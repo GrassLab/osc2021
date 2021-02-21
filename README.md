@@ -14,7 +14,7 @@ This repository is homework submission for students
     - Your name
 3. Design and implement your kernel in forked repository
 4. Create a GitHub pull request
-    - Choose `GrassLab/osdi2020` as base repository and `{your student ID}` as base branch
+    - Choose `GrassLab/osc2021` as base repository and `{your student ID}` as base branch
     - Choose branch in your forked repository as compare branch
     - Name it with student ID and which lab e.g. `0856085 lab0`
     ![](images/pull_request.png)
