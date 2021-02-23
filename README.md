@@ -10,13 +10,23 @@ My Implementation of Operating System at [`OSC2021`][OSC21], NYCU.
 | :-------: | ----------- | -------- | :----------------------- |
 | `0856039` | `ianre657`  | `陳奕安` | ianchen.cs08@nycu.edu.tw |
 
-## How to build
+## Prerequisite
 
-**WIP**
++ [`docker`][docker]
++ [`qemu`][qemu]
++ [`clang-format`][clang-format]
 
-## How to run
+[qemu]: https://www.qemu.org/download/
+[docker]: https://www.docker.com/
+[clang-format]: https://formulae.brew.sh/formula/clang-format
 
-**WIP**
+## How-to
+
+| Usage            | Command      | Description                                    |
+| :--------------- | :----------- | :--------------------------------------------- |
+| Build code       | `make`       | Generate kernel image:`kernel8.img`            |
+| Run              | `make run`   | Run kernel image in `qemu`                     |
+| Enter Virtualenv | `make shell` | Start a bash shell (with cross-compiling tool) |
 
 ## How to burn it into pi3
 
