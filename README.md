@@ -12,13 +12,17 @@ My Implementation of Operating System at [`OSC2021`][OSC21], NYCU.
 
 ## Prerequisite
 
-+ [`docker`][docker]
-+ [`qemu`][qemu]
-+ [`clang-format`][clang-format]
++ Build only
+  + [docker][docker]
++ Dev tool
+  + [clang-format][clang-format]: Format C code
+  + [qemu][qemu]: Run kernel image in emulater
+  + [Raspberry Pi Imager][imger]: SD card utilites
 
 [qemu]: https://www.qemu.org/download/
 [docker]: https://www.docker.com/
 [clang-format]: https://formulae.brew.sh/formula/clang-format
+[imger]: https://www.raspberrypi.org/software/
 
 ## How-to
 
