@@ -10,13 +10,27 @@ My Implementation of Operating System at [`OSC2021`][OSC21], NYCU.
 | :-------: | ----------- | -------- | :----------------------- |
 | `0856039` | `ianre657`  | `陳奕安` | ianchen.cs08@nycu.edu.tw |
 
-## How to build
+## Prerequisite
 
-**WIP**
++ Build only
+  + [docker][docker]
++ Dev tool
+  + [clang-format][clang-format]: Format C code
+  + [qemu][qemu]: Run kernel image in emulater
+  + [Raspberry Pi Imager][imger]: SD card utilites
 
-## How to run
+[qemu]: https://www.qemu.org/download/
+[docker]: https://www.docker.com/
+[clang-format]: https://formulae.brew.sh/formula/clang-format
+[imger]: https://www.raspberrypi.org/software/
 
-**WIP**
+## How-to
+
+| Usage            | Command      | Description                                    |
+| :--------------- | :----------- | :--------------------------------------------- |
+| Build code       | `make`       | Generate kernel image:`kernel8.img`            |
+| Run              | `make run`   | Run kernel image in `qemu`                     |
+| Enter Virtualenv | `make shell` | Start a bash shell (with cross-compiling tool) |
 
 ## How to burn it into pi3
 
