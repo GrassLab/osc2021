@@ -1,23 +1,31 @@
-# this makefile should be runned under linux cross compile env
-ARCH_PRE := aarch64-unknown-linux-gnueabi
+ARCH_PRE := aarch64-unknown-linux-gnueabi-
 
-CC := $(ARCH_PRE)-gcc
-LD:= $(ARCH_PRE)-ld
-OBJCOPY := $(ARCH_PRE)-objcopy
-KERNEL := kernel8
+CC := $(ARCH_PRE)gcc
+LD:= $(ARCH_PRE)ld
+OBJCOPY := $(ARCH_PRE)objcopy
 
-ALL: $(KERNEL).img
-GENERATED := a.o $(KERNEL).elf $(KERNEL).img
+CFLAGS = -Wall -nostdlib
 
-$(KERNEL).img: $(KERNEL).elf
-	$(OBJCOPY) -O binary $(KERNEL).elf $@
+ASM = $(wildcard *.S)
 
-$(KERNEL).elf: a.o linker.ld
-	$(LD) -T linker.ld -o $@ a.o
+OBJS = $(ASM:%.S=build/%_s.o)
 
-a.o: a.S
-	$(CC) -c $^
+TARGET = kernel8.img
+TARGET_ELF = kernel8.elf
+
+all: $(TARGET)
+
+build/%_s.o: %.S
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(TARGET): $(TARGET_ELF)
+	@mkdir -p $(@D)
+	$(OBJCOPY) -O binary $< $@
+
+$(TARGET_ELF): $(OBJS)
+	$(LD) -T linker.ld -o $@ $(OBJS)
 
 .PHONY: clean
 clean:
-	rm $(GENERATED)
+	$(RM) $(TARGET) $(TARGET_ELF) $(OBJS)

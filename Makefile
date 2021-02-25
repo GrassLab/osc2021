@@ -1,23 +1,29 @@
-QEMU := qemu-system-aarch64
-KERNEL_IMG := ./src/kernel8.img
+QEMU = qemu-system-aarch64
+DOCKER = ./dockcross-linux-arm64
+KERNEL_IMG = kernel8.img
 
-DOCKER := ./dockcross-linux-arm64
+.PHONY: shell clean run
 
+all: $(KERNEL_IMG)
 
-.PHONY: build
-build:
-	$(DOCKER) make -C ./src
+# == Commands
+run: $(KERNEL_IMG)
+	$(QEMU_WITH_KERNEL) $<
 
-.PHONY: clean
-clean:
-	$(DOCKER) make -C ./src clean
-
-.PHONY: shell
 shell:
 	$(DOCKER) bash
 
-$(KERNEL_IMG): build
+clean:
+	$(RM) $(KERNEL_IMG)
+	$(DOCKER) make -C ./src clean
 
-.PHONY: run
-run: $(KERNEL_IMG)
-	$(QEMU) -M raspi3 -kernel $(KERNEL_IMG) -display none -d in_asm
+define QEMU_WITH_KERNEL
+	$(QEMU) -M raspi3 \
+	-display none \
+	-d in_asm\
+	-kernel
+endef
+
+$(KERNEL_IMG):
+	$(DOCKER) make -C ./src
+	cp src/$(KERNEL_IMG) $@
