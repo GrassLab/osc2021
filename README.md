@@ -4,7 +4,7 @@
 
 | 學號 | GitHub 帳號 | 姓名 | Email |
 | --- | ----------- | --- | --- |
-|`0856085`| `t0037799` | `林濬維` | jwlin.cs08g@nctu.edu.tw |
+|`0856004`| `calee0219` | `李家安` | sz110010@gmail.com,calee.cs08@nycu.edu.tw |
 
 ## How to build
 
