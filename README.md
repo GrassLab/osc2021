@@ -1,4 +1,4 @@
-# My OSC 2021
+# NCTU Operating Capstone 2021
 
 ## Author
 
