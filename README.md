@@ -18,11 +18,22 @@ My Implementation of Operating System at [`OSC2021`][OSC21], NYCU.
   + [clang-format][clang-format]: Format C code
   + [qemu][qemu]: Run kernel image in emulater
   + [Raspberry Pi Imager][imger]: SD card utilites
+  + A corss-gdb for arrch64: see below
 
 [qemu]: https://www.qemu.org/download/
 [docker]: https://www.docker.com/
 [clang-format]: https://formulae.brew.sh/formula/clang-format
 [imger]: https://www.raspberrypi.org/software/
+
+### Compiling a cross gdb for `aarch64`
+
+1. Download `gdb` from [official gdb website][gdb]
+2. unzip code and `cd` into folder
+3. `./configure --target=aarch64-linux`
+4. `make`
+5. `make install`, (the target binary would be installed as `/usr/local/bin/aarch64-linux-gdb`)
+
+[gdb]: https://www.gnu.org/software/gdb/download/
 
 ## How-to
 
