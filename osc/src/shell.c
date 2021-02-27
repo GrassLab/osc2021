@@ -1,12 +1,15 @@
 #include "shell.h"
+#include "bool.h"
 #include "cfg.h"
 #include "string.h"
 #include "uart.h"
-#include <stdbool.h>
 
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC ((volatile unsigned int *)0x3F10001c)
 #define PM_WDOG ((volatile unsigned int *)0x3F100024)
+
+#define forEach(p, list, type)                                                 \
+  for (p = (list); p != (list) + (sizeof(list) / sizeof(type)); p++)
 
 void cmdHello();
 void cmdHelp();
@@ -29,10 +32,9 @@ Cmd cmdList[] = {
 
 void cmdHello() { uart_puts("Hello 😎👋!!\n"); }
 void cmdHelp() {
-  int numCmds = sizeof(cmdList) / sizeof(Cmd);
   uart_puts("available commands:\n");
-  Cmd *c = cmdList;
-  for (int i = 0; i < numCmds; i++, c++) {
+  Cmd *c;
+  forEach(c, cmdList, Cmd) {
     uart_puts("\t");
     uart_puts(c->name);
     uart_puts("\t");
@@ -67,7 +69,7 @@ void _bfrClear() {
 
 void shellInputLine() {
   enum InputChar c;
-  _Bool flagExit = false;
+  bool flagExit = false;
   _bfrClear();
 
   while (!flagExit) {
@@ -104,9 +106,8 @@ void shellInputLine() {
 
 // Process command resides in buffer
 void shellProcessCommand() {
-  int numCmds = sizeof(cmdList) / sizeof(Cmd);
-  Cmd *c = cmdList;
-  for (int i = 0; i < numCmds; i++, c++) {
+  Cmd *c;
+  forEach(c, cmdList, Cmd) {
     if (!strcmp(c->name, buffer)) {
       c->func();
     }
