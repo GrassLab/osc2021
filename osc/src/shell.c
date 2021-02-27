@@ -8,9 +8,6 @@
 #define PM_RSTC ((volatile unsigned int *)0x3F10001c)
 #define PM_WDOG ((volatile unsigned int *)0x3F100024)
 
-#define forEach(p, list, type)                                                 \
-  for (p = (list); p != (list) + (sizeof(list) / sizeof(type)); p++)
-
 void cmdHello();
 void cmdHelp();
 void cmdReboot();
@@ -33,8 +30,8 @@ Cmd cmdList[] = {
 void cmdHello() { uart_puts("Hello 😎👋!!\n"); }
 void cmdHelp() {
   uart_puts("available commands:\n");
-  Cmd *c;
-  forEach(c, cmdList, Cmd) {
+  Cmd *end = cmdList + sizeof(cmdList) / sizeof(Cmd);
+  for (Cmd *c = cmdList; c != end; c++) {
     uart_puts("\t");
     uart_puts(c->name);
     uart_puts("\t");
@@ -106,8 +103,8 @@ void shellInputLine() {
 
 // Process command resides in buffer
 void shellProcessCommand() {
-  Cmd *c;
-  forEach(c, cmdList, Cmd) {
+  Cmd *end = cmdList + sizeof(cmdList) / sizeof(Cmd);
+  for (Cmd *c = cmdList; c != end; c++) {
     if (!strcmp(c->name, buffer)) {
       c->func();
     }
