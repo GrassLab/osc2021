@@ -1,30 +1,27 @@
-# Operating Systems Capstone 2021
-# My Operating Systems Capstone 2021
-[中文](讀我.md)
+# My OSC 2021
 
-This repository is homework submission for students
+## Author
 
-## How to submit homework
+| 學號 | GitHub 帳號 | 姓名 | Email |
+| --- | ----------- | --- | --- |
+|`L091197`| `andykuo8766` | `郭紘安` | andykuo8766@gapp.nthu.edu.tw |
 
-1. Fork [this repository](https://github.com/GrassLab/osc2021) on GitHub 
-    ![](images/fork_button.png)
-2. Write down following info in your `README.md`
-    - GitHub account name
-    - Student ID
-    - Your name
-3. Design and implement your kernel in forked repository
-4. Create a GitHub pull request
-    - Choose `GrassLab/osc2021` as base repository and `{your student ID}` as base branch
-    - Choose branch in your forked repository as compare branch
-    - Name it with student ID and which lab e.g. `0856085 lab0`
-    ![](images/pull_request.png)
-5. We will accept pull request when lab due date
+## How to build
 
-repeat 3-5 to submit later homework/lab.
+**WIP**
 
-## Example
+## How to run
 
-- forked repository: https://github.com/t0037799/osc2021
-- pull request: https://github.com/GrassLab/osc2021/pull/1
+**WIP**
 
-## Happy Coding ~
+## How to burn it into pi3
+
+**WIP**
+
+## Architecture
+
+**WIP**
+
+## Directory structure
+
+**WIP**
