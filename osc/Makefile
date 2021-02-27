@@ -6,14 +6,16 @@ OBJCOPY := $(TOOLCHAIN_PREFIX)-objcopy
 SRC_DIR = src
 BUILD_DIR = build
 
-LINKER_SCRIPT = $(SRC_DIR)/linker.ld
+LDSCRIPT = $(SRC_DIR)/linker.ld
+LDFLAGS = -nostdlib
 ENTRY = $(SRC_DIR)/start.S
 ENTRY_OBJS = $(BUILD_DIR)/start.o
 
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
-CFLAGS = -Wall -I include -g -ggdb
+CFLAGS = -Wall -I include -nostdlib -nostartfiles -ffreestanding
+CFLAGS += -g -ggdb
 
 TARGET = kernel8.img
 TARGET_ELF = kernel8.elf
@@ -28,7 +30,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 
 $(TARGET): $(ENTRY_OBJS) $(OBJS)
 	@mkdir -p $(@D)
-	$(LD) $(ENTRY_OBJS) $(OBJS) -T $(LINKER_SCRIPT) -o $(TARGET_ELF)
+	$(LD) $(LDFLAGS) $(ENTRY_OBJS) $(OBJS) -T $(LDSCRIPT) -o $(TARGET_ELF)
 	$(OBJCOPY) -O binary $(TARGET_ELF) $(TARGET)
 
 
