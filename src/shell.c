@@ -59,6 +59,32 @@ void get_input(){
         uart_putc(cur_char);
         if(cur_char == '\n')
             break;
+        else if(cur_char == '\e'){
+            if(uart_getc() == '['){
+                cur_char = uart_getc();
+                switch (cur_char)
+                {
+                case 'D':
+                    left_key();
+                    break;
+                case 'C':
+                    right_key();
+                    break;
+                case 'A':
+                    up_key();
+                    break;
+                case 'B':
+                    down_key();
+                    break;
+                default:
+                    uart_puts("Not known\n");
+                    break;
+                }
+            }
+        }
+        else if(cur_char == 127){
+            del_key();
+        }
         else{
             if(input_tail_idx == MAX_INPUT){
                 uart_puts("Input string meet command max limit! Please press enter or shrink the command!\n");
@@ -69,6 +95,28 @@ void get_input(){
         }
     }
     input_buffer[input_tail_idx] = 0;
+}
+
+void del_key(){
+    if(input_tail_idx>0){
+        input_tail_idx -= 1;
+        uart_puts("\033[1D");
+        uart_puts(" ");
+        uart_puts("\033[1D");
+    }
+}
+
+void left_key(){
+    
+}
+void right_key(){
+
+}
+void up_key(){
+
+}
+void down_key(){
+
 }
 
 void simple_shell(){
