@@ -23,25 +23,21 @@ int bfrWriteHead = 0;
 int curInputSize = 0;
 
 Cmd cmdList[] = {
-    {.name = "hello", .help = " Greeting", .func = cmdHello},
-    {.name = "help", .help = " Show avalible commands", .func = cmdHelp},
-    {.name = "reboot", .help = " Reboot device", .func = cmdReboot},
+    {.name = "hello", .help = "Greeting", .func = cmdHello},
+    {.name = "help", .help = "Show avalible commands", .func = cmdHelp},
+    {.name = "reboot", .help = "Reboot device", .func = cmdReboot},
 };
 
-void cmdHello() { uart_puts("Hello 😎👋!!\n"); }
+void cmdHello() { uart_println("Hello 😎👋!!"); }
 void cmdHelp() {
-  uart_puts("available commands:\n");
+  uart_println("available commands:");
   Cmd *end = cmdList + sizeof(cmdList) / sizeof(Cmd);
   for (Cmd *c = cmdList; c != end; c++) {
-    uart_puts("\t");
-    uart_puts(c->name);
-    uart_puts("\t");
-    uart_puts(c->help);
-    uart_puts("\n");
+    uart_println("  %s  \t%s", c->name, c->help);
   }
 }
 void cmdReboot() {
-  uart_puts("reboot\n");
+  uart_println("reboot");
   *PM_RSTC = PM_PASSWORD | 0x20;
   *PM_WDOG = PM_PASSWORD | 100; // reboot after 100 watchdog ticks
 }
@@ -164,10 +160,7 @@ void shellInputLine() {
       buffer[curInputSize] = 0;
       uart_puts("\r\n");
       if (CFG_LOG_ENABLE) {
-        uart_puts("GET:'");
-        uart_puts(buffer);
-        uart_puts("'");
-        uart_puts("\r\n");
+        uart_println("GET:'%s'", buffer);
       }
       break;
     default:
