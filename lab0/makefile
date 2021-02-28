@@ -1,6 +1,6 @@
 CC:= aarch64-linux-gnu-gcc
 LD:= aarch64-linux-gnu-ld
-OBJCPY:= aarch-linux-gnu-objcopy
+OBJCPY:= aarch64-linux-gnu-objcopy
 Source:= a.S
 LINKER:= linker.ld
 QEMUL:= qemu-system-aarch64
