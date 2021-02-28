@@ -28,7 +28,7 @@ Cmd cmdList[] = {
     {.name = "reboot", .help = "Reboot device", .func = cmdReboot},
 };
 
-void cmdHello() { uart_println("Hello 😎👋!!"); }
+void cmdHello() { uart_println("Hello!!"); }
 void cmdHelp() {
   uart_println("available commands:");
   Cmd *end = cmdList + sizeof(cmdList) / sizeof(Cmd);
@@ -164,7 +164,8 @@ void shellInputLine() {
       }
       break;
     default:
-      uart_puts("<?>");
+        // ignore other input
+        ;
     }
   }
 }

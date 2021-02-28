@@ -3,7 +3,10 @@
 int main() {
   uart_init();
 
-  uart_puts("\r🐹🐔🐤🦊:  \\Hello/\n# ");
+  uart_println("-------------------------------");
+  uart_println(" Operating System Capstone 2020");
+  uart_println("-------------------------------");
+
   while (1) {
     shellPrintPrompt();
     shellInputLine();
