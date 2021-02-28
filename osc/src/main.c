@@ -5,7 +5,7 @@ int main() {
 
   uart_puts("\rMy Simple Shell:\n# ");
   while (1) {
-    uart_puts("\r>");
+    shellPrintPrompt();
     shellInputLine();
     shellProcessCommand();
   }

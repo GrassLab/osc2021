@@ -36,7 +36,7 @@ run: all
 debug: all
 	@echo "${YELLOW} 🐛 Start debugging${RESET}"
 	@echo "${YELLOW}Open another terminal and use ${GREEN}make gdb${YELLOW} to connect to host${RESET}"
-	$(DEBUG_SERVER_WITH_KERNEL) $(SRC_FOLDER)/$(KERNEL_IMG)
+	$(DEBUG_SERVER_WITH_KERNEL) $(SRC_FOLDER)/$(KERNEL_IMG) -serial null -serial stdio
 
 gdb: all
 	@echo "${YELLOW} 🕵️‍♀️ Using ${GREEN}${CROSS_GDB}${RESET}"

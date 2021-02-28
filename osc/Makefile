@@ -14,7 +14,7 @@ ENTRY_OBJS = $(BUILD_DIR)/start.o
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
-CFLAGS = -Wall -I include -nostdlib -nostartfiles -ffreestanding
+CFLAGS = -Wall -I include -nostdlib -nostartfiles -ffreestanding -MMD
 CFLAGS += -g -ggdb
 
 TARGET = kernel8.img
