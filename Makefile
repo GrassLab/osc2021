@@ -1,29 +1,65 @@
 QEMU = qemu-system-aarch64
+CROSS_GDB = aarch64-linux-gdb
 DOCKER = ./dockcross-linux-arm64
+
+.PHONY: shell clean run debug gdb
+
+SRC_FOLDER = osc
+
 KERNEL_IMG = kernel8.img
+KERNEL_ELF = kernel8.elf
 
-.PHONY: shell clean run
+all: $(SRC_FOLDER)/$(KERNEL_IMG) $(SRC_FOLDER)/$(KERNEL_ELF)
+	@echo "${YELLOW} 📦 Build Finished${RESET}"
 
-all: $(KERNEL_IMG)
+
+# define standard colors
+RED          := $(shell tput setaf 1)
+GREEN        := $(shell tput setaf 2)
+YELLOW       := $(shell tput setaf 3)
+WHITE        := $(shell tput setaf 7)
+RESET := $(shell tput sgr0)
 
 # == Commands
-run: $(KERNEL_IMG)
-	$(QEMU_WITH_KERNEL) $<
-
 shell:
+	@echo "${YELLOW} 🤖 Spawn shell inside ${DOCKER} ${RESET}"
 	$(DOCKER) bash
 
 clean:
-	$(RM) $(KERNEL_IMG)
-	$(DOCKER) make -C ./src clean
+	$(DOCKER) make -C $(SRC_FOLDER) clean
+	@echo "${YELLOW} 🚚 Finish cleanup${RESET}"
 
-define QEMU_WITH_KERNEL
+run: all
+	@echo "${YELLOW} 🚧 Run kernel with QEMU${RESET}"
+	$(RUN_WITH_KERNEL) $(SRC_FOLDER)/$(KERNEL_IMG) -serial null -serial stdio
+
+debug: all
+	@echo "${YELLOW} 🐛 Start debugging${RESET}"
+	@echo "${YELLOW}Open another terminal and use ${GREEN}make gdb${YELLOW} to connect to host${RESET}"
+	$(DEBUG_SERVER_WITH_KERNEL) $(SRC_FOLDER)/$(KERNEL_IMG) -serial null -serial stdio
+
+gdb: all
+	@echo "${YELLOW} 🕵️‍♀️ Using ${GREEN}${CROSS_GDB}${RESET}"
+	$(CROSS_GDB) --init-command osc-gdb
+# ==
+
+define DEBUG_SERVER_WITH_KERNEL
 	$(QEMU) -M raspi3 \
 	-display none \
-	-d in_asm\
+	-s -S \
 	-kernel
 endef
 
-$(KERNEL_IMG):
-	$(DOCKER) make -C ./src
-	cp src/$(KERNEL_IMG) $@
+define RUN_WITH_KERNEL
+	$(QEMU) -M raspi3 \
+	-display none \
+	-kernel
+endef
+
+ $(SRC_FOLDER)/$(KERNEL_IMG): FORCE
+	$(DOCKER) make -C $(SRC_FOLDER)
+
+ $(SRC_FOLDER)/$(KERNEL_ELF): FORCE
+	$(DOCKER) make -C $(SRC_FOLDER)
+
+FORCE:

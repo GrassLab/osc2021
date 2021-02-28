@@ -1,4 +1,4 @@
-src/build/
+osc/build/
 *.elf
 *.img
 
