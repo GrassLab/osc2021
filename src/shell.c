@@ -1,8 +1,13 @@
 #include "mini_uart.h"
+#include "utils.h"
 #include "shell.h"
 #include "str_tool.h"
 
 #define MAX_INPUT 10
+
+#define PM_PASSWORD 0x5a000000
+#define PM_RSTC 0x3F10001c
+#define PM_WDOG 0x3F100024
 
 struct CMD {
     char *name;
@@ -11,7 +16,8 @@ struct CMD {
 };
 struct CMD command[] = {
     {.name="hello", .help="print Hello World!", .func=shell_hello},
-    {.name="help", .help="print all available commands", .func=shell_help}
+    {.name="help", .help="print all available commands", .func=shell_help},
+    {.name="reboot", .help="reboot the machine", .func=shell_reboot},
 };
 
 char input_buffer[MAX_INPUT+1];
@@ -98,4 +104,15 @@ void shell_help(){
     }
     uart_puts("===============================================");
     uart_puts("\n");
+}
+
+void shell_reboot(){
+    uart_puts("Reboot after 10 watchdog tick!\n");
+    put32(PM_RSTC, PM_PASSWORD | 0x20);
+    put32(PM_WDOG, PM_PASSWORD | 10);
+    uart_puts("\nPree 'c' to cancel reboot\n");
+    while(uart_getc()!='c');
+    put32(PM_RSTC, PM_PASSWORD | 0);
+    put32(PM_WDOG, PM_PASSWORD | 0);
+    uart_puts("Reboot had canceled!\n");
 }
