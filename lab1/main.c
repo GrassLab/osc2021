@@ -24,16 +24,11 @@ void shell(){
 			uart_puts("Hello World!\n");
 		}else if(strcmp(buffer,"reboot")==0){
 			uart_puts("rebooting...\n");
-			int tick=87;
-			*PM_RSTC=PM_PASSWORD|0x20;
-			*PM_WDOG=PM_PASSWORD|tick;
-			while(1){
-				//rebooting...
-			}
+			reboot();
 		}else{
 			uart_puts("Error: No such command \"");
 			uart_puts(buffer);
-			uart_puts("\"\n");
+			uart_puts("\".\n");
 		}
 	}
 }

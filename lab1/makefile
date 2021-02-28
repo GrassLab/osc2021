@@ -7,8 +7,8 @@ all:
 	cd inc&&make
 	make $(APP).img
 
-$(APP).img:start.o main.o inc/uart.o
-	aarch64-linux-gnu-ld -T $(LINKER) -o $(APP).elf start.o main.o inc/uart.o
+$(APP).img:start.o main.o inc/uart.o inc/reboot.o
+	aarch64-linux-gnu-ld -T $(LINKER) -o $(APP).elf start.o main.o inc/uart.o inc/reboot.o
 	aarch64-linux-gnu-objcopy -O binary $(APP).elf $@
 	rm $(APP).elf
 

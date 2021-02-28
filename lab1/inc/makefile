@@ -3,7 +3,7 @@ SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
 
 all:
-	for obj in $(OBJS) ; do\
+	for obj in $(OBJS);do\
 		make $$obj;\
 	done
 %.o:%.c
