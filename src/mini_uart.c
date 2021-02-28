@@ -30,22 +30,19 @@ void uart_init(){
 }
 
 void uart_putc(char c){
-    while(1){
-        if(get32(AUX_MU_LSR_REG)&0x20)
-            break;
-    }
+    while(!(get32(AUX_MU_LSR_REG)&0x20));
     put32(AUX_MU_IO_REG, c);
 }
 
 char uart_getc(void){
-    while(1){
-        if(get32(AUX_MU_LSR_REG)&0x01)
-            break;
-    }
-    return get32(AUX_MU_IO_REG);
+    while(!(get32(AUX_MU_LSR_REG)&0x01));
+    char c = (char)get32(AUX_MU_IO_REG);
+    return c == '\r' ? '\n' : c;
 }
 
 void uart_puts(char* str){
-    for(int i=0; str[i]!='\0'; i++)
-        uart_putc(str[i]);
+    while(*str){
+        uart_putc(*str);
+        str += 1;
+    }
 }

@@ -30,7 +30,7 @@ kernel8.img: $(SRC_DIR)/linker.ld $(OBJ_FILES)
 
 
 run:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -d in_asm -serial null -serial stdio
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio
 
 clean:
 	rm -rf $(RES_DIR)/* *.img
