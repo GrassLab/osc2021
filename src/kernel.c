@@ -1,0 +1,11 @@
+#include "mini_uart.h"
+
+void kernel_main(void){
+    uart_init();
+    uart_puts("Hello, world!\n");
+
+    while(1){
+        uart_puts("YOYOYO\n");
+        uart_putc(uart_getc());
+    }
+}
