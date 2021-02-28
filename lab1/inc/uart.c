@@ -43,9 +43,18 @@ void uart_init(){
 	*GPPUDCLK0=0;
 
 	*AUX_MU_CNTL=3;//enable the transmitter and receiver
+
+	//flush read buffer
+	while(*AUX_MU_LSR&0x01){
+		char tmp=(char)(*AUX_MU_IO);
+	}
 }
 
 void uart_send(unsigned int c){
+	if(c=='\n'){//convert \n to \r\n
+		uart_send('\r');//recursive
+	}
+
 	do{ asm volatile("nop"); }while(!(*AUX_MU_LSR&0x20));
 	*AUX_MU_IO=c;
 }
