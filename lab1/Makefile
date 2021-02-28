@@ -8,12 +8,13 @@ CXXFLAGS := -Iinclude -ffreestanding -nostdinc -nostdlib -nostartfiles -std=gnu+
 
 INCLUDE  := $(wildcard **/*.h)
 SRC      := $(wildcard **/*.cpp)
-OBJ      := $(patsubst %.cpp,%.o,$(SRC)) start.o
+ASM      := $(wildcard **/*.S)
+OBJ      := $(patsubst %.cpp,%.o,$(SRC)) $(patsubst %.S,%.o,$(ASM))
 
 .PHONY: all clean
 all: kernel8.img
 clean:
-	rm -rf **/*.o *.o *.elf *.img
+	rm -rf **/*.o *.elf *.img
 %.o: %.S
 	$(CC) $(CCFLAGS) -c $< -o $@
 %.o: %.cpp $(INCLUDE)
