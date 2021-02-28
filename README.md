@@ -1,4 +1,4 @@
-# My OSC 2021 - LAB 01
+# My OSC 2021
 
 ## Author
 
@@ -6,22 +6,31 @@
 | --- | ----------- | --- | --- |
 |`L091197`| `andykuo8766` | `郭紘安` | andykuo8766@gapp.nthu.edu.tw |
 
-## How to build
-
-**WIP**
-
-## How to run
-
-**WIP**
-
-## How to burn it into pi3
-
-**WIP**
-
-## Architecture
-
-**WIP**
-
-## Directory structure
-
-**WIP**
+## Labs
+* **Lab 0: Environment Setup**
+    * [Branch](https://github.com/andykuo8766/osc2021/tree/LAB-01)
+    * [Release]
+* **Lab 1: Hello World**
+    * [Branch]
+    * [Release]
+* **Lab 2: Bootloader**
+    * [Branch]
+    * [Release]
+* **Lab 3: Exception and Interrupt**
+    * [Branch]
+    * [Release]
+* **Lab 4: Multitasking**
+    * [Branch]
+    * [Release]
+* **Lab 5: Virtual Memory**
+    * [Branch]
+    * [Release]
+* **Lab 6: Allocator**
+    * [Branch]
+    * [Release]
+* **Lab 7: Virtual File System**
+    * [Branch]
+    * [Release]
+* **Lab 8: File Systerm and Meets Hardware**
+    * [Branch]
+    * [Release]
