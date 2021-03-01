@@ -1,4 +1,4 @@
-  .section "text"
-  _start:
+.section "text"
+_start:
   wfe
   b _start
