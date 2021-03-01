@@ -1,24 +1,22 @@
 ARMGNU = aarch64-linux-gnu
-C_FLAGS = -Wall -Wextra -Wshadow -Wconversion -nostdlib -nostartfiles
+C_FLAGS = -Wall -Wextra -Wshadow -Wconversion -ffreestanding -nostdinc -nostdlib -nostartfiles
 
 KERNEL_C_SOURCE_FILES = main.c uart.c
 KERNEL_C_OBJECT_FILES = $(KERNEL_C_SOURCE_FILES:.c=.o)
-KERNEL_ASSEMBLY_SOURCE_FILES = start.S
-KERNEL_ASSEMBLY_OBJECT_FILES = $(KERNEL_ASSEMBLY_SOURCE_FILES:.S=.o)
 
 all: kernel8.img
 
-kerenl8.img: kernel8.elf
-		${ARMGNU}-objcopy -O binary kernel8.elf kernel8.img
-
-kernel8.elf: ${KERNEL_ASSEMBLY_OBJECT_FILES} ${KERNEL_C_OBJECT_FILES} 
-		${ARMGNU}-ld -T linker.ld -o kernel8.elf ${KERNEL_ASSEMBLY_OBJECT_FILES} ${KERNEL_C_OBJECT_FILES}
+start.o: start.S
+		$(ARMGNU)-gcc -c start.S -o start.o -g
 
 %.o: %.c 
-		${ARMGNU}-cc -c ${C_FLAGS} $^ -o $@
+		$(ARMGNU)-gcc $(C_FLAGS) -c $< -o $@
 
-%.o: %.S 
-		${ARMGNU}-cc -c $^ -o $@
+kernel8.elf: start.o $(KERNEL_C_OBJECT_FILES) 
+		$(ARMGNU)-ld start.o $(KERNEL_C_OBJECT_FILES) -T linker.ld -o kernel8.elf
+
+kerenl8.img: kernel8.elf
+		$(ARMGNU)-objcopy -O binary kernel8.elf kernel8.img
 
 clean: rm -rf *.o *.elf *img
 
