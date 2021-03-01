@@ -5,7 +5,7 @@ CROSS_CONTAINER_IMG = dockcross-linux-aarch64
 DOCKCROSS_SCRIPT = $(CROSS_CONTAINER_IMG)
 CROSS_ENV_RUN = ./$(DOCKCROSS_SCRIPT)
 
-.PHONY: shell clean run debug gdb build
+.PHONY: setup shell clean run debug gdb build
 
 # target implementation to use
 IMPL_FOLDER ?= impl-rs
@@ -30,6 +30,12 @@ WHITE        := $(shell tput setaf 7)
 RESET := $(shell tput sgr0)
 
 # == Commands
+setup:
+	$(RUN_BUILD_DOCKER_IMAGE)
+	docker run $(CROSS_CONTAINER_IMG) > $(DOCKCROSS_SCRIPT)
+	chmod +x $(DOCKCROSS_SCRIPT)
+	@echo "${YELLOW} 🎉 You're all set 🎉 ${RESET}"
+
 shell: $(DOCKCROSS_SCRIPT)
 	@echo "${YELLOW} 🤖 Spawn shell inside ${DOCKER} ${RESET}"
 	$(CROSS_ENV_RUN) bash
@@ -65,7 +71,17 @@ define RUN_WITH_KERNEL
 	-kernel
 endef
 
-$(DOCKCROSS_SCRIPT): Dockerfile
+define RUN_BUILD_DOCKER_IMAGE
+	@echo "${YELLOW} 👷‍♂️ Start Building Cross compiling env with Docker${RESET}"
 	docker build -t $(CROSS_CONTAINER_IMG) .
-	docker run $(CROSS_CONTAINER_IMG) > $@
+	@echo "${YELLOW} ✅ Cross compiling env built${RESET}"
+	@echo "${GREEN}"
+	docker images ${CROSS_CONTAINER_IMG}
+	@echo "${RESET}"
+endef
+
+$(DOCKCROSS_SCRIPT): Dockerfile
+	$(RUN_BUILD_DOCKER_IMAGE)
+	docker run $(CROSS_CONTAINER_IMG) > $(DOCKCROSS_SCRIPT)
 	chmod +x $(DOCKCROSS_SCRIPT)
+
