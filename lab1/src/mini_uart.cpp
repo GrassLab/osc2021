@@ -11,9 +11,9 @@ void MiniUART::Init() {
     Kernel::Delay(150);
     MMIO::set(MMIOREG::GPPUDCLK0, (1 << 14) | (1 << 15));
     Kernel::Delay(150);
+    MMIO::set(MMIOREG::GPPUD, 0);
     MMIO::set(MMIOREG::GPPUDCLK0, 0);
 
-    
     MMIO::set(MMIOREG::AUX_ENABLES, 1);
     MMIO::set(MMIOREG::AUX_MU_CNTL_REG, 0);
     MMIO::set(MMIOREG::AUX_MU_IER_REG, 0);
