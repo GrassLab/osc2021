@@ -4,7 +4,7 @@ LD       := aarch64-linux-gnu-ld
 OBJCOPY  := aarch64-linux-gnu-objcopy
 LD_SRC   := linker.ld
 CCFLAGS  := -std=gnu17
-CXXFLAGS := -Iinclude -ffreestanding -nostdinc -nostdlib -nostartfiles -std=gnu++14 -O2
+CXXFLAGS := -Iinclude -ffreestanding -nostdinc -nostdlib -nostartfiles -std=gnu++14 -O2 -g
 
 INCLUDE  := $(wildcard **/*.h)
 SRC      := $(wildcard **/*.cpp)
