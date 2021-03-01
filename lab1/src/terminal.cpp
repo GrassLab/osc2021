@@ -47,5 +47,7 @@ void Terminal::Hello() {
 }
 
 void Terminal::Reboot() {
+    MiniUART::PutS("Rebooting...\r\n");
     Kernel::Reset(100);
+    while (true);
 }
