@@ -35,23 +35,57 @@ uint8_t MiniUART::Recv() {
 }
 
 uint8_t MiniUART::GetCh() {
-    char ch = Recv();
-    Send(ch);
-    if (ch == '\r') Send('\n'); // When ENTER(\r) clicked, send \r\n
+    uint8_t ch = Recv();
+    if (ch == '\b' || ch == 127) {
+        ch = '\b';
+    }
+    else if (ch == '\r') {
+        Send('\r');
+        Send('\n');
+    }
+    else if (ch < 32) {
+        Send('^');
+        Send(ch + 64);
+    }
+    else if (ch > 127) {
+        Send('\\');
+        Send('x');
+        uint8_t ch1 = (ch >> 4) & 0xf, ch2 = ch & 0xf;
+        ch1 = (ch1 < 10) ? ch1 + '0' : ch1 - 10 + 'A';
+        ch2 = (ch2 < 10) ? ch2 + '0' : ch2 - 10 + 'A';
+        Send(ch1);
+        Send(ch2);
+    }
+    else {
+        Send(ch);
+    }
     return ch;
 }
 
 void MiniUART::GetS(char* str) {
+    uint32_t offset = 0;
     while (true) {
         uint8_t ch = GetCh();
-        if (ch == '\r')
-        {
-            *str = 0;
+        if (ch == '\r') {
+            str[offset] = 0;
             return;
         }
+        else if (ch == '\b') {
+            if (offset > 0) {
+                offset--;
+                if (str[offset] < 32) {
+                    PutS("\b\b  \b\b");
+                }
+                else if (str[offset] > 127) {
+                    PutS("\b\b\b\b    \b\b\b\b");
+                }
+                else {
+                    PutS("\b \b");
+                }
+            }
+        }
         else {
-            *str = ch;
-            str++;
+            str[offset++] = ch;
         }
     }
 }
