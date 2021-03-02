@@ -7,21 +7,20 @@
 |`309551057`| `karljackab` | `李智嘉` | karljackab@gmail.com |
 
 ## How to build
-
-**WIP**
+- Please prepare 'qemu-system-aarch64' enumerator
+- Simply type ```make``` to build the OS
 
 ## How to run
-
-**WIP**
+- ```make run``` to start the enumerator
 
 ## How to burn it into pi3
+1. Replace the ```kernel8.img``` file to the new one which previous ```make``` had created
+2. You can connect to your pi3 by UART
 
-**WIP**
-
-## Architecture
+<!-- ## Architecture
 
 **WIP**
 
 ## Directory structure
 
-**WIP**
+**WIP** -->
