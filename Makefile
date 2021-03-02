@@ -1,27 +1,50 @@
-ARMGNU = aarch64-linux-gnu
-C_FLAGS = -Wall -Wextra -Wshadow -Wconversion -ffreestanding -nostdinc -nostdlib -nostartfiles
+CXX = aarch64-linux-gnu-gcc
+CXXFLAGS = -Iinclude -Wall -ffreestanding -nostdinc -nostdlib -nostartfiles
 
-KERNEL_C_SOURCE_FILES = main.c uart.c
-KERNEL_C_OBJECT_FILES = $(KERNEL_C_SOURCE_FILES:.c=.o)
+LD = aarch64-linux-gnu-ld
+LDFLAGS = -T scripts/linker.ld
 
-all: kernel8.img
+OBJCOPY = aarch64-linux-gnu-objcopy
+OBJCOPYFLAGS = -O binary
 
-start.o: start.S
-		$(ARMGNU)-gcc -c start.S -o start.o -g
+GDB = gdb-multiarch
+GDBFLAGS = -x ./debug.gdb
 
-%.o: %.c 
-		$(ARMGNU)-gcc $(C_FLAGS) -c $< -o $@
+BUILD_DIR = build
+ELF = kernel8.elf
+IMG = kernel8.img
+SRC = $(wildcard **/*.S) $(wildcard **/*.c)
+OBJ = start.o $(filter-out start.o, $(wildcard *.o))
 
-kernel8.elf: start.o $(KERNEL_C_OBJECT_FILES) 
-		$(ARMGNU)-ld start.o $(KERNEL_C_OBJECT_FILES) -T linker.ld -o kernel8.elf
 
-kerenl8.img: kernel8.elf
-		$(ARMGNU)-objcopy -O binary kernel8.elf kernel8.img
+all:
+	mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $(SRC)
+	make kernel8
 
-clean: rm -rf *.o *.elf *img
+kernel8:
+	$(LD) $(LDFLAGS) -o $(BUILD_DIR)/$(ELF) $(OBJ)
+	$(OBJCOPY) $(OBJCOPYFLAGS) $(BUILD_DIR)/$(ELF) $(BUILD_DIR)/$(IMG)
+	rm $(OBJ)
 
-run: kernel8.img
-		qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio
+debug:
+	qemu-system-aarch64 -M raspi3\
+		-kernel $(BUILD_DIR)/$(IMG)\
+		-display none\
+		-serial null\
+		-serial stdio\
+		-S -s
 
-debug: kernel8.img 
-		qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -S -s
+run:
+	qemu-system-aarch64 -M raspi3\
+		-kernel $(BUILD_DIR)/$(IMG)\
+		-display none\
+		-serial null\
+		-serial stdio
+
+gdb:
+	$(GDB) $(GDBFLAGS)
+
+clean:
+	rm -rf $(BUILD_DIR)
+

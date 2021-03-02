@@ -1,11 +1,27 @@
-SECTIONS
+ENTRY(_start)
+__heap_start = 0x90000;
+__stack_top  = 0xA0000;
+
+MEMORY
 {
-    . = 0x80000;
-    .text :  { *(.text) }
-    .rodata : { *(.rodata) }
-    .data : { *(.data) }
-    . = ALIGN(0x8);
-    bss_begin = .;
-    .bss : { *(.bss*) } 
-    bss_end = .;
+    code_ram   (rx!rw) : ORIGIN = 0x80000, LENGTH = 0x5000
+    data_ram   (rw!x)  : ORIGIN = 0x86000, LENGTH = 0x1A000
+}
+SECTIONS
+{       
+    .text :
+    {
+        boot.o(.text)
+        *(.text)
+
+    } > code_ram
+
+    .data :
+    {
+        *(.data)
+        bss_begin = .;
+        *(.bss)
+        bss_end = .;
+        *(.rodata*)
+    } > data_ram
 }

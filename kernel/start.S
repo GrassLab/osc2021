@@ -24,7 +24,7 @@ memzero: //clear the bss
 	b.gt memzero
 
 4:
-    ldr x0, = _start
+    ldr x0, = __stack_top
     mov sp, x0 //set stack
     bl main //jump to main.c
     b 1b
