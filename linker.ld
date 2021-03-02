@@ -1,17 +1,16 @@
-_stack_size = 0x4000;
+_stack_size = 0xA00;
 
 SECTIONS
 {
  . = 0x80000;
  .text : { 
-	KEEP(*(.text.boot))
-	*( .text .text.* .gun.linkonce.t*)  
+	*( .text)  
  }
  .rodata : {
-	*(.rodata .rodata.* .gnulinonce.r*)
+	*(.rodata)
  }
  .data : {
- 	*(.data .data.* .gnu.linkonce.d*)
+ 	*(.data)
  }
  .bss (NOLOAD) : {
 	. = ALIGN(16);

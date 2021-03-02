@@ -22,7 +22,7 @@ void uart_init(){
     *AUX_MU_LCR_REG = 3;
     *AUX_MU_MCR_REG = 0;
     *AUX_MU_BAUD = 270;
-    *AUX_MU_IIR_REG = 0x06;
+    *AUX_MU_IIR_REG = 0xc6;
     reg = *GPFSEL1;
     reg &= ~((7 << 12) | (7 << 15));
     reg |= (2 << 12) | (2 << 15);

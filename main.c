@@ -27,6 +27,7 @@ void shell(){
     int idx = 0;
     while(1){
         c = uart_get();
+        // if(c == '\0') continue;
         if(c == '\r') uart_send('\n');
         uart_send(c);
         str[idx++] = c;
@@ -35,16 +36,17 @@ void shell(){
             str[idx - 1] = '\0';
             if(compare(str, "hello") == 0) uart_puts("Hello World\n\r");
             else if(compare(str, "help") == 0) show_commands();
-            else if(compare(str, "reboot") == 0) reset(0);
+            else if(compare(str, "reboot") == 0) break;
             idx = 0;
             uart_puts("$ ");
         }
 
     }
+    reset(0);
 }
 int main(void){
     uart_init();
-    if(uart_get())
-        shell();    
+    uart_get()
+    shell();    
     return 0;
 }
