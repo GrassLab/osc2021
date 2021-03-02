@@ -16,13 +16,15 @@ void shell() {
   } else if (!strcmp(buf, "reboot")) {
     reset(10);
   } else if (strcmp(buf, "")) {
-    uart_puts("no such instruction\n");
+    uart_puts("no such instruction \'");
+    uart_puts(buf);
+    uart_puts("\'\n");
   }
 }
 
 void main() {
   uart_init();
-  uart_puts("Lab 1:\n");
+  uart_puts("\rLab 1:\n");
   while (1) {
     shell();
   }
