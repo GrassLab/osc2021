@@ -4,7 +4,7 @@
 
 | 學號 | GitHub 帳號 | 姓名 | Email |
 | --- | ----------- | --- | --- |
-|`0856085`| `t0037799` | `林濬維` | jwlin.cs08g@nctu.edu.tw |
+|`0856572`| `EricPwg` | `彭宣儒` | dz92286@gmail.com |
 
 ## How to build
 
