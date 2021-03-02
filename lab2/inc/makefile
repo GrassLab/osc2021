@@ -1,4 +1,5 @@
 .PHONY:all clean
+CFLAGS:=-nostdinc -nostdlib -nostartfiles
 SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
 
@@ -7,7 +8,7 @@ all:
 		make $$obj;\
 	done
 %.o:%.c
-	aarch64-linux-gnu-gcc -c $<
+	aarch64-linux-gnu-gcc $(CFLAGS) -c $<
 
 clean:
 	-rm *.o

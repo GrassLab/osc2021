@@ -1,5 +1,6 @@
 #include "uart.h"
 #include "mmio.h"
+#include "printf.h"
 
 //GPIO registers
 #define GPFSEL1         ((volatile unsigned int*)(MMIO_BASE+0x00200004))
@@ -83,6 +84,17 @@ void uart_puthex(unsigned int hex){
 			uart_send('a'+v-10);
 		}
 	}
+}
+
+unsigned int uart_printf(char* fmt,...){
+	char dst[100];
+    //__builtin_va_start(args, fmt): "..." is pointed by args
+    //__builtin_va_arg(args,int): ret=(int)*args;args++;return ret;
+    __builtin_va_list args;
+    __builtin_va_start(args,fmt);
+    unsigned int ret=vsprintf(dst,fmt,args);
+    uart_puts(dst);
+    return ret;
 }
 
 int strcmp(char* a,char* b){

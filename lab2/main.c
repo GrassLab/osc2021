@@ -37,15 +37,8 @@ void shell(){
 void main(){
 	uart_init();
 
-	unsigned int data[2];
-	if(getSerialNum(data)){
-		uart_puthex(data[1]);
-		uart_send(' ');
-		uart_puthex(data[0]);
-		uart_send('\n');
-	}else{
-		uart_puts("fail\n");
-	}
+	uart_puthex(sizeof(unsigned long));
+	uart_printf(" %d\n",sizeof(long int));
 
 	shell();
 }
