@@ -29,9 +29,9 @@ void buffer_clear(){
 }
 
 void init_shell(){
+    uart_puts("Welcome to my simple shell\r\n");
+    uart_puts("ヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノ\r\n");
     buffer_clear();
-    uart_puts("Welcome to my simple shell\n");
-    uart_puts("ヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノ\n");
 }
 
 void execute_command(char *input_cmd){
@@ -45,7 +45,7 @@ void execute_command(char *input_cmd){
         }
     }
     if(!had_executed){
-        uart_puts("ERROR! Command not found!\n");
+        uart_puts("ERROR! Command not found!\r\n");
     }
 }
 
@@ -56,9 +56,10 @@ void get_input(){
     char cur_char;
     while(1){
         cur_char = uart_getc();
-        uart_putc(cur_char);
-        if(cur_char == '\n')
+        if(cur_char == '\r'){
+            uart_puts("\r\n");
             break;
+        }
         else if(cur_char == '\e'){
             if(uart_getc() == '['){
                 cur_char = uart_getc();
@@ -77,7 +78,7 @@ void get_input(){
                     down_key();
                     break;
                 default:
-                    uart_puts("Not known\n");
+                    uart_puts("Not known\r\n");
                     break;
                 }
             }
@@ -87,9 +88,10 @@ void get_input(){
         }
         else{
             if(input_tail_idx == MAX_INPUT){
-                uart_puts("Input string meet command max limit! Please press enter or shrink the command!\n");
-                continue;
+                uart_puts("\r\nInput string meet command max limit!\r\n");
+                break;
             }
+            uart_putc(cur_char);
             input_buffer[input_tail_idx] = cur_char;
             input_tail_idx += 1;
         }
@@ -130,37 +132,34 @@ void simple_shell(){
 }
 
 void shell_hello(){
-    uart_puts("Hello World d(`･∀･)b\n");
+    uart_puts("Hello World d(`･∀･)b\r\n");
 }
 
 void shell_help(){
     uart_puts("===============================================");
-    uart_puts("\n");
+    uart_puts("\r\n");
     uart_puts("Command Name");
     uart_puts("\t");
     uart_puts("Description");
-    uart_puts("\n");
+    uart_puts("\r\n");
     uart_puts("===============================================");
-    uart_puts("\n");
+    uart_puts("\r\n");
 
     int cmd_len = sizeof(command)/sizeof(struct CMD);
     for(int cmd_idx=0; cmd_idx<cmd_len; cmd_idx+=1){
         uart_puts(command[cmd_idx].name);
         uart_puts("\t\t");
         uart_puts(command[cmd_idx].help);
-        uart_puts("\n");
+        uart_puts("\r\n");
     }
     uart_puts("===============================================");
-    uart_puts("\n");
+    uart_puts("\r\n");
 }
 
 void shell_reboot(){
-    uart_puts("Reboot after 10 watchdog tick!\n");
+    uart_puts("Reboot after 10 watchdog tick!\r\n");
+    delay(10000);
     put32(PM_RSTC, PM_PASSWORD | 0x20);
     put32(PM_WDOG, PM_PASSWORD | 10);
-    uart_puts("\nPree 'c' to cancel reboot\n");
-    while(uart_getc()!='c');
-    put32(PM_RSTC, PM_PASSWORD | 0);
-    put32(PM_WDOG, PM_PASSWORD | 0);
-    uart_puts("Reboot had canceled!\n");
+    while(1);
 }
