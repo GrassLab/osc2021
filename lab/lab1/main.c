@@ -42,9 +42,12 @@ void get_cmd(char *buff) {
 }
 
 void shell() {
-  while (uart_getc() == '\0')
-    ;
   char buff[buff_size];
+  /* say hello */
+  uart_puts("++++++++++++++++++++\r\n");
+  uart_puts("+++ Hello Shell! +++\r\n");
+  uart_puts("++++++++++++++++++++\r\n");
+
   while (1) {
     uart_puts("$ ");
     get_cmd(buff);
@@ -55,10 +58,8 @@ void shell() {
 }
 void main() {
   uart_init();  // set up serial console
-  /* say hello */
-  uart_puts("++++++++++++++++++++\r\n");
-  uart_puts("+++ Hello Shell! +++\r\n");
-  uart_puts("++++++++++++++++++++\r\n");
-  uart_getc();
+  while (uart_getc() == '\0')
+    ;
+
   shell();
 }
