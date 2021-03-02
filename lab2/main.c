@@ -37,8 +37,18 @@ void shell(){
 void main(){
 	uart_init();
 
-	uart_puthex(sizeof(unsigned long));
-	uart_printf(" %d\n",sizeof(long int));
+	unsigned int v[2];
+	if(getBoardRevision(v)){
+		uart_printf("board revision: 0x%x\n",v[0]);
+	}else{
+		uart_printf("fail: getBoardRevision\n");
+	}
+	if(getVCMEM(v)){
+		uart_printf("VC Core base address: 0x%x\n",v[0]);
+		uart_printf("VC memory size: %d\n",v[1]);
+	}else{
+		uart_printf("fail: getVCMEM\n");
+	}
 
 	shell();
 }

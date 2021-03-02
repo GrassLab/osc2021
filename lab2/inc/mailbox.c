@@ -4,6 +4,8 @@
 #define MBOX_REQUEST            0
 #define MBOX_CH_PROP            8//CPU->GPU
 #define MBOX_TAG_GETSERIAL      0x10004
+#define MBOX_TAG_GETREVISION    0x00010002
+#define MBOX_TAG_GETVCMEM       0x00010006
 #define MBOX_TAG_LAST           0
 #define TAG_REQUEST_CODE        0
 
@@ -41,6 +43,40 @@ int getSerialNum(unsigned int* dst){
 	mbox[6]=0;
 	mbox[7]=MBOX_TAG_LAST;
 	
+	int success=mbox_call(MBOX_CH_PROP);
+	if(success){
+		dst[0]=mbox[5];
+		dst[1]=mbox[6];
+	}
+	return success;
+}
+
+int getBoardRevision(unsigned int* dst){//it should be 0xa020d3 for rpi3 b+
+	mbox[0]=7*4;
+	mbox[1]=MBOX_REQUEST;
+	mbox[2]=MBOX_TAG_GETREVISION;
+	mbox[3]=4;
+	mbox[4]=TAG_REQUEST_CODE;
+	mbox[5]=0;
+	mbox[6]=MBOX_TAG_LAST;
+
+	int success=mbox_call(MBOX_CH_PROP);
+	if(success){
+		dst[0]=mbox[5];
+	}
+	return success;
+}
+
+int getVCMEM(unsigned int* dst){
+	mbox[0]=8*4;
+	mbox[1]=MBOX_REQUEST;
+	mbox[2]=MBOX_TAG_GETVCMEM;
+	mbox[3]=8;
+	mbox[4]=TAG_REQUEST_CODE;
+	mbox[5]=0;
+	mbox[6]=0;
+	mbox[7]=MBOX_TAG_LAST;
+
 	int success=mbox_call(MBOX_CH_PROP);
 	if(success){
 		dst[0]=mbox[5];
