@@ -8,11 +8,15 @@
 
 ## How to build
 
-**WIP**
+```
+make
+```
 
 ## How to run
 
-**WIP**
+```
+make run
+```
 
 ## How to burn it into pi3
 
