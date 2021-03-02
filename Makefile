@@ -1,26 +1,34 @@
-export PATH := /usr/local/opt/llvm/bin:$(PATH)
-
 CC=clang
 CFLAGS+=-mcpu=cortex-a53 --target=aarch64-rpi3-elf
-#LD=/usr/local/opt/llvm/bin/ld.lld
-LD=ld.lld
-LDFLAGS=
+LD=aarch64-linux-gnu-ld
+LDFLAGS+=-T $(LINKER_SCRIPT)
 
-all: kernel8.img
-	echo "Kernel8 image build completed!"
+IMAGE=kernel8.img
+ELF_FILE=kernel8.elf
+OBJ_FILES=a.o
 
-kernel8.img: kernel8.elf
+LINKER_SCRIPT=linker.lds
+
+
+all: $(IMAGE)
+	@echo ""
+	@echo "==============================="
+	@echo "$(IMAGE) image build completed!"
+
+img: $(IMAGE)
+$(IMAGE): %.img: %.elf
 # Build kernel image from elf file
-	/usr/local/opt/llvm/bin/llvm-objcopy -O binary kernel8.elf kernel8.img
+	llvm-objcopy -O binary $< $@
 
-kernel8.elf: a.o linker.lds
+elf: $(ELF_FILE)
+$(ELF_FILE): $(OBJ_FILES)
 # Linke elf file from object file
-#$(LD) -arch aarch64 -T linker.lds -o kernel8.elf a.o
-	$(LD) -T linker.lds -o kernel8.elf a.o
+	$(LD) $(LDFLAGS) -o $@ $<
 
-%.o: %.S
+obj: $(OBJ_FILES)
+$(OBJ_FILES): %.o: %.S
 # Compile from asm to obj file
-	$(CC) $(CFLAGS) -c $< -o a.o
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f kernel8.img kernel8.elf a.o
+	rm -f $(IMAGE) $(ELF_FILE) $(OBJ_FILES)

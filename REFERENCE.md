@@ -10,7 +10,9 @@
 ### Cross compile
 
 - Using LLVM
+  - [Introduction of LLVM]( https://medium.com/@zetavg/%E7%B7%A8%E8%AD%AF%E5%99%A8-llvm-%E6%B7%BA%E6%B7%BA%E7%8E%A9-42a58c7a7309)
   - https://clang.llvm.org/docs/CrossCompilation.html
+  - When checking llvm cross compiling, it seems that although using clang as compiler, it still using gnu linker as the cross-linker. Since that, I give up trying lld as linker but back to GNU linker
 
 ### ASM
 
