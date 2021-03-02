@@ -1,0 +1,7 @@
+bare-metal: write program without OS
+boot loader: the program that is executed after the BIOS is being booted
+
+-- Makefile
+COPS: parameters of C compiler
+nostdlib: don't use C std lib. The reason is that C std lib eventually interact with operating system.
+nostartfiles: don't use standard startup files. It would setting an initial stack pointer...... But we'll do it on our own
