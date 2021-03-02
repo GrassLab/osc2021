@@ -1,5 +1,5 @@
 CC = aarch64-linux-gnu-gcc
-CFLAGS = -Wall -nostdlib -nostartfiles -ffreestanding
+CFLAGS = -Iinclude -Wall -nostdlib -nostartfiles -ffreestanding
 # ASMFLAGS = 
 LD = aarch64-linux-gnu-ld
 OBJCOPY = aarch64-linux-gnu-objcopy
@@ -34,4 +34,4 @@ kernel8.img: kernel8.elf
 	$(OBJCOPY) $(OBJCOPYFLAGS) $(BUILD_DIR)/kernel8.elf $(BUILD_DIR)/kernel8.img
 
 run:
-	$(QEMU) -M raspi3 -kernel $(BUILD_DIR)/kernel8.img -display none -d in_asm
+	$(QEMU) -M raspi3 -kernel $(BUILD_DIR)/kernel8.img -display none -serial null -serial stdio
