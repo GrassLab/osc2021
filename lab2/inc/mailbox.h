@@ -1,0 +1,1 @@
+int getSerialNum(unsigned int* dst);
