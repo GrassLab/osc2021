@@ -34,40 +34,40 @@ void uart_init()
     register unsigned int reg;
 
     /* initialize UART */
-    *AUX_ENABLE     |= 1;       /* enable mini UART */
-    *AUX_MU_CNTL     = 0;       /* Disable transmitter and receiver during configuration. */
+    *AUX_ENABLE |= 1; /* enable mini UART */
+    *AUX_MU_CNTL = 0; /* Disable transmitter and receiver during configuration. */
 
-    *AUX_MU_IER      = 0;       /* Disable interrupt */
-    *AUX_MU_LCR      = 3;       /* Set the data size to 8 bit. */
-    *AUX_MU_MCR      = 0;       /* Don’t need auto flow control. */
-    *AUX_MU_BAUD     = 270;     /* 115200 baud */
-    *AUX_MU_IIR      = 6;       /* No FIFO */
+    *AUX_MU_IER = 0;    /* Disable interrupt */
+    *AUX_MU_LCR = 3;    /* Set the data size to 8 bit. */
+    *AUX_MU_MCR = 0;    /* Don’t need auto flow control. */
+    *AUX_MU_BAUD = 270; /* 115200 baud */
+    *AUX_MU_IIR = 6;    /* No FIFO */
     // *AUX_MU_IIR      = 0xc6;       /* No FIFO */
 
     /* map UART1 to GPIO pins */
     reg = *GPFSEL1;
-    reg &= ~((7<<12)|(7<<15));  /* address of gpio 14, 15 */
-    reg |=   (2<<12)|(2<<15);   /* set to alt5 */
+    reg &= ~((7 << 12) | (7 << 15)); /* address of gpio 14, 15 */
+    reg |= (2 << 12) | (2 << 15);    /* set to alt5 */
 
     *GPFSEL1 = reg;
 
-    *GPPUD = 0;                 /* enable gpio 14 and 15 */
-    reg=150;
-    while ( reg-- )
-    { 
-        asm volatile("nop"); 
-    }
-    
-    *GPPUDCLK0 = (1<<14)|(1<<15);
-    reg=150; 
-    while ( reg-- )
+    *GPPUD = 0; /* enable gpio 14 and 15 */
+    reg = 150;
+    while (reg--)
     {
         asm volatile("nop");
     }
-    
-    *GPPUDCLK0 = 0;             /* flush GPIO setup */
 
-    *AUX_MU_CNTL = 3;           // Enable the transmitter and receiver.
+    *GPPUDCLK0 = (1 << 14) | (1 << 15);
+    reg = 150;
+    while (reg--)
+    {
+        asm volatile("nop");
+    }
+
+    *GPPUDCLK0 = 0; /* flush GPIO setup */
+
+    *AUX_MU_CNTL = 3; // Enable the transmitter and receiver.
 }
 
 /**
@@ -76,23 +76,25 @@ void uart_init()
 void uart_send(unsigned int c)
 {
     /* Wait until we can send */
-    do {
-        
+    do
+    {
+
         asm volatile("nop");
 
-    } while( ! ( *AUX_MU_LSR&0x20 ));
-    
-    /* write the character to the buffer */   
+    } while (!(*AUX_MU_LSR & 0x20));
+
+    /* write the character to the buffer */
     *AUX_MU_IO = c;
 
-    if ( c == '\n' ) 
+    if (c == '\n')
     {
-        do {
-            
+        do
+        {
+
             asm volatile("nop");
 
-        } while( ! ( *AUX_MU_LSR&0x20 ));
-        
+        } while (!(*AUX_MU_LSR & 0x20));
+
         *AUX_MU_IO = '\r';
     }
 }
@@ -100,21 +102,23 @@ void uart_send(unsigned int c)
 /**
  * Receive a character
  */
-char uart_getc() {
+char uart_getc()
+{
 
     char r;
-    
+
     /* wait until something is in the buffer */
-    do{
-        
+    do
+    {
+
         asm volatile("nop");
-        
-    } while ( ! ( *AUX_MU_LSR&0x01 ) );
+
+    } while (!(*AUX_MU_LSR & 0x01));
 
     /* read it and return */
-    r = ( char )( *AUX_MU_IO );
-
-    /* convert carrige return to newline */
+    r = (char)(*AUX_MU_IO);
+    /* convert carrige return to newline 
+       because pressing enter only sends \r */
     return r == '\r' ? '\n' : r;
 }
 
@@ -123,14 +127,13 @@ char uart_getc() {
  */
 void uart_puts(char *s)
 {
-    while( *s )
+    while (*s)
     {
         /* convert newline to carrige return + newline */
-    
+
         //if(*s=='\n')
         //    uart_send('\r');
 
         uart_send(*s++);
-
     }
 }

@@ -22,3 +22,6 @@ clean:
 
 run:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio
+
+deploy:
+	cp ./kernel8.img /run/media/brothre23/4DFF-0A36/

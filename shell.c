@@ -20,9 +20,6 @@ void shell_start ()
     while(1)
     {
         input_char = uart_getc();
-
-        
-
         input_parse = parse ( input_char );
 
         command_controller ( input_parse, input_char, buffer, &buffer_counter);
