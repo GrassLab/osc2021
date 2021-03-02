@@ -20,7 +20,9 @@ make run
 
 ## How to burn it into pi3
 
-**WIP**
+```
+make burn
+```
 
 ## Architecture
 

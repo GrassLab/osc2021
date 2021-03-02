@@ -22,6 +22,7 @@ void shell() {
 
 void main() {
   uart_init();
+  uart_puts("Lab 1:\n");
   while (1) {
     shell();
   }

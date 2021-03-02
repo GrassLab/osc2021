@@ -39,3 +39,6 @@ debug: all
 
 tty: all
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial "pty" -display none
+
+burn: all
+	lsblk | grep sdb1 > /dev/null && sudo mount /dev/sdb1 sd_mount && sudo cp kernel8.img sd_mount/kernel8.img && sudo umount sd_mount 
