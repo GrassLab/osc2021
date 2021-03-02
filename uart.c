@@ -51,8 +51,8 @@ char uart_get(){
     	asm volatile("nop");
     }
     res = (char)(*AUX_MU_IO_REG);
-    if(res == '\r') return '\n';
-    else return res;
+    // if(res == '\r') return '\n';
+    return res;
 }
 char* uart_gets(char* s){
     char *ptr = s;

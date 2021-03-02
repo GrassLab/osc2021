@@ -1,5 +1,5 @@
 CC = aarch64-linux-gnu-gcc
-CFLAG = -fPIC -fno-stack-protector -nostdlib -nostartfiles -Wall -O2 -ffunction-sections
+CFLAG = -fPIC -fno-stack-protector -nostdlib -nostartfiles -ffunction-sections
 SF =
 ifndef SF
 	SF=start.S
@@ -20,3 +20,5 @@ kernel8.img: s.o $(OBJS)
 clean:
 	-rm kernel8.elf kernel8.img
 
+test:
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio

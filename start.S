@@ -1,23 +1,26 @@
 .section ".text.boot"
 
 .global _start
+
 _start:
-	
-	ldr x1, =_bss_start
-	ldr x2, =_bss_end
-	b clean_bss
-
-set_zero:
-	str xzr, [x1]
-	add x1, x1, #8
-
-clean_bss:
-	# zero out bss
-	cmp x1, x2
-	blt set_zero
-	
-	mov sp, #0x80000
-	bl main
+	mrs    x1, mpidr_el1 // read cpu id
+	and    x1, x1, #3
+	cbz    x1, 2f
 
 1:
+	wfe
+	b 1b
+2:
+	ldr    x1, =__stack_top
+	mov    sp, x1
+
+	ldr    x1, =__bss_start
+	ldr    w2, =__bss_size
+3:	
+	cbz    w2, 4f
+	str    xzr, [x1], #8
+	sub    w2, w2, #1
+	cbnz   w2, 3b
+4:  
+	bl main
 	b 1b
