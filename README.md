@@ -26,3 +26,10 @@ make
 ```bash
 make run
 ```
+## Simple Shell
+| command   | description                   | 
+| ----------| ----------------------------- | 
+| hello     | print Hello World!            |
+| help      | print all available commands  |
+| reboot    | reboot rpi3                   |
+| cancel    | cancel reboot rpi3            |
