@@ -1,5 +1,4 @@
 #include "gpio.h"
-#include <stdio.h>
 
 #define AUX_MU_IO_REG ((volatile unsigned int*)(MMIO_BASE + 0x00215040))
 #define AUX_MU_IER_REG ((volatile unsigned int*)(MMIO_BASE + 0x00215044))
@@ -36,35 +35,24 @@ void uart_init(){
     *GPPUDCLK0 = 0;
     *AUX_MU_CNTL_REG = 3;
 
-
 }
 void uart_send(unsigned int c){
-    while(~(*AUX_MU_LSR_REG)&0x20){
+    do {
     	asm volatile("nop");
-    }
+    }while(~(*AUX_MU_LSR_REG)&0x20);
     *AUX_MU_IO_REG = c;
 	
 }
 char uart_get(){
     char res;
-    while(~(*AUX_MU_LSR_REG)&0x01){
+    do {
     	asm volatile("nop");
-    }
+    } while(~(*AUX_MU_LSR_REG)&0x01);
     res = (char)(*AUX_MU_IO_REG);
     // if(res == '\r') return '\n';
     return res;
 }
-char* uart_gets(char* s){
-    char *ptr = s;
-    char c;
-    while((c = uart_get())!='\n' && c != EOF){
-    	*s = c;
-	s++;
-    }
-    *s = '\0';
-    return ptr;
-    
-}
+
 void uart_puts(char *s){
     while(*s){
     	if(*s == '\n') uart_send('\r');
