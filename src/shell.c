@@ -28,7 +28,8 @@ void clear_buffer() {
 void receive_cmd() {
   while (1) {
     char c = uart_getc();
-    if (c == '\n') {  // '\r' is replaced with '\n'
+    if (c == '\0') continue;  // to avoid weird character
+    if (c == '\n') {          // '\r' is replaced with '\n'
       uart_puts("\r\n");
       buffer[buffer_pos] = '\0';
       break;

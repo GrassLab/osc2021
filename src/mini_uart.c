@@ -18,14 +18,15 @@ void uart_init() {
   *GPPUDCLK0 = 0;                   // remove the clock
 
   /* initialize Mini UART */
-  *AUXENB |= 1;           // enable mini UART
-  *AUX_MU_CNTL_REG = 0;   // disable transmitter, receiver during configuration
-  *AUX_MU_IER_REG = 0;    // disable receive and transmit interrupts
-  *AUX_MU_LCR_REG = 3;    // enable 8 bit mode
-  *AUX_MU_MCR_REG = 0;    // set RTS line to be always high
-  *AUX_MU_BAUD = 270;     // set baud rate to 115200
-  *AUX_MU_IIR_REG = 0x6;  // no FIFO
-  *AUX_MU_CNTL_REG = 3;   // enable transmitter and receiver back
+  *AUXENB |= 1;          // enable mini UART
+  *AUX_MU_CNTL_REG = 0;  // disable transmitter, receiver during configuration
+  *AUX_MU_IER_REG = 0;   // disable receive and transmit interrupts
+  *AUX_MU_LCR_REG = 3;   // enable 8 bit mode
+  *AUX_MU_MCR_REG = 0;   // set RTS line to be always high
+  *AUX_MU_BAUD = 270;    // set baud rate to 115200
+  // comment this line to avoid weird character
+  //   *AUX_MU_IIR_REG = 0x6;  // no FIFO
+  *AUX_MU_CNTL_REG = 3;  // enable transmitter and receiver back
 }
 
 void uart_send(unsigned int c) {
