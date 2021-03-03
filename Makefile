@@ -1,14 +1,19 @@
+BUILD=debug
+
 CC=clang
-CFLAGS+=-mcpu=cortex-a53 --target=aarch64-rpi3-elf
+CFLAGS=-mcpu=cortex-a53 --target=aarch64-rpi3-elf -Wall
+CFLAGS+=-g -O0
+
 LD=aarch64-linux-gnu-ld
 LDFLAGS+=-T $(LINKER_SCRIPT)
 
 IMAGE=kernel8.img
 ELF_FILE=kernel8.elf
-OBJ_FILES=a.o
+OBJ_FILES=a.o kernel.o
 
 LINKER_SCRIPT=linker.lds
 
+.PHONY: all clean img elf obj
 
 all: $(IMAGE)
 	@echo ""
@@ -23,11 +28,14 @@ $(IMAGE): %.img: %.elf
 elf: $(ELF_FILE)
 $(ELF_FILE): $(OBJ_FILES)
 # Linke elf file from object file
-	$(LD) $(LDFLAGS) -o $@ $<
+	$(LD) $(LDFLAGS) -o $@ $?
 
 obj: $(OBJ_FILES)
-$(OBJ_FILES): %.o: %.S
+%.o: %.S
 # Compile from asm to obj file
+	$(CC) $(CFLAGS) -c $< -o $@
+%.o: %.c
+# Compile from C to obj file
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:

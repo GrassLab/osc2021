@@ -17,3 +17,15 @@
 ### ASM
 
 - wfe: http://www.wowotech.net/armv8a_arch/wfe_wfi.html
+
+## Lab 1
+
+### ASM
+
+- ARM Register (32 bit): http://sp1.wikidot.com/arm
+- Register 64 bit: https://insidelinuxdev.net/article/a03td4.html
+- [instruction set]( https://static.docs.arm.com/ddi0596/a/DDI_0596_ARM_a64_instruction_set_architecture.pdf)
+- 
+
+### UART
+- GPIO: https://www.slideshare.net/raspberrypi-tw/raspberry-pigpiolookinside
