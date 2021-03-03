@@ -46,7 +46,7 @@ void shell(){
 }
 int main(void){
     uart_init();
-    uart_get()
+    uart_get();
     shell();    
     return 0;
 }

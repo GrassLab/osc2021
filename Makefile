@@ -14,7 +14,7 @@ s.o:$(SF)
 	aarch64-linux-gnu-gcc $(CFLAG) -c $< -o $@
 
 kernel8.img: s.o $(OBJS)
-	aarch64-linux-gnu-ld s.o $(OBJS) -T wade_linker.ld -nostdlib -o kernel8.elf
+	aarch64-linux-gnu-ld s.o $(OBJS) -T linker.ld -nostdlib -o kernel8.elf
 	aarch64-linux-gnu-objcopy -O binary kernel8.elf kernel8.img
 	
 clean:
