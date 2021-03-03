@@ -19,6 +19,9 @@ void show_commands(){
     uart_puts(" hello    |  print Hello World\r\n");
     uart_puts(" reboot   |  reboot raspi3\r\n");
 }
+void backspace(){
+    uart_puts("\b \b");
+}
 void recieve_cmd(char *str){
     for(int i = 0; i < 1024; ++i) str[i] = '\0';
     char ch;
@@ -27,8 +30,18 @@ void recieve_cmd(char *str){
             uart_puts("\r\n");
             break;
         }
-        str[i] = ch;
-        uart_send(ch);
+        else if(ch == '\b'){
+            if(i > 0){
+                backspace();
+                str[i - 1] = '\0';
+            }
+            i = (i == 0) ? -1: i - 2;
+        }
+        else{
+            str[i] = ch;
+            uart_send(ch);
+        }
+        
     }
 }
 void shell(){
