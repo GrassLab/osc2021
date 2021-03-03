@@ -8,7 +8,7 @@
 
 ## Labs
 * **Lab 0: Environment Setup**
-    * [Branch]
+    * [Branch](https://github.com/andykuo8766/osc2021/tree/LAB-00)
     * [Release]
 * **Lab 1: Hello World**
     * [Branch](https://github.com/andykuo8766/osc2021/tree/LAB-01)
