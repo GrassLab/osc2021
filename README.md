@@ -8,15 +8,16 @@
 
 ## How to build
 
-**WIP**
+make
 
-## How to run
 
-**WIP**
+## How to run (qemu)
+
+make run 
 
 ## How to burn it into pi3
 
-**WIP**
+manullay clone .img file into sd card 
 
 ## Architecture
 
@@ -24,4 +25,7 @@
 
 ## Directory structure
 
-**WIP**
+lab1 /
+|----include
+|----lib
+|-----otehr files
