@@ -22,12 +22,16 @@ void mem_reset(char *buff, int size) {
 
 void do_hello() { uart_puts("Hello World!\r\n"); }
 void do_help() {
-  uart_puts("help: available commands\r\n");
+  uart_puts("help: print available commands\r\n");
   uart_puts("hello: print Hello World!\r\n");
-  uart_puts("reboot: restart OS\r\n");
+  uart_puts("reboot: restart OS\b\r\n");
 }
-void reboot() {}
-
+void do_except(char *buff) {
+  uart_puts("No command: ");
+  uart_puts(buff);
+  uart_puts("\r\n");
+}
+void clear_line() { uart_puts("\r                    "); }
 void get_cmd(char *buff) {
   char c;
   mem_reset(buff, buff_size);
@@ -35,6 +39,15 @@ void get_cmd(char *buff) {
     if (c == '\r') {
       uart_puts("\r\n");
       break;
+    }
+    /* backspace handler*/
+    else if (c == '\b') {
+      buff[--i] = 0;
+      clear_line();
+      uart_puts("\r$ ");
+      uart_puts(buff);
+      if (i-- < 0) i = -1;
+      continue;
     }
     buff[i] = c;
     uart_send(c);
@@ -51,9 +64,14 @@ void shell() {
   while (1) {
     uart_puts("$ ");
     get_cmd(buff);
-    if (strcmp(buff, "hello")) do_hello();
-    if (strcmp(buff, "help")) do_help();
-    if (strcmp(buff, "reboot")) do_reset(10);
+    if (strcmp(buff, "hello"))
+      do_hello();
+    else if (strcmp(buff, "help"))
+      do_help();
+    else if (strcmp(buff, "reboot"))
+      do_reset(10);
+    else
+      do_except(buff);
   }
 }
 void main() {
