@@ -4,24 +4,22 @@
 
 | 學號 | GitHub 帳號 | 姓名 | Email |
 | --- | ----------- | --- | --- |
-|`0856085`| `t0037799` | `林濬維` | jwlin.cs08g@nctu.edu.tw |
+|`309555009`| `HexRabbit` | `陳冠廷` | h3xrabbit@gmail.com |
 
 ## How to build
 
-**WIP**
+```
+make
+```
 
 ## How to run
 
-**WIP**
+```
+make run
+```
 
 ## How to burn it into pi3
 
-**WIP**
-
-## Architecture
-
-**WIP**
-
-## Directory structure
-
-**WIP**
+```
+make flash
+```
