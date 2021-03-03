@@ -76,6 +76,6 @@ void main() {
   uart_init();  // set up serial console
   while (uart_getc() == '\0')
     ;
-
+  uart_getc();
   shell();
 }

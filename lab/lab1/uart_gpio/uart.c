@@ -5,12 +5,12 @@
 
 void uart_init() {
   /* initialize UART */
-  *AUX_ENABLE |= 1;  // enable UART1, AUX mini uart
-  *AUX_MU_CNTL = 0;  // Disable enable RX & TX operation
-  *AUX_MU_LCR = 3;   // used to set data bit length (8 bit = 3)
-  *AUX_MU_MCR = 0;   // disable auto flow control
-  *AUX_MU_IER = 0;   // disable interrupts
-  // *AUX_MU_IIR = 0xc6; // identify TX or RX interrup
+  *AUX_ENABLE |= 1;    // enable UART1, AUX mini uart
+  *AUX_MU_CNTL = 0;    // Disable enable RX & TX operation
+  *AUX_MU_LCR = 3;     // used to set data bit length (8 bit = 3)
+  *AUX_MU_MCR = 0;     // disable auto flow control
+  *AUX_MU_IER = 0;     // disable interrupts
+  *AUX_MU_IIR = 0xc6;  // identify TX or RX interrup
   *AUX_MU_BAUD = 270;  // 115200 baud
 
   /* map UART1 to GPIO pins */
