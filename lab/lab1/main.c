@@ -31,7 +31,6 @@ void do_except(char *buff) {
   uart_puts(buff);
   uart_puts("\r\n");
 }
-void clear_line() { uart_puts("\r                    "); }
 void get_cmd(char *buff) {
   char c;
   mem_reset(buff, buff_size);
@@ -66,9 +65,10 @@ void shell() {
       do_hello();
     else if (strcmp(buff, "help"))
       do_help();
-    else if (strcmp(buff, "reboot"))
-      do_reset(10);
-    else
+    else if (strcmp(buff, "reboot")) {
+      do_reset(100);
+      return;
+    } else
       do_except(buff);
   }
 }
