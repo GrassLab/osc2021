@@ -32,6 +32,7 @@ void cmd_handle() // parse command
 	{
 		uart_putstr("\rreboot .... \n");
 		raspi3_reboot(100);
+		while(1);  // wait for reboot
 	}
 	else if(strlen(cmd) != 0)
 	{
@@ -96,10 +97,10 @@ void main()
 				c2 = uart_getchar();
 				if (c2 == 'A')	// cursor up
 				{
-					for(int i = 0; i < cmdSize; i++)	// clear input
+					for(int i = 0; i < cmdSize; i++) // clear input
 						uart_putstr("\b \b");
 					cmd_init();
-					for(int i = 0; i < CMDSIZE; i++)	// input last command
+					for(int i = 0; i < CMDSIZE; i++) // input last command
 					{
 						if(last_cmd[i] == 0)
 							break;
@@ -109,7 +110,7 @@ void main()
 						cmdSize++;
 					}
 				}
-				else if (c2 == 'C' && cmdSize < strlen(cmd))	// cursor left
+				else if (c2 == 'C' && cmdSize < strlen(cmd)) // cursor left
 				{
 					uart_putstr("\033[C");
 					cmdSize++;
@@ -121,7 +122,7 @@ void main()
 				}
 				break;
 			default:
-				if (c > 31 && c < 127)
+				if (c > 31 && c < 127)	// visible ascii
 				{
 					cmd[cmdSize] = c;
 					cmdSize++;
@@ -130,7 +131,7 @@ void main()
 				break;
 		}
 		
-		if (cmdSize == CMDSIZE)
+		if (cmdSize >= CMDSIZE)	// cmd length > CMDSIZE
 		{
 			uart_putstr("\ncommand too long !\n# ");
 			cmd_init();

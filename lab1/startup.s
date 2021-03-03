@@ -15,7 +15,7 @@ _start:								// _start represents the program start entry symbol, the followin
 
 busy_loop: 	
 	wfe								// Let ARM enter the 'low-power standby state' amd wait for event
-	b 	   busy_loop                // b means jump, the this sentence means jump back to _start
+	b 	   busy_loop                // b means jump, the this sentence means jump back to busy_loop
 
 init: 	
 	ldr    x1, =__bss_start			// init bss segment, bss segment are initialized to 0, .bss start address to x1

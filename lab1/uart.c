@@ -40,13 +40,15 @@ void uart_init()
 	
 	// 1. Change GPIO 14, 15 to alternate function
 	
-    register unsigned int r = *GPFSEL1;
+    register unsigned int r = *GPFSEL1;	// GPFSEL is GPIO Function Select Registers
     r&=~((7<<12)|(7<<15)); // Reset GPIO 14, 15
     r|=(2<<12)|(2<<15);    // set alt5 
     *GPFSEL1 = r;
 	
 	// 2. Disable GPIO pull up/down (Because these GPIO pins use alternate functions, not basic input-output)
 	
+	// GPPUD is GPIO Pull-up/down Register
+	// GPPUDCLKn is GPIO Pull-up/down Clock Register
     *GPPUD = 0;                                // Set control signal to disable
     r=150; while(r--) { asm volatile("nop"); } // Wait 150 cycles
     *GPPUDCLK0 = (1<<14)|(1<<15);              // Clock the control signal into the GPIO pads
