@@ -25,3 +25,4 @@ run:
 
 deploy:
 	cp ./kernel8.img /run/media/brothre23/4DFF-0A36/
+	sudo eject /dev/sdc
