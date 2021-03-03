@@ -25,7 +25,6 @@
 #ifndef __UART_H
 #define __UART_H
 
-#include "../lib/uart.c"
 void uart_init();
 void uart_send(unsigned int c);
 char uart_getc();

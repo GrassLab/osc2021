@@ -24,7 +24,7 @@
  */
 
 #include "../include/gpio.h"
-
+#include "../include/uart.h"
 /* Auxilary mini UART registers */
 #define AUX_ENABLE      ((volatile unsigned int*)(MMIO_BASE+0x00215004))
 #define AUX_MU_IO       ((volatile unsigned int*)(MMIO_BASE+0x00215040))
@@ -65,6 +65,11 @@ void uart_init()
     r=150; while(r--) { asm volatile("nop"); }
     *GPPUDCLK0 = 0;        // flush GPIO setup
     *AUX_MU_CNTL = 3;      // enable Tx, Rx
+
+
+    while(*AUX_MU_LSR&0x01){
+        char c = *(AUX_MU_IO);
+    }
 }
 
 /**

@@ -1,3 +1,4 @@
+#include "../include/stringUtils.h"
 int compString(char *command, char *buffer){
     unsigned char c1, c2;
 

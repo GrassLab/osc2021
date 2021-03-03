@@ -1,21 +1,26 @@
-SRCS = $(wildcard *.c)
-OBJS = $(SRCS:.c=.o)
-CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
+KERNEL:=kernel8
+LINKER:=linker.ld
+CFLAGS:=-nostdinc -nostdlib -nostartfiles
+LIB = ./lib
+all: $(KERNEL).img
 
-all: clean kernel8.img
+$(KERNEL).img:start.o main.o lib/uart.o  lib/shell.o lib/stringUtils.o
+	aarch64-linux-gnu-ld  -T $(LINKER) -o $(KERNEL).elf start.o main.o lib/uart.o lib/stringUtils.o  lib/shell.o
+	aarch64-linux-gnu-objcopy -O binary $(KERNEL).elf $@
 
-start.o: start.S
-	aarch64-linux-gnu-gcc $(CFLAGS) -c start.S -o start.o
+start.o:start.S
+	aarch64-linux-gnu-gcc $(CFLAGS) -c $<
 
-%.o: %.c
-	aarch64-linux-gnu-gcc $(CFLAGS) -c $< -o $@
-
-kernel8.img: start.o $(OBJS)
-	aarch64-linux-gnu-ld -nostdlib -nostartfiles start.o $(OBJS) -T linker.ld -o kernel8.elf
-	aarch64-linux-gnu-objcopy -O binary kernel8.elf kernel8.img
-
-clean:
-	rm kernel8.elf *.o 
+%.o:%.c
+	aarch64-linux-gnu-gcc $(CFLAGS) -o $@ -c $<
+$(LIB)/%.o:$(LIB)/%.c
+	aarch64-linux-gnu-gcc $(CFLAGS) -o $@ -c $<
 
 run:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio
+	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio
+
+onboard:
+	sudo screen /dev/ttyUSB0 115200
+
+clean:
+	rm *.o *.elf *.img $(LIB)/*.o 
