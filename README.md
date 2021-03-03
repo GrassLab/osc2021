@@ -1,5 +1,11 @@
 # Operating Systems Capstone 2021
 
+## Author
+
+| 學號 | GitHub 帳號 | 姓名 |
+| --- | ----------- | --- |
+|`309551163`| `chengyu-su` | `蘇承禹` |
+
 [中文](讀我.md)
 
 This repository is homework submission for students
