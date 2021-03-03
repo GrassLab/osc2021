@@ -40,12 +40,10 @@ void get_cmd(char *buff) {
       uart_puts("\r\n");
       break;
     }
-    /* backspace handler*/
+    /* backspace handler */
     else if (c == '\b') {
       buff[--i] = 0;
-      clear_line();
-      uart_puts("\r$ ");
-      uart_puts(buff);
+      if (i >= 0) uart_puts("\b \b");
       if (i-- < 0) i = -1;
       continue;
     }
