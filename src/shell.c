@@ -5,6 +5,7 @@
 
 void cmd_help() {
   uart_puts("Command\t\tDescription\n");
+  uart_puts("---------------------------------------------\n");
   uart_puts("help\t\tprint all available commands\n");
   uart_puts("hello\t\tprint Hello World!\n");
   uart_puts("reboot\t\treboot machine\n");
