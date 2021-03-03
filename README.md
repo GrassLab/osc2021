@@ -25,7 +25,3 @@ manullay clone .img file into sd card
 
 ## Directory structure
 
-lab1 /
-|----include
-|----lib
-|-----otehr files
