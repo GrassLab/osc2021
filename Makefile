@@ -24,3 +24,6 @@ kernel8.img: $(OBJ_FILES)
 
 clean:
 	rm -rf $(BUILD_DIR)
+
+run:
+	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/kernel8.img -serial null -serial stdio -display none
