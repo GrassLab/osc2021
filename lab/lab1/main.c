@@ -61,7 +61,9 @@ void shell() {
   while (1) {
     uart_puts("$ ");
     get_cmd(buff);
-    if (strcmp(buff, "hello"))
+    if (buff[0] == '\0')
+      continue;
+    else if (strcmp(buff, "hello"))
       do_hello();
     else if (strcmp(buff, "help"))
       do_help();
