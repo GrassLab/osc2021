@@ -20,6 +20,6 @@
 
 ## Labs
 * **Lab 0: Environment Setup**
-    * [Branch]()
+    * [Branch](https://github.com/Yunyung/osc2021/tree/LAB-00)
 * **Lab 1: Hello World**
-    * [Branch
+    * [Branch]()
