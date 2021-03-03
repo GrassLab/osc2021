@@ -7,21 +7,10 @@
 |`L091197`| `andykuo8766` | `郭紘安` | andykuo8766@gapp.nthu.edu.tw |
 
 ## How to build
-
-**WIP**
-
-## How to run
-
-**WIP**
-
-## How to burn it into pi3
-
-**WIP**
-
-## Architecture
-
-**WIP**
-
-## Directory structure
-
-**WIP**
+```bash
+make
+```
+## Run on QEMU
+```bash
+make run
+```
