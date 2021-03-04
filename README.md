@@ -8,12 +8,12 @@
 
 ## How to build
 
-'''
+```
 make
-'''
+```
 
 ## How to run (on qemu)
 
-'''
+```
 make run
-'''
+```
