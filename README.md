@@ -27,7 +27,7 @@ In Lab 1, we will practice bare metal programming by implementing a simple shell
 │   ├── shell.c         # source file to process shell flow
 │   ├── start.S         # source code for booting
 │   ├── string.c        # source file to implement some function in <string.h>
-│   ├── math.c        # source file to implement some function in <math.h>
+│   ├── math.c          # source file to implement some function in <math.h>
 │   └── uart.c          # source file to process uart interface
 │
 ├── LICENSE
