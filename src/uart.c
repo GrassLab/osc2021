@@ -1,6 +1,6 @@
 #include "uart.h"
 #include "register.h"
-#include <stdio.h>
+#include "string.h"
 
 void delay_cycles (unsigned int num) {
     for (int i = 0; i < num; i++) {
@@ -17,6 +17,77 @@ void uart_send (char *str) {
     while (*str) {
         uart_sendc(*str);
         ++str;
+    }
+}
+
+void uart_sendi (int num) {
+    char buffer[256];
+    int isNegative = 0;
+    if (num < 0) {
+        isNegative = 1;
+        num = -num;
+    }
+
+    for (int i = 0; i < 255; i++) {
+        buffer[i] = '0' + num % 10;
+        num /= 10;
+        if (!num) {
+            buffer[i + 1] = '\0';
+            break;
+        }
+    }
+
+    /* reverse buffer */
+    int len = strlength(buffer);
+    for (int i = 0; i < len / 2; i++) {
+        char tmp = buffer[i];
+        buffer[i] = buffer[len - i - 1];
+        buffer[len - i - 1] = tmp;
+    }
+    if (isNegative)
+        uart_sendc('-');
+    uart_send(buffer);
+}
+
+void uart_sendf (float num) {
+    char integer[256];
+    int isNegative = 0;
+
+    if (num < 0) {
+        isNegative = 1;
+        num = - num;
+    }
+
+    int tmp = (int)num;
+
+    /* integer */
+    for (int i = 0; i < 255; i++) {
+        integer[i] = '0' + tmp % 10;
+        tmp /= 10;
+        if (!tmp) {
+            integer[i + 1] = '\0';
+            break;
+        }
+    }
+
+    /* reverse buffer */
+    int len = strlength(integer);
+    for (int i = 0; i < len / 2; i++) {
+        char tmp = integer[i];
+        integer[i] = integer[len - i - 1];
+        integer[len - i - 1] = tmp;
+    }
+    if (isNegative)
+        uart_sendc('-');
+    uart_send(integer);
+    uart_sendc('.');
+
+    num -= tmp;
+    for (int i = 0; i < 3; i++) {
+        num *= 10;
+        unsigned char c = (int)num % 10;
+        num -= c;
+        uart_sendc((char)(c + '0'));
     }
 }
 
