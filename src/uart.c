@@ -54,3 +54,14 @@ char uart_getchar() {
     return r=='\r'?'\n':r;
 
 }
+
+void uart_putstr(char* str) {
+    while(*str) {
+        // \r\n
+        if(*str=='\n') {
+            uart_putchar('\r');
+        }
+        uart_putchar(*str);
+        str++;
+    }
+}

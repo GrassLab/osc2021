@@ -13,7 +13,7 @@ ENTRY_OBJ = $(SRC_DIR)/boot.o
 SRCS=$(wildcard $(SRC_DIR)/*.c)
 OBJS=$(SRCS:.c=.o)
 
-CFLAGS = -Wall
+CFLAGS = -Wall -fno-builtin-memset
 
 .PHONY: clean all asm run
 
