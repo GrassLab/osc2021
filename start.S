@@ -4,7 +4,7 @@
 // let only one  processor handle this by let the other 3 processors enter low power mode by instruction "wfi" 
 
 _start:
-    mrs   x1, mpidr_el1                     // mrs => move from system register.  mpidr_el1 => system register for core identification
+    mrs   x1, MPIDR_EL1                     // mrs => move from system register.  mpidr_el1 => system register for core identification
     and   x1, x1, #3                        // select the first processor by logical and
     cbz   x1, _init                         // cbz => compare and branch on zero
     b     _low_power_mode                   // b => unconditional jump

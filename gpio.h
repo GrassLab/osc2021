@@ -1,6 +1,6 @@
 #include "mmio.h"
 
-#define GPIO_BASE       (MMIO_BASE + 0x20000000)  // Rpi3 use 16MB memory for MMIO, BROADCOM User Manual page 5.
+#define GPIO_BASE       (MMIO_BASE + 0x200000)  // Rpi3 use 16MB memory for MMIO, BROADCOM User Manual page 5.
 
 
 // BROADCOM User Manual page 91.
