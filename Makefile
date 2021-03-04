@@ -6,6 +6,9 @@ CFLAGS=-mcpu=cortex-a53 --target=aarch64-rpi3-elf -Wall -nostdinc -nostdlib
 LD=ld.lld
 LDFLAGS+=-m aarch64elf -nostdlib -T $(LINKER_SCRIPT)
 
+OBJCPY=llvm-objcopy
+OBJCPYFLAGS=--output-target=aarch64-rpi3-elf -O binary
+
 IMAGE=kernel8.img
 ELF_FILE=kernel8.elf
 OBJ_FILES=boot.o kernel.o
@@ -22,11 +25,13 @@ all: $(IMAGE)
 img: $(IMAGE)
 $(IMAGE): %.img: %.elf
 # Build kernel image from elf file
-	llvm-objcopy --output-target=aarch64-rpi3-elf -O binary $< $@
+	$(OBJCPY) $(OBJCPYFLAGS) $< $@
 
 elf: $(ELF_FILE)
 $(ELF_FILE): $(OBJ_FILES)
 # Linke elf file from object file
+# TODO: Add $(LINKER_SCRIPT) as pre-request so that
+# if it is modified, the target will re-run.
 	$(LD) $(LDFLAGS) -o $@ $^
 
 obj: $(OBJ_FILES)
