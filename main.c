@@ -1,16 +1,18 @@
 #include "uart.h"
 #include "string.h"
+#include "reboot.h"
 #define BUFFER_SIZE 64
 
 void parse_command (char *b) {
     if (!strcmp(b, "hello")) {
         uart_send("Hello World!\n");
     }
-    else if (!strcmp(b, "reboot")) {
-        uart_send("reboot\n");
-    }
     else if (!strcmp(b, "help")) {
         uart_send("hello help reboot\n");
+    }
+    else if (!strcmp(b, "reboot")) {
+        uart_send("reboot~~\n");
+        reset(10);
     }
     else {
         uart_send("No such command.\n");

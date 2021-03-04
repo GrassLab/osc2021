@@ -1,4 +1,5 @@
 #include "uart.h"
+#include "register.h"
 #include <stdio.h>
 
 void delay_cycles (unsigned int num) {
