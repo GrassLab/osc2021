@@ -1,27 +1,50 @@
-# My OSC 2021
+# NCTU Operating Capstone 2021
 
 ## Author
 
-| 學號 | GitHub 帳號 | 姓名 | Email |
-| --- | ----------- | --- | --- |
-|`0856085`| `t0037799` | `林濬維` | jwlin.cs08g@nctu.edu.tw |
+| Student ID | GitHub Account | Name  | Email                       |
+| -----------| -------------- | ----- | --------------------------- |
+| 309551054  | Brothre23      | 于兆良 | daveyu824.cs09g@nctu.edu.tw |
 
-## How to build
+## Files
 
-**WIP**
+| File          | Content                               |
+| --------------| --------------------------------------|
+| command.c(.h) | dealing with different shell commands |
+| gpio.c        | some gpio config                      |
+| main.c        | main program                          |
+| math.c(.h)    | replica of the standard math.h        |
+| shell.c(.h)   | controlling the shell behavior        |
+| string.c(.h)  | replica of the standard string.h      |
+| start.S       | setting up the booting process        |
+| uart.c(.h)    | uart opertaion                        |
+| link.ld       | linker script                         |
 
-## How to run
+## Build
 
-**WIP**
+```bash
+make
+```
 
-## How to burn it into pi3
+## Run on QEMU
 
-**WIP**
+```bash
+make run
+```
 
-## Architecture
+## Deploy to Pi 3
 
-**WIP**
+```bash
+make deploy
+```
 
-## Directory structure
+(Remember to change the mounting point.)
 
-**WIP**
+## Simple Shell
+
+| command   | description                   |
+| ----------| ----------------------------- |
+| hello     | print Hello World!            |
+| help      | print all available commands  |
+| timestamp | print current timestamp       |
+| reboot    | reset rpi3                    |
