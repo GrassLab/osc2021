@@ -14,6 +14,8 @@ void shell_cmd(char* cmd) {
     else if(!strcmp(cmd, "reboot")) {
         reset(100);
     }
+    else if(!strcmp(cmd, "")) {
+    }
     else {
         uart_putstr("Unknwon command!\n");
     }
