@@ -1,27 +1,11 @@
-# My OSC 2021
+# Operating Systems Capstone 2021
 
+[中文](讀我.md)
+
+This repository is homework submission for students
 ## Author
 
-| 學號 | GitHub 帳號 | 姓名 | Email |
-| --- | ----------- | --- | --- |
-|`0856085`| `t0037799` | `林濬維` | jwlin.cs08g@nctu.edu.tw |
+ | 學號 | GitHub 帳號 | 姓名 | Email |
+ | --- | ----------- | --- | --- |
+ |`0856022`| `pityYo` | `巫垣佑` | warren03wu@gmail.com 
 
-## How to build
-
-**WIP**
-
-## How to run
-
-**WIP**
-
-## How to burn it into pi3
-
-**WIP**
-
-## Architecture
-
-**WIP**
-
-## Directory structure
-
-**WIP**
