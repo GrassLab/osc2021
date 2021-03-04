@@ -1,5 +1,5 @@
 CC=clang
-CFLAGS=-mcpu=cortex-a53 --target=aarch64-rpi3-elf -Wall
+CFLAGS=-mcpu=cortex-a53 --target=aarch64-rpi3-elf -Wall -nostdinc -nostdlib
 #CFLAGS+=-g -O0
 
 #LD=aarch64-linux-gnu-ld
