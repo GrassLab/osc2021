@@ -8,8 +8,12 @@
 
 ## How to build
 
+```bash
 make
+```
 
 ## How to run
 
+```bash
 make run
+```
