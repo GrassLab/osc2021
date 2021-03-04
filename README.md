@@ -1,27 +1,21 @@
-# My OSC 2021
+# Operating Systems Capstone 2021
 
-## Author
-
-| 學號 | GitHub 帳號 | 姓名 | Email |
-| --- | ----------- | --- | --- |
-|`0856085`| `t0037799` | `林濬維` | jwlin.cs08g@nctu.edu.tw |
+|Student ID|Github Account|Name|
+|----------|--------------|----|
+|309551030|Icer070402|邱黃婷|
 
 ## How to build
-
-**WIP**
+```
+$ make
+```
 
 ## How to run
+```
+$ make run
+```
 
-**WIP**
-
-## How to burn it into pi3
-
-**WIP**
-
-## Architecture
-
-**WIP**
-
-## Directory structure
-
-**WIP**
+## How to debug
+```
+$ make debug
+$ make gdb
+```
