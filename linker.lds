@@ -11,8 +11,9 @@ SECTIONS
     . = 0x80000;
     .text :
     {
-        *(.text)
+        KEEP(*(.text.boot)) *(.text)
     } >ROM
+    .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) } >ROM
     .data :
     {
         *(.data)
@@ -24,4 +25,6 @@ SECTIONS
         __bss_end = .;
         __stack_top = . + 0xffff;
     } >RAM
+
+    /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
 }
