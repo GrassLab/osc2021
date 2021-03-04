@@ -9,7 +9,7 @@ LDFLAGS+=-T $(LINKER_SCRIPT)
 
 IMAGE=kernel8.img
 ELF_FILE=kernel8.elf
-OBJ_FILES=a.o kernel.o
+OBJ_FILES=boot.o kernel.o
 
 LINKER_SCRIPT=linker.lds
 
