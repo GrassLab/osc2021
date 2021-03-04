@@ -1,4 +1,4 @@
-.section ".boot"
+.section ".text.boot"
 
 .global _start
 
@@ -10,19 +10,19 @@ _start:
   b loop
 
 bsszero:
-  ldr x0, __bss_begin
-  ldr x1, __bss_end
+  ldr x0, =__bss_begin
+  ldr x1, =__bss_end
 
 loopbsszero:
   cbz x1, init
-  str xzr, [x1], #8
+  str xzr, [x0], #8
   sub x1, x1, #8
   cbnz x1, loopbsszero
   
 init:
   ldr x0, =_start
   mov sp, x0
-  bl kern_main
+  bl main
   b loop
 
 loop:

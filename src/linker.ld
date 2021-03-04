@@ -1,7 +1,7 @@
 SECTIONS {
     . = 0x80000;
     .text : {
-        KEEP(*(.boot));
+        KEEP(*(.text.boot));
         *(.text)
     }
     .rodata : {

@@ -13,9 +13,9 @@ ENTRY_OBJ = $(SRC_DIR)/boot.o
 SRCS=$(wildcard $(SRC_DIR)/*.c)
 OBJS=$(SRCS:.c=.o)
 
-CFLAGS =
+CFLAGS = -Wall
 
-.PHONY: clean all asm
+.PHONY: clean all asm run
 
 all: $(DST_DIR)/kernel8.img
 
@@ -32,6 +32,9 @@ $(DST_DIR)/kernel8.img: $(ENTRY_OBJ) $(OBJS)
 
 asm: $(DST_DIR)/kernel8.img
 	qemu-system-aarch64 -M raspi3 -kernel $(DST_DIR)/kernel8.img -display none -d in_asm
+
+run: $(DST_DIR)/kernel8.img
+	qemu-system-aarch64 -M raspi3 -kernel $(DST_DIR)/kernel8.img -display none -serial null -serial stdio
 
 clean:
 	rm -rf $(SRC_DIR)/*.o $(DST_DIR)/kernel8.*
