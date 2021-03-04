@@ -52,7 +52,7 @@ void uart_init()
     *AUX_MU_LCR = 3;       // 8 bits
     *AUX_MU_MCR = 0;
     *AUX_MU_IER = 0;
-    *AUX_MU_IIR = 0xc6;    // disable interrupts
+    *AUX_MU_IIR = 0x6;    // disable interrupts
     *AUX_MU_BAUD = 270;    // 115200 baud
     /* map UART1 to GPIO pins */
     r=*GPFSEL1;
@@ -89,11 +89,6 @@ char uart_getc() {
     char r;
     /* wait until something is in the buffer */
     do{asm volatile("nop");}while(!(*AUX_MU_LSR&0x01));
-    asm volatile("nop");
-    asm volatile("nop");
-    asm volatile("nop");
-    asm volatile("nop");
-    asm volatile("nop");
     /* read it and return */
     r=(char)(*AUX_MU_IO);
     /* convert carrige return to newline */
