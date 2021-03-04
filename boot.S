@@ -7,7 +7,7 @@ _start:
   //and   x0, x0, #3
   //cbnz  x0, _hang
   // Set stack pointer to #LOW_MEMORY (0xffffffff)
-  ldr   x0, =0x90000
+  ldr   x0, =_start
   mov   sp, x0
   // Set bss as zero
   ldr   x0, =__bss_begin

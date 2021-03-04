@@ -165,7 +165,7 @@ void reset(int tick){ // reboot after watchdog timer expire
 //}
 
 void reboot() {
-    reset(0);
+    reset(1);
 }
 
 void cmd(const char * buff) {
