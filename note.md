@@ -32,6 +32,7 @@ the program being executed after the RPI3 is booted.
 
 ### detailed 
 * MPIDR_EL1: register that stores the processor ID.
+
 For RPI3 has four cores and we only want to execute the program once, so we check the processor ID of current process. Making sure that only the core with ID equals to zero execute this program.
 Then, we ask one processor to initializing bss section.
 After initializing the stack pointer, we can execute our kernel program.
