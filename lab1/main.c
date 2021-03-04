@@ -62,9 +62,9 @@ void reboot()
     unsigned int r;
     r = *PM_RSTS; 
     r &= ~0xfffffaaa;
-    *PM_RSTS = PM_WDOG_MAGIC | r;  
-    *PM_WDOG = PM_WDOG_MAGIC | 10;
-    *PM_RSTC = PM_WDOG_MAGIC | PM_RSTC_FULLRST;
+    *PM_RSTS = PM_WDOG_MAGIC | r;  //debugger, watchdog, software
+    *PM_WDOG = PM_WDOG_MAGIC | 10;  //used 20 bit count down
+    *PM_RSTC = PM_WDOG_MAGIC | PM_RSTC_FULLRST;//had a watchdog full reset. clear this flag by writing 0 this field
 }
 
 void main()

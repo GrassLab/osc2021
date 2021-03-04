@@ -16,6 +16,7 @@ _start:
     ldr x0, = bss_begin
     ldr x1, = bss_end
     sub x1, x1, x0
+    cbz x1, 4f
     bl memzero
 
 memzero: //clear the bss
