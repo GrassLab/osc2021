@@ -30,7 +30,7 @@ void buffer_clear(){
 
 void init_shell(){
     uart_puts("Welcome to my simple shell\r\n");
-    uart_puts("ヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノ\r\n");
+    uart_puts("~~~~~~~~~~~~~~~~~~~~~~~\r\n");
     buffer_clear();
 }
 
@@ -88,7 +88,7 @@ void get_input(){
         }
         else{
             if(input_tail_idx == MAX_INPUT){
-                uart_puts("\r\nInput string meet command max limit!\r\n");
+                uart_puts("\r\nInput string exceeds command max limit!\r\n");
                 break;
             }
             uart_putc(cur_char);
@@ -137,11 +137,7 @@ void shell_hello(){
 
 void shell_help(){
     uart_puts("===============================================");
-    uart_puts("\r\n");
-    uart_puts("Command Name");
-    uart_puts("\t");
-    uart_puts("Description");
-    uart_puts("\r\n");
+    uart_puts("\r\nCommand Name\tDescriptionr\n");
     uart_puts("===============================================");
     uart_puts("\r\n");
 
@@ -158,7 +154,7 @@ void shell_help(){
 
 void shell_reboot(){
     uart_puts("Reboot after 10 watchdog tick!\r\n");
-    delay(10000);
+    delay(1);
     put32(PM_RSTC, PM_PASSWORD | 0x20);
     put32(PM_WDOG, PM_PASSWORD | 10);
     while(1);
