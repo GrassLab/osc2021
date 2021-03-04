@@ -4,24 +4,16 @@
 
 | 學號 | GitHub 帳號 | 姓名 | Email |
 | --- | ----------- | --- | --- |
-|`0856085`| `t0037799` | `林濬維` | jwlin.cs08g@nctu.edu.tw |
+|`309706016`| `JiaWeiHsu` | `許家瑋` | bryan35818363680919@gmail.com |
 
 ## How to build
 
-**WIP**
+`make`
 
 ## How to run
 
-**WIP**
+`make run`
 
 ## How to burn it into pi3
 
-**WIP**
-
-## Architecture
-
-**WIP**
-
-## Directory structure
-
-**WIP**
+copy image to SD card
