@@ -103,11 +103,10 @@ char * gets (char * str) {
     int buff_end = 0;
     do {
         c = uart_getc();
-        str[buff_end] = c;
-        buff_end++;
+        str[buff_end++] = c;
         uart_setc(c);
     } while (c != '\n');
-    str[buff_end] = '\0';
+    str[buff_end-1] = '\0';
     return str;
 }
 
@@ -143,10 +142,28 @@ int strcmp(const char * a, const char * b) {
         }
         cnt++;
     }
-    if (a[cnt] == b[cnt] == '\0') {
+    if (a[cnt] == '\0' && b[cnt] == '\0') {
         return 0;
     }
     return 1;
+}
+
+#define PM_PASSWORD 0x5a000000
+#define PM_RSTC 0x3F10001c
+#define PM_WDOG 0x3F100024
+
+void reset(int tick){ // reboot after watchdog timer expire
+    *((unsigned int*)PM_RSTC) = PM_PASSWORD | 0x20; // full reset
+    *((unsigned int*)PM_WDOG) = PM_PASSWORD | tick; // number of watchdog tick
+}
+
+//void cancel_reset() {
+//    set(PM_RSTC, PM_PASSWORD | 0); // full reset
+//    set(PM_WDOG, PM_PASSWORD | 0); // number of watchdog tick
+//}
+
+void reboot() {
+    reset(0);
 }
 
 void cmd(const char * buff) {
@@ -154,8 +171,13 @@ void cmd(const char * buff) {
         help();
     } else if (!strcmp(buff, "hello")) {
         hello();
-    } else {
-        puts("Command not found!\n");
+    } else if (!strcmp(buff, "reboot")) {
+        reboot();
+    } else if (!strcmp(buff, "")) {
+        return;
+    }else {
+        puts(buff);
+        puts(" : command not found!\n");
     }
     return;
 }
