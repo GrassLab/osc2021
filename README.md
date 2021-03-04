@@ -40,6 +40,7 @@ My Implementation of Operating System at [`OSC2021`][OSC21], NYCU.
 | Usage            | Command      | Description                                    |
 | :--------------- | :----------- | :--------------------------------------------- |
 | Build code       | `make`       | Generate kernel image:`kernel8.img`            |
+| Setup            | `make setup` | Rebuild docker image for cross-compiling       |
 | Run              | `make run`   | Run kernel image in `qemu`                     |
 | Enter Virtualenv | `make shell` | Start a bash shell (with cross-compiling tool) |
 
