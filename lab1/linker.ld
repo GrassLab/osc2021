@@ -1,8 +1,6 @@
 SECTIONS {
     . = 0x80000;
     .text.boot : { *(.text.boot) }
-    .text : { *(.text) }
-    .data : { *(.data) }
     .bss  : { 
         . = ALIGN(8); /* Make sure that we can initialize it by using 64-bit register. */
         __bss_start__ = .;
@@ -10,4 +8,6 @@ SECTIONS {
         . = ALIGN(8);
         __bss_end__ = .;
     }
+    .text : { *(.text) }
+    .data : { *(.data) }
 }
