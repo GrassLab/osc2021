@@ -18,6 +18,7 @@ SECTIONS
     {
         *(.data)
     } >RAM
+    . = ALIGN(0x8);
     __bss_begin = .;
     .bss :
     {

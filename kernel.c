@@ -107,6 +107,7 @@ char * gets (char * str) {
         str[buff_end++] = c;
         uart_setc(c);
     } while (c != '\n');
+    uart_setc('\r');
     str[buff_end-1] = '\0';
     return str;
 }
@@ -120,15 +121,15 @@ int puts(const char * str) {
 }
 
 void help() {
-    puts("Commands:\n");
-    puts("    help\n");
-    puts("    hello\n");
-    puts("    reboot\n");
+    puts("Commands:\n\r");
+    puts("    help\n\r");
+    puts("    hello\n\r");
+    puts("    reboot\n\r");
     return;
 }
 
 void hello() {
-    puts("Hello World!\n");
+    puts("Hello World!\n\r");
     return;
 }
 
@@ -179,7 +180,7 @@ void cmd(const char * buff) {
         return;
     }else {
         puts(buff);
-        puts(" : command not found!\n");
+        puts(" : command not found!\n\r");
     }
     return;
 }
@@ -190,6 +191,7 @@ void kernel() {
     uart_setc('i');
     uart_setc('\n');
     while(1) {
+        puts("$ ");
         char buff[GETS_BUFF_LEN];
         gets(buff);
         cmd(buff);
