@@ -1,6 +1,6 @@
-osc/build/
 *.elf
 *.img
+dockcross-linux-aarch64
 
 !res/*
 

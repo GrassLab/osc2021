@@ -1,17 +1,26 @@
 QEMU = qemu-system-aarch64
 CROSS_GDB = aarch64-linux-gdb
-DOCKER = ./dockcross-linux-arm64
 
-.PHONY: shell clean run debug gdb
+CROSS_CONTAINER_IMG = dockcross-linux-aarch64
+DOCKCROSS_SCRIPT = $(CROSS_CONTAINER_IMG)
+CROSS_ENV_RUN = ./$(DOCKCROSS_SCRIPT)
 
-SRC_FOLDER = osc
+.PHONY: setup shell clean run debug gdb build
+
+# target implementation to use
+IMPL_FOLDER ?= impl-rs
 
 KERNEL_IMG = kernel8.img
 KERNEL_ELF = kernel8.elf
 
-all: $(SRC_FOLDER)/$(KERNEL_IMG) $(SRC_FOLDER)/$(KERNEL_ELF)
+IMPL_KERNEL_IMG = $(IMPL_FOLDER)/$(KERNEL_IMG)
+IMPL_KERNEL_ELF = $(IMPL_FOLDER)/$(KERNEL_ELF)
+
+all: $(DOCKCROSS_SCRIPT) build
 	@echo "${YELLOW} 📦 Build Finished${RESET}"
 
+build: $(DOCKCROSS_SCRIPT)
+	$(CROSS_ENV_RUN) make -C $(IMPL_FOLDER)
 
 # define standard colors
 RED          := $(shell tput setaf 1)
@@ -21,22 +30,28 @@ WHITE        := $(shell tput setaf 7)
 RESET := $(shell tput sgr0)
 
 # == Commands
-shell:
-	@echo "${YELLOW} 🤖 Spawn shell inside ${DOCKER} ${RESET}"
-	$(DOCKER) bash
+setup:
+	$(RUN_BUILD_DOCKER_IMAGE)
+	docker run $(CROSS_CONTAINER_IMG) > $(DOCKCROSS_SCRIPT)
+	chmod +x $(DOCKCROSS_SCRIPT)
+	@echo "${YELLOW} 🎉 You're all set 🎉 ${RESET}"
 
-clean:
-	$(DOCKER) make -C $(SRC_FOLDER) clean
+shell: $(DOCKCROSS_SCRIPT)
+	@echo "${YELLOW} 🤖 Spawn shell inside ${DOCKER} ${RESET}"
+	$(CROSS_ENV_RUN) bash
+
+clean: $(DOCKCROSS_SCRIPT)
+	$(CROSS_ENV_RUN) make -C $(IMPL_FOLDER) clean
 	@echo "${YELLOW} 🚚 Finish cleanup${RESET}"
 
 run: all
 	@echo "${YELLOW} 🚧 Run kernel with QEMU${RESET}"
-	$(RUN_WITH_KERNEL) $(SRC_FOLDER)/$(KERNEL_IMG) -serial null -serial stdio
+	$(RUN_WITH_KERNEL) $(IMPL_KERNEL_IMG) -serial null -serial stdio
 
 debug: all
 	@echo "${YELLOW} 🐛 Start debugging${RESET}"
 	@echo "${YELLOW}Open another terminal and use ${GREEN}make gdb${YELLOW} to connect to host${RESET}"
-	$(DEBUG_SERVER_WITH_KERNEL) $(SRC_FOLDER)/$(KERNEL_IMG) -serial null -serial stdio
+	$(DEBUG_SERVER_WITH_KERNEL) $(IMPL_KERNEL_IMG) -serial null -serial stdio
 
 gdb: all
 	@echo "${YELLOW} 🕵️‍♀️ Using ${GREEN}${CROSS_GDB}${RESET}"
@@ -56,10 +71,17 @@ define RUN_WITH_KERNEL
 	-kernel
 endef
 
- $(SRC_FOLDER)/$(KERNEL_IMG): FORCE
-	$(DOCKER) make -C $(SRC_FOLDER)
+define RUN_BUILD_DOCKER_IMAGE
+	@echo "${YELLOW} 👷‍♂️ Start Building Cross compiling env with Docker${RESET}"
+	docker build -t $(CROSS_CONTAINER_IMG) .
+	@echo "${YELLOW} ✅ Cross compiling env built${RESET}"
+	@echo "${GREEN}"
+	docker images ${CROSS_CONTAINER_IMG}
+	@echo "${RESET}"
+endef
 
- $(SRC_FOLDER)/$(KERNEL_ELF): FORCE
-	$(DOCKER) make -C $(SRC_FOLDER)
+$(DOCKCROSS_SCRIPT): Dockerfile
+	$(RUN_BUILD_DOCKER_IMAGE)
+	docker run $(CROSS_CONTAINER_IMG) > $(DOCKCROSS_SCRIPT)
+	chmod +x $(DOCKCROSS_SCRIPT)
 
-FORCE:
