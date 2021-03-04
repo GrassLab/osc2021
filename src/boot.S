@@ -1,6 +1,6 @@
 #include "mem.h"
 
-.section ".boot"
+.section ".text.boot"
 
 .globl _start
 _start:

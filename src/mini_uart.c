@@ -13,7 +13,6 @@ void init_uart()
     selector |= 2<<15;                      // set alt5 for gpio 15
     put32(GPFSEL1,selector);
 
-
     put32(GPPUD,0);
     delay(150);
     put32(GPPUDCLK0,(1<<14)|(1<<15));
@@ -25,8 +24,8 @@ void init_uart()
     put32(AUX_MU_IER_REG, 0);
     put32(AUX_MU_LCR_REG, 3);
     put32(AUX_MU_MCR_REG, 0);
-    put32(AUX_MU_BAUD_REG, 270);
-    put32(AUX_MU_IIR_REG, 6);
+    put32(AUX_MU_BAUD_REG, 270); // set baud rate
+    put32(AUX_MU_IIR_REG, 6); // ?
     put32(AUX_MU_CNTL_REG, 3);
 }
 
@@ -59,9 +58,4 @@ char receive_char()
         }
     }
     return (get32(AUX_MU_IO_REG) & 0xFF);
-}
-
-char* receive_string()
-{
-    
 }

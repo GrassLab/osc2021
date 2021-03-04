@@ -5,8 +5,8 @@
 void kernel()
 {
     init_uart();
-
-    send_string("Welcome to PiShell!\n");
+    
+    send_string("Welcome to PiShell!\r\n");
 
     char command[10];
     int commandIdx = 0;
