@@ -52,7 +52,7 @@ void uart_init(){
 }
 
 void uart_send(unsigned int c){
-	if(c=='\n'){//convert \n to \r\n
+	if(c=='\n'){//convert "\n" to "\r\n"
 		uart_send('\r');//recursive
 	}
 
@@ -65,6 +65,13 @@ char uart_getc(){
 	do{ asm volatile("nop"); }while(!(*AUX_MU_LSR&0x01));
 	r=(char)(*AUX_MU_IO);
 	return r=='\r'?'\n':r;
+}
+
+unsigned char uart_getb(){//for data transfer
+	unsigned char r;
+	do{ asm volatile("nop"); }while(!(*AUX_MU_LSR&0x01));
+	r=(unsigned char)(*AUX_MU_IO);
+	return r;
 }
 
 void uart_puts(char *s){

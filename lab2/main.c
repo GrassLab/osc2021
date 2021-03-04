@@ -3,7 +3,40 @@
 #include "inc/mailbox.h"
 
 void loadImg(){
-	uart_puts("TODO...\n");
+	unsigned long k_addr=0,k_size=0;
+	char c;
+
+	uart_puts("Please enter kernel load address (Hex): ");
+	do{
+		c=uart_getc();
+		if(c>='0'&&c<='9'){
+			k_addr=k_addr*16+c-'0';
+		}else if(c>='a'&&c<='f'){
+			k_addr=k_addr*16+c-'a'+10;
+		}else if(c>='A'&&c<='F'){
+			k_addr=k_addr*16+c-'A'+10;
+		}
+	}while(c!='\n');
+	uart_printf("0x%x\n",k_addr);
+
+	uart_puts("Please enter kernel size (Dec): ");
+	do{
+		c=uart_getc();
+		if(c>='0'&&c<='9'){
+			k_size=k_size*10+c-'0';
+		}
+	}while(c!='\n');
+	uart_printf("%d\n",k_size);
+
+	uart_puts("Please send kernel image now...\n");
+	unsigned char* target=(unsigned char*)k_addr;
+	while(k_size--){
+		*target=uart_getb();
+		target++;
+	}
+
+	uart_puts("loading...\n");
+	((void (*)(void))k_addr)();
 }
 
 void shell(){
