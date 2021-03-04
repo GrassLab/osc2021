@@ -50,9 +50,9 @@ void uart_init() {
 
   /* initialize UART */
   *AUX_ENABLE |= 1; // enable UART1, AUX mini uart
-  *AUX_MU_CNTL = 0;
-  *AUX_MU_LCR = 3; // 8 bits
-  *AUX_MU_MCR = 0;
+  *AUX_MU_CNTL = 0; // diable receiver/transmitter
+  *AUX_MU_LCR = 3;  // 8 bits
+  *AUX_MU_MCR = 0;  // clear -> set UART1_RTS line to low
   *AUX_MU_IER = 0;
   *AUX_MU_IIR = 0xc6; // disable interrupts
   *AUX_MU_BAUD = 270; // 115200 baud
