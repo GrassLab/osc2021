@@ -4,19 +4,25 @@
 
 | 學號 | GitHub 帳號 | 姓名 | Email |
 | --- | ----------- | --- | --- |
-|`0856085`| `t0037799` | `林濬維` | jwlin.cs08g@nctu.edu.tw |
+|`0616325`| `cclin0816` | `林重均` | benjamin.cclin@gmail.com |
 
 ## How to build
 
-**WIP**
+```
+make
+```
 
 ## How to run
 
-**WIP**
+```
+make run
+```
 
 ## How to burn it into pi3
 
-**WIP**
+```
+make burn
+```
 
 ## Architecture
 
