@@ -1,8 +1,6 @@
-BUILD=debug
-
 CC=clang
 CFLAGS=-mcpu=cortex-a53 --target=aarch64-rpi3-elf -Wall
-CFLAGS+=-g -O0
+#CFLAGS+=-g -O0
 
 LD=aarch64-linux-gnu-ld
 LDFLAGS+=-T $(LINKER_SCRIPT)

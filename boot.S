@@ -2,8 +2,11 @@
 
 .globl _start
 _start:
+  // disable multi core
+  mrs   x0, mpidr_el1
+  and   x0, x0, #3
+  cbnz  x0, _hang
   // Set bss as zero
-  // TODO
   ldr   x0, =__bss_begin
   ldr   x1, =__bss_end
   bl    _bss_clear
@@ -16,8 +19,8 @@ _hang:
   b     _hang
 
 _bss_clear:
-  sub   x2, x1, x0
-  cbz   x2, _clear_complete
+  subs  x2, x1, x0
+  b.le  _clear_complete
   str   xzr, [x0], #8
   b     _bss_clear
 _clear_complete:

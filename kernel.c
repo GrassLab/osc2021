@@ -1,3 +1,5 @@
+#define GETS_BUFF_LEN 0xff
+
 #define MMIO_BASE 0x3F000000
 
 #define UART_MAP_OFFSET 0x00215000
@@ -82,8 +84,11 @@ void uart_init() {
 }
 
 char uart_getc() {
+    char c;
     while(!(*AUX_MU_LSR_REG & 0b1)) { asm volatile("nop"); }
-    return *(char*)AUX_MU_IO_REG;
+    c = (char)*AUX_MU_IO_REG;
+    //asm volatile("nop");
+    return c=='\r'?'\n':c;
 }
 
 void uart_setc(char c) {
@@ -92,10 +97,78 @@ void uart_setc(char c) {
     return;
 }
 
+char * gets (char * str) {
+    char c = '\0';
+    //char buff[GETS_BUFF_LEN];
+    int buff_end = 0;
+    do {
+        c = uart_getc();
+        str[buff_end] = c;
+        buff_end++;
+        uart_setc(c);
+    } while (c != '\n');
+    str[buff_end] = '\0';
+    return str;
+}
+
+int puts(const char * str) {
+    int str_end = 0;
+    while (str[str_end] != '\0') {
+        uart_setc(str[str_end++]);
+    }
+    return str_end;
+}
+
+void help() {
+    puts("Commands:\n");
+    puts("    help\n");
+    puts("    hello\n");
+    return;
+}
+
+void hello() {
+    puts("Hello World!\n");
+    return;
+}
+
+// 0 as same, 1 as different, -1 as error
+int strcmp(const char * a, const char * b) {
+    int cnt = 0;
+    while (a[cnt] != '\0' && b[cnt] != '\0') {
+        if (a[cnt] != b[cnt]) {
+            return 1;
+        }
+        if (cnt >= 1000) {
+            return -1;
+        }
+        cnt++;
+    }
+    if (a[cnt] == b[cnt] == '\0') {
+        return 0;
+    }
+    return 1;
+}
+
+void cmd(const char * buff) {
+    if (!strcmp(buff, "help")) {
+        help();
+    } else if (!strcmp(buff, "hello")) {
+        hello();
+    } else {
+        puts("Command not found!\n");
+    }
+    return;
+}
+
 void kernel() {
     uart_init();
     uart_setc('H');
     uart_setc('i');
-    while(1) { asm volatile("nop"); }
+    uart_setc('\n');
+    while(1) {
+        char buff[GETS_BUFF_LEN];
+        gets(buff);
+        cmd(buff);
+    }
     return;
 }

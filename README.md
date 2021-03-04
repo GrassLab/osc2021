@@ -33,20 +33,25 @@ make img    # copy elf to image file, same as make all
 
 ## How to run
 
-### Run in qemu and show the asm
+### Run in qemu and show console
 
 ``` shell
-qemu-system-aarch64 -M raspi3 -kernel ./kernel8.img -display none -d in_asm
+qemu-system-aarch64 -M raspi3 -kernel ./kernel8.img -display none -serial null -serial stdio
 # -M/-machine: Supported machine, here using Raspberry Pi 3B
 # -display: display backend type, none, gtk, ...
-# -d: debugging, in_asm for Show generated host assembly code for each compiled Translation-Block (TB)
 ```
+
+### Debug on qemu
+- Add `CLFAGS+=-g -O0` on Makefile
+- Run `qemu-system-aarch64 -M raspi3 -kernel ./kernel8.img -display none -serial null -serial stdio -s -S`
+- Run `gdb -x gdbcmd.gdb`
 
 ## How to burn it into pi3
 
 ### Burn into micro SD card
 ``` shell
 dd if=nctuos.img of=/dev/sdc bs=512 # if for input, of for output, bs for block size
+cp kernel8.img ${your SD card mount folder} # replace kernel8.elf with your image
 ```
 
 ### UART ping
@@ -60,14 +65,14 @@ dd if=nctuos.img of=/dev/sdc bs=512 # if for input, of for output, bs for block 
 ### Host tty attach
 
 ``` shell
-dmesg | grep -i tty         # Using dmesg command to check tty
-sudo screen /dev/ttyUSB0    # Attach tty using root permission, or screen may terminate
+dmesg | grep -i tty                # Using dmesg command to check tty
+sudo screen /dev/ttyUSB0 115200    # Attach tty using root permission, or screen may terminate
 ```
 
 ## Architecture
 
-**WIP**
+boot.S for sp set, bss clear, then jump to kernel (write by C)
 
 ## Directory structure
 
-**WIP**
+All in one folder now.
