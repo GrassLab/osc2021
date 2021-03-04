@@ -1,27 +1,34 @@
-# My OSC 2021
+Tutorial 03 - UART1, Auxilary mini UART
+=======================================
 
-## Author
+It is time for the famous Hello World example. We're going to write on the UART1 first, as it's easier to program
+as it has a fixed clocked frequency.
 
-| 學號 | GitHub 帳號 | 姓名 | Email |
-| --- | ----------- | --- | --- |
-|`0856085`| `t0037799` | `林濬維` | jwlin.cs08g@nctu.edu.tw |
+NOTE: qemu does not redirect UART1 to terminal by default, only UART0, so you have to use `-serial null -serial stdio`.
 
-## How to build
+Gpio.h
+------
 
-**WIP**
+We have a new header file. This defines the base MMIO address, and the GPIO controller's addresses. This file
+going to be very popular, as many devices need it.
 
-## How to run
+Uart.h, uart.c
+--------------
 
-**WIP**
+A very minimal implementation.
 
-## How to burn it into pi3
+`uart_init()` initializes the device and maps it to the GPIO ports.
 
-**WIP**
+`uart_send(c)` sends a character over the serial line.
 
-## Architecture
+`uart_getc()` receives a character. The carrige return character (13) will be converted into a newline character (10).
 
-**WIP**
+`uart_puts(s)` prints out a string. On newline, a carrige return character will also be sent (13 + 10).
 
-## Directory structure
+Main
+----
 
-**WIP**
+First, we have to call the uart initialization code. Then, it'll return "Hello World!". If you've purchased an USB
+serial cable, you should see it on minicom's screen. After that every character typed in minicom will be
+echoed back. If you haven't turned off local echo, that means you'll see every pressed key twice.
+
