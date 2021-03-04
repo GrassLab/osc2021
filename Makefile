@@ -15,9 +15,9 @@ OBJS=$(SRCS:.c=.o)
 
 CFLAGS = -I include/ -Wall -fno-builtin-memset
 
-.PHONY: clean all asm run
+.PHONY: clean all asm run dir
 
-all: $(DST_DIR)/kernel8.img
+all: dir $(DST_DIR)/kernel8.img
 
 $(ENTRY_OBJ): $(ENTRY)
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -29,6 +29,9 @@ $(DST_DIR)/kernel8.img: $(ENTRY_OBJ) $(OBJS)
 	$(LD) -T $(LINKER_FILE) -o $(DST_DIR)/kernel8.elf $^
 	$(OBJCOPY) -O binary $(DST_DIR)/kernel8.elf $(DST_DIR)/kernel8.img
 
+dir: $(DST_DIR)
+$(DST_DIR):
+	mkdir -p $(DST_DIR)
 
 asm: $(DST_DIR)/kernel8.img
 	qemu-system-aarch64 -M raspi3 -kernel $(DST_DIR)/kernel8.img -display none -d in_asm
