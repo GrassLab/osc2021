@@ -1,12 +1,13 @@
-ENTRY(__my_start__)
-
 SECTIONS {
     . = 0x80000;
-    .text : { *(.text.boot) *(.text) }
+    .text.boot : { *(.text.boot) }
+    .text : { *(.text) }
     .data : { *(.data) }
     .bss  : { 
+        . = ALIGN(8); /* Make sure that we can initialize it by using 64-bit register. */
         __bss_start__ = .;
         *(.bss)
+        . = ALIGN(8);
         __bss_end__ = .;
     }
 }
