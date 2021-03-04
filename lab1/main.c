@@ -1,6 +1,7 @@
 # include "uart.h"
 # include "utli.h"
 
+//itoa
 void int_to_str(int n, char *s){
   char tmp[100];
   int idx = 0;
@@ -15,6 +16,7 @@ void int_to_str(int n, char *s){
   s[idx] = '\0';
 }
 
+//str compare
 int str_cmp(char *s1, char *s2){
   int i = 0;
   if (s1[0] == '\0' && s2[0] == '\0') return 1;
@@ -53,17 +55,23 @@ void invoke_cmd(char *cmd){
 
 int main(){
   uart_init();
-  uart_puts("HaHa\n");
-  uart_puts(" > ");
+  uart_puts("Hi!\n");
+  uart_puts("Welcome to Eric's system ~\n");
+  uart_puts("(Lab1)\n");
+  uart_flush();
+  uart_puts("> ");
 
   char cmd[1000];
-  char get_c[10];
   int cmd_end = 0;
 
+  //char get_c[10];
+
   while(1){
-    uart_puts("\r > ");
+    uart_puts("\r> ");
     uart_puts(cmd);
     char c = uart_read();
+
+    // for debug
     //int_to_str((int)c, get_c);
     //uart_puts(get_c);
     //uart_puts("\n");
@@ -71,15 +79,14 @@ int main(){
     if (c == '\n'){
       uart_puts("\n");
       cmd[cmd_end] = '\0';
-      //uart_puts(cmd);
       invoke_cmd(cmd);
       cmd_end = 0;
       cmd[0] = '\0';
     }
-    else if ((int)c == 127){
+    else if ((int)c == 127 || (int)c == 8){
       cmd_end--;
       cmd[cmd_end] = '\0';
-      uart_puts("\b");
+      uart_puts("\b \b");
     }
     else{
       cmd[cmd_end] = c;

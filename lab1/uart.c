@@ -80,7 +80,8 @@ char uart_read() {
 void uart_puts(char *s) {
     while(*s) {
         /* convert newline to carrige return + newline */
-	uart_write(*s++);	    
+      if (*s == '\n') uart_write('\r');
+      uart_write(*s++);	    
     }
 }
 
