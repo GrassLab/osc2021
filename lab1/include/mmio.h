@@ -28,18 +28,10 @@ class MMIO {
 public:
     static const uint32_t PM_PASSWORD     = 0x5A000000;
     static inline void set(MMIOREG addr, uint32_t val) {
-        asm volatile("str %w[val], [%x[addr]]" :: [val]"r"(val), [addr]"r"(addr) : "memory");
-        // Compiler would store 64-bit data with the following code with aarch64-linux-gnu-g++ on Ubuntu 20.04
-        // So do not use it.
-        // ((volatile uint32_t*)addr)[0] = val;
+        *reinterpret_cast<volatile uint32_t*>(addr) = val;
     }
     static inline uint32_t get(MMIOREG addr) {
-        uint32_t ret;
-        asm volatile("ldr %w[ret_val], [%x[addr]]" : [ret_val]"=r"(ret) : [addr]"r"(addr) : "memory");
-        return ret;
-        // Compiler would store 64-bit data with the following code with aarch64-linux-gnu-g++ on Ubuntu 20.04
-        // So do not use it.
-        // return *(volatile uint32_t*)addr;
+        return *reinterpret_cast<volatile uint32_t*>(addr);
     }
 };
 
