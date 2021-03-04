@@ -56,15 +56,20 @@ void uart_init()
     *AUX_MU_BAUD = 270;    // 115200 baud
     /* map UART1 to GPIO pins */
     r=*GPFSEL1;
-    r&=~((7<<12)|(7<<15)); // gpio14, gpio15
-    r|=(2<<12)|(2<<15);    // alt5
+    r&=~((7<<12)|(7<<15)); // gpio14, gpio15 (clear FSEL14 ans FSEL15, which represent the gpio14 and gpio15)
+    r|=(2<<12)|(2<<15);    // alt5 (010 = alternate function 5, set FSEL14 ans FSEL15 to 010)
     *GPFSEL1 = r;
     *GPPUD = 0;            // enable pins 14 and 15
+    r=150; while(r--) { asm volatile("nop"); } // wait 150 cycles
+    *GPPUDCLK0 = (1<<14)|(1<<15); // assert clock on line 14 and 15
     r=150; while(r--) { asm volatile("nop"); }
-    *GPPUDCLK0 = (1<<14)|(1<<15);
-    r=150; while(r--) { asm volatile("nop"); }
-    *GPPUDCLK0 = 0;        // flush GPIO setup
+    *GPPUDCLK0 = 0;        // flush GPIO setup(remove the clock)
     *AUX_MU_CNTL = 3;      // enable Tx, Rx
+
+    // flush read buffer
+    while(*AUX_MU_LSR&0x01){
+		char tmp=(char)(*AUX_MU_IO);
+	}
 }
 
 /**
@@ -72,9 +77,9 @@ void uart_init()
  */
 void uart_send(unsigned int c) {
     /* wait until we can send */
-    do{asm volatile("nop");}while(!(*AUX_MU_LSR&0x20));
+    do{asm volatile("nop");}while(!(*AUX_MU_LSR&0x20)); // wait until transmit FIFO can accept at least one byte
     /* write the character to the buffer */
-    *AUX_MU_IO=c;
+    *AUX_MU_IO=c; // write data to the UART FIFOs
 }
 
 /**

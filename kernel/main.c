@@ -6,12 +6,12 @@
 
 int strcmp(char *a, char *b) {
     while(*a != '\0') {
-        if(*a != *b) return 0;
+        if(*a != *b) return 1;
         a++;
         b++;
     }
-    if(*a != *b) return 0;
-    return 1;
+    if(*a != *b) return 1;
+    return 0;
 }
 
 void uart_read_line(char *input) {
@@ -65,13 +65,13 @@ void main() {
         uart_read_line(input);
         uart_puts("\r");
 
-        if(strcmp(input, "hello")) {
+        if(!strcmp(input, "hello")) {
             hello();
         }
-        else if(strcmp(input, "help")) {
+        else if(!strcmp(input, "help")) {
             help();
         }
-        else if(strcmp(input, "reboot")) {
+        else if(!strcmp(input, "reboot")) {
             reboot();
         }
         else {
