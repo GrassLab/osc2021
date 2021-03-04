@@ -13,9 +13,9 @@ void uart_init() {
     // GPIO setting
     unsigned int r = *GPFSEL1;
     // reset gpio 14 15
-    r &= ~((0x111<<12)|(0x111<<15));
+    r &= ~((0b111<<12)|(0b111<<15));
     // set alt5 to gpio 14 15
-    r |= (0x010<<12)|(0x010<<15);
+    r |= (0b010<<12)|(0b010<<15);
     *GPFSEL1 = r;
 
     // disable gpio pull-down pull-up
@@ -25,7 +25,7 @@ void uart_init() {
     while(r--) {
         asm volatile("nop");
     }
-    *GPPUDCLK0 = (0x1<<14)|(0x1<<15);
+    *GPPUDCLK0 = (0b1<<14)|(0b1<<15);
     r = 150;
     while(r--) {
         asm volatile("nop");
