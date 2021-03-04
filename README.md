@@ -4,24 +4,16 @@
 
 | 學號 | GitHub 帳號 | 姓名 | Email |
 | --- | ----------- | --- | --- |
-|`0856085`| `t0037799` | `林濬維` | jwlin.cs08g@nctu.edu.tw |
+|`309551007`| `shizsun0609tw` | `陳鎮華` | shizsun0609tw@gmail.com |
 
 ## How to build
 
-**WIP**
+```bash
+make
+```
 
 ## How to run
 
-**WIP**
-
-## How to burn it into pi3
-
-**WIP**
-
-## Architecture
-
-**WIP**
-
-## Directory structure
-
-**WIP**
+```bash
+make run
+```
