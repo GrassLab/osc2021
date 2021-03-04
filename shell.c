@@ -13,17 +13,13 @@ void shell_start ()
     strset (buffer, 0, MAX_BUFFER_LEN);   
 
     // new line head
-    uart_puts("# ");
+    uart_puts("pi@:~$ ");
 
     // read input
     while(1)
     {
         input_char = uart_getc();
-
-        
-
         input_parse = parse ( input_char );
-
         command_controller ( input_parse, input_char, buffer, &buffer_counter);
     }
 }
@@ -32,7 +28,6 @@ enum SPECIAL_CHARACTER parse ( char c )
 {
     if ( !(c < 128 && c >= 0) )
         return UNKNOWN;
-
     if ( c == BACK_SPACE )
         return BACK_SPACE;
     else if ( c == LINE_FEED || c == CARRIAGE_RETURN )
@@ -43,6 +38,7 @@ enum SPECIAL_CHARACTER parse ( char c )
 
 void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffer[], int * counter )
 {
+	int flag = 0;
     if ( input_parse == UNKNOWN )
         return;
     
@@ -70,8 +66,9 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
 
             if      ( !strcmp(buffer, "help"        ) ) command_help();
             else if ( !strcmp(buffer, "hello"       ) ) command_hello();
-            else if ( !strcmp(buffer, "reboot"      ) ) reset();
+            else if ( !strcmp(buffer, "reboot"      ) ) {reset();flag = 1;}
 			else if ( !strcmp(buffer, "cancel"      ) ) cancel_reset();
+			else if ( !strcmp(buffer, "\0"      ) )   uart_puts("");
             else                                        command_not_found(buffer);
         }
             
@@ -79,7 +76,8 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
         strset (buffer, 0, MAX_BUFFER_LEN); 
 
         // new line head;
-        uart_puts("# ");
+        if(flag != 1)
+        uart_puts("pi@:~$ ");
     }
     else if ( input_parse == REGULAR_INPUT )
     {

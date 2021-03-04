@@ -30,7 +30,8 @@ void command_hello ()
 void command_not_found (char * s) 
 {
     uart_puts("Err: command ");
-    uart_puts("not found, try <help>\n");
+	uart_puts(s);
+    uart_puts(" not found, try <help>\n");
 }
 
 

@@ -16,7 +16,7 @@ void uart_init()
     *AUX_MU_MCR      = 0;       /* Don’t need auto flow control. */
     *AUX_MU_BAUD     = 270;     /* 115200 baud */
     *AUX_MU_IIR      = 6;       /* No FIFO */
-    // *AUX_MU_IIR      = 0xc6;       /* No FIFO */
+    
 
     /* map UART1 to GPIO pins */
     reg = *GPFSEL1;
@@ -25,7 +25,6 @@ void uart_init()
     *GPFSEL1 = reg;             /* enable gpio 14 and 15 */
 
     *GPPUD = 0;                 /*  disable pull-up/down */
-	
 	/*  disable need time */
     reg=150;
     while ( reg-- )
@@ -34,17 +33,15 @@ void uart_init()
     }
     
     *GPPUDCLK0 = (1<<14)|(1<<15);
-
 	/*  disable need time */
     reg=150; 
     while ( reg-- )
     {
         asm volatile("nop");
     }
-    
     *GPPUDCLK0 = 0;             /* flush GPIO setup */
 
-    *AUX_MU_CNTL = 3;           // Enable the transmitter and receiver.
+    *AUX_MU_CNTL = 3;           /* Enable the transmitter and receiver. */
 }
 
 /**
@@ -65,11 +62,8 @@ void uart_send(unsigned int c)
     if ( c == '\n' ) 
     {
         do {
-            
             asm volatile("nop");
-
         } while( ! ( *AUX_MU_LSR&0x20 ));
-        
         *AUX_MU_IO = '\r';
     }
 }
