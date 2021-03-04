@@ -17,4 +17,5 @@ $ make run
 ## How to debug
 ```
 $ make debug
+$ make gdb
 ```
