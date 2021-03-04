@@ -28,7 +28,7 @@ $(IMAGE): %.img: %.elf
 elf: $(ELF_FILE)
 $(ELF_FILE): $(OBJ_FILES)
 # Linke elf file from object file
-	$(LD) $(LDFLAGS) -o $@ $?
+	$(LD) $(LDFLAGS) -o $@ $^
 
 obj: $(OBJ_FILES)
 %.o: %.S

@@ -2,8 +2,8 @@ ENTRY(_start)
 
 MEMORY
 {
-    ROM (rx)  : ORIGIN = 0x80000, LENGTH = 0x100
-    RAM (rwx) : ORIGIN = 0x81000, LENGTH = 0x100
+    ROM (rx)  : ORIGIN = 0x80000, LENGTH = 0x1000
+    RAM (rwx) : ORIGIN = 0x81000, LENGTH = 0x1000
 }
 
 SECTIONS
@@ -23,4 +23,5 @@ SECTIONS
         *(.bss)
     } >RAM
     __bss_end = .;
+    __stack_top = . + 0xffff;
 }

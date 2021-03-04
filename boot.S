@@ -8,7 +8,7 @@ _start:
   ldr   x1, =__bss_end
   bl    _bss_clear
   // Set stack pointer to #LOW_MEMORY (0xffffffff)
-  ldr   x0, =0xffffffff
+  ldr   x0, =__stack_top
   mov   sp, x0
   // Jump to kernel
   bl    kernel
