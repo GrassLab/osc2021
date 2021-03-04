@@ -81,5 +81,6 @@ void uart_init () {
     *aux(MU_IIR) = 6;
     /* Enable the transmitter and receiver */
     *aux(MU_CNTL) = 3;
+    delay_cycles(150);
 }
 

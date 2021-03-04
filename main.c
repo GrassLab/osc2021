@@ -12,7 +12,7 @@ void parse_command (char *b) {
     }
     else if (!strcmp(b, "reboot")) {
         uart_send("reboot~~\n");
-        reset(10);
+        reset(10000);
     }
     else {
         uart_send("No such command.\n");
@@ -23,7 +23,10 @@ int main () {
     uart_init();
     char buffer[BUFFER_SIZE];
 
-    uart_send("osdi shell\n");
+    uart_send("\r\n");
+    uart_send("+========================+\r\n");
+    uart_send("|       osdi shell       |\r\n");
+    uart_send("+========================+\r\n");
     while (1) {
         uart_send("$ ");
         uart_getline(buffer, BUFFER_SIZE);

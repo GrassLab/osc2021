@@ -26,6 +26,8 @@
 #define AUX_SPI1_PEEK_REG   0x3F2150D4
 #define aux(NAME) ((volatile unsigned int *)(AUX_ ## NAME ## _REG))
 
+#define PM_PASSWORD 0x5a000000
+
 #define GPFSEL0_REG 0x3F200000
 #define GPFSEL1_REG 0x3F200004
 #define GPFSEL2_REG 0x3F200008
@@ -34,7 +36,6 @@
 #define GPFSEL5_REG 0x3F200014
 #define GPPUD_REG 0x3F200094
 #define GPPUDCLK0_REG 0x3F200098
-#define PM_PASSWORD_REG 0x5a000000
 #define PM_RSTC_REG 0x3F10001c
 #define PM_WDOG_REG 0x3F100024
 #define regp(NAME) ((volatile unsigned int *)(NAME ## _REG))
