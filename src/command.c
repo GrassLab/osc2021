@@ -2,7 +2,7 @@
 #include "mini_uart.h"
 #include "string.h"
 #include "peripheral.h"
-#include "ops.h"
+#include "base_ops.h"
 
 void exec_command(char *input)
 {
@@ -29,9 +29,17 @@ void fetch(char *command, int maxSize)
         c = getchar();
         putchar(c);
 
+        switch (c) {
+
+        }
+        
         if (c == '\r') {
             putchar('\n');
             break;
+        } else if (c == 127) {
+            puts("\b \b");
+            i--;
+            i = i < 0 ? 0 : i;
         } else {
             command[i] = c;
             i++;
