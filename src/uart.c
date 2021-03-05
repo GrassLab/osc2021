@@ -49,6 +49,36 @@ void uart_sendi (int num) {
     uart_send(buffer);
 }
 
+void uart_sendh (unsigned int num) {
+    char buffer[256];
+
+    for (int i = 0; i < 255; i++) {
+        int tmp = num % 16;
+        char c;
+        if (tmp < 10)
+            c = tmp + '0';
+        else
+            c = tmp - 10 + 'a';
+
+        buffer[i] = c;
+        num /= 16;
+        if (!num) {
+            buffer[i + 1] = '\0';
+            break;
+        }
+    }
+
+    /* reverse buffer */
+    int len = strlength(buffer);
+    for (int i = 0; i < len / 2; i++) {
+        char tmp = buffer[i];
+        buffer[i] = buffer[len - i - 1];
+        buffer[len - i - 1] = tmp;
+    }
+    uart_send("0x");
+    uart_send(buffer);
+}
+
 void uart_sendf (float num) {
     char integer[256];
     int isNegative = 0;

@@ -15,6 +15,7 @@ void parse_command (char *b) {
         uart_send("reboot: reboot raspi\r\n");
         uart_send("time: show current time from boost\r\n");
         uart_send("version: show rapi version\r\n");
+        uart_send("vcm: get vc memory\r\n");
     }
     else if (!strcmp(b, "reboot")) {
         uart_send("reboot~~\n");
@@ -25,7 +26,20 @@ void parse_command (char *b) {
         uart_send(" (s)\r\n");
     }
     else if (!strcmp(b, "version")) {
-        uart_sendi((int)get_board_revision());
+        uart_sendh((int)get_board_revision());
+        uart_send("\r\n");
+    }
+    else if (!strcmp(b, "vcm")) {
+        unsigned int base, size;
+        if (get_vc_memory(&base, &size)) {
+            uart_send("base: ");
+            uart_sendh(base);
+            uart_send("\r\nsize: ");
+            uart_sendh(size);
+            uart_send("\r\n");
+        }
+        else
+            uart_send("fail\r\n");
     }
     else {
         uart_send("No such command.\n");

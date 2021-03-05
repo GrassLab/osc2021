@@ -1,7 +1,11 @@
 #include "mmio.h"
 #include "mailbox.h"
+#include "uart.h"
 
+/* mailbox tag */
 #define GET_BOARD_REVISION  0x00010002
+#define GET_VC_MEMORY 0x00010006
+
 #define REQUEST_CODE        0x00000000
 #define REQUEST_SUCCEED     0x80000000
 #define REQUEST_FAILED      0x80000001
@@ -23,6 +27,16 @@
  *     - Mailbox 1 Read/Write: CPU write to GPU
  *     - channel 8: Request from ARM for response by VC
  *     - channel 9: Request from VC for response by ARM
+ *
+ * 3. Buffer Contents:
+ *     - buffer size in bytes (u32)
+ *     - buffer request/response code (u32)
+ *     - tag
+ *         - tag identifier (u32)
+ *         - tag buffer size in bytes (u32)
+ *         - request/reponse code (u32)
+ *         - value buffer (>u32)
+ *     - end tag (u32)
  */
 int mailbox_call (unsigned int *mailbox_buffer, unsigned char channel) {
     /* Combine the message address with channel number. */
@@ -38,7 +52,10 @@ int mailbox_call (unsigned int *mailbox_buffer, unsigned char channel) {
     while ((*mmio(MAILBOX_STATUS) & MAIL_EMPTY)) ;
 
     unsigned int result = *mmio(MAILBOX_READ);
-    return result == message;
+    if (result == message)
+        return mailbox_buffer[1] == REQUEST_SUCCEED;
+
+    return 0;
 }
 
 /* raspi 3b+ should be 0xa020d3 */
@@ -50,14 +67,35 @@ unsigned int get_board_revision () {
 
     /* tag begin */
     mailbox_buffer[2] = GET_BOARD_REVISION;
-    /* maximum of request and reponse value buffer's length */
+    /* value buffer size */
     mailbox_buffer[3] = 4;
     mailbox_buffer[4] = TAG_REQUEST_CODE;
-    /* vaule buffer */
+    /* vaule buffer size */
     mailbox_buffer[5] = 0;
+
     mailbox_buffer[6] = END_TAG;
 
     if (mailbox_call(mailbox_buffer, 8))
         return mailbox_buffer[5];
     return 0;
+}
+
+int get_vc_memory (unsigned int *base, unsigned int *size) {
+    unsigned int __attribute__((aligned(16))) mailbox_buffer[8];
+    mailbox_buffer[0] = 8 * 4;
+    mailbox_buffer[1] = REQUEST_CODE;
+
+    /* tag */
+    mailbox_buffer[2] = GET_VC_MEMORY;
+    mailbox_buffer[3] = 8;
+    mailbox_buffer[4] = TAG_REQUEST_CODE;
+    mailbox_buffer[5] = 0;
+    mailbox_buffer[6] = 0;
+
+    mailbox_buffer[7] = END_TAG;
+
+    int flag = mailbox_call(mailbox_buffer, 8);
+    *base = mailbox_buffer[5];
+    *size = mailbox_buffer[6];
+    return flag;
 }
