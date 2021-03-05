@@ -20,7 +20,7 @@ void uart_send (char *str) {
     }
 }
 
-void uart_sendi (int num) {
+void uart_sendi (long num) {
     char buffer[256];
     int isNegative = 0;
     if (num < 0) {
@@ -49,7 +49,7 @@ void uart_sendi (int num) {
     uart_send(buffer);
 }
 
-void uart_sendh (unsigned int num) {
+void uart_sendh (unsigned long num) {
     char buffer[256];
 
     for (int i = 0; i < 255; i++) {

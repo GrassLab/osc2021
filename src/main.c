@@ -3,6 +3,7 @@
 #include "reboot.h"
 #include "time.h"
 #include "mailbox.h"
+#include "debug.h"
 #define BUFFER_SIZE 64
 
 void parse_command (char *b) {
@@ -16,6 +17,7 @@ void parse_command (char *b) {
         uart_send("time: show current time from boost\r\n");
         uart_send("version: show rapi version\r\n");
         uart_send("vcm: get vc memory\r\n");
+        uart_send("x/[num]gx [address]: print value in memory\r\n");
     }
     else if (!strcmp(b, "reboot")) {
         uart_send("reboot~~\n");
@@ -40,6 +42,8 @@ void parse_command (char *b) {
         }
         else
             uart_send("fail\r\n");
+    }
+    else if (mem_print(b)) {
     }
     else {
         uart_send("No such command.\n");
