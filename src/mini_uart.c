@@ -1,6 +1,6 @@
 #include "peripheral.h"
 #include "mini_uart.h"
-#include "ops.h"
+#include "base_ops.h"
 
 void init_uart()
 {
@@ -14,9 +14,9 @@ void init_uart()
     put32(GPFSEL1,selector);
 
     put32(GPPUD,0);
-    delay(150);
+    wait(150);
     put32(GPPUDCLK0,(1<<14)|(1<<15));
-    delay(150);
+    wait(150);
     put32(GPPUDCLK0,0);
 
     put32(AUXENB, 1);
