@@ -1,26 +1,22 @@
-#include "mem.h"
 
 .section ".text.boot"
 
-.globl _start
+
 _start:
-  mrs x0, mpidr_el1
-  and x0, x0, #0xFF
-  cbz x0, mcore
-  b loop
+    // load bss position
+    adr     x0, bss_begin
+    adr     x1, bss_end
+    sub     x1, x1, x0
+    
+    // clear bss memory
+    clear:
+    str     xzr, [x0], #8
+    subs    x1, x1, #8
+    bgt     clear
 
-loop:
-  b loop
+    // set stack position, defined in linker.ld
+    ldr     x0, = _stack_top
+    mov     sp, x0
 
-mcore:
-  adr x0, bss_begin
-  adr x1, bss_end
-  sub x1, x1, x0
-  bl clearmem
-  ldr x0, = _stack_top
-  mov sp, x0
-  bl kernel
-
-
-
-  
+    // start kernel
+    bl      kernel
