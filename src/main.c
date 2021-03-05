@@ -2,6 +2,7 @@
 #include "string.h"
 #include "reboot.h"
 #include "time.h"
+#include "mailbox.h"
 #define BUFFER_SIZE 64
 
 void parse_command (char *b) {
@@ -13,6 +14,7 @@ void parse_command (char *b) {
         uart_send("help: print all available commands\r\n");
         uart_send("reboot: reboot raspi\r\n");
         uart_send("time: show current time from boost\r\n");
+        uart_send("version: show rapi version\r\n");
     }
     else if (!strcmp(b, "reboot")) {
         uart_send("reboot~~\n");
@@ -22,6 +24,9 @@ void parse_command (char *b) {
         uart_sendf(get_time());
         uart_send(" (s)\r\n");
     }
+    else if (!strcmp(b, "version")) {
+        uart_sendi((int)get_board_revision());
+    }
     else {
         uart_send("No such command.\n");
     }
@@ -29,6 +34,7 @@ void parse_command (char *b) {
 
 int main () {
     uart_init();
+
     char buffer[BUFFER_SIZE];
 
     uart_send("\r\n");

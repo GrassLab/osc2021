@@ -40,9 +40,6 @@ exe:
 dump:
 	$(QEMU) -M raspi3 -kernel $(IMG) -display none -d in_asm
 
-test:
-	$(QEMU) -M raspi3 -kernel $(PROVIED_IMG) -display none -d in_asm
-
 debug:
 	$(QEMU) -M raspi3 -kernel $(IMG) -display none -S -s $(MINI-UART)
 

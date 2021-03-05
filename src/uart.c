@@ -1,5 +1,5 @@
 #include "uart.h"
-#include "register.h"
+#include "mmio.h"
 #include "string.h"
 
 void delay_cycles (unsigned int num) {
@@ -113,8 +113,8 @@ void uart_getline (char *buffer, unsigned int size) {
     }
 }
 
-#define clear(r, n) *regp(r) &= ~(1 << n)
-#define set(r, n) *regp(r) |= 1 << n
+#define clear(r, n) *mmio(r) &= ~(1 << n)
+#define set(r, n) *mmio(r) |= 1 << n
 
 void uart_init () {
     /* GPIO 15 takes alternate function 5 */
@@ -128,13 +128,13 @@ void uart_init () {
     clear(GPFSEL1, 12);
 
     /* turn off GPIO pull-up/down */
-    *regp(GPPUD) = 0;
+    *mmio(GPPUD) = 0;
     delay_cycles(150);
     /* clock the control signal into the GPIO */
     set(GPPUDCLK0, 14);
     set(GPPUDCLK0, 15);
     delay_cycles(150);
-    *regp(GPPUDCLK0) = 0;
+    *mmio(GPPUDCLK0) = 0;
 
     /* Enable mini UART */
     *aux(ENABLES) |= 1;
