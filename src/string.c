@@ -14,3 +14,15 @@ int strcmp(char *str1, char *str2)
 
     return result;
 }
+
+void * memset (void *ptr, int value, int num)
+{
+    char *currentPtr = ptr;
+
+    while (num--) {
+        *currentPtr = (unsigned char)value;
+        currentPtr++;
+    }
+
+    return ptr;
+}

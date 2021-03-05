@@ -1,23 +1,41 @@
 #include "command.h"
 #include "mini_uart.h"
-#include "str.h"
+#include "string.h"
 #include "peripheral.h"
 #include "ops.h"
 
 void exec_command(char *input)
 {
-    if (strcmp(input, "help") == 0)
-    {
-        send_string("1. help\r\n");
-        send_string("2. hello\r\n");
-    } else if (strcmp(input, "hello") == 0) 
-    {
-        send_string("Hello World!\r\n");
+    if (strcmp(input, "help") == 0) {
+        puts("1. help\r\n");
+        puts("2. hello\r\n");
+    } else if (strcmp(input, "hello") == 0) {
+        puts("Hello World!\r\n");
     } else if (strcmp(input, "reboot") == 0) {
-        send_string("rebooting...\r\n");
+        puts("rebooting...\r\n");
         reboot(100);
     } else {
-        send_string("Try another command\r\n");
+        puts("Try another command\r\n");
+    }
+}
+
+void fetch(char *command, int maxSize)
+{
+    char c;
+    int i = 0;
+    memset(command, 0, sizeof(char) * maxSize);
+
+    while(1) {
+        c = getchar();
+        putchar(c);
+
+        if (c == '\r') {
+            putchar('\n');
+            break;
+        } else {
+            command[i] = c;
+            i++;
+        }
     }
 }
 

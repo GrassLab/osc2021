@@ -2,8 +2,8 @@
 #define _MINI_UART_H
 
 void init_uart();
-void send_char(char c);
-void send_string(char *);
-char receive_char();
+int putchar(char c);
+int puts(const char *str);
+int getchar();
 
 #endif

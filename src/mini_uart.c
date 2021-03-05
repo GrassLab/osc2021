@@ -29,7 +29,7 @@ void init_uart()
     put32(AUX_MU_CNTL_REG, 3);
 }
 
-void send_char(char c)
+int putchar(char c)
 {
     while(1) {
         if (get32(AUX_MU_LSR_REG) & 0x20) {
@@ -37,20 +37,24 @@ void send_char(char c)
         }
     }
 
-    put32(AUX_MU_IO_REG, c);
+    put32(AUX_MU_IO_REG, (unsigned char)c);
+
+    return (unsigned char)c;
 }
 
-void send_string(char *str)
+int puts(const char *str)
 {
     int i = 0;
     while(str[i] != '\0')
     {
-        send_char(str[i]);
+        putchar(str[i]);
         i++;
     }
+
+    return 0;
 }
 
-char receive_char()
+int getchar()
 {
     while(1) {
         if (get32(AUX_MU_LSR_REG) & 0x01) {
