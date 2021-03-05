@@ -1,4 +1,4 @@
-_stack_top = 0x81000;
+_stack_top = 0x480000;
 
 SECTIONS
 {
