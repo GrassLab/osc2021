@@ -10,7 +10,7 @@ void kernel()
     char command[MAX_COMMAND_SIZE];
     while (1)
     {
-        fetch(command, MAX_COMMAND_SIZE);
+        get(command, MAX_COMMAND_SIZE);
         exec_command(command);
     }
 }

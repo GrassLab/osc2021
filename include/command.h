@@ -3,7 +3,7 @@
 
 #define MAX_COMMAND_SIZE (20)
 
-void fetch(char *command, int maxSize);
+void get(char *command, int maxSize);
 void exec_command(char *input);
 
 void reboot(int tick);

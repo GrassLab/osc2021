@@ -13,36 +13,34 @@ void exec_command(char *input)
         puts("Hello World!\r\n");
     } else if (strcmp(input, "reboot") == 0) {
         puts("rebooting...\r\n");
-        reboot(100);
+        reboot(0);
     } else {
         puts("Try another command\r\n");
     }
 }
 
-void fetch(char *command, int maxSize)
+void get(char *command, int maxSize)
 {
     char c;
     int i = 0;
     memset(command, 0, sizeof(char) * maxSize);
 
     while(1) {
+        // TODO: max command length limitation
         c = getchar();
         putchar(c);
-
-        switch (c) {
-
-        }
         
-        if (c == '\r') {
-            putchar('\n');
-            break;
-        } else if (c == 127) {
-            puts("\b \b");
-            i--;
-            i = i < 0 ? 0 : i;
-        } else {
-            command[i] = c;
-            i++;
+        switch (c) {
+            case '\r':
+                putchar('\n');
+                break;
+            case '\b':
+                puts(" \b");
+                i--;
+                i = i < 0 ? 0 : i;
+            default:
+                command[i] = c;
+                i++;
         }
     }
 }
