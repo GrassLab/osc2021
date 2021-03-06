@@ -8,7 +8,7 @@ CROSS_ENV_RUN = ./$(DOCKCROSS_SCRIPT)
 .PHONY: setup shell clean run debug gdb build
 
 # target implementation to use
-IMPL_FOLDER ?= impl-c
+IMPL_FOLDER ?= impl-rs
 
 KERNEL_IMG = kernel8.img
 KERNEL_ELF = kernel8.elf

@@ -20,10 +20,15 @@ My Implementation of Operating System at [`OSC2021`][OSC21], NYCU.
   + [Raspberry Pi Imager][imger]: SD card utilites
   + A corss-gdb for arrch64: see below
 
++ (Optional)Cross compile rust implement without docker
+  1. Change your toolchain to `nightly`
+  2. Install [cargo-binutils][cargo-binutils]
+
 [qemu]: https://www.qemu.org/download/
 [docker]: https://www.docker.com/
 [clang-format]: https://formulae.brew.sh/formula/clang-format
 [imger]: https://www.raspberrypi.org/software/
+[cargo-binutils]: https://github.com/rust-embedded/cargo-binutils
 
 ### Compiling a cross gdb for `aarch64`
 
