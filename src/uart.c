@@ -147,6 +147,7 @@ void uart_getline (char *buffer, unsigned int size) {
 #define set(r, n) *mmio(r) |= 1 << n
 
 void uart_init () {
+#ifdef UART_MINI
     /* GPIO 15 takes alternate function 5 */
     clear(GPFSEL1, 17);
     set(GPFSEL1, 16);
@@ -183,5 +184,6 @@ void uart_init () {
     /* Enable the transmitter and receiver */
     *aux(MU_CNTL) = 3;
     delay_cycles(150);
+#endif
 }
 

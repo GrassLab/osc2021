@@ -10,11 +10,14 @@ C_SRC := $(wildcard $(DIR)/*.c)
 C_OBJ := $(patsubst %.c, $(BUILD_DIR)/%.o, $(notdir $(C_SRC)))
 ASM_SRC := $(wildcard $(DIR)/*.S)
 ASM_OBJ := $(patsubst %.S, $(BUILD_DIR)/%.o, $(notdir $(ASM_SRC)))
-CCFLAG := -Wall -nostdlib -Og -Isrc
+
+UART := UART_MINI # UART_MINI or UART_PL011
+
+CCFLAG := -Wall -nostdlib -Og -Isrc -D$(UART)
 ASMFLAG := -Isrc
 
-ELF := kernel8.elf
 LD := linker.ld
+ELF := kernel8.elf
 IMG := kernel8.img
 PROVIED_IMG := nctuos.img
 GDB := gdb-multiarch
@@ -35,7 +38,7 @@ $(BUILD_DIR)/%.o: $(DIR)/%.S
 	$(COMPILER) $(ASMFLAG) -c $< -o $@
 
 exe:
-	$(QEMU) -M raspi3 -kernel $(IMG) -display none -serial null -serial stdio
+	$(QEMU) -M raspi3 -kernel $(IMG) -display none -serial null -serial pty
 
 dump:
 	$(QEMU) -M raspi3 -kernel $(IMG) -display none -d in_asm

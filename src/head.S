@@ -4,6 +4,14 @@ _start:
     ldr x0, = __stack_base
     mov sp, x0
 
+/* relocate boot loader */
+    bl relocate_process
+    ldr x0, =new_loader_address
+    br x0
+
+new_loader_address:
+bl clear_memory
+
 /* init bss section */
     ldr x0, =__bss_start
     ldr x1, =__bss_size

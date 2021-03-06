@@ -4,6 +4,7 @@
 #include "time.h"
 #include "mailbox.h"
 #include "debug.h"
+#include "loader.h"
 #define BUFFER_SIZE 64
 
 void parse_command (char *b) {
@@ -42,6 +43,8 @@ void parse_command (char *b) {
         }
         else
             uart_send("fail\r\n");
+    }
+    else if (!strcmp(b, "test")) {
     }
     else if (mem_print(b)) {
     }
