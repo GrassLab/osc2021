@@ -1,24 +1,30 @@
-.section ".text.boot"
+.section ".text.reloc"
 
-.global _start
+.global _reloc
 
-_start:
-    mrs     x1, mpidr_el1
-    and     x1, x1, #3
-    cbz     x1, 2f
-1:  
-    wfe
-    b       1b
-2:
-    ldr     x1, =_start
+_reloc:
+    ldr     x1, =_reloc
     mov     sp, x1
-    ldr     x1, =__bss_start
-    ldr     w2, =__bss_size
-3:  
-    cbz     w2, 4f
+    ldr     x1, =_bss_start
+    ldr     w2, =_bss_size
+
+_bss_init_loop:  
+    cbz     w2, _bss_init_fini
     str     xzr, [x1], #8
     sub     w2, w2, #1
-    b       3b
-4:  
-    bl      main
-    b       1b
+    b       _bss_init_loop
+
+_bss_init_fini:
+    bl      relocate
+    bl      _reloc_addr
+
+.section ".text.boot"
+    
+_bootloader:
+    bl      bootloader
+
+.global _halt 
+   
+_halt:
+    wfe
+    b       _halt
