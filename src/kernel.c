@@ -4,7 +4,6 @@
 
 void shell() {
   char buf[256];
-  puts("\r> ");
   gets_n(buf, 255);
   if (!strcmp(buf, "hello")) {
     puts("Hello World!\n");

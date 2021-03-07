@@ -1,6 +1,5 @@
 import pwn
 import argparse
-import time
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-t', '--tty', help='target tty', default='/dev/ttyUSB0')
