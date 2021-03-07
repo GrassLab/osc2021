@@ -16,7 +16,7 @@ _start:
     ldr x0, = bss_begin
     ldr x1, = bss_end
     sub x1, x1, x0
-    cbz x1, 4f
+    cbz x1, 4f //if bss size = 0, no need to clear bss, goto 4
 
 memzero: //clear the bss
 	str xzr, [x0], #8
