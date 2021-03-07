@@ -22,53 +22,35 @@ serial.send('s')
 kernel_bin = pwn.ELF(kernel_file)
 for section in kernel_bin.sections:
     if(section.__class__.__name__ == 'Section' and 'debug' not in section.name):
-        print('Section :', section.name)
+        print('\nSection :', section.name)
         serial.send('S')
-        res = b''
-        while len(res) < 2 or res[-2:] != b'ST':
-            res = serial.recvuntil('ST', timeout = 3)
-            print(res)
+        serial.recvuntil('S')
+
         print('Address :', hex(section.header.sh_addr))
         serial.send(pwn.p64(section.header.sh_addr))
+
         print('Size :', hex(section.data_size))
         serial.send(pwn.p32(section.data_size))
+
         checksum = 0
-        prev_checksum = 0
+
         print('Type :', section.header.sh_type)
         if (section.header.sh_type == 'SHT_NOBITS'):
             serial.send('A')
         else:
             serial.send('D')
-            # serial.send(kernel_bin.section(section.name))
             sec = kernel_bin.section(section.name)
-            c = 11
-            while c < len(sec):
-                checksum = c
-                # checksum = sec[c]
-                serial.send(pwn.p8(c))
-                # serial.send(pwn.p8(sec[c]))
-                c += 1
-                if(True):
-                    check = serial.recv(1)[0]
-                    serial.send(pwn.p8(0x69))
-                    
-                    # print(serial.recv(timeout=0.1))
-                    if(check == checksum):
-                        prev_checksum = checksum
-                        serial.send(pwn.p8(0))
-                        print("Check ", c, checksum, check)
-                    else:
-                        print("Revert ", c, checksum, check)
-                        serial.send(pwn.p8(1))
-                        c -= 1
-                        checksum = prev_checksum
-                        time.sleep(1)
-                
-        res = serial.recvuntil('FN')
-        # print(res)
-        print('Checksum :', checksum, res[-7])
-        print('Total Transerfer :', hex(pwn.u32(res[-6: -2])))
-        print('Finish')
+            # cnt = 0
+            for d in sec:
+                if(d == 10 or d == 13):
+                    serial.send(pwn.p8(13))
+                    serial.send(pwn.p8(13 - d))
+                else:
+                    serial.send(pwn.p8(d))
+                checksum ^= d
+        res_checksum = pwn.u8(serial.recv(1))
+        serial.recvuntil('FN')
+        print('Checksum :', checksum == res_checksum)
 
 serial.send('K')
 print('Entry Point :', hex(kernel_bin.entry))

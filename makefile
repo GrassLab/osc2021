@@ -46,4 +46,7 @@ debug: all
 	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial "pty" -display none -S -s
 
 burn: all
-	lsblk | grep sdb1 > /dev/null && sudo mount /dev/sdb1 sd_mount && sudo cp bootloader.img sd_mount/bootloader.img && sudo umount sd_mount 
+	lsblk | grep sdb1 > /dev/null && \
+	sudo mount /dev/sdb1 sd_mount && \
+	sudo cp bootloader.img sd_mount/kernel8.img && \
+	sudo umount sd_mount 

@@ -1,30 +1,41 @@
-.section ".text.reloc"
+.section ".text.boot"
 
-.global _reloc
+.global _start
 
-_reloc:
-    ldr     x1, =_reloc
-    mov     sp, x1
+_start:
+    mov     x10, x0
+    mov     x11, x1
+    mov     x12, x2
+    mov     x13, x3
+
+    ldr     x4, =0x80000
+    mov     sp, x4
+    mov     x1, x4
+    ldr     x2, =_start
+    ldr     w3, =_bl_size
+
+_reloc_loop:
+    ldr     x4, [x1], #8
+    str     x4, [x2], #8
+    sub     w3, w3, #1
+    cbnz    w3, _reloc_loop
+
     ldr     x1, =_bss_start
     ldr     w2, =_bss_size
+    cbz     w2, _bootloader
 
 _bss_init_loop:  
-    cbz     w2, _bss_init_fini
     str     xzr, [x1], #8
     sub     w2, w2, #1
-    b       _bss_init_loop
+    cbnz    w2, _bss_init_loop
 
-_bss_init_fini:
-    bl      relocate
-    bl      _reloc_addr
-
-.section ".text.boot"
-    
 _bootloader:
-    bl      bootloader
+    bl      bootloader-0x20000
 
-.global _halt 
-   
+.section ".text.halt"
+
+.global _halt
+
 _halt:
     wfe
-    b       _halt
+    b _halt

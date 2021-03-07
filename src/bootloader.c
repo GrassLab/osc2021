@@ -3,56 +3,40 @@
 #include "util.h"
 
 void recv_section() {
-  puts("ST");
+  uart_put_raw('S');
   unsigned char *section_addr = (unsigned char *)recv_ll();
   unsigned long section_size = recv_l();
+  unsigned char section_type = uart_get_raw();
   unsigned char checksum = 0;
-  unsigned char prev_checksum;
-  unsigned char recv_status;
-  unsigned long i = 0;
-  // test mem
-  for (i = 0; i < section_size; i++) {
-    *section_addr = 0x66;
-    if (*section_addr != 0x66) {
-      system_error("mem err\n");
-    }
-  }
 
-  if ((recv_status = uart_get_raw()) == 'A') {
-    for (i = 0; i < section_size; i++) {
+  if (section_type == 'A') {
+    for (unsigned int i = 0; i < section_size; i++) {
       *section_addr++ = 0;
     }
-  } else if (recv_status == 'D') {
-    for (i = 0; i < section_size; i++) {
+  } else if (section_type == 'D') {
+    for (unsigned int i = 0; i < section_size; i++) {
       *section_addr = uart_get_raw();
-      checksum = *section_addr++;
-      if (1) {
-        uart_flush_stdin();
-        uart_put_raw(checksum);
-        while (uart_get_raw() != 0x69)
-          ;
-        if (uart_get_raw()) {
-          i -= 1;
-          section_addr -= 1;
-          checksum = prev_checksum;
-          wait_clock(1000000);
-        } else {
-          prev_checksum = checksum;
-        }
+      if(*section_addr == 13) {
+        unsigned char sub = uart_get_raw();
+        *section_addr -= sub;
       }
+      checksum ^= *section_addr++;
     }
   } else {
     system_error("control flow failed\n");
   }
+
   uart_put_raw(checksum);
-  send_l(i);
-  puts("FN");
+  uart_put_raw('F');
+  uart_put_raw('N');
 }
 
 void bootloader() {
   uart_init();
 
+  void (*kernel)(void);
   char recv_status = 0;
+
   // wait for start
   while ((recv_status = uart_get_raw()) != 's')
     ;
@@ -62,17 +46,24 @@ void bootloader() {
     recv_section();
   }
 
-  // recv kernel address
+  // recv kernel entry point
   if (recv_status != 'K') {
     system_error("control flow failed\n");
   }
 
-  void (*kernel)(void) = (void *)recv_ll();
+  kernel = (void (*)(void))recv_ll();
 
   // end transmission
   if ((recv_status = uart_get_raw()) != 'E') {
     system_error("control flow failed\n");
   }
 
-  kernel();
+  // branch to kernel
+  asm volatile(
+      "mov x30, %0;"
+      "mov x0, x10;"
+      "mov x1, x11;"
+      "mov x2, x12;"
+      "mov x3, x13;"
+      "ret" ::"r"(kernel));
 }

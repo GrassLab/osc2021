@@ -1,8 +1,30 @@
 #include "io.h"
+#include "reset.h"
+#include "util.h"
 
-char buf[256];
-void kernel() {
-  puts("hi\n");
+void shell() {
+  char buf[256];
+  puts("\r> ");
   gets_n(buf, 255);
-  puts(buf);
+  if (!strcmp(buf, "hello")) {
+    puts("Hello World!\n");
+  } else if (!strcmp(buf, "help")) {
+    puts(
+        "help   : help menu\n"
+        "hello  : print hello\n"
+        "reboot : reboot system\n");
+  } else if (!strcmp(buf, "reboot")) {
+    reset(5);
+  } else if (strcmp(buf, "")) {
+    puts("no such instruction \'");
+    puts(buf);
+    puts("\'\n");
+  }
+}
+
+void kernel() {
+  puts("\rLab 2:\n");
+  while (1) {
+    shell();
+  }
 }

@@ -39,10 +39,3 @@ void uart_put_raw(unsigned int data) {
     ;
   *AUX_MU_IO = data;
 }
-
-void uart_flush_stdin() {
-  unsigned int d;
-  while ((*AUX_MU_LSR & 0x1) != 0) {
-    d = (*AUX_MU_IO);
-  }
-}
