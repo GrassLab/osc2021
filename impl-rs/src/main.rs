@@ -4,14 +4,13 @@
 #![feature(format_args_nl)]
 #![feature(trait_alias)]
 
-use bsp::{gpio, uart};
 use core::panic::PanicInfo;
 
 mod boot;
-mod bsp;
-mod console;
 mod cpu;
+mod gpio;
 mod memory;
+mod uart;
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
@@ -19,12 +18,9 @@ fn panic(_info: &PanicInfo) -> ! {
 }
 
 pub unsafe fn main() -> ! {
-    let mut gpio = gpio::GPIO::new(memory::map::mmio::GPIO_START);
-    gpio.map_mini_uart();
-    let mut uart = uart::MINIUART::new(memory::map::mmio::MINI_UART_START);
-    uart.init();
+    uart::init_uart();
     loop {
-        uart.write_str("Hello world\n");
-        cpu::spin_for_cycles(200);
+        let c = uart::read_char();
+        uart::write_char(c);
     }
 }

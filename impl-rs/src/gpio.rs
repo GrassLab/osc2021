@@ -1,4 +1,4 @@
-use crate::bsp::common::MMIODerefWrapper;
+use crate::memory;
 use register::{mmio::*, register_bitfields, register_structs};
 
 // Raspberrypi3 Model B+ -> BCM2837B0
@@ -68,38 +68,28 @@ register_structs! {
     }
 }
 
-/// Abstraction for the associated MMIO registers.
-type Registers = MMIODerefWrapper<RegisterBlock>;
-
-pub struct GPIO {
-    registers: Registers,
-}
-
-impl GPIO {
-    pub const unsafe fn new(mmio_start_addr: usize) -> Self {
-        Self {
-            registers: Registers::new(mmio_start_addr),
-        }
-    }
-    pub fn map_mini_uart(&mut self) {
-        self.registers
+pub fn map_mini_uart() {
+    let regs = memory::map::mmio::GPIO_START as *const RegisterBlock;
+    unsafe {
+        (*regs)
             .GPFSEL1
             .modify(GPFSEL1::FSEL15::AltFunc5 + GPFSEL1::FSEL14::AltFunc5);
-        self.disable_pud_14_15();
     }
-    fn disable_pud_14_15(&mut self) {
-        use crate::cpu;
+    disable_pud_14_15()
+}
 
-        const DELAY: usize = 150;
-        self.registers.GPPUD.write(GPPUD::PUD::Off);
+fn disable_pud_14_15() {
+    use crate::cpu;
+    let regs = memory::map::mmio::GPIO_START as *const RegisterBlock;
+    const DELAY: usize = 150;
+    unsafe {
+        (*regs).GPPUD.write(GPPUD::PUD::Off);
         cpu::spin_for_cycles(DELAY);
-
-        self.registers
+        (*regs)
             .GPPUDCLK0
             .write(GPPUDCLK0::PUDCLK15::AssertClock + GPPUDCLK0::PUDCLK14::AssertClock);
         cpu::spin_for_cycles(DELAY);
-
-        self.registers.GPPUD.write(GPPUD::PUD::Off);
-        self.registers.GPPUDCLK0.set(0);
+        (*regs).GPPUD.write(GPPUD::PUD::Off);
+        (*regs).GPPUDCLK0.set(0);
     }
 }

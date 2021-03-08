@@ -1,4 +1,4 @@
-use crate::{bsp::common::MMIODerefWrapper, cpu};
+use crate::{cpu, gpio, memory};
 use register::{mmio::*, register_bitfields, register_structs};
 
 register_bitfields! {
@@ -83,50 +83,50 @@ register_structs! {
     }
 }
 
-/// Abstraction for the associated MMIO registers.
-type Registers = MMIODerefWrapper<RegisterBlock>;
-
-pub struct MINIUART {
-    registers: Registers,
-}
-
-impl MINIUART {
-    pub const unsafe fn new(mmio_start_addr: usize) -> Self {
-        Self {
-            registers: Registers::new(mmio_start_addr),
-        }
-    }
-    pub fn init(&mut self) {
-        self.registers.AUXENB.modify(AUXENB::MINI_UART::Off);
-        self.registers
+pub fn init_uart() {
+    let regs = memory::map::mmio::MINI_UART_START as *const RegisterBlock;
+    unsafe {
+        (*regs).AUXENB.modify(AUXENB::MINI_UART::Off);
+        (*regs)
             .AUX_MU_CNTL
             .modify(AUX_MU_CNTL::RX_ENB::Off + AUX_MU_CNTL::RX_ENB::Off);
-        self.registers
-            .AUX_MU_LCR
-            .modify(AUX_MU_LCR::DSIZE::EightBit);
-        self.registers.AUX_MU_MCR.modify(AUX_MU_MCR::RTS::High);
-        self.registers.AUX_MU_IER.set(0);
-        self.registers.AUX_MU_IIR.modify(AUX_MU_IIR::FIFO_ENB::Off);
-        self.registers
-            .AUX_MU_BAUD
-            .modify(AUX_MU_BAUD::BAUD::Rate115200);
-        self.registers
+        (*regs).AUX_MU_LCR.modify(AUX_MU_LCR::DSIZE::EightBit);
+        (*regs).AUX_MU_MCR.modify(AUX_MU_MCR::RTS::High);
+        (*regs).AUX_MU_IER.set(0);
+        (*regs).AUX_MU_IIR.modify(AUX_MU_IIR::FIFO_ENB::Off);
+        (*regs).AUX_MU_BAUD.modify(AUX_MU_BAUD::BAUD::Rate115200);
+        gpio::map_mini_uart();
+        (*regs)
             .AUX_MU_CNTL
             .modify(AUX_MU_CNTL::RX_ENB::On + AUX_MU_CNTL::RX_ENB::On);
     }
-    pub fn write_str(&mut self, s: &str) {
-        for c in s.chars() {
-            self.write_char(c);
-        }
-    }
-    fn write_char(&mut self, c: char) {
-        while self
-            .registers
-            .AUX_MU_LSR
-            .matches_all(AUX_MU_LSR::TX_EMPTY::False)
-        {
+}
+pub fn read_char() -> char {
+    let regs = memory::map::mmio::MINI_UART_START as *const RegisterBlock;
+    unsafe {
+        while (*regs).AUX_MU_LSR.matches_all(AUX_MU_LSR::RX_RDY::False) {
             cpu::nop();
         }
-        self.registers.AUX_MU_IO.set(c as u32);
+        let c: char = (*regs).AUX_MU_IO.get() as u8 as char;
+        if c == '\r' {
+            return '\n';
+        }
+        return c;
     }
 }
+
+pub fn write_char(c: char) {
+    let regs = memory::map::mmio::MINI_UART_START as *const RegisterBlock;
+    unsafe {
+        while (*regs).AUX_MU_LSR.matches_all(AUX_MU_LSR::TX_EMPTY::False) {
+            cpu::nop();
+        }
+        (*regs).AUX_MU_IO.set(c as u32);
+    }
+}
+
+// pub fn write_str(s: &str) {
+//     for c in s.chars() {
+//         write_char(c);
+//     }
+// }
