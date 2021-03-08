@@ -31,7 +31,7 @@ void shell_start ()
 
 enum SPECIAL_CHARACTER parse ( char c )
 {
-    if (c == '\177') // back space
+    if (c == '\177') // back space. TODO: Maybe compare with '\r' is better to read
         return BACK_SPACE;
         
     if ( !(c < 128 && c >= 0) )
