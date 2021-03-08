@@ -7,6 +7,11 @@ IDIR = include
 SDIR = src
 BDIR = build
 
+ROOTFS = rootfs
+MOUNT_DIR = sd_mount
+SDB = /dev/sdb1
+INITRAMFS = initramfs.cpio
+
 CFLAGS = -Wall -I $(IDIR) -g -ffreestanding
 
 S_SRCS = $(wildcard $(SDIR)/*.S)
@@ -22,7 +27,7 @@ KN = kernel8
 
 .PHONY: clean all
 
-all: $(BL).img $(KN).elf
+all: $(BDIR) $(BL).img $(KN).elf $(INITRAMFS)
 
 %.img: %.elf
 	$(OBJCOPY) -O binary $< $@
@@ -48,13 +53,22 @@ run: all
 debug: all
 	qemu-system-aarch64 -M raspi3 -kernel $(BL).img -serial null -serial "pty" -display none -S -s
 
-burn: all
-	lsblk | grep sdb1 > /dev/null && \
-	sudo mount /dev/sdb1 sd_mount && \
-	sudo cp $(BL).img sd_mount/kernel8.img && \
-	sudo umount sd_mount 
+burn: $(SDB) $(MOUNT_DIR) all
+	sudo mount $(SDB) $(MOUNT_DIR) && \
+	sudo cp $(BL).img $(MOUNT_DIR)/kernel8.img && \
+	sudo umount $(MOUNT_DIR) 
 
-genfs:
-	cd rootfs && \
-	find . | cpio -o -H newc > ../initramfs.cpio && \
+$(MOUNT_DIR):
+	mkdir $(MOUNT_DIR)
+
+$(ROOTFS):
+	mkdir $(ROOTFS)
+	echo "test" > $(ROOTFS)/test.txt
+
+$(INITRAMFS): $(ROOTFS)
+	cd $(ROOTFS) && \
+	find . | cpio -o -H newc > ../$(INITRAMFS) && \
 	cd ..
+
+$(BDIR):
+	mkdir $(BDIR)
