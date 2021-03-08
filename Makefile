@@ -1,17 +1,31 @@
+# OSC 2021, check https://github.com/GrassLab/osc2021
+
+# set build parameters
+LANG ?= c # defualt set to C, use `LANG=rust make` to change implementation language
+ENV ?= release # default set to release mode, use `ENV=debug make` to change to debug mode
+
+ifeq ($(LANG), rust)
+	SRC_ROOT=rust-impl
+else
+	SRC_ROOT=c-impl
+endif
+
 CC=clang
-CFLAGS=-mcpu=cortex-a53 --target=aarch64-rpi3-elf -Wall -nostdinc -nostdlib
-#CFLAGS+=-g -O0
+CFLAGS=-mcpu=cortex-a53 --target=aarch64-rpi3-elf -Wall -nostdinc -nostdlib -I $(SRC_ROOT)/include
+ifeq ($(ENV), debug)
+	CFLAGS+=-g -O0
+endif
 
 #LD=aarch64-linux-gnu-ld
 LD=ld.lld
-LDFLAGS+=-m aarch64elf -nostdlib -T $(LINKER_SCRIPT)
+LDFLAGS+=-m aarch64elf -nostdlib -L $(SRC_ROOT)/lib
 
 OBJCPY=llvm-objcopy
 OBJCPYFLAGS=--output-target=aarch64-rpi3-elf -O binary
 
 IMAGE=kernel8.img
 ELF_FILE=kernel8.elf
-OBJ_FILES=boot.o kernel.o
+OBJ_FILES=boot/boot.o $(SRC_ROOT)/kernel.o $(SRC_ROOT)/lib/util.o $(SRC_ROOT)/lib/shell.o $(SRC_ROOT)/lib/mmio.o
 
 LINKER_SCRIPT=linker.lds
 
@@ -28,11 +42,9 @@ $(IMAGE): %.img: %.elf
 	$(OBJCPY) $(OBJCPYFLAGS) $< $@
 
 elf: $(ELF_FILE)
-$(ELF_FILE): $(OBJ_FILES)
+$(ELF_FILE): $(OBJ_FILES) $(LINKER_SCRIPT)
 # Linke elf file from object file
-# TODO: Add $(LINKER_SCRIPT) as pre-request so that
-# if it is modified, the target will re-run.
-	$(LD) $(LDFLAGS) -o $@ $^
+	$(LD) $(LDFLAGS) -T $(LINKER_SCRIPT) -o $@ $(filter-out $(LINKER_SCRIPT), $^)
 
 obj: $(OBJ_FILES)
 %.o: %.S
