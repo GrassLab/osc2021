@@ -45,14 +45,14 @@ register_bitfields! {
     GPPUDCLK0 [
         /// Pin 15
         PUDCLK15 OFFSET(15) NUMBITS(1) [
-            NoEffect = 0,
-            AssertClock = 1
+            NoEffect = 0b0,
+            AssertClock = 0b1
         ],
 
         /// Pin 14
         PUDCLK14 OFFSET(14) NUMBITS(1) [
-            NoEffect = 0,
-            AssertClock = 1
+            NoEffect = 0b0,
+            AssertClock = 0b1
         ]
     ]
 
@@ -62,6 +62,7 @@ register_structs! {
     #[allow(non_snake_case)]
     RegisterBlock {
         (0x04 => GPFSEL1: ReadWrite<u32, GPFSEL1::Register>),
+        (0x08 => _reserved1),
         (0x94 => GPPUD: ReadWrite<u32, GPPUD::Register>),
         (0x98 => GPPUDCLK0: ReadWrite<u32, GPPUDCLK0::Register>),
         (0xA0 => @END),
@@ -70,26 +71,19 @@ register_structs! {
 
 pub fn map_mini_uart() {
     let regs = memory::map::mmio::GPIO_START as *const RegisterBlock;
+    const DELAY: usize = 200;
+    use crate::cpu;
+
     unsafe {
         (*regs)
             .GPFSEL1
             .modify(GPFSEL1::FSEL15::AltFunc5 + GPFSEL1::FSEL14::AltFunc5);
-    }
-    disable_pud_14_15()
-}
-
-fn disable_pud_14_15() {
-    use crate::cpu;
-    let regs = memory::map::mmio::GPIO_START as *const RegisterBlock;
-    const DELAY: usize = 150;
-    unsafe {
-        (*regs).GPPUD.write(GPPUD::PUD::Off);
+        (*regs).GPPUD.modify(GPPUD::PUD::Off);
         cpu::spin_for_cycles(DELAY);
         (*regs)
             .GPPUDCLK0
             .write(GPPUDCLK0::PUDCLK15::AssertClock + GPPUDCLK0::PUDCLK14::AssertClock);
         cpu::spin_for_cycles(DELAY);
-        (*regs).GPPUD.write(GPPUD::PUD::Off);
         (*regs).GPPUDCLK0.set(0);
     }
 }
