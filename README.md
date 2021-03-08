@@ -22,7 +22,7 @@ qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio
 | --------------| ----------------------------------------------------- | 
 | gpio.h        | some gpio config                                      |
 | main.c        | main program                                          |
-| myshell.c(.h) | code for control the shell behave                     |
+| myshell.c(.h) | code for control the shell behavior                   |
 | uart.c(.h)    | code for uart opertaion                               |
-| link.ld       | linker script                                         |
+| linker.ld     | linker script                                         |
 | start.S       | startup program                                       |
