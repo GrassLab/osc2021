@@ -1,0 +1,40 @@
+#! /usr/bin/python3
+import os
+import time
+import serial#pyserial
+
+def dumpImg(dev,k_addr='0xa0000',kernel='kernel8.img'):
+	k_size=os.stat(kernel).st_size
+
+	dev.write(str.encode(k_addr+'\n'))
+	dev.write(str.encode(str(k_size)+'\n'))
+	with open(kernel,"rb") as f:
+		data=f.read(k_size)
+		dev.write(data)
+		if len(data)!=k_size:
+			print('Error: dumpImg().')
+
+if __name__=='__main__':
+	src=input('src?')
+	br=115200
+	dev=serial.Serial(src,br)
+
+	test_case='./input'
+	f=open(test_case,'r')
+	while True:
+		#input
+		cmd=f.readline()
+		if cmd=='':
+			break
+		dev.write(str.encode(cmd))
+		if cmd=='loadimg\n':
+			dumpImg(dev)
+
+		#output
+		while True:
+			time.sleep(1)#wait for transmission
+			cnt=dev.inWaiting()
+			if cnt>0:
+				print(dev.read(cnt).decode(),end='')
+			else:
+				break
