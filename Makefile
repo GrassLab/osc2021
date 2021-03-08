@@ -1,23 +1,25 @@
 CC = aarch64-linux-gnu-gcc
-CFLAG = -fPIC -fno-stack-protector -nostdlib -nostartfiles -ffunction-sections
+CFLAG = -fPIC -Iinclude -fno-stack-protector -nostdlib -nostartfiles -ffunction-sections
 SF =
 ifndef SF
 	SF=start.S
 endif
-SRCS = $(wildcard *.c)
+SRC_DIR = src/
+SRCS = $(wildcard $(SRC_DIR)*.c)
 OBJS = $(SRCS:.c=.o)
 all:clean kernel8.img
 
-s.o:$(SF)
-	$(CC) $(CFLAG) -c $(SF) -o s.o
+start.o: $(SRC_DIR)start.S
+	$(CC) $(CFLAG) -c $< -o $@
 %.o: %.c
 	aarch64-linux-gnu-gcc $(CFLAG) -c $< -o $@
 
-kernel8.img: s.o $(OBJS)
-	aarch64-linux-gnu-ld s.o $(OBJS) -T linker.ld -nostdlib -o kernel8.elf
+kernel8.img: $(SRC_DIR)start.o $(OBJS)
+	aarch64-linux-gnu-ld $(SRC_DIR)start.o $(OBJS) -T $(SRC_DIR)linker.ld -nostdlib -o kernel8.elf
 	aarch64-linux-gnu-objcopy -O binary kernel8.elf kernel8.img
 	
 clean:
+	-rm $(SRC_DIR)*.o
 	-rm kernel8.elf kernel8.img
 
 test:
