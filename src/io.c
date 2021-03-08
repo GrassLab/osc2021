@@ -75,7 +75,8 @@ void gets_n(char *buffer, unsigned int max_length) {
 */
 
 
-// modified for pwntools interactive
+// modified for pwntools serial
+
 void putc(char c) {
   uart_put_raw((unsigned int)(c));
 }

@@ -22,7 +22,7 @@ void shell() {
 }
 
 void kernel() {
-  puts("\rLab 2:\n");
+  puts("Lab 2:\n");
   while (1) {
     shell();
   }

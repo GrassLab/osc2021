@@ -1,4 +1,5 @@
 #include "util.h"
+
 #include "io.h"
 
 extern void _halt();
@@ -21,7 +22,9 @@ void wait_clock(unsigned int t) {
     ;
 }
 
-void system_error(const char * msg) {
+void system_error(const char *msg) {
+  puts("Error :");
   puts(msg);
+  puts("\n");
   _halt();
 }

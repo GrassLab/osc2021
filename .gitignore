@@ -3,3 +3,6 @@
 ref
 .vscode
 build
+rootfs
+__pycache__
+initramfs.cpio
