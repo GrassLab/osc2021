@@ -1,0 +1,67 @@
+.section ".text.boot"
+
+.global _start
+
+_start:
+    // read cpu id, stop slave cores
+    // read the content of mpidr_el1, indicating the core number, into x1
+    mrs     x1, mpidr_el1
+    // keep only the first and the second bit
+    and     x1, x1, #3
+    // jump to label 2 if x1 is zero
+    cbz     x1, 2f
+    // cpu id > 0, stop
+    // wfe puts the core into a low-power standby mode
+1:  wfe
+    // an infinity loop forms here
+    b       1b
+2:  // cpu id == 0
+
+/*    ldr     x1, =0x80000
+    ldr     x2, _loader_size
+    ldr     w1, _loader_block
+    // x2 = x1 - x2
+    subs    x2, x1, x2
+    // load code from the old address into x3
+    // and put it back to the new address
+1:  ldr     x3, [x1], #8
+    str     x3, [x2], #8
+    sub     w1, w1, #1
+    // loop again if size still > 0
+    cbnz    w1, 1b */
+
+    // relocate our code from load address to link address
+    ldr     x1, =0x80000
+    ldr     x2, =_start
+    ldr     w3, =_loader_size
+1:  ldr     x4, [x1], #8
+    str     x4, [x2], #8
+    sub     w3, w3, #1
+    cbnz    w3, 1b
+
+    // set stack before our code
+    // ldr loads data from memory to register, which is _start here
+    ldr     x1, =_start
+    mov     sp, x1
+
+    // clear bss
+    ldr     x1, =_bss_start
+    ldr     w2, =_bss_size
+3:  cbz     w2, 4f
+    # set the content x1 points to as zero
+    # and x1 = x1 + 8
+    str     xzr, [x1], #8
+    # w2 = w2 - 1
+    sub     w2, w2, #1
+    cbnz    w2, 3b
+
+    // jump to C code, should not return
+    // bl is to branch with the address of the next instruction saved, 
+    // whereas b is to simply branch and will not return
+/*4:  ldr     x1, =main
+    ldr     x2, =_loader_size
+    subs    x1, x1, x2
+    blr     x1*/
+4:  bl      main - 2048
+    // for failsafe, halt this core too
+    b       1b
