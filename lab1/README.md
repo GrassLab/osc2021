@@ -8,16 +8,15 @@
 
 ## How to build
 
-make
+**WIP**
 
+## How to run
 
-## How to run (qemu)
-
-make run 
+**WIP**
 
 ## How to burn it into pi3
 
-manullay clone .img file into sd card 
+**WIP**
 
 ## Architecture
 
@@ -25,3 +24,4 @@ manullay clone .img file into sd card
 
 ## Directory structure
 
+**WIP**
