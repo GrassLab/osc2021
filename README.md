@@ -14,7 +14,7 @@
     * [Branch](https://github.com/andykuo8766/osc2021/tree/LAB-01)
     * [Release]
 * **Lab 2: Bootloader**
-    * [Branch]
+    * [Branch](https://github.com/andykuo8766/osc2021/tree/LAB-02)
     * [Release]
 * **Lab 3: Exception and Interrupt**
     * [Branch]
