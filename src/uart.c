@@ -1,6 +1,6 @@
 #include "gpio.h"
 #include "aux.h"
-#include "util.h"
+#include "utils.h"
 
 void uart_init() {
     register unsigned int r = *GPFSEL1;
@@ -43,16 +43,4 @@ void print(const char *s) {
         }
         uart_putc(*s++);
     }
-}
-
-void get(char *s) {
-    char c = uart_getc();
-    while (c != '\n') {
-        uart_putc(c);
-        *s = c;
-        s++;
-        c = uart_getc();
-    }
-    *s = '\0';
-    print("\n");
 }

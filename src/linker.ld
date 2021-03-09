@@ -14,7 +14,7 @@ SECTIONS
 	{
 		*(.data)
 	}
-	.bss ALIGN(16) (NOLOAD):
+	.bss ALIGN(8) (NOLOAD):
 	{
 		_bss_start = .;
 		*(.bss)
