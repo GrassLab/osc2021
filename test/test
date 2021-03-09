@@ -3,7 +3,7 @@ import os
 import time
 import serial#pyserial
 
-def dumpImg(dev,k_addr='0xa0000',kernel='kernel8.img'):
+def dumpImg(dev,k_addr='0xa0000',kernel='kernel87.img'):
 	k_size=os.stat(kernel).st_size
 
 	dev.write(str.encode(k_addr+'\n'))
@@ -28,7 +28,9 @@ if __name__=='__main__':
 			break
 		dev.write(str.encode(cmd))
 		if cmd=='loadimg\n':
-			dumpImg(dev,k_addr='0x80000',kernel='kernel8.img')
+			k_addr=f.readline()
+			kernel=f.readline()
+			dumpImg(dev,k_addr=k_addr[:-1],kernel=kernel[:-1])
 			#dumpImg()
 
 		#output

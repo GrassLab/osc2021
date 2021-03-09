@@ -5,12 +5,12 @@
 #define min(a,b) ((a)<(b)?(a):(b))
 
 void moveImg(){//should use register
-	asm volatile("cbz x14, endcopy		\n"::);
+	asm volatile("cbz x14, endmove		\n"::);
 	asm volatile("ldrb w0, [x13], #1	\n"::);
 	asm volatile("strb w0, [x12], #1	\n"::);
 	asm volatile("sub x14, x14, #1		\n"::);
 	asm volatile("br x10				\n"::);
-	asm volatile("endcopy:				\n"::);
+	asm volatile("endmove:				\n"::);
 	asm volatile("br x11				\n"::);
 }
 
@@ -57,7 +57,7 @@ void loadImg(){
 	}else{//overlape
 		unsigned long tmp_addr=min(c_addr,k_addr)-(c_size+k_size);
 		unsigned char* target=(unsigned char*)tmp_addr;
-		for(int i=0;i<c_size;++i){//old prog
+		for(int i=0;i<c_size;++i){//cur prog
 			*target=((unsigned char*)c_addr)[i];
 			target++;
 		}
@@ -68,7 +68,7 @@ void loadImg(){
 
 		uart_puts("moving...\n");
 		unsigned long delta=c_addr-tmp_addr;
-		asm volatile("mov x10, %0	\n"::"r"((unsigned long)moveImg-delta));//location of copy-loop
+		asm volatile("mov x10, %0	\n"::"r"((unsigned long)moveImg-delta));//copy-loop address
 		asm volatile("mov x11, %0	\n"::"r"(k_addr));//load address
 		asm volatile("mov x12, %0	\n"::"r"(k_addr));//copy dst
 		asm volatile("mov x13, %0	\n"::"r"(tmp_addr+c_size));//copy src
