@@ -5,8 +5,6 @@
 use core::panic::PanicInfo;
 
 mod cpu;
-mod gpio;
-mod memory;
 mod uart;
 
 global_asm!(include_str!("boot.S"));
@@ -20,7 +18,7 @@ fn panic(_info: &PanicInfo) -> ! {
 pub unsafe fn main() -> ! {
     uart::init_uart();
     loop {
-        let c = uart::read_char();
-        uart::write_char(c);
+        let c = uart::getc();
+        uart::send(c);
     }
 }

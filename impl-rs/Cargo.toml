@@ -1,6 +1,6 @@
 [package]
 authors = ["Ian Chen <ianre657@gmail.com>"]
-edition = "2018"
+edition = "2021"
 name = "kernel"
 version = "0.1.0"
 
@@ -8,4 +8,3 @@ version = "0.1.0"
 
 [dependencies]
 cortex-a = {version = "5.x.x"}
-register = {version = "1.x.x"}

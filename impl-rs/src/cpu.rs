@@ -8,11 +8,3 @@ pub fn spin_for_cycles(n: usize) {
         asm::nop();
     }
 }
-
-/// Pause execution on the core.
-#[inline(always)]
-pub fn wait_forever() -> ! {
-    loop {
-        asm::wfe()
-    }
-}
