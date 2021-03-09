@@ -2,7 +2,7 @@ _stack_size = 0xA00;
 
 SECTIONS
 {
- . = 0x80000;
+ . = 0x60000;
  __start_addr = .;
  .text : { 
 	*( .text)  

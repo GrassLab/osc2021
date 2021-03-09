@@ -5,13 +5,14 @@ extern char __end[];
 #define TMP_ADDR ((char)(0x100000))
 
 void bootloader_loadimg(){
-    copy_bootloader();
-    uart_puts("Copy bootloader done.\r\n");
-    uart_puts("Send new kernel through uart\r\n");
-    void (*func_ptr)() = load_new_kernel;
-    unsigned long int func_addr = (unsigned long int)func_ptr;
-    void (*function_call)(void) = (void (*)(void))(func_addr - (unsigned long int)__start_addr + TMP_ADDR);
-    function_call();
+    // copy_bootloader();
+    // uart_puts("Copy bootloader done.\r\n");
+    // uart_puts("Send new kernel through uart\r\n");
+    // void (*func_ptr)() = load_new_kernel;
+    // unsigned long int func_addr = (unsigned long int)func_ptr;
+    // void (*function_call)(void) = (void (*)(void))(func_addr - (unsigned long int)__start_addr + TMP_ADDR);
+    // function_call();
+    load_new_kernel();
 }
 void copy_bootloader(){
     // move self(bootloader) to TMP_ADDR
