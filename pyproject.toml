@@ -1,0 +1,18 @@
+[tool.poetry]
+authors = ["Ian Chen <ianre657@gmail.com>"]
+description = "tools for osc"
+license = "MIT"
+name = "osc"
+version = "0.1.0"
+
+[tool.poetry.dependencies]
+pyserial = "^3.5"
+python = "^3.8"
+rich = "^9.13.0"
+
+[tool.poetry.dev-dependencies]
+black = {version = "^20.8b1", allow-prereleases = true}
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0"]
