@@ -11,7 +11,6 @@ ASM := $(wildcard */*.S)
 ELF = $(BUILD_DIR)/kernel.elf
 OBJ := $(patsubst %.S, %.o, $(ASM)) $(patsubst %.c, %.o, $(SRC))
 IMG = $(BUILD_DIR)/kernel8.img
-
 .PHONY: all clean run dump debug
 
 all: $(IMG)

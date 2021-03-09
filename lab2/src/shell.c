@@ -37,37 +37,35 @@ void do_command(char* command) {
   else if(strncmp(command, "reboot", 7) == 0) {
     reset(100);
   }
-  else if(strncmp(command, "loadimg ", 7) == 0) {
-    loadimg(strtol(command + 8, 0, 16));
+  else if(strncmp(command, "loadimg", 7) == 0) {
+    loadimg();
   }
   else {
     uart_puts("unknown command\n");
   }	
 }
 
-void loadimg(size_t load_address) {
-  uart_puts("Load image at 0x");
-  uart_hex(load_address);
+void loadimg() {
+  size_t load_address;
   char buf[9]; 
   size_t img_size;
-  //uart_read(buf, 8);
+  //read load address
+  uart_puts("Input the address to load image(0x): ");
+  uart_readline(buf, 8);
+  load_address = strtol(buf, 0, 16);
+  uart_puts("\nLoad image at: 0x");
+  uart_hex(load_address);
   //read size
+  uart_puts("\nInput the image size(0x): ");
   uart_read(buf, 8);
   buf[8] = '\0';
-  //uart_puts("buffer: ");
-  //uart_puts(buf);
   img_size = strtol(buf, 0, 16);
-  /*for(int i = 0; i < 8; i++) {
-    uart_send((unsigned int)*(&img_size+i)); 
-  }*/
-  uart_puts("\nimage size: ");
+  uart_puts("\nimage size: 0x");
   uart_hex(img_size);
-  uart_puts("\n");
   //read kernel img 
- 
   uart_puts("\nLoad image...\n");
   uart_read((char* )load_address, img_size);
-  uart_puts("\nJump to address...");
+  uart_puts("\nJump to address...\n");
   asm volatile("mov sp, %0" ::"r"(load_address));
   ((void (*)(void))(load_address))();
 }

@@ -81,3 +81,21 @@ size_t uart_read(char* buf, size_t count) {
   }
   return i;
 }
+
+size_t uart_readline(char* buf, size_t count) {
+  size_t i;
+  char c;
+  for(i = 0; i < count; i++) {
+    c = uart_getc();
+    if(c =='\n' || c == '\r') {
+      uart_send('\n');
+      uart_send('\r');
+      i++;
+      break;
+    } 
+    uart_send(c);
+    buf[i] = c;
+  }
+  buf[i] = '\0';
+  return i;
+}

@@ -6,5 +6,5 @@
 #include <types.h>
 void shell();
 void do_command(char* command);
-void loadimg(size_t load_address);
+void loadimg();
 #endif

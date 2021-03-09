@@ -10,13 +10,18 @@ SECTIONS
   {
   	*(.data)
   }
-
-  . = ALIGN(0x8);
-
-  _bss_begin = .;
-  .bss : {
-  	*(.bss)
+  .rodata : 
+  {
+    *(.rodata)
   }
-  _bss_end = .;
+  .bss ALIGN(0x10) : 
+  {
+    _bss_begin = .; 
+  	*(.bss)
+    _bss_end = .;
+  }
+
+  
+  
 
 }
