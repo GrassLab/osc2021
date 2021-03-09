@@ -6,12 +6,19 @@
 #define TRANSMIT_INT_ENABLE_BIT (1 << 1)
 #define RECEIVE_INT_ENABLE_BIT (1 << 0)
 
-/* terminal send \x0d instead of \x0a */ 
+/* terminal send \x0d instead of \x0a */
 #define NEWLINE '\r'
 
 void mini_uart_init() {
+    int r;
     *GPFSEL1 &= 0xfffc0fff;
-    *GPFSEL1 |= 0x0001a000;
+    *GPFSEL1 |= 0x00012000;
+
+    *GPPUD = 0;
+    r = 150; while(r--);
+    *GPPUDCLK0 = (1 << 14) | (1 << 15);
+    r = 150; while(r--);
+    *GPPUDCLK0 = 0;
 
     *AUXENB = 1;
     *AUX_MU_CNTL_REG = 0;
@@ -23,12 +30,12 @@ void mini_uart_init() {
     *AUX_MU_CNTL_REG = 3;
 
     /* enable transmit/receive interrupt */
-    *AUX_MU_IER_REG = RECEIVE_INT_ENABLE_BIT | TRANSMIT_INT_ENABLE_BIT;
-    *INPUT_ENABLE_REGISTER_1 = AUX_INT_ENABLE_BIT;
+    //*AUX_MU_IER_REG = RECEIVE_INT_ENABLE_BIT | TRANSMIT_INT_ENABLE_BIT;
+    //*INPUT_ENABLE_REGISTER_1 = AUX_INT_ENABLE_BIT;
 }
 
 void __wfe() {
-    asm("wfe");
+    //asm("wfe");
 }
 
 /* TODO: wfe not work ? */
@@ -61,7 +68,7 @@ void write_uart(const char *buffer, int count) {
 
 void writeline_uart(const char *buffer, int count) {
     write_uart(buffer, count);
-    write_uart("\n", 1);
+    write_uart("\n\r", 2);
 }
 
 int interact_readline_uart(char *buffer) {
@@ -74,7 +81,7 @@ int interact_readline_uart(char *buffer) {
         if (c != NEWLINE) {
             write_uart(&c, 1);
         } else {
-            write_uart("\n", 1);
+            write_uart("\n\r", 2);
         }
     }
 
@@ -91,5 +98,5 @@ void puts_uart(const char *buffer) {
         *(char *)AUX_MU_IO_REG = buffer[i];
         i++;
     }
-    write_uart("\n", 1);
+    write_uart("\n\r", 2);
 }

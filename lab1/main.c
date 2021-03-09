@@ -17,6 +17,7 @@ int strcmp(const char *a, const char *b) {
 }
 
 void shell() {
+  mini_uart_init();
   for (;;) {
     write_uart("> ", 2);
     interact_readline_uart(buffer);

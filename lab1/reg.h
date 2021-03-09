@@ -22,5 +22,8 @@
 /* GPIO Memory Map */
 #define GPIO            ((__REG_TYPE) 0x3f200000)
 #define GPFSEL1         ((__REG) (GPIO + 0x4))
+#define GPPUD           ((__REG) (GPIO + 0x94))
+#define GPPUDCLK0       ((__REG) (GPIO + 0x98))
+
 
 #endif
