@@ -1,15 +1,17 @@
 #include "system.h"
 #include "string.h"
 #include "uart.h"
+#include "bootloader.h"
 
 struct cmd{
     char input[20];
     void(*callback)(void);
 };
-struct cmd cmd_list[3] = {
+struct cmd cmd_list[SYS_CMD_NUM] = {
     {.input = "help", .callback = sys_help},
     {.input = "hello", .callback = sys_hello},
-    {.input = "reboot", .callback = sys_reboot}
+    {.input = "reboot", .callback = sys_reboot},
+    {.input = "loadimg", .callback = bootloader_loadimg}
 };
 void system_command(char* buf){
     for(int i = 0; i < SYS_CMD_NUM; ++i){

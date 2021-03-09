@@ -3,6 +3,7 @@ _stack_size = 0xA00;
 SECTIONS
 {
  . = 0x80000;
+ __start_addr = .;
  .text : { 
 	*( .text)  
  }
@@ -18,6 +19,7 @@ SECTIONS
  	*(.bss .bss.*)
 	__bss_end = .;
  }
+ 
  .heap : {
 	 . = ALIGN(16);
 	 __heap_top = .;
@@ -29,6 +31,7 @@ SECTIONS
 	. = ALIGN(16);
 	__stack_top = .;
  }
- _end = .;
+ 
+ __end = .;
 }
 __bss_size = (__bss_end - __bss_start) >> 3;

@@ -1,10 +1,10 @@
 #include "shell.h"
-#include "system.h"
-#include "uart.h"
+
 
 void shell_welcome(){
     uart_puts("------------------------\r\n");
-    uart_puts("= Welcome to Raspi3 B+ =\r\n");
+    uart_puts("=       Bootloader     =\r\n");
+    uart_puts("=                      =\r\n");
     uart_puts("= Author: Yuan-Yu Wu   =\r\n");
     uart_puts("------------------------\r\n");
 }

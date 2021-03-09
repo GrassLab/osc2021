@@ -60,3 +60,15 @@ void uart_puts(char *s){
 	uart_send(*s++);
     }
 }
+int uart_get_int(){
+    int res = 0;
+    char c;
+    while(1){
+        c = uart_get();
+        if(c == '\0' || c == '\n')
+            break;
+        uart_send(c);
+        res = res * 10 + (c - '0');
+    }
+    return res;
+}

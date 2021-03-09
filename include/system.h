@@ -4,7 +4,7 @@
 #define PM_RSTC ((volatile unsigned int *)(0x3F10001c))
 #define PM_RSTS ((volatile unsigned int *)(0x3F100020))
 #define PM_WDOG ((volatile unsigned int *)(0x3F100024))
-#define SYS_CMD_NUM 3
+#define SYS_CMD_NUM 4
 
 void system_command(char*);
 void sys_help();

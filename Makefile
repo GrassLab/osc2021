@@ -23,4 +23,10 @@ clean:
 	-rm kernel8.elf kernel8.img
 
 test:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none
+
+run_serial:
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial pty -display none
+
+check:
+	aarch64-linux-gnu-readelf -s kernel8.elf
