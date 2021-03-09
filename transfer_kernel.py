@@ -1,7 +1,6 @@
 # Copyright (C) 2021 IanChen (ianchen-tw@github)
 
 import argparse
-import dataclasses
 import time
 from dataclasses import dataclass
 from typing import Any, Iterable
@@ -15,10 +14,10 @@ from rich.console import Console
 class TypedArgs:
     image: str
     tty: str
+    dry: str
 
     @classmethod
     def parse(cls):
-        fields = [f.name for f in dataclasses.fields(cls)]
         p = argparse.ArgumentParser(description="Send kernel image via tty device")
         p.add_argument(
             "--dry",
@@ -26,12 +25,10 @@ class TypedArgs:
             action="store_true",
             help="dry run, not opening any device at all",
         )
-        for f in fields:
-            p.add_argument(f)
-        _args = p.parse_args()
-        arg = cls(**{f: getattr(_args, f) for f in fields})
-        arg.dry = _args.dry
-        return arg
+        p.add_argument("image")
+        p.add_argument("tty")
+        arg = p.parse_args()
+        return cls(image=arg.image, tty=arg.tty, dry=arg.dry)
 
 
 def main():
