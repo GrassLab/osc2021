@@ -28,7 +28,8 @@ if __name__=='__main__':
 			break
 		dev.write(str.encode(cmd))
 		if cmd=='loadimg\n':
-			dumpImg(dev)
+			dumpImg(dev,k_addr='0x80000',kernel='kernel8.img')
+			#dumpImg()
 
 		#output
 		while True:

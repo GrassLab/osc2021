@@ -2,10 +2,26 @@
 #include "inc/reboot.h"
 #include "inc/mailbox.h"
 
+#define min(a,b) ((a)<(b)?(a):(b))
+
+void moveImg(){//should use register
+	asm volatile("cbz x14, endcopy		\n"::);
+	asm volatile("ldrb w0, [x13], #1	\n"::);
+	asm volatile("strb w0, [x12], #1	\n"::);
+	asm volatile("sub x14, x14, #1		\n"::);
+	asm volatile("br x10				\n"::);
+	asm volatile("endcopy:				\n"::);
+	asm volatile("br x11				\n"::);
+}
+
 void loadImg(){
+	extern unsigned long* __prog_start,__prog_end;
+	unsigned long c_addr,c_size;
+	c_addr=(unsigned long)&__prog_start;
+	c_size=(unsigned long)(&__prog_end)-(unsigned long)(&__prog_start);//include stack
+
 	unsigned long k_addr=0,k_size=0;
 	char c;
-
 	uart_puts("Please enter kernel load address (Hex): ");
 	do{
 		c=uart_getc();
@@ -29,14 +45,36 @@ void loadImg(){
 	uart_printf("%d\n",k_size);
 
 	uart_puts("Please send kernel image now...\n");
-	unsigned char* target=(unsigned char*)k_addr;
-	while(k_size--){
-		*target=uart_getb();
-		target++;
-	}
+	if(c_addr>k_addr+k_size||c_addr+c_size<k_addr){//no overlape
+		unsigned char* target=(unsigned char*)k_addr;
+		while(k_size--){
+			*target=uart_getb();
+			target++;
+		}
 
-	uart_puts("loading...\n");
-	((void (*)(void))k_addr)();
+		uart_puts("loading...\n");
+		asm volatile("br %0\n"::"r"(k_addr));
+	}else{//overlape
+		unsigned long tmp_addr=min(c_addr,k_addr)-(c_size+k_size);
+		unsigned char* target=(unsigned char*)tmp_addr;
+		for(int i=0;i<c_size;++i){//old prog
+			*target=((unsigned char*)c_addr)[i];
+			target++;
+		}
+		for(int i=0;i<k_size;++i){//new prog
+			*target=uart_getb();
+			target++;
+		}
+
+		uart_puts("moving...\n");
+		unsigned long delta=c_addr-tmp_addr;
+		asm volatile("mov x10, %0	\n"::"r"((unsigned long)moveImg-delta));//location of copy-loop
+		asm volatile("mov x11, %0	\n"::"r"(k_addr));//load address
+		asm volatile("mov x12, %0	\n"::"r"(k_addr));//copy dst
+		asm volatile("mov x13, %0	\n"::"r"(tmp_addr+c_size));//copy src
+		asm volatile("mov x14, %0	\n"::"r"(k_size));//copy size
+		asm volatile("br x10		\n"::);
+	}
 }
 
 void shell(){
