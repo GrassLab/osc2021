@@ -1,30 +1,32 @@
 SECTIONS
 {
-    . = 0x80000;
-    .text :
-    {
-        *(.text._start) *(.text*)
-    }
-
-    .rodata :
-    {
-        *(.rodata*)
-    }
-
-    .data :
-    {
-        *(.data*)
-    }
-
-    .bss ALIGN(8):
-    {
-        __bss_start = .;
-        *(.bss*);
-        . = ALIGN(8);
-        /* Fill for the bss == 0 case, so that __bss_start <= __bss_end_inclusive holds */
-        . += 8;
-        __bss_end_inclusive = . - 8;
-    }
-
-    /DISCARD/ : { *(.comment*) }
+  /*
+    0x80000 is the default address where the kernel image would be loaded into memory
+    (for 64bit machine), this address could be modified by varaible `kernel_address` in config.txt
+    see: https://www.raspberrypi.org/documentation/configuration/config-txt/boot.md
+    for more information
+  */
+  . = 0x80000;
+  .text :
+  {
+    *(.text.boot) *(.text*)
+  }
+  .rodata :
+  {
+    *(.rodata*)
+  }
+  .data :
+  {
+    *(.data*)
+  }
+  .bss ALIGN(16) (NOLOAD) :
+  {
+    __bss_start = .;
+    *(.bss*);
+    __bss_end = .;
+  }
+  _end = .;
+  /DISCARD/ : { *(.comment*) }
 }
+__bss_size = (__bss_end - __bss_start) >> 3;
+__stack_top = _start;
