@@ -12,17 +12,19 @@ endif
 CC := $(CROSS_COMPILE)gcc
 KERNEL_CFLAGS = -mcpu=cortex-a53 \
 	-fno-common -ffreestanding -O0 \
+	-fdata-sections -ffunction-sections \
 	-Wall -Werror \
-	-Wl,-Tkernel/linker.ld -nostartfiles
+	-Wl,-Tkernel/linker.ld,--gc-sections -nostartfiles
 
 BOOTLOADER_CFLAGS = -mcpu=cortex-a53 \
 	-fno-common -ffreestanding -O0 \
+	-fdata-sections -ffunction-sections \
 	-Wall -Werror \
-	-Wl,-Tbootloader/linker.ld -nostartfiles
+	-Wl,-Tbootloader/linker.ld,--gc-sections -nostartfiles
 
 .PHONY: all run gen_cpio clean
 
-all: kernel8.img bootloader.img
+all: kernel8.img bootloader.img gen_cpio
 
 # TODO: make it more efficient
 kernel8.img: kernel/startup.S kernel/main.c lib/*.c
