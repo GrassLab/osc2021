@@ -1,3 +1,4 @@
-with open('/dev/pts/4', 'wb', buffering = 0) as tty:
-    with open('./build/kernel8.img', 'rb') as f:
-        tty.write(f.read())
+with open('/dev/pts/5', 'wb', buffering = 0) as tty,  open('./build/kernel8.img', 'rb') as f:
+    tty.write('s'.encode())
+    tty.write(f.read())
+    tty.write('end'.encode())
