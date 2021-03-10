@@ -18,9 +18,8 @@ KERNEL_CFLAGS = -mcpu=cortex-a53 \
 
 BOOTLOADER_CFLAGS = -mcpu=cortex-a53 \
 	-fno-common -ffreestanding -O0 \
-	-fdata-sections -ffunction-sections \
 	-Wall -Werror \
-	-Wl,-Tbootloader/linker.ld,--gc-sections -nostartfiles
+	-Wl,-Tbootloader/linker.ld -nostartfiles
 
 .PHONY: all run gen_cpio clean
 
