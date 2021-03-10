@@ -1,17 +1,18 @@
 ENTRY(_start)
-
 SECTIONS
 {
-  . = 0x60000;
-
+  . = 0x60000;  
+  
   _stext = .;
   .text :
   { 
+    *(.bl_relo)
+    _bl_entry = .;
     *(.text)
     *(.rodata)
   }
   . = ALIGN(0x1000);
-  _stext = .;
+  _etext = .;
 
   _sdata = .;
   .data :
@@ -34,4 +35,6 @@ SECTIONS
 
   . = 0x80000;
   _kernel = .;
+
+  _blsize = _ebss - _stext;
 }
