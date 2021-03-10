@@ -42,7 +42,7 @@ void __wfe() {
 void read_uart(char *buffer, int count) {
     for (int i = 0; i < count; i++) {
         while (!(*AUX_MU_LSR_REG & DATA_READY_BIT)) __wfe();
-        buffer[count++] = *AUX_MU_IO_REG & 0xff;
+        buffer[i] = *AUX_MU_IO_REG & 0xff;
     }
 }
 
