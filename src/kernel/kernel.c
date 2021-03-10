@@ -4,7 +4,7 @@
 
 void kernel()
 {
-    init_uart();
+    // init_uart(); // init in bootloader
     puts("Welcome!\r\n");
     
     char command[MAX_COMMAND_SIZE];

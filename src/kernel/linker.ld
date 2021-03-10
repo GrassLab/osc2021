@@ -1,9 +1,8 @@
-_stack_top = 0x480000;
+_stack_top = 0x48000;
 
 SECTIONS
 {
     . = 0x80000;
-    .text.boot : { *(.text.boot) }
     .text : { *(.text) }
     .data : 
     {
