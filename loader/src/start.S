@@ -1,72 +1,72 @@
-/*
- * Copyright (C) 2018 bzt (bztsrc@github)
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use, copy,
- * modify, merge, publish, distribute, sublicense, and/or sell copies
- * of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- *
- */
-
 .section ".text.boot"
 
 .global _start
 
 _start:
-    // save arguments in registers (we will need them later for the new kernel)
-    // I choosed x10-x13 because instructions generated from C by gcc does not
-    // touch them. You can check that with "aarch64-elf-objdump -d kernel8.elf"
     mov     x10, x0
     mov     x11, x1
     mov     x12, x2
     mov     x13, x3
-
     // read cpu id, stop slave cores
+    // read the content of mpidr_el1, indicating the core number, into x1
     mrs     x1, mpidr_el1
+    // keep only the first and the second bit
     and     x1, x1, #3
+    // jump to label 2 if x1 is zero
     cbz     x1, 2f
     // cpu id > 0, stop
+    // wfe puts the core into a low-power standby mode
 1:  wfe
+    // an infinity loop forms here
     b       1b
 2:  // cpu id == 0
+
+/*    ldr     x1, =0x80000
+    ldr     x2, _loader_size
+    ldr     w1, _loader_block
+    // x2 = x1 - x2
+    subs    x2, x1, x2
+    // load code from the old address into x3
+    // and put it back to the new address
+1:  ldr     x3, [x1], #8
+    str     x3, [x2], #8
+    sub     w1, w1, #1
+    // loop again if size still > 0
+    cbnz    w1, 1b */
 
     // relocate our code from load address to link address
     ldr     x1, =0x80000
     ldr     x2, =_start
-    ldr     w3, =__loader_size
-1:  ldr     x4, [x1], #8
+    ldr     w3, =_loader_size
+5:  ldr     x4, [x1], #8
     str     x4, [x2], #8
     sub     w3, w3, #1
-    cbnz    w3, 1b
+    cbnz    w3, 5b
 
     // set stack before our code
+    // ldr loads data from memory to register, which is _start here
     ldr     x1, =_start
     mov     sp, x1
 
     // clear bss
-    ldr     x1, =__bss_start
-    ldr     w2, =__bss_size
+    ldr     x1, =_bss_start
+    ldr     w2, =_bss_size
 3:  cbz     w2, 4f
+    # set the content x1 points to as zero
+    # and x1 = x1 + 8
     str     xzr, [x1], #8
+    # w2 = w2 - 1
     sub     w2, w2, #1
     cbnz    w2, 3b
 
-    // jump to relocated C code, should not return
-4:  bl      main-1024
+    // jump to C code, should not return
+    // bl is to branch with the address of the next instruction saved, 
+    // whereas b is to simply branch and will not return
+/*4:  ldr     x1, =main
+    ldr     x2, =_loader_size
+    subs    x1, x1, x2
+    blr     x1*/
+4:  bl      main - 4096
+// 4:  bl      main
     // for failsafe, halt this core too
     b       1b

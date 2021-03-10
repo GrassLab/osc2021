@@ -104,7 +104,6 @@ void uart_send(unsigned int c)
  */
 char uart_getc()
 {
-
     char r;
 
     /* wait until something is in the buffer */
@@ -127,6 +126,10 @@ char uart_getc()
  */
 void uart_puts(char *s)
 {
+    // uart_send('K');
+    // uart_send('\n');
+    // uart_send('\r');
+
     while (*s)
     {
         /* convert newline to carrige return + newline */
@@ -136,4 +139,9 @@ void uart_puts(char *s)
 
         uart_send(*s++);
     }
+}
+
+void putc(void *p, char c)
+{
+    uart_send(c);
 }

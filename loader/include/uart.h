@@ -62,4 +62,6 @@ char uart_getc();
  */
 void uart_puts(char *s);
 
+void putc(void *p, char c);
+
 #endif
