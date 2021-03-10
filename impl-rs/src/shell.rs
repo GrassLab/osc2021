@@ -1,9 +1,10 @@
 use crate::uart;
+use crate::{log, print, println};
+use cmd::CmdType;
 use core::str;
 
-use crate::{log, print};
-
 mod buffer;
+mod cmd;
 
 enum Keyboard {
     BackSpace(char),
@@ -37,6 +38,9 @@ impl Shell {
         let s = str::from_utf8(self.buffer.data()).unwrap();
         log!("    buffer :`{}`", s);
     }
+    pub fn build_prompt(&self) {
+        print!(" {}", ">");
+    }
     pub fn input_line(&mut self) {
         self.buffer.clear();
         loop {
@@ -49,16 +53,32 @@ impl Shell {
                     break;
                 }
                 Keyboard::BackSpace(_) => {
-                    self.buffer.pop();
-                    print!("\u{08} \u{08}");
+                    if let Ok(_) = self.buffer.pop() {
+                        print!("\u{08} \u{08}");
+                    }
                 }
                 Keyboard::Printable(c) => {
-                    print!("{}", c);
-                    self.buffer.push(c);
+                    if let Ok(_) = self.buffer.push(c) {
+                        print!("{}", c);
+                    }
                 }
                 Keyboard::NotSupported(_) => {}
             }
         }
     }
-    pub fn process_command(&mut self) {}
+    pub fn process_command(&mut self) {
+        let s = str::from_utf8(self.buffer.data()).unwrap().trim();
+        if s.is_empty() {
+            return;
+        }
+        match CmdType::parse(s) {
+            CmdType::Cmd(func) => func(),
+            CmdType::Unknown => {
+                println!(
+                    "Unkown command: {:?}, type `help` to get available commands",
+                    s
+                );
+            }
+        }
+    }
 }

@@ -1,2 +1,2 @@
-pub const MX_BFR_SIZE: usize = 200;
-pub const ENABLE_LOG: bool = true;
+pub const MX_BFR_SIZE: usize = 256;
+pub const ENABLE_LOG: bool = false;

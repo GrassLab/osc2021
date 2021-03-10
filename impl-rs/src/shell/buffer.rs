@@ -1,6 +1,7 @@
 use crate::config::MX_BFR_SIZE;
 
-// TODO: remove const def in size here
+pub struct BfrFullErr;
+pub struct BfrEmptyErr;
 
 pub struct Buffer {
     buffer: [u8; MX_BFR_SIZE],
@@ -17,20 +18,25 @@ impl Buffer {
     pub fn clear(&mut self) {
         self.write_head = 0;
     }
-    pub fn push(&mut self, c: char) {
+    pub fn push(&mut self, c: char) -> Result<(), BfrFullErr> {
         if self.write_head < MX_BFR_SIZE {
             self.buffer[self.write_head] = c as u8;
             self.write_head += 1;
+            Ok(())
+        } else {
+            Err(BfrFullErr)
         }
     }
-    pub fn pop(&mut self) {
+    pub fn pop(&mut self) -> Result<(), BfrEmptyErr> {
         if self.write_head > 0 {
             self.write_head -= 1;
             self.buffer[self.write_head] = '\0' as u8;
+            Ok(())
+        } else {
+            Err(BfrEmptyErr)
         }
     }
     pub fn data(&self) -> &[u8] {
         return &self.buffer[0..self.write_head];
-        // return *str::from_utf8(valid_str).unwrap();
     }
 }

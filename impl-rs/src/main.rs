@@ -27,6 +27,7 @@ pub unsafe fn main() -> ! {
     let mut shell = Shell::new();
 
     loop {
+        shell.build_prompt();
         shell.input_line();
         shell.process_command();
     }
