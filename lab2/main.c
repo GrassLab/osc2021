@@ -50,6 +50,7 @@ void loadImg(){
 		while(k_size--){
 			*target=uart_getb();
 			target++;
+			uart_send('.');
 		}
 
 		uart_puts("loading...\n");
@@ -64,6 +65,7 @@ void loadImg(){
 		for(int i=0;i<k_size;++i){//new prog
 			*target=uart_getb();
 			target++;
+			uart_send('.');
 		}
 
 		uart_puts("moving...\n");
