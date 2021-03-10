@@ -1,5 +1,9 @@
 {
     "files.associations": {
-        "gpio.h": "c"
+        "gpio.h": "c",
+        "uart.h": "c",
+        "math.h": "c",
+        "printf.h": "c",
+        "stdarg.h": "c"
     }
 }
