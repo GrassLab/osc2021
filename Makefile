@@ -1,7 +1,7 @@
 .PHONY: setup shell clean run debug gdb build
 
 # target implementation to use
-IMPL_FOLDER ?= impl-rs
+IMPL_FOLDER ?= impl-c
 
 QEMU = qemu-system-aarch64
 CROSS_GDB = aarch64-linux-gdb
