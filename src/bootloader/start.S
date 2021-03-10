@@ -22,4 +22,4 @@ clear:
     bl      bootloader
 
     // jump to kernel
-    mov     x1, x0
+    br      x0

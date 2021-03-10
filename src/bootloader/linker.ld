@@ -1,5 +1,5 @@
 _stack_top = 0x61000;
-_kernel_begin = 0x80000;
+_kernel_begin = 0x81000;
 
 SECTIONS
 {

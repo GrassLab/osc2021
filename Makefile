@@ -1,5 +1,5 @@
 ARMGNU = aarch64-linux-gnu
-FLAGS = -Wall -nostdlib -Iinclude -ffreestanding -Werror
+FLAGS = -Wall -nostdlib -Iinclude/bootloader -Iinclude/kernel -Iinclude/lib -ffreestanding -Werror
 
 BUILD_DIR= build
 SRC_DIR = src
@@ -32,10 +32,15 @@ bootloader.img: $(filter $(OBJS_DIR)/bootloader/%.o $(OBJS_DIR)/lib/%.o, $(OBJ_F
 	$(ARMGNU)-objcopy $(BUILD_DIR)/bootloader.elf -O binary $(BUILD_DIR)/$@
 
 
-
-
 clean:
 	rm -rf $(BUILD_DIR) $(OBJS_DIR)
 
 run:
-	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/kernel8.img -serial null -serial stdio -display none
+	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/bootloader.img -serial null -serial stdio -display none
+
+run.tty:
+	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/bootloader.img -serial null -serial pty -display none
+
+debug:
+	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/bootloader.img -serial null -serial pty -display none -s -S
+	

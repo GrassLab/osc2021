@@ -1,9 +1,12 @@
-_stack_top = 0x48000;
+_stack_top = 0x480000;
 
 SECTIONS
 {
-    . = 0x80000;
-    .text : { *(.text) }
+    . = 0x81000;
+    .text : {
+        *(.text.start) 
+        *(.text)
+    }
     .data : 
     {
         *(.rodata)
