@@ -5,7 +5,7 @@
 
 enum SPECIAL_CHARACTER
 {
-    BACK_SPACE = 8,
+    BACK_SPACE = '\177',
     LINE_FEED = 10,
     CARRIAGE_RETURN = 13,
 
@@ -13,7 +13,6 @@ enum SPECIAL_CHARACTER
     NEW_LINE = 1001,
 
     UNKNOWN = -1,
-
 };
 
 void shell_start();

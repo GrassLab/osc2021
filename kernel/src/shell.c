@@ -43,16 +43,14 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
 {
     if ( input_parse == UNKNOWN )
         return;
-    
-    // Special key
-    if ( input_parse == BACK_SPACE )
-    {
-        if (  (*counter) > 0 )
-            (*counter) --;
         
-        uart_send(c);
-        uart_send(' ');
-        uart_send(c);
+    if (input_parse == BACK_SPACE)
+    {
+        if ((*counter) > 0)
+        {
+            (*counter)--;
+            uart_puts("\b \b");
+        }
     }
     else if ( input_parse == NEW_LINE )
     {
