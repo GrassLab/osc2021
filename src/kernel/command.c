@@ -38,9 +38,14 @@ void get(char *command, int maxSize)
                 puts(" \b");
                 i--;
                 i = i < 0 ? 0 : i;
+                break;
             default:
                 command[i] = c;
                 i++;
+        }
+
+        if (c == '\r') {
+            break;
         }
     }
 }
