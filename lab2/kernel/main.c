@@ -23,19 +23,22 @@ void shell() {
       for (int i = 0; i < sizeof(commands)/sizeof(void *); i++) {
         puts_uart(commands[i]);
       }
+
     } else if (!strcmp("hello", buffer)) {
       puts_uart(hello);
+
     } else if (!strncmp("cpio", buffer, 4)) {
       if (strlen(buffer) < 6) {
         cpio_list_file(_cpio_buf);
       } else {
-        char *content = cpio_get_content(&buffer[5], _cpio_buf);
+        const char *content = cpio_get_content(&buffer[5], _cpio_buf);
         if (content) {
           puts_uart(content);
         } else {
           puts_uart("file not found.");
         }
       }
+
     } else if (!strcmp("reboot", buffer)) {
       puts_uart("reboot machine");
       reset(100);

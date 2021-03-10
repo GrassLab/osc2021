@@ -4,7 +4,7 @@
 #include <stddef.h>
 
 int strncmp(const char *a, const char *b, size_t n) {
-  int i = 0;
+  size_t i = 0;
   while (i < n-1 && a[i] == b[i] && a[i] != '\0' && b[i] != '\0') i++;
   return a[i] - b[i];
 }
@@ -19,6 +19,12 @@ size_t strlen(const char *s) {
   size_t i = 0;
   while (s[i]) i++;
   return i;
+}
+
+void memcpy(char *dst, const char *src, size_t n) {
+  while(n--) {
+    *dst++ = *src++;
+  }
 }
 
 #endif

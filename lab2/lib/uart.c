@@ -34,7 +34,7 @@ void mini_uart_init() {
     //*INPUT_ENABLE_REGISTER_1 = AUX_INT_ENABLE_BIT;
 }
 
-void __wfe() {
+static void __wfe() {
     //asm("wfe");
 }
 
