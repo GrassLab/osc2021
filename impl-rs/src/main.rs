@@ -4,8 +4,10 @@
 
 use core::panic::PanicInfo;
 
+mod config;
 mod cpu;
 mod print;
+mod shell;
 mod uart;
 
 global_asm!(include_str!("boot.S"));
@@ -21,8 +23,11 @@ pub unsafe fn main() -> ! {
     println!("-------------------------------");
     println!(" Operating System Capstone 2021");
     println!("-------------------------------");
+    use shell::Shell;
+    let mut shell = Shell::new();
+
     loop {
-        let c = uart::getc();
-        uart::send(c);
+        shell.input_line();
+        shell.process_command();
     }
 }
