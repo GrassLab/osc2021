@@ -1,15 +1,16 @@
+cargo-features = ["edition2021"]
 [package]
 authors = ["Ian Chen <ianre657@gmail.com>"]
-edition = "2018"
-name = "impl-rs"
+edition = "2021"
+name = "kernel"
 version = "0.1.0"
-
-[profile.dev]
-panic = "abort"
-
-[profile.release]
-panic = "abort"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+cortex-a = {version = "5.x.x"}
+spin = "0.5.2"
+
+[dependencies.lazy_static]
+features = ["spin_no_std"]
+version = "1.0"
