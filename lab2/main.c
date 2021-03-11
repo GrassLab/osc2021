@@ -1,6 +1,7 @@
 #include "inc/uart.h"
 #include "inc/reboot.h"
 #include "inc/mailbox.h"
+#include "inc/cpio.h"
 
 #define min(a,b) ((a)<(b)?(a):(b))
 
@@ -100,6 +101,7 @@ void shell(){
 			uart_puts("          hello\n");
 			uart_puts("          reboot\n");
 			uart_puts("          loadimg\n");
+			uart_puts("          archive\n");
 		}else if(strcmp(buffer,"hello")==0){
 			uart_puts("Hello World!\n");
 		}else if(strcmp(buffer,"reboot")==0){
@@ -107,6 +109,8 @@ void shell(){
 			reboot();
 		}else if(strcmp(buffer,"loadimg")==0){
 			loadImg();
+		}else if(strcmp(buffer,"archive")==0){
+			dumpArchive();
 		}else{
 			uart_puts("Error: No such command \"");
 			uart_puts(buffer);

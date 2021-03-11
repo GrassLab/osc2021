@@ -12,7 +12,7 @@ all:
 $(APP).img:$(OBJS)
 	aarch64-linux-gnu-ld -T $(LINKER) -o $(APP).elf $(OBJS)
 	aarch64-linux-gnu-objcopy -O binary $(APP).elf $@
-	aarch64-linux-gnu-readelf -s $(APP).elf | grep __bss_end
+	#aarch64-linux-gnu-readelf -s $(APP).elf | grep __bss_end
 	rm $(APP).elf
 
 start.o:start.S
@@ -23,9 +23,8 @@ start.o:start.S
 
 run:
 	make all
-	#qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial stdio
-	qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial pty
-	#qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial stdio -d in_asm
+	qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial stdio -initrd ./archive/initramfs.cpio
+	#qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial pty -initrd ./archive/initramfs.cpio
 
 onboard:
 	sudo screen /dev/ttyUSB0 115200
