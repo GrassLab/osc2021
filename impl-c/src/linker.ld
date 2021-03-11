@@ -6,7 +6,7 @@ SECTIONS
     see: https://www.raspberrypi.org/documentation/configuration/config-txt/boot.md
     for more information
   */
-  . = 0x180000;
+  . = 0x80000;
   .text :
   {
     KEEP(*(.text.boot)) *(.text)
