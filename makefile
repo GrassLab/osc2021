@@ -17,8 +17,8 @@ all: kernel8.img
 start.o: start.S
 	$(GCC) -c $< -o $@
 
-kernel8.img: start.o main.o uart.o linker.ld
-	$(LD) $(LDFLAGS) -o kernel8.elf start.o main.o uart.o
+kernel8.img: start.o main.o uart.o linker.ld reboot.o
+	$(LD) $(LDFLAGS) -o kernel8.elf start.o main.o uart.o reboot.o
 	$(OBJCOPY) -O binary kernel8.elf $@
 
 clean:

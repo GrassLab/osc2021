@@ -1,6 +1,6 @@
 #include "mmio.h"
 
-#define AUX_BASE        (MMIO_BASE + 0x215000) // BROADCOM User Manual Page 8
+#define AUX_BASE        (MMIO_BASE + 0x00215000) // BROADCOM User Manual Page 8
 
 #define AUX_IRQ         ((volatile unsigned int*)(AUX_BASE + 0x00))
 #define AUX_ENABLES     ((volatile unsigned int*)(AUX_BASE + 0x04))

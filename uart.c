@@ -31,8 +31,8 @@ void uart_init() {
     Page 16
     */
     register unsigned int r = *GPFSEL1;
-    r &= ~((7 >> 12) | (7 >> 15));      // reset [14:12] and [17:15] to 0
-    r |= ((2 >> 12) | (2 >> 15));       // set [14:12] and [17:15] to ALT5
+    r &= ~((7 << 12) | (7 << 15));      // reset [14:12] and [17:15] to 0
+    r |= ((2 << 12) | (2 << 15));       // set [14:12] and [17:15] to ALT5
     *GPFSEL1 = r;
 
 

@@ -1,8 +1,9 @@
 #include "uart.h"
+#include "reboot.h"
 
 #define MAXCMDSIZE 32
 
-char cmdBuffer[MAXCMDSIZE] = {0};
+char cmdBuffer[MAXCMDSIZE];
 int cmdSize = 0;
 
 void clear_buffer() {
@@ -16,7 +17,6 @@ void clear_buffer() {
 int strlen(char* s) {
     int length = 0;
     while (s[length] != '\0') {
-        s++;
         length++;
     }
 
@@ -41,14 +41,17 @@ int strcmp(char* s1, char* s2) {
 
 void cmdhandler() {
     if (strcmp(cmdBuffer, "help")) {
-        uart_putchar(">> Available Commands as follow\n");
+        uart_putchar("\n>> Available Commands as follow\n");
         uart_putchar("    >> help: print all available commands\n");
         uart_putchar("    >> hello: print string Hello World!\n");
     } else if (strcmp(cmdBuffer, "hello")) {
-        uart_putchar(">> Hello World!\n");
+        uart_putchar("\n>> Hello World!\n");
+    } else if (strcmp(cmdBuffer, "reboot")) {
+        uart_putchar("\n>>Start rebooting...\n");
+        reset(100);
     } else {
-        uart_putchar(">> Unsupported command\n");
-        uart_putchar(">> Command input: \n");
+        uart_putchar("\n>> Unsupported command, ");
+        uart_putchar("Command input: ");
         uart_putchar(cmdBuffer);
         uart_putchar("\n");
     }
@@ -63,6 +66,7 @@ int main() {
     char c;
     while (1) {
         c = uart_read();
+        uart_write(c);
         switch (c)
         {
         case '\n':
@@ -74,7 +78,6 @@ int main() {
         default:
             if (c > 96 && c < 123) {  // a to z
                 cmdBuffer[cmdSize++] = c;
-                uart_write(c);
             }
         }
     }
