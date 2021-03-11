@@ -1,5 +1,6 @@
 #include "string.h"
-#include "stdint.h"
+#include <stddef.h>
+#include <stdint.h>
 int strcmp(const char *x, const char *y) {
   while (*x) {
     if (*x != *y)
@@ -7,6 +8,14 @@ int strcmp(const char *x, const char *y) {
     x++, y++;
   }
   return *(const unsigned char *)x - *(const unsigned char *)y;
+}
+
+void memcpy(void *dest, const void *src, size_t n) {
+  uint8_t *d = (uint8_t *)dest;
+  uint8_t *s = (uint8_t *)src;
+  while (n--) {
+    *d++ = *s++;
+  }
 }
 
 // Credits to

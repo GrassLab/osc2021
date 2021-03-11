@@ -50,22 +50,23 @@ int parse_header_field() {
 }
 
 void cmdLoadKernel() {
-  uart_println("load kernel");
+  const int64_t MAGIC_MOD = 856039; // my student id 😎
+  uint8_t *kernel = (uint8_t *)0x80000;
+  uart_println("load kernel at %x", kernel);
 
-  int file_size = parse_header_field();
+  int64_t file_size = parse_header_field();
   uart_println("[header] filesize: %d", file_size);
 
-  int check_sum = parse_header_field();
+  int64_t check_sum = parse_header_field();
   uart_println("[header] check_sum: %d", check_sum);
 
-  const int MAGIC_MOD = 856039; // my student id 😎
-
-  // accept data
-  int local_check_sum = 0;
+  // Receive data
+  int64_t local_check_sum = 0;
   int data = 0;
-  for (int i = 0; i < file_size; i++) {
+  for (int64_t i = 0; i < file_size; i++) {
     data = uart_getu8();
-    local_check_sum += (int)data;
+    *(kernel + i) = data;
+    local_check_sum += data;
     local_check_sum %= MAGIC_MOD;
     if (i < 5) {
       uart_println("  recv byte %d: %d, checksum: %d", i, data,
@@ -79,11 +80,14 @@ void cmdLoadKernel() {
                    local_check_sum);
     }
   }
+
   if (local_check_sum != check_sum) {
     uart_println("Checksum not match, file crashed. QQ");
+  } else {
+    uart_println("transmission finished");
+    void (*entry)(void) = (void *)kernel;
+    entry();
   }
-
-  uart_println("transmission finished");
 }
 void _bfrPush(char c) {
   if (curInputSize < MX_CMD_BFRSIZE) {

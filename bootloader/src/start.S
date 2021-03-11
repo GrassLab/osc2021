@@ -1,8 +1,8 @@
-.section ".text.boot"
+.section ".text.relocate"
 
-.global _start
+.global _relocate
 
-_start:
+_relocate:
     // Get cpuid
     mrs x0, MPIDR_EL1
     and x0, x0, #3 // Get the first two bit in Aff0 fields
@@ -15,8 +15,8 @@ _start:
 
 // cpuid = 0
 2:
-    // Initialize stack pointer: set to __stack_top
-    ldr x0, = __stack_top
+    // Initialize stack pointer
+    ldr x0, = __relocate_target_addr
     mov sp, x0
 
     // Clear bss
@@ -26,6 +26,14 @@ _start:
     str     xzr, [x0], #8   //  *x0 = zero, x0 = x0 + 8
     sub     x1, x1, #1      //  x1 = x1 - 1
     cbnz    x1, 3b          // Loop back to label 3 until bss is cleared
+4:  bl      relocate
 
-4:  bl      main  // Jump to Kernel Entry Point (Main function)
+
+//This section would be executed right after relocation
+.section ".text.boot"
+
+.global _start
+
+_start:
+1:  bl      main  // Jump to Kernel Entry Point (Main function)
     b       1b    // Stay in busy loop if returned

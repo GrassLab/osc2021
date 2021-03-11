@@ -1,3 +1,5 @@
+ENTRY(__relocate)
+
 SECTIONS
 {
   /*
@@ -7,25 +9,30 @@ SECTIONS
     for more information
   */
   . = 0x80000;
-  .text :
-  {
-    *(.text.boot) *(.text*)
-  }
-  .rodata :
-  {
-    *(.rodata*)
-  }
-  .data :
-  {
-    *(.data*)
-  }
+
+  /* relocate
+  Code that handle code relocation, would move the actual loader program into a higher memory space
+  */
+  __relocate = .;
+  .relocate : { KEEP(*(.text.relocate)) }
+
+  . = ALIGN(4096);
+  _begin = .;
+  .text : { KEEP(*(.text.boot)) *(.text*) }
+  .rodata : { *(.rodata*)}
+  .data : { *(.data*) }
   .bss ALIGN(16) (NOLOAD) :
   {
     __bss_start = .;
     *(.bss*)
     __bss_end = .;
   }
+  . = ALIGN(4096);
   _end = .;
 }
+
 __bss_size = (__bss_end - __bss_start) >> 3;
-__stack_top = _start;
+
+/* Point to a higher address to
+*/
+__relocate_target_addr = 0x30000000;

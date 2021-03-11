@@ -98,3 +98,11 @@ define RUN_WITH_KERNEL
 	-display none \
 	-kernel
 endef
+
+# define RUN_WITH_KERNEL
+# 	@echo "${GREEN} 📬 Multiplexing qemu pty device${RESET}"
+# 	$(QEMU) -M raspi3 \
+# 	-serial null -serial stdio \
+# 	-display none \
+# 	-kernel
+# endef
