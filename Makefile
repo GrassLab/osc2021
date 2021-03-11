@@ -1,7 +1,10 @@
 .PHONY: setup shell clean run debug gdb build
 
 # target implementation to use
-IMPL_FOLDER ?= impl-c
+# IMPL_FOLDER ?= impl-c
+# IS_BUILING_BOOT_LOADER = 0
+IMPL_FOLDER ?= bootloader
+IS_BUILING_BOOT_LOADER = 1
 
 QEMU = qemu-system-aarch64
 CROSS_GDB = aarch64-linux-gdb
@@ -12,7 +15,22 @@ KERNEL_ELF = kernel8.elf
 IMPL_KERNEL_IMG = $(IMPL_FOLDER)/$(KERNEL_IMG)
 IMPL_KERNEL_ELF = $(IMPL_FOLDER)/$(KERNEL_ELF)
 
-ifeq ($(IMPL_FOLDER),impl-c)
+# change default img to run/debug
+ifeq ($(IS_BUILING_BOOT_LOADER),1)
+IMPL_FOLDER = bootloader
+IMPL_KERNEL_IMG = bootloader/bootloader.img
+IMPL_KERNEL_ELF = bootloader/bootloader.elf
+endif
+
+# select which folder need to run under venv
+IMPL_TO_USE_VENV:= bootloader impl-c
+ifneq ($(filter $(IMPL_FOLDER),$(IMPL_TO_USE_VENV)),)
+    USE_VENV = 1
+else
+    USE_VENV = 0
+endif
+
+ifeq ($(USE_VENV),1)
     # C impl settings
     DOCKCROSS_SCRIPT = dockcross-linux-aarch64
     ENV_RUN=./$(DOCKCROSS_SCRIPT)
@@ -38,8 +56,8 @@ RESET := $(shell tput sgr0)
 # == Commands
 
 shell:
-ifneq ($(IMPL_FOLDER),impl-rs)
-	@echo "${YELLOW} ❌ Building for rust, no virtual env needed${RESET}"
+ifeq ($(IMPL_FOLDER),impl-rs)
+	@echo "${YELLOW} ❌ Build under rust impl, no virtual env needed${RESET}"
 else
 	@echo "${YELLOW} 🤖 Spawn shell inside ${DOCKER} ${RESET}"
 	$(ENV_RUN) bash
@@ -51,12 +69,12 @@ clean:
 
 run: all
 	@echo "${YELLOW} 🚧 Run kernel with QEMU${RESET}"
-	$(RUN_WITH_KERNEL) $(IMPL_KERNEL_IMG) -serial null -serial stdio
+	$(RUN_WITH_KERNEL) $(IMPL_KERNEL_IMG)
 
 debug: all
 	@echo "${YELLOW} 🐛 Start debugging${RESET}"
 	@echo "${YELLOW}Open another terminal and use ${GREEN}make gdb${YELLOW} to connect to host${RESET}"
-	$(DEBUG_SERVER_WITH_KERNEL) $(IMPL_KERNEL_IMG) -serial null -serial stdio
+	$(DEBUG_SERVER_WITH_KERNEL) $(IMPL_KERNEL_IMG)
 
 gdb: all
 	@echo "${YELLOW} 🕵️‍♀️ Using ${GREEN}${CROSS_GDB}${RESET}"
@@ -65,13 +83,18 @@ gdb: all
 
 define DEBUG_SERVER_WITH_KERNEL
 	$(QEMU) -M raspi3 \
+	-chardev pty,signal=on,id=char0 \
+	-serial null -serial chardev:char0 \
 	-display none \
 	-s -S \
 	-kernel
 endef
 
 define RUN_WITH_KERNEL
+	@echo "${GREEN} 📬 Multiplexing qemu pty device${RESET}"
 	$(QEMU) -M raspi3 \
+	-chardev pty,signal=on,id=char0 \
+	-serial null -serial chardev:char0 \
 	-display none \
 	-kernel
 endef

@@ -24,9 +24,11 @@
  *
  */
 
+#include "uart.h"
 #include "gpio.h"
 #include "string.h"
 #include <stdarg.h>
+#include <stdint.h>
 
 /* Auxilary mini UART registers */
 #define AUX_ENABLE ((volatile unsigned int *)(MMIO_BASE + 0x00215004))
@@ -91,15 +93,24 @@ void uart_send(unsigned int c) {
  * Receive a character
  */
 char uart_getc() {
-  char r;
+  char r = (char)uart_getu8();
+  /* convert carrige return to newline */
+  return r == '\r' ? '\n' : r;
+}
+
+/**
+ * Receive data directly from uart
+ */
+uint8_t uart_getu8() {
+  uint8_t r;
   /* wait until something is in the buffer */
   do {
     asm volatile("nop");
   } while (!(*AUX_MU_LSR & 0x01));
   /* read it and return */
-  r = (char)(*AUX_MU_IO);
+  r = (uint8_t)(*AUX_MU_IO);
   /* convert carrige return to newline */
-  return r == '\r' ? '\n' : r;
+  return r;
 }
 
 /**

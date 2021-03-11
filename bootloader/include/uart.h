@@ -26,9 +26,12 @@
 #ifndef UART_H
 #define UART_H
 
+#include <stdint.h>
+
 void uart_init();
 void uart_send(unsigned int c);
 char uart_getc();
+uint8_t uart_getu8();
 void uart_puts(char *s);
 void uart_println(char *format, ...);
 

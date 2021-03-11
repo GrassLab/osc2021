@@ -24,6 +24,7 @@
  *
  */
 
+#include "uart.h"
 #include "gpio.h"
 #include "string.h"
 #include <stdarg.h>

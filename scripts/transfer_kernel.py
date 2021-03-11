@@ -31,6 +31,18 @@ class TypedArgs:
         return cls(image=arg.image, tty=arg.tty, dry=arg.dry)
 
 
+def encode_literal_num(n: int, size: int) -> bytes:
+    """Send numbers as literal string in decimal
+    `size`: target length of the byte str
+    example: 123 -> ["0","0",... , "1","2","3"]
+    """
+    s = str(n)
+    s = "0" * (size - len(s)) + s
+    # prevent overflow
+    assert s[0] == "0"
+    return s.encode("utf-8")
+
+
 def main():
     console = Console()
     arg = TypedArgs.parse()
@@ -43,14 +55,37 @@ def main():
 
     tty = SerialSender(portname=arg.tty, dry=arg.dry)
 
-    # send four bytes as filesize header
-    size_bin = img.size().to_bytes(4, byteorder="big")
+    # Protocal
+    # 1. send command to use
+    tty.send("load\n".encode("utf-8"))
+
+    # 2. send header1: file size(32 bytes literal dec value)
+    size_bin = encode_literal_num(img.size(), 32)
     tty.send(size_bin)
 
-    # send the whole kernel in binary format
+    # 3. send header2: check_sum(32 bytes literal dec value)
+    check_sum = encode_literal_num(img.check_sum(), 32)
+    tty.send(check_sum)
+
+    # 4. send the whole kernel in binary format
     total_bytes = img.size()
     with TransferProgress(console, total_bytes) as p:
-        for b in img.bytes():
+        local_checksum = 0
+        for i, b in enumerate(img.bytes()):
+            local_checksum += int(b[0])
+            if i < 5:
+                # list of 1 bytes
+                d = b[0]
+                console.print(
+                    f"byte [green]{i}[reset]: {d:02x}(hex), {d:3d}(dec), checksum:{local_checksum}"
+                )
+            if i == 5:
+                console.print("[green] omitted...[reset]")
+            if i > img.size() - 5:
+                d = b[0]
+                console.print(
+                    f"byte [green]{i}[reset]: {d:02x}(hex), {d:3d}(dec), checksum:{local_checksum}"
+                )
             tty.send(b)
             p.advance_bytes(1)
 
@@ -91,6 +126,11 @@ class KernelImg:
     def bytes(self) -> Iterable[bytes]:
         """List of data splitted by 1 byte"""
         return [b"%c" % d for d in self.data]
+
+    def check_sum(self) -> int:
+        # mod: 0856039
+        # 😎 my student id
+        return sum([int(b) for b in self.data]) % 856039
 
 
 class TransferProgress:

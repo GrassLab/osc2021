@@ -3,14 +3,10 @@
 #include "cfg.h"
 #include "string.h"
 #include "uart.h"
+#include <stdint.h>
 
-#define PM_PASSWORD 0x5a000000
-#define PM_RSTC ((volatile unsigned int *)0x3F10001c)
-#define PM_WDOG ((volatile unsigned int *)0x3F100024)
-
-void cmdHello();
 void cmdHelp();
-void cmdReboot();
+void cmdLoadKernel();
 
 typedef struct {
   char *name;
@@ -19,16 +15,15 @@ typedef struct {
 } Cmd;
 
 char buffer[MX_CMD_BFRSIZE + 1] = {0};
-int bfrWriteHead = 0;
 int curInputSize = 0;
 
 Cmd cmdList[] = {
-    {.name = "hello", .help = "Greeting", .func = cmdHello},
     {.name = "help", .help = "Show avalible commands", .func = cmdHelp},
-    {.name = "reboot", .help = "Reboot device", .func = cmdReboot},
+    {.name = "load",
+     .help = "Load kernel image via uart",
+     .func = cmdLoadKernel},
 };
 
-void cmdHello() { uart_println("Hello!!"); }
 void cmdHelp() {
   uart_println("available commands:");
   Cmd *end = cmdList + sizeof(cmdList) / sizeof(Cmd);
@@ -36,136 +31,114 @@ void cmdHelp() {
     uart_println("  %s  \t%s", c->name, c->help);
   }
 }
-void cmdReboot() {
-  uart_println("reboot");
-  *PM_RSTC = PM_PASSWORD | 0x20;
-  *PM_WDOG = PM_PASSWORD | 100; // reboot after 100 watchdog ticks
-}
 
-void _cursorMoveLeft() {
-  if (bfrWriteHead > 0) {
-    bfrWriteHead--;
+int parse_header_field() {
+#define HEADER_SIZE 32
+  // send digit in plain text to indicate size;
+  char data[HEADER_SIZE + 1] = {0};
+  for (int i = HEADER_SIZE - 1; i >= 0; i--) {
+    data[i] = (char)uart_getu8();
   }
-}
+  data[HEADER_SIZE] = 0;
 
-void _cursorMoveRight() {
-  if (bfrWriteHead < curInputSize) {
-    bfrWriteHead++;
+  // parse to int;
+  int n = 0;
+  for (int i = 0, base = 1; i < HEADER_SIZE; i++, base *= 10) {
+    n += (data[i] - '0') * base;
   }
+  return n;
 }
 
+void cmdLoadKernel() {
+  uart_println("load kernel");
+
+  int file_size = parse_header_field();
+  uart_println("[header] filesize: %d", file_size);
+
+  int check_sum = parse_header_field();
+  uart_println("[header] check_sum: %d", check_sum);
+
+  const int MAGIC_MOD = 856039; // my student id 😎
+
+  // accept data
+  int local_check_sum = 0;
+  int data = 0;
+  for (int i = 0; i < file_size; i++) {
+    data = uart_getu8();
+    local_check_sum += (int)data;
+    local_check_sum %= MAGIC_MOD;
+    if (i < 5) {
+      uart_println("  recv byte %d: %d, checksum: %d", i, data,
+                   local_check_sum);
+    }
+    if (i == 5) {
+      uart_println("  ... omitted");
+    }
+    if (i > file_size - 5) {
+      uart_println("  recv byte %d: %d, checksum: %d", i, data,
+                   local_check_sum);
+    }
+  }
+  if (local_check_sum != check_sum) {
+    uart_println("Checksum not match, file crashed. QQ");
+  }
+
+  uart_println("transmission finished");
+}
 void _bfrPush(char c) {
-  if (curInputSize >= MX_CMD_BFRSIZE)
-    // buffer is full
-    return;
-
-  if (bfrWriteHead <= curInputSize) {
-    // insert in middle: right shift buffer first
-    for (int i = curInputSize; i > bfrWriteHead; i--) {
-      buffer[i] = buffer[i - 1];
-    }
-    buffer[bfrWriteHead++] = c;
-    curInputSize++;
-    buffer[curInputSize] = 0;
+  if (curInputSize < MX_CMD_BFRSIZE) {
+    buffer[curInputSize++] = c;
   }
 }
 
-void _bfrPop() {
-  if (bfrWriteHead > 0) {
-    bfrWriteHead--;
-    // left shift the whole buffer
-    for (int i = bfrWriteHead; i < curInputSize; i++) {
-      buffer[i] = buffer[i + 1];
-    }
-    buffer[curInputSize--] = 0;
+int _bfrPop() {
+  if (curInputSize > 0) {
+    buffer[--curInputSize] = 0;
+    return 0;
   }
+  return -1;
 }
 
 void _bfrClear() {
   curInputSize = 0;
-  bfrWriteHead = 0;
   buffer[0] = 0;
 }
 
-AnsiEscType decode_escape_sequence() {
-  char c = uart_getc();
-  if (c == '[') {
-    // ANSI CSI
-    switch (c = uart_getc()) {
-    case 'C':
-      return CursorForward;
-    case 'D':
-      return CursorBackward;
-    default:
-      return Unknown;
-    }
-  }
-  return Unknown;
-}
-
-void _shellUpdatePrompt() {
-  // Must be called after every keystroke user input
-  // Assumption: There're at most 1 character change inside the buffer
-
-  // Rebuild buffer
-  shellPrintPrompt();
-  uart_puts(buffer);
-
-  // User might delete 1 character, here we paint a blank space to "delete it"
-  // on the screen
-  uart_puts(" ");
-
-  // Restore cursor on the screen
-  uart_puts("\r\e[");
-  uart_puts(itoa(bfrWriteHead + 1, 10));
-  uart_puts("C");
-}
-
-void shellPrintPrompt() { uart_puts("\r>"); }
+void shellPrintPrompt() { uart_puts(" >"); };
 
 void shellInputLine() {
   enum KeyboardInput c;
-  AnsiEscType termCtrl;
   bool flagExit = false;
   _bfrClear();
 
   while (!flagExit) {
     flagExit = false;
-    _shellUpdatePrompt();
     switch ((c = uart_getc())) {
-    case KI_ANSI_ESCAPE_SEQ_START:
-      termCtrl = decode_escape_sequence();
-      switch (termCtrl) {
-      case CursorForward:
-        _cursorMoveRight();
-        break;
-      case CursorBackward:
-        _cursorMoveLeft();
-        break;
-      case Unknown:
-        break;
-      }
-      break;
     case KI_PRINTABLE_START ... KI_PRINTABLE_END:
       _bfrPush(c);
       uart_send(c);
       break;
     case KI_BackSpace:
     case KI_Delete:
-      _bfrPop();
+      if (!_bfrPop()) {
+        uart_puts("\b \b");
+      };
       break;
+
     case KI_CarrageReturn:
     case KI_LineFeed:
       flagExit = true;
       buffer[curInputSize] = 0;
       uart_puts("\r\n");
       if (CFG_LOG_ENABLE) {
-        uart_println("GET:'%s'", buffer);
+        uart_puts("GET:'");
+        uart_puts(buffer);
+        uart_puts("'");
+        uart_puts("\r\n");
       }
       break;
     default:
-        // ignore other input
-        ;
+      uart_puts("<?>");
     }
   }
 }
