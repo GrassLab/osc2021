@@ -17,6 +17,7 @@ void command_help ()
     uart_puts("\thelp:\t\tprint this help.\n");
     uart_puts("\thello:\t\tprint \"Hello World!\".\n");
     uart_puts("\ttimestamp:\tget current timestamp.\n");
+    uart_puts("\treboot:\t\treboot Raspberry Pi.\n");
     uart_puts("\n");
 }
 

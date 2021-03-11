@@ -36,6 +36,3 @@ with open(args.filename, 'rb') as file:
             device.write(raw[i: i+1])
             device.flush()
             print(i)
-            # sum += raw[i: i+1]
-
-        # print(sum)
