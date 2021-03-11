@@ -1,6 +1,4 @@
-# OSDI Note
-
-# Lab 1: Hello Worldter
+# Lab 1: Hello World
 ## Requirements
 1. Basic Initialization
 2. Mini UART
@@ -66,12 +64,34 @@ SECTIONS
 }
 ```
 
-上面這段程式定義 bss segment，其中 NOLOAD 表示運作時不會載入記憶體，ALIGN(16) 表示記憶體位址對齊，接下來的 ``*(.bss .bss.*)`` 與 ``*(COMMON)`` 是載入所有的 .o 檔到 bss segment 上。
+上面這段程式定義 bss segment，其中 NOLOAD 表示其內容在運作時不會載入記憶體，ALIGN(16) 表示記憶體位址對齊，接下來的 ``*(.bss .bss.*)`` 與 ``*(COMMON)`` 是載入所有的 .o 檔的 bss 到 bss segment 上。
 
-#### 其他
-+ ``.gnu.linkonce``: [2] 這些 section 是其他東西用的，不用理它
+以下為完整的 linker script
+```
+SECTIONS
+{
+    . = 0x80000;
+    .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
+    .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
+    PROVIDE(_data = .);
+    .data : { *(.data .data.* .gnu.linkonce.d*) }
+    .bss (NOLOAD) : {
+        . = ALIGN(16);
+        __bss_start = .;
+        *(.bss .bss.*)
+        *(COMMON)
+        __bss_end = .;
+    }
+    _end = .;
+
+   /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
+}
+__bss_size = (__bss_end - __bss_start)>>3;
+```
+
++ ``.gnu.linkonce``: [2] 這些 section 是 g++ 使用的，g++ 會在自己的 section 擴展 template。這些 symbol 會被定義為 weak 且允許多重定義，而 linker 會將一個 section 納入，其餘丟皆棄
 + ``KEEP()``: [3] 當有開啟 link-time garbage collection 的時候，有開 KEEP 的區域不會被回收
-+ ``PROVIDE()``: [4] 若程式沒有提供這個 symbol，才會使用這裡提供的 symbol。
++ ``PROVIDE()``: [4] 若程式沒有提供這個 symbol (也就是標示 ``_data = .`` )，才會使用這裡提供的 symbol。
 + ``*(COMMON)``: 表示所有未被初始化的資料
 
 ## Mini UART
@@ -242,6 +262,9 @@ void uart_puts(char *s) {
 + Interrupt enable register1(page 116 of manual): set 29 bit to enable. (AUX interrupt enable)
 
 **NOTE: qemu 不會將 UART1 導向至 terminal，因此要使用 ``-serial null -serial stdio``**
+
+## Simple Shell
+...
 
 ## References
 + [1] https://github.com/bztsrc/raspi3-tutorial/tree/master/02_multicorec
