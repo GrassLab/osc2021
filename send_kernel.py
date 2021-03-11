@@ -1,7 +1,8 @@
 import serial
 import os
+import time
 
-kernel_file = os.path.join('test_kernel','kernel8_test2.img')
+kernel_file = os.path.join('test_kernel','kernel8.img')
 uart_path = os.path.join('/dev', 'pts/5')
 # uart_path = os.path.join('\\.','\COM3')
 kernel_size = os.path.getsize(kernel_file)
@@ -16,6 +17,7 @@ with open(kernel_file, "rb") as fp:
     byte = fp.read(1)
     while byte:
         srl.write(byte)
+        time.sleep(0.001)
         byte = fp.read(1)
 
 print("Transmit new kernel done\n")

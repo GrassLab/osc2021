@@ -25,11 +25,11 @@ clean:
 test:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none
 
-test_cpio:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -initrd ~/initramfs.cpio
+test_lab2:
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -initrd ../initramfs.cpio
 
-run_serial:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial pty -display none
+test_qemu_lab2:
+	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial pty -display none -initrd ../initramfs.cpio
 
 check:
 	aarch64-linux-gnu-readelf -s kernel8.elf

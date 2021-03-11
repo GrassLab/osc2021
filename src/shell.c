@@ -3,7 +3,7 @@
 
 void shell_welcome(){
     uart_puts("------------------------\r\n");
-    uart_puts("=     Bootloader       =\r\n");
+    uart_puts("=        Kernel        =\r\n");
     uart_puts("=                      =\r\n");
     uart_puts("= Author: Yuan-Yu Wu   =\r\n");
     uart_puts("------------------------\r\n");
