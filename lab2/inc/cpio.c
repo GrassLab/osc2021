@@ -50,6 +50,21 @@ cpio_header* dumpEntry(cpio_header* addr){
 	return (cpio_header*)ret;
 }
 
+cpio_header* findEntry(cpio_header* addr,char* target){
+	while(1){
+		unsigned long psize=strToU(addr->c_namesize),dsize=strToU(addr->c_filesize);
+		if((sizeof(cpio_header)+psize)&3)psize+=4-((sizeof(cpio_header)+psize)&3);
+		if(dsize&3)dsize+=4-(dsize&3);
+
+		char* path=(char*)(addr+1);
+		char* data=path+psize;
+		if(strcmp(path,"TRAILER!!!")==0)break;
+		if(strcmp(path,target)==0)return addr;
+		addr=(cpio_header*)(data+dsize);
+	}
+	return 0;
+}
+
 cpio_header* getBase(){
 	unsigned long addr=0;
 	char c;
@@ -68,11 +83,22 @@ cpio_header* getBase(){
 	return (cpio_header*)addr;
 }
 
+void getName(char* target){
+	uart_puts("Please enter file name: ");
+	int cnt=0;
+	while(1){
+		target[cnt++]=uart_getc();
+		uart_send(target[cnt-1]);
+		if(target[cnt-1]=='\n')break;
+	}
+	target[--cnt]=0;
+}
+
 void dumpArchive(){
 	//cpio_header* addr=(cpio_header*)getBase();
 	cpio_header* addr=(cpio_header*)0x8000000;
-	while(addr){
-		uart_send('\n');
-		addr=dumpEntry(addr);
-	}
+	char target[100];getName(target);
+
+	cpio_header* ret=findEntry(addr,target);
+	if(ret)dumpEntry(ret);
 }
