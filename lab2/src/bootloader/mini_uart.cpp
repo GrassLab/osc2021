@@ -22,6 +22,9 @@ void MiniUART::Init() {
     MMIO::set(MMIOREG::AUX_MU_BAUD_REG, 270);
     MMIO::set(MMIOREG::AUX_MU_IIR_REG, 6);
     MMIO::set(MMIOREG::AUX_MU_CNTL_REG, 3);
+    // Clear input buffer
+    while(MMIO::get(MMIOREG::AUX_MU_LSR_REG) & 1)
+        MMIO::get(MMIOREG::AUX_MU_IO_REG);
 }
 
 void MiniUART::Send(uint8_t ch) {
