@@ -1,0 +1,4 @@
+*.txt
+*.img
+*.elf
+ramdisk
