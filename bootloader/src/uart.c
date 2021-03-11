@@ -148,7 +148,12 @@ void uart_println(char *fmt, ...) {
         i = -i;
         uart_send('-');
       }
-      uart_puts(itoa(i, 10));
+      uart_puts(itoa((int64_t)i, 10));
+      break;
+    case 'x':
+      i = va_arg(arg, int);
+      uart_puts("0x");
+      uart_puts(itoa((int64_t)i, 16));
       break;
     case 's':
       s = va_arg(arg, char *);
