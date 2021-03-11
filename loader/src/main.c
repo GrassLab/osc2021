@@ -29,20 +29,29 @@ int main()
         size += (size_char - '0') * pow(10, exponent);
         exponent++;
 
-        printf("%c %d\n", size_char, size);
+        // printf("%c %d\n", size_char, size);
     }
 
     char *kernel = (char *)0x80000;
-    char temp;
-    // int sum = 0;
+    // char temp;
 
     for (int i = 0; i < size; i++)
-    {
-        temp = uart_getc();
-        *kernel = temp;
-        printf("%c", temp);
-        kernel++;
-    }
+        *kernel++ = uart_getc();
+    // {
+        // temp = uart_getc();
+        // *kernel = temp;
+
+        // this works
+        // printf("aaa\n");
+        
+        // this works
+        // printf("%d", i);
+        
+        // this does not work
+        // printf("%d\n", i);
+
+        // kernel++;
+    // }
 
     printf("Jump to the kernel...\n");
 
@@ -52,26 +61,13 @@ int main()
         "mov x2, x12\n"
         "mov x3, x13\n");
 
-    printf("Registers saved...\n");
+    // printf("Registers saved...\n");
 
     asm volatile(
         "mov x30, 0x80000\n"
         "ret\n");
 
     printf("After kernel jump...\n");
-
-    // void *kernel_ptr = (void *)0x80000;
-    // goto *kernel_ptr;
-
-    // asm volatile(
-    //     "mov x0, x10\n"
-    //     "mov x1, x11\n"
-    //     "mov x2, x12\n"
-    //     "mov x3, x13\n"
-    //     "mov x30, 0x80000\n"
-    //     "ret\n");
-
-    // printf("After kernel jump...\n");
 
     return 0;
 }
