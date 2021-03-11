@@ -4,7 +4,7 @@
 
 | 學號 | GitHub 帳號 | 姓名 | Email |
 | --- | ----------- | --- | --- |
-|`0856136`| `luk1684tw` | `` | luk1684tw@gmail.com |
+|`0856136`| `luk1684tw` | `鍾昀諠` | luk1684tw@gmail.com |
 
 ## How to build
 
