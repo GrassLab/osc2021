@@ -25,6 +25,9 @@ clean:
 test:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none
 
+test_cpio:
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -initrd ~/initramfs.cpio
+
 run_serial:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial pty -display none
 

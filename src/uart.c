@@ -43,6 +43,26 @@ void uart_send(unsigned int c){
     *AUX_MU_IO_REG = c;
 	
 }
+void uart_puts(char *s){
+    while(*s){
+    	if(*s == '\n') uart_send('\r');
+	// if(*s == '\r') uart_send('\n');
+	uart_send(*s++);
+    }
+}
+void uart_puts_bySize(char *s, int size){
+    for(int i = 0; i < size ;++i)
+        uart_send(*s++);
+    
+}
+
+void uart_printint(unsigned long long int num){
+    for(int i = 0; i < 64; ++i){
+        uart_send(num % 10 + '0');
+        num /= 10;
+    }
+    uart_puts("\r\n");
+}
 char uart_get(){
     char res;
     do {
@@ -53,13 +73,7 @@ char uart_get(){
     return res;
 }
 
-void uart_puts(char *s){
-    while(*s){
-    	if(*s == '\n') uart_send('\r');
-	// if(*s == '\r') uart_send('\n');
-	uart_send(*s++);
-    }
-}
+
 int uart_get_int(){
     int res = 0;
     char c;

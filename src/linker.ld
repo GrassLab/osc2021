@@ -1,8 +1,8 @@
-_stack_size = 0xA00;
+__process_size = 0x2000;
 
 SECTIONS
 {
- . = 0x60000;
+ . = 0x80000;
  __start_addr = .;
  .text : { 
 	*( .text)  
@@ -27,8 +27,7 @@ SECTIONS
  }
  .stack : {
 	 . = ALIGN(16);
-	. = . + _stack_size;
-	. = ALIGN(16);
+	. = . + __process_size;
 	__stack_top = .;
  }
  

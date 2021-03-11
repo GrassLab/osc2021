@@ -11,7 +11,7 @@ _start:
 	b 1b
 2:
 	ldr    x1, =__stack_top
-	mov    sp, x1//0x80000
+	mov    sp, x1 //0x80000
 
 	ldr    x1, =__bss_start
 	ldr    w2, =__bss_size

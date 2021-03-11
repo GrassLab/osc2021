@@ -3,7 +3,7 @@
 
 void shell_welcome(){
     uart_puts("------------------------\r\n");
-    uart_puts("=       Bootloader     =\r\n");
+    uart_puts("=     Bootloader       =\r\n");
     uart_puts("=                      =\r\n");
     uart_puts("= Author: Yuan-Yu Wu   =\r\n");
     uart_puts("------------------------\r\n");
@@ -20,9 +20,10 @@ void shell(){
         if(c == '\r'){
             uart_puts("\r\n");
             system_command(input_buffer);
-            __memset(buf_ptr, '\0', INPUT_SIZE);
+            
             uart_puts("$ ");
             buf_ptr = input_buffer;
+            __memset(buf_ptr, '\0', INPUT_SIZE);
         }
         else if(c == '\b'){
             if(buf_ptr > input_buffer){
