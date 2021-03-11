@@ -3,12 +3,12 @@
 
 #define CMD_LEN 128
 
-/*  Reboot  */
+/* Reboot */
 #define PM_PASSWORD    0x5a000000
 #define PM_RSTC        ((volatile unsigned int*)(0x3F10001c))
 #define PM_WDOG        ((volatile unsigned int*)(0x3F100024))
 
-/*  Key  */
+/* Key */
 #define LEFT_BRACKET    (char)91
 #define DELETE          (char)127
 #define TAB             (char)9
@@ -56,7 +56,7 @@ static void get_cmd(char *s) {
     int esc_state = 0;
     char c = uart_getc();
     while (c != '\n') {
-        if (c == DELETE) {  /*  Key - Delete  */
+        if (c == DELETE) { /* Key - Delete */
             if (cursor) {
                 char delete[4] = {ESC, LEFT_BRACKET, (char)68, '\0'};
                 print(delete);
@@ -68,10 +68,10 @@ static void get_cmd(char *s) {
                 esc_state = 0;
             }
         }
-        else if (c == ESC) {  /*  Key - Esc  */
+        else if (c == ESC) { /* Key - Esc */
             esc_state = 1;
         }
-        else if (c == LEFT_BRACKET && esc_state) {  /*  Key - Left Bracket  */
+        else if (c == LEFT_BRACKET && esc_state) { /* Key - Left Bracket */
             esc_state = 0;
             uart_getc();
         }
@@ -92,9 +92,9 @@ static void get_cmd(char *s) {
 
 void run_shell() {
     char cmd[CMD_LEN];
-    /*  Flush first character  */
+    /* Flush first character */
     uart_getc();
-    /*  Print enter information  */
+    /* Print enter information */
     print("==================================\n");
     print("=== Raspberry Pi 3 Model b+ OS ===\n");
     print("==================================\n");
