@@ -41,6 +41,9 @@
 	sudo apt-get install -y libpixman-1-dev
 	```
 
+### Cross GDB
+``sudo apt install gdb-multiarch``
+
 ## How to build
 ### Source code to object code
 ``aarch64-linux-gnu-gcc-8 -c a.S``
