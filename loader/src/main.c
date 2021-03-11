@@ -10,7 +10,7 @@ int main()
 
     // say hello
     printf("Hello World!\n");
-    printf("Send the size of the kernel image first.\n");
+    printf("You can start to send the kernel image now!\n");
 
     char size_char = '0';
     int size = 0, exponent = 0;
@@ -32,23 +32,46 @@ int main()
         printf("%c %d\n", size_char, size);
     }
 
-    printf("You can start to send the kernel image now!\n");
     char *kernel = (char *)0x80000;
+    char temp;
+    // int sum = 0;
 
     for (int i = 0; i < size; i++)
     {
-        printf("%d\n", i);
-        *kernel++ = uart_getc();
+        temp = uart_getc();
+        *kernel = temp;
+        printf("%c", temp);
+        kernel++;
     }
 
     printf("Jump to the kernel...\n");
 
     asm volatile(
-        "mov x0, x10;"
-        "mov x1, x11;"
-        "mov x2, x12;"
-        "mov x3, x13;"
-        "mov x30, 0x80000; ret");
+        "mov x0, x10\n"
+        "mov x1, x11\n"
+        "mov x2, x12\n"
+        "mov x3, x13\n");
+
+    printf("Registers saved...\n");
+
+    asm volatile(
+        "mov x30, 0x80000\n"
+        "ret\n");
+
+    printf("After kernel jump...\n");
+
+    // void *kernel_ptr = (void *)0x80000;
+    // goto *kernel_ptr;
+
+    // asm volatile(
+    //     "mov x0, x10\n"
+    //     "mov x1, x11\n"
+    //     "mov x2, x12\n"
+    //     "mov x3, x13\n"
+    //     "mov x30, 0x80000\n"
+    //     "ret\n");
+
+    // printf("After kernel jump...\n");
 
     return 0;
 }

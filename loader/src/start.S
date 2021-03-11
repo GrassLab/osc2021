@@ -66,7 +66,7 @@ _start:
     ldr     x2, =_loader_size
     subs    x1, x1, x2
     blr     x1*/
-4:  bl      main - 4096
+4:  bl      main - 8192
 // 4:  bl      main
     // for failsafe, halt this core too
     b       1b

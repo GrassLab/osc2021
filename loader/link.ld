@@ -25,7 +25,7 @@
  
 SECTIONS
 {
-    . = 0x80000 - 4096;
+    . = 0x80000 - 8192;
     _loader_start = .;
     .text : { KEEP(*(.text.boot)) *(.text .text.*) }
     .rodata : { *(.rodata .rodata.*) }
