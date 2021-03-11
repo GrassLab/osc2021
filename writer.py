@@ -25,9 +25,17 @@ with open(args.filename, 'rb') as file:
             length_sent = length_sent // 10
             
             device.write(str(digit).encode())
+            device.flush()
 
         device.write(str('\n').encode())
+        device.flush()
+
+        sum = 0
 
         for i in range(length):
             device.write(raw[i: i+1])
+            device.flush()
             print(i)
+            # sum += raw[i: i+1]
+
+        # print(sum)

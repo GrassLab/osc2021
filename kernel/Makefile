@@ -5,7 +5,8 @@ INCLUDE_DIR = include
 SRC_DIR = src
 OBJ_DIR = build
 
-CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
+CFLAGS = -Wall -O2 -ffreestanding -nostdlib -nostartfiles
+# CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
 CC = aarch64-linux-gnu-gcc
 LINKER = aarch64-linux-gnu-ld
 OBJ_CPY = aarch64-linux-gnu-objcopy

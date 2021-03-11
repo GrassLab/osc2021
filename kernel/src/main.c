@@ -1,5 +1,6 @@
 #include "uart.h"
 #include "shell.h"
+#include "printf.h"
 
 int main()
 {
