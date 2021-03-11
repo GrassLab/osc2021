@@ -1,11 +1,7 @@
 
 help
-hello
 loadimg
 0x80000
 kernel8.img
-123
-hello
 help
-= =
-reboot
+123

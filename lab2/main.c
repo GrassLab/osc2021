@@ -45,7 +45,7 @@ void loadImg(){
 	uart_printf("%d\n",k_size);
 
 	uart_puts("Please send kernel image now...\n");
-	if(c_addr>k_addr+k_size||c_addr+c_size<k_addr){//no overlape
+	if(c_addr>k_addr+k_size||c_addr+c_size<k_addr){//no overlap
 		unsigned char* target=(unsigned char*)k_addr;
 		while(k_size--){
 			*target=uart_getb();
@@ -55,8 +55,9 @@ void loadImg(){
 
 		uart_puts("loading...\n");
 		asm volatile("br %0\n"::"r"(k_addr));
-	}else{//overlape
+	}else{//overlap
 		unsigned long tmp_addr=min(c_addr,k_addr)-(c_size+k_size);
+		tmp_addr&=(~0x3);//alignment
 		unsigned char* target=(unsigned char*)tmp_addr;
 		for(int i=0;i<c_size;++i){//cur prog
 			*target=((unsigned char*)c_addr)[i];
