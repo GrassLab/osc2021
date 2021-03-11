@@ -4,7 +4,7 @@ __stack_top  = 0xA0000;
 
 SECTIONS
 {
-    . = 0x80000;
+    . = 0x50000;
     .text :  { *(.text) }
     .rodata : { *(.rodata) }
     .data : { *(.data) }

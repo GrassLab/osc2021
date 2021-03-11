@@ -1,0 +1,2 @@
+kernel_address=0x60000
+arm64_bit=1
