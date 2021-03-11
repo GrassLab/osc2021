@@ -24,7 +24,6 @@
  */
 
 #include "uart.h"
-#include "shell.h"
 
 void main()
 {
@@ -32,7 +31,27 @@ void main()
     uart_init();
     
     // say hello
-    uart_puts("Hello World!\n");
-    
-    ShellStart();
+    uart_puts("Wait for read kernel img...\n");
+
+    while(uart_getc() != 's');
+
+    uart_puts("Start to read kernel size...\n");
+
+    int kernel_size = 0;
+    for (int i = 0; i < 4; ++i)
+    {
+        char c = uart_getc();
+
+        kernel_size |= c << i * 8;
+    }
+
+    char *start_address = (char *)0x80000;
+    for (int i = 0; i < kernel_size; ++i)
+    {
+	char c = uart_getc();
+
+	*(start_address + i) = c;
+    }
+
+    goto *start_address;
 }

@@ -30,7 +30,7 @@ CC = aarch64-linux-gnu-gcc
 LINKER = aarch64-linux-gnu-ld
 OBJ_CPY = aarch64-linux-gnu-objcopy
 
-all: clean kernel8.img
+all: clean bootloader.img
 
 start.o: start.S
 	$(CC) $(CFLAGS) -c start.S -o start.o
@@ -38,12 +38,12 @@ start.o: start.S
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-kernel8.img: start.o $(OBJS)
-	$(LINKER) -nostdlib -nostartfiles start.o $(OBJS) -T linker.ld -o kernel8.elf
-	$(OBJ_CPY) -O binary kernel8.elf kernel8.img
+bootloader.img: start.o $(OBJS)
+	$(LINKER) -nostdlib -nostartfiles start.o $(OBJS) -T linker.ld -o bootloader.elf
+	$(OBJ_CPY) -O binary bootloader.elf bootloader.img
 
 clean:
-	rm kernel8.elf *.o >/dev/null 2>/dev/null || true
+	rm bootloader.elf *.o >/dev/null 2>/dev/null || true
 
 run:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio
+	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial stdio
