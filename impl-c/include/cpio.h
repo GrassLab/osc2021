@@ -39,3 +39,6 @@ int cpioInfo(void *archive, CpioSummaryInfo *info);
 
 // Print file names inside a CPIO archive (using uart)
 int cpioLs(void *archive);
+
+// Get file by return it's content and the size in memory.
+void *cpioGetFile(void *archive, const char *name, unsigned long *size);

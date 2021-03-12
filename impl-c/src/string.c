@@ -29,9 +29,9 @@ int strlen(const char *str) {
 // Caution:
 //  1. Copy the string returned if you need to store result
 //  2. Only pass in positive values
-char *itoa(int val, int base) {
-  static char buf[32] = {0};
-  int i = 30;
+char *itoa(int64_t val, int base) {
+  static char buf[64] = {0};
+  int i = 31;
   if (val == 0) {
     buf[i] = '0';
     return &buf[i];

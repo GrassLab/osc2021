@@ -24,10 +24,27 @@ int cpioLs(void *archive) {
   return 0;
 }
 
+void *cpioGetFile(void *archive, const char *name, unsigned long *size) {
+  CpioNewcHeader *header, *next;
+  const char *filename;
+  void *fileContent;
+  int err;
+  for (header = archive;; header = next) {
+    err = _cpioParseHeader(header, &filename, size, &fileContent, &next);
+    if (err) {
+      return NULL;
+    }
+    if (strcmp(filename, name) == 0) {
+      return fileContent;
+    }
+  }
+  return NULL;
+}
+
 int cpioInfo(void *archive, CpioSummaryInfo *info) {
   CpioNewcHeader *header, *next;
   const char *filename;
-  void *result;
+  void *data;
   int err;
   uint64_t filesize, curPathSize;
 
@@ -37,16 +54,14 @@ int cpioInfo(void *archive, CpioSummaryInfo *info) {
   info->mxPathSize = 0;
 
   header = archive;
-  for (;;) {
-    err = _cpioParseHeader(header, &filename, &filesize, &result, &next);
+  for (uint32_t i = 0;; i++, info->numFiles++, header = next) {
+    err = _cpioParseHeader(header, &filename, &filesize, &data, &next);
     if (err == -1) {
       return err;
     } else if (err == 1) {
       // EOF
       return 0;
     }
-    info->numFiles++;
-    header = next;
 
     // Check if this is the maximum file path size.
     curPathSize = strlen(filename);
@@ -63,9 +78,9 @@ int _hexChar2Int(char c) {
   case '0' ... '9':
     return c - '0';
   case 'a' ... 'f':
-    return c - 'a';
+    return c - 'a' + 10;
   case 'A' ... 'F':
-    return c - 'A';
+    return c - 'A' + 10;
   default:
     return -1;
   }

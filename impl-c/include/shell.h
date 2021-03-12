@@ -9,7 +9,7 @@ typedef enum AnsiEscType {
 } AnsiEscType;
 
 enum KeyboardInput {
-  KI_BackSpace = '\b',             // 18
+  KI_BackSpace = '\b',             // 8
   KI_LineFeed = '\n',              // 10
   KI_CarrageReturn = '\r',         // 13
   KI_Esc = '\e',                   // 27

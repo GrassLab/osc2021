@@ -169,7 +169,7 @@ void shellInputLine() {
       buffer[curInputSize] = 0;
       uart_puts("\r\n");
       if (CFG_LOG_ENABLE) {
-        uart_println("GET:'%s'", buffer);
+        uart_println("buffer: '%s'", buffer);
       }
       break;
     default:
@@ -179,12 +179,30 @@ void shellInputLine() {
   }
 }
 
+int _tryFetchFile() {
+  unsigned long size;
+  uint8_t *file = (uint8_t *)cpioGetFile((void *)RAMFS_ADDR, buffer, &size);
+  if (file != NULL) {
+    if (CFG_LOG_ENABLE) {
+      uart_println("  [fetchFile] file addr:%x , size:%d", file, size);
+    }
+    for (unsigned long i = 0; i < size; i++) {
+      uart_send(file[i]);
+    }
+    uart_println("");
+    return 0;
+  }
+  return 1;
+}
+
 // Process command resides in buffer
 void shellProcessCommand() {
   Cmd *end = cmdList + sizeof(cmdList) / sizeof(Cmd);
   for (Cmd *c = cmdList; c != end; c++) {
     if (!strcmp(c->name, buffer)) {
       c->func();
+      return;
     }
   }
+  _tryFetchFile();
 }
