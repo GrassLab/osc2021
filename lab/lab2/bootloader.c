@@ -2,99 +2,60 @@
 
 #include "uart.h"
 #include "utils.h"
-void mem_reset(char *buff, int size) {
-  for (int i = 0; i < size; i++) buff[i] = '\0';
-}
-
-void get_cmd(char *buff) {
-  char c;
-  mem_reset(buff, buff_size);
-  for (int i = 0; (c = uart_getc()); i++) {
-    if (c == '\r') {
-      uart_puts("\r\n");
-      break;
-    }
-    /* backspace handler */
-    else if (c == '\b') {
-      buff[--i] = 0;
-      if (i >= 0) uart_puts("\b \b");
-      if (i-- < 0) i = -1;
-      continue;
-    }
-    buff[i] = c;
-    uart_send(c);
-  }
-}
-
-/*  do_funcs */
 void do_reset(int tick) {         // reboot after watchdog timer expire
   *PM_RSTC = PM_PASSWORD | 0x20;  // full reset
   *PM_WDOG = PM_PASSWORD | tick;  // number of watchdog tick
 }
 
-int strcmp(char *array_1, char *array_2) {
-  int i;
-  for (i = 0; array_1[i] != '\0'; i++)
-    if (array_1[i] != array_2[i]) return 0;
-  if (array_2[i] != '\0') return 0;
-  return 1;
-}
 void do_hello() { uart_puts("Hello World!\r\n"); }
 void do_help() {
   uart_puts("help: print available commands\r\n");
   uart_puts("hello: print Hello World!\r\n");
-  uart_puts("reboot: restart OS\b\r\n");
+  uart_puts("reboot: restart device\r\n");
 }
 void do_except(char *buff) {
   uart_puts("No command: ");
   uart_puts(buff);
   uart_puts("\r\n");
 }
-void do_jump(char *new_address) { _branch((unsigned long int *)new_address); }
-void do_load() {
-  /* copy this process*/
-  char *now = _start, *end = _end, *new = (char *)(_start + MOVE_BYTES);
-  for (; now < end; now++, new ++) *new = *now;
-  uart_puts("copy finish\n");
+void do_jump(char *new_addr) {
+  uart_puts("Plz start to send kernel!\r\n");
+  char buff[buff_size];
+  unsigned int kernel_size, i = 0;
 
-  /* get _branch address */
-  // void (*func_ptr)() = _moveTo;
-  void (*func_ptr)() = do_jump;
-  func_ptr = func_ptr + MOVE_BYTES;
-  // func_ptr(func_ptr);
+  /* get kernel size */
+  do buff[i] = uart_getc();
+  while (buff[i++]);
 
-  /* jump to new process*/
-  // char buff[64];
-  // itoa(_start, buff);
-  // uart_puts(itoa(_start, buff));
-  // uart_puts("\n");
-  // uart_puts(itoa(func_ptr, buff));
-  // uart_puts("\n");
-  // uart_puts(itoa(_end, buff));
-  // uart_puts("\n");
-  // uart_puts("\n");
+  kernel_size = atoi(buff);
+  uart_puts("Kernel Size: ");
+  uart_puts(buff);
+  uart_puts("\r\n");
 
-  // uart_puts(itoa((char *)(_start + MOVE_BYTES), buff));
-  // uart_puts("\n");
-  // unsigned long int fff = func_ptr;
-  // func_ptr = func_ptr + MOVE_BYTES;
-  // uart_puts(itoa(func_ptr, buff));
-  // uart_puts("\n");
-  // uart_puts(itoa(new, buff));
-  // uart_puts("\n");
-  // uart_puts("\n");
-
-  // uart_puts(itoa((char *)(_start + MOVE_BYTES) - _start, buff));
-  // uart_puts("\n");
-  // uart_puts(itoa(func_ptr - fff, buff));
-  // uart_puts("\n");
-  // uart_puts(itoa(new - _end, buff));
-  // uart_puts("\n");
-  // uart_puts("\n");
-
-  // _moveTo((unsigned long int *)func_ptr, (unsigned long int)MOVE_BYTES);
+  /* get kernel */
+  for (i = 0; i < kernel_size; i++) {
+    new_addr[i] = uart_getc();
+    uart_puts("\r");
+    uart_puts(itoa(i + 1, buff));
+    uart_puts(" / ");
+    uart_puts(itoa(kernel_size, buff));
+  }
+  uart_puts("\r\nload finish\r\n");
+  _branch((unsigned long int *)new_addr);  // jump to kernel
 }
 
+void do_load() {
+  /* copy this process */
+  char *now = _start, *end = _end, *new = _start + SHIFT_ADDR;
+  for (; now <= end; now++, new ++) *new = *now;
+  uart_puts("copy finish\r\n");
+
+  /* get and jump copy func address */
+  void (*func_ptr)() = do_jump;
+  void (*func_call)(char *) = (void (*)(char *))((unsigned long int)func_ptr +
+                                                 (unsigned long int)SHIFT_ADDR);
+  func_call((char *)KERNEL_ADDR);
+}
 void shell() {
   char buff[buff_size];
   /* say hello */
@@ -114,17 +75,16 @@ void shell() {
     else if (strcmp(buff, "reboot")) {
       do_reset(100);
       return;
-    } else if (strcmp(buff, "load")) {
+    } else if (strcmp(buff, "load"))
       do_load();
-      uart_puts("DDDDDD\n");
-    } else
+    else
       do_except(buff);
   }
 }
 void main() {
   uart_init();  // set up serial console
-  // while (uart_getc() == '\0')
-  //   ;
-  // uart_getc();
+  while (uart_getc() == '\0')
+    ;
+  uart_getc();
   shell();
 }

@@ -1,0 +1,30 @@
+c_magic     070701
+c_ino       00F400F0
+c_mode      000041ED
+c_uid       000003E8
+c_gid       000003E8
+c_nlin      00000002
+c_mtim      6048A631
+c_filesize  00000000
+c_devmajor  00000103
+c_devminor  00000005
+c_rdevmajo  00000000
+c_rdevmino  00000000
+c_namesize  00000002
+c_check     00000000
+
+
+c_magic     070701
+c_ino       00F414B2
+c_mode      000081A4
+c_uid       000003E8
+c_gid       000003E8
+c_nlin      00000001
+c_mtim      6048A546
+c_filesize  0000001C
+c_devmajor  00000103
+c_devminor  00000005
+c_rdevmajo  00000000
+c_rdevmino  00000000
+c_namesize  00000009
+c_check     00000000

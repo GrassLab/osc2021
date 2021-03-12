@@ -1,4 +1,4 @@
-initramfs initramfs.cpio 0x20000000
-kernel_address=0x60000
+kernel_address=0x80000
 kernel=bootloader.img
-arm64_bit=1
+arm_64bit=1
+initramfs initramfs.cpio 0x8000000

@@ -13,9 +13,9 @@ _error:
 
 
 _setup_stack:
-	//ldr 		x0, =_stack_top
-	//mov 		sp, x0
-	mov sp, #0x80000
+	ldr 		x0, =_stack_top
+	mov 		sp, x0
+	// mov sp, #0x80000
 
 _setup_bss:
 	ldr     x1, =_bss_top

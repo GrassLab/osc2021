@@ -36,7 +36,7 @@ void uart_send(unsigned int c) {
   do {
     asm volatile("nop");
     /* This bit is set if the transmit FIFO can accept at least one byte. */
-  } while (!(*AUX_MU_LSR & 0x20));  // wait for output bit(0x20) on
+  } while (~(*AUX_MU_LSR) & 0x20);  // wait for output bit(0x20) on
 
   *AUX_MU_IO = c;  // write the character to the buffer
 }
@@ -47,7 +47,7 @@ char uart_getc() {
   do {
     asm volatile("nop");
     /* This bit is set if there was a receiver overrun */
-  } while (!(*AUX_MU_LSR & 0x01));  // wait for intput bit(0x01) on
+  } while (~(*AUX_MU_LSR) & 0x01);  // wait for intput bit(0x01) on
 
   return (char)(*AUX_MU_IO);  // read it and return
 }
