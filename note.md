@@ -248,9 +248,6 @@ void uart_send(unsigned int c) {
 ```c=
 void uart_puts(char *s) {
     while(*s) {
-        /* convert newline to carrige return + newline */
-        if(*s=='\n')
-            uart_send('\r');
         uart_send(*s++);
     }
 }

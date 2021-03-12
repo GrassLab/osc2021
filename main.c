@@ -1,13 +1,12 @@
 #include "uart.h"
-#include "str.h"
-
+#include "shell.h"
 
 void main() {
-    const char *command[2] = { "help", "hello" };
-    
     uart_init();
 
-    while(true) {
+    shell_welcome_message();
 
+    while(1) {
+        shell_start();
     } 
 }

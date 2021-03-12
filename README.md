@@ -9,8 +9,8 @@
 ## How to build
 ``make``
 
-## QEMU
-``make qemu``
+## How to run
+``make run``
 
 ## How to burn it into pi3
 ``make burn``
