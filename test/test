@@ -33,7 +33,7 @@ def dumpImg(dev,k_addr='0xa0000',kernel='kernel87.img'):
 def getLine(file):
 	cmd=f.readline()
 	if cmd=='':
-		cmd=input('\n(STDIN)');
+		cmd=input('\n(Relay)');
 		cmd=cmd+'\n'
 	return cmd
 

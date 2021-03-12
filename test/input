@@ -2,6 +2,6 @@
 help
 loadimg
 0x80000
-kernel8.img
+../lab2/kernel8.img
 help
 123
