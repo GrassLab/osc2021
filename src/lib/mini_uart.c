@@ -25,7 +25,7 @@ void init_uart()
     put32(AUX_MU_LCR_REG, 3);
     put32(AUX_MU_MCR_REG, 0);
     put32(AUX_MU_BAUD_REG, 270); // set baud rate
-    put32(AUX_MU_IIR_REG, 6); // ?
+    put32(AUX_MU_IIR_REG, 6);
     put32(AUX_MU_CNTL_REG, 3);
 }
 
