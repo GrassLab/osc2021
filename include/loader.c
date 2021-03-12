@@ -11,7 +11,7 @@ unsigned long remote_load (unsigned long *base, unsigned long size) {
         tmp |= c;
         buf64 |= tmp << ((i % 8) * 8);
         if (i % 8 == 7) {
-            hex |= buf64;
+            hex ^= buf64;
             *base++ = buf64;
             buf64 = 0;
         }

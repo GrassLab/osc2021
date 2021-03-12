@@ -135,10 +135,14 @@ void uart_getline (char *buffer, unsigned int size) {
     for (int i = 0; i < size - 1; i++) {
         char c = uart_getc();
         if (c == '\n' || c == '\r') {
+#ifdef UART_REPLY
             uart_send("\r\n");
+#endif
             break;
         }
+#ifdef UART_REPLY
         uart_sendc(c);
+#endif
         buffer[i] = c;
     }
 }

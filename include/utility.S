@@ -22,3 +22,7 @@ get_bootloader_end:
 get__start:
     ldr x0, =_start
     ret
+
+.global jump_address
+jump_address:
+    br x0

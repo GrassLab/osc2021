@@ -5,6 +5,7 @@
 #include "mailbox.h"
 #include "debug.h"
 #include "loader.h"
+#include "utility.h"
 #define BUFFER_SIZE 64
 
 void parse_command (char *b) {
@@ -53,11 +54,25 @@ void parse_command (char *b) {
         uart_send("size: ");
         uart_getline(buffer, BUFFER_SIZE);
         unsigned long size = atoui(buffer);
+
+        /* send kernel base address and size */
+        uart_send("+========================+\r\n");
+        uart_send("|       kernel info      |\r\n");
+        uart_send("+========================+\r\n");
+        uart_send("address: ");
         uart_sendh(address);
         uart_send("\r\n");
+        uart_send("size: ");
         uart_sendh(size);
         uart_send("\r\n");
-        remote_load((unsigned long *)address, size);
+
+        long checksum = remote_load((unsigned long *)address, size);
+        uart_send("checksum: ");
+        uart_sendh(checksum);
+        uart_send("\r\n");
+    }
+    else if (!strcmp(b, "jump")) {
+        jump_address(0x80000);
     }
     else if (!strcmp(b, "test")) {
     }
@@ -75,7 +90,7 @@ int main () {
 
     uart_send("\r\n");
     uart_send("+========================+\r\n");
-    uart_send("|       osdi shell       |\r\n");
+    uart_send("|       bootloader       |\r\n");
     uart_send("+========================+\r\n");
 
     while (1) {
