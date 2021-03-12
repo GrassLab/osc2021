@@ -5,6 +5,7 @@
 
 // CPIO manual page
 // https://www.freebsd.org/cgi/man.cgi?query=cpio&sektion=5
+#define RAMFS_ADDR 0x8000000
 
 #define CPIO_HEADER_MAGIC "070701"
 #define CPIO_FOOTER_MAGIC "TRAILER!!!"
@@ -33,4 +34,8 @@ typedef struct cpioSummaryInfo {
   unsigned int mxPathSize;
 } CpioSummaryInfo;
 
+// Get summary information inside a CPIO archive
 int cpioInfo(void *archive, CpioSummaryInfo *info);
+
+// Print file names inside a CPIO archive (using uart)
+int cpioLs(void *archive);

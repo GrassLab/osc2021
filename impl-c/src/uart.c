@@ -152,3 +152,40 @@ void uart_println(char *fmt, ...) {
   uart_puts("\r\n");
   va_end(arg);
 }
+
+// same as println, but without a newline at the end
+void uart_printf(char *fmt, ...) {
+  unsigned int i;
+  char *s;
+
+  va_list arg;
+  va_start(arg, fmt);
+  for (; fmt; fmt++) {
+    // Send leading chars
+    while (*fmt != '%' && *fmt) {
+      uart_send(*fmt++);
+    }
+    if (*fmt == 0)
+      break;
+    // Start parsing %..
+    fmt++;
+    switch (*fmt) {
+    case 'd':
+      i = va_arg(arg, int);
+      if (i < 0) {
+        i = -i;
+        uart_send('-');
+      }
+      uart_puts(itoa(i, 10));
+      break;
+    case 's':
+      s = va_arg(arg, char *);
+      uart_puts(s);
+      break;
+    case '%':
+      uart_send('%');
+      break;
+    }
+  }
+  va_end(arg);
+}

@@ -1,4 +1,5 @@
 #include "cpio.h"
+#include "cfg.h"
 #include "string.h"
 #include "uart.h"
 
@@ -7,6 +8,21 @@ int64_t _parseHexStr(const char *buf, int len);
 uintptr_t _alignUp(unsigned long n, unsigned long align);
 int _cpioParseHeader(CpioNewcHeader *header, const char **filename,
                      uint64_t *_filesize, void **data, CpioNewcHeader **next);
+
+int cpioLs(void *archive) {
+  CpioNewcHeader *header, *next;
+  const char *filename;
+  void *fileContent;
+  int err;
+  for (header = archive;; header = next) {
+    err = _cpioParseHeader(header, &filename, NULL, &fileContent, &next);
+    if (err) {
+      return 1;
+    }
+    uart_println(" %s", filename);
+  }
+  return 0;
+}
 
 int cpioInfo(void *archive, CpioSummaryInfo *info) {
   CpioNewcHeader *header, *next;
@@ -84,7 +100,9 @@ uintptr_t _alignUp(uintptr_t n, unsigned long align) {
 int _cpioParseHeader(CpioNewcHeader *header, const char **filename,
                      uint64_t *_filesize, void **data, CpioNewcHeader **next) {
   if (strncmp(header->magic, CPIO_HEADER_MAGIC, 6)) {
-    uart_println("detect crashed file");
+    if (CFG_LOG_ENABLE) {
+      uart_println("  [parseHeader] uncorrect header magic field");
+    }
     return 1;
   }
 
@@ -93,14 +111,19 @@ int _cpioParseHeader(CpioNewcHeader *header, const char **filename,
       ((namesize = _parseHexStr(header->namesize, 8)) == -1)) {
     return -1;
   }
-  uart_println("[file] size:%d, namesize:%d", filesize, namesize);
+  if (CFG_LOG_ENABLE) {
+    uart_println("  [parseHeader] found entry: size:%d, namesize:%d", filesize,
+                 namesize);
+  }
 
   // Get filename && filesize
   *filename = ((char *)header) + sizeof(CpioNewcHeader);
 
   // Ensure this file is not the trailer in CPIO indicating EOF.
   if (strncmp(*filename, CPIO_FOOTER_MAGIC, sizeof(CPIO_FOOTER_MAGIC)) == 0) {
-    uart_println("get trailer");
+    if (CFG_LOG_ENABLE) {
+      uart_println("  [parseHeader] hit cpio footer");
+    }
     return -1;
   }
 

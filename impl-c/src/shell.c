@@ -1,6 +1,7 @@
 #include "shell.h"
 #include "bool.h"
 #include "cfg.h"
+#include "cpio.h"
 #include "string.h"
 #include "uart.h"
 
@@ -9,6 +10,7 @@
 #define PM_WDOG ((volatile unsigned int *)0x3F100024)
 
 void cmdHello();
+void cmdLs();
 void cmdHelp();
 void cmdReboot();
 
@@ -24,6 +26,7 @@ int curInputSize = 0;
 
 Cmd cmdList[] = {
     {.name = "hello", .help = "Greeting", .func = cmdHello},
+    {.name = "ls", .help = "list files", .func = cmdLs},
     {.name = "help", .help = "Show avalible commands", .func = cmdHelp},
     {.name = "reboot", .help = "Reboot device", .func = cmdReboot},
 };
@@ -32,10 +35,16 @@ void cmdHello() { uart_println("Hello!!"); }
 void cmdHelp() {
   uart_println("available commands:");
   Cmd *end = cmdList + sizeof(cmdList) / sizeof(Cmd);
+  const int minIndent = 8;
   for (Cmd *c = cmdList; c != end; c++) {
-    uart_println("  %s  \t%s", c->name, c->help);
+    uart_printf("  %s", c->name);
+    for (int i = minIndent - strlen(c->name); i > 0; i--) {
+      uart_puts(" ");
+    }
+    uart_println("%s", c->help);
   }
 }
+void cmdLs() { cpioLs((void *)RAMFS_ADDR); }
 void cmdReboot() {
   uart_println("reboot");
   *PM_RSTC = PM_PASSWORD | 0x20;

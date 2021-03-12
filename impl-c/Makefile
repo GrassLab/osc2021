@@ -25,7 +25,7 @@ all: directories $(TARGET)
 $(ENTRY_OBJS): $(ENTRY)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(LDSCRIPT)
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(LDSCRIPT) include/cfg.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TARGET): $(ENTRY_OBJS) $(OBJS)

@@ -31,6 +31,7 @@ void uart_send(unsigned int c);
 char uart_getc();
 void uart_puts(char *s);
 void uart_println(char *format, ...);
+void uart_printf(char *format, ...);
 
 
 #endif
