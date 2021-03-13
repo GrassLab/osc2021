@@ -3,6 +3,9 @@
 
 !res/*
 res/*.cpio
+poetry.lock
+res/bootloader
+res/kernel
 
 #=========================
 #     MacOS

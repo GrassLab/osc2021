@@ -1,0 +1,6 @@
+file impl-c/kernel8.elf
+dir impl-c
+target remote :1234
+
+tui enable
+si
