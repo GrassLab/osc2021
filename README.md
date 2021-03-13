@@ -12,6 +12,6 @@
 
 ## TODO
 - [x] load kernel image via uart
-- [ ] add cpio archive
+- [x] add cpio archive
 - [ ] change the name of bootloader image (elective)
 - [ ] implement dtb parser (elective)

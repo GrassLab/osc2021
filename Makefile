@@ -41,7 +41,13 @@ UART := UART_MINI # UART_MINI or UART_PL011
 CCFLAG := -Wall -nostdlib -Og -D$(UART) -I$(INC_DIR)
 ASMFLAG := -Isrc
 
-all: $(BOOTLOADER).img $(KERNEL).img
+# cpio archive
+CPIO_DIR := rootfs
+CPIO_FILES := $(wildcard $(CPIO_DIR)/*)
+CPIO := initramfs.cpio
+QEMU_CPIO := -initrd $(CPIO)
+
+all: $(BOOTLOADER).img $(KERNEL).img $(CPIO)
 
 # include files
 $(INC_BUILD)/%.o: $(INC_DIR)/%.c
@@ -78,9 +84,13 @@ $(BUILD_DIR)/%.o: $(DIR)/%.S
 	@mkdir -p $(BUILD_DIR)
 	$(COMPILER) $(CCFLAG) -I$(DIR) -c $< -o $@
 
+# cpio archive
+$(CPIO): $(CPIO_FILES)
+	cd $(CPIO_DIR) && find . | cpio -o -H newc > ../$(CPIO)
+
 # debug tools
 exe:
-	$(QEMU) -M raspi3 -kernel $(TEST_IMG) -display none -serial null -serial pty
+	$(QEMU) -M raspi3 -kernel $(TEST_IMG) $(QEMU_CPIO) -display none -serial null -serial pty
 
 dump:
 	$(QEMU) -M raspi3 -kernel $(TEST_IMG) -display none -d in_asm
@@ -94,5 +104,6 @@ gdb:
 
 clean:
 	rm -rf $(BUILD_DIR)
+	rm -rf $(CPIO)
 	rm -f $(KERNEL).elf $(KERNEL).img
 	rm -rf $(BOOTLOADER).elf $(BOOTLOADER).img

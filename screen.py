@@ -45,8 +45,9 @@ def load_kernel (fileName):
     size = os.path.getsize(fileName)
     base_address = 0x80000
     aligned_size = (size // 8) * 8 + 16
-    nonblock_read()
+    #nonblock_read()
     send('load')
+    nonblock_clear()
     send(f'{base_address}')
     nonblock_clear()
     send(f'{aligned_size}')
@@ -70,20 +71,28 @@ def load_kernel (fileName):
     checksum ^= int.from_bytes(longb, byteorder='little') ^ end_tag
     longb += end_tag.to_bytes(8, byteorder='little')
     ser.write(longb)
-    for i in range(5):
+    for i in range(6):
         print(get_line())
     checksum_str = get_line()
     checksum_recv = int(checksum_str.split(' ')[1], 0)
     print(checksum_str)
     if checksum_recv == checksum:
         print('\nsuceed to load kernel~~~~~~')
-        nonblock_read()
+        nonblock_clear()
         return True
     else:
         print('\n!!!! fail to load kernel !!!!')
-        nonblock_read()
+        nonblock_clear()
         return False
 
+def auto_load ():
+    if load_kernel('kernel8.img'):
+        nonblock_clear()
+        send('jump')
+        nonblock_read()
+
+
+auto_load()
 while True:
     command = input()
     if command == 'exit':

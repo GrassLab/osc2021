@@ -5,10 +5,18 @@
 #include "mailbox.h"
 #include "debug.h"
 #include "loader.h"
+#include "cpio.h"
 #define BUFFER_SIZE 64
 
 void parse_command (char *b) {
-    if (!strcmp(b, "hello")) {
+    char token[128];
+    int i = 0;
+    for (; i < 128 && b[i] != '\0' && b[i] != ' '; i++) {
+        token[i] = b[i];
+    }
+    token[i] = '\0';
+
+    if (!strcmp(token, "hello")) {
         uart_send("Hello World!\n");
     }
     else if (!strcmp(b, "help")) {
@@ -19,7 +27,6 @@ void parse_command (char *b) {
         uart_send("version: show rapi version\r\n");
         uart_send("vcm: get vc memory\r\n");
         uart_send("x/[num]gx [address]: print value in memory\r\n");
-        uart_send("load: load kernel image via mini-uart\r\n");
     }
     else if (!strcmp(b, "reboot")) {
         uart_send("reboot~~\n");
@@ -45,21 +52,14 @@ void parse_command (char *b) {
         else
             uart_send("fail\r\n");
     }
-    else if (!strcmp(b, "load")) {
-        uart_send("address: ");
-        char buffer[BUFFER_SIZE];
-        uart_getline(buffer, BUFFER_SIZE);
-        unsigned long address = atoui(buffer);
-        uart_send("size: ");
-        uart_getline(buffer, BUFFER_SIZE);
-        unsigned long size = atoui(buffer);
-        uart_sendh(address);
-        uart_send("\r\n");
-        uart_sendh(size);
-        uart_send("\r\n");
-        remote_load((unsigned long *)address, size);
+    else if (!strcmp(b, "ls")) {
+        cpio_show_files();
+    }
+    else if (!strcmp(token, "cat")) {
+        cpio_cat_interface(b);
     }
     else if (!strcmp(b, "test")) {
+        cpio_cat_file("test.txt");
     }
     else if (mem_print(b)) {
     }

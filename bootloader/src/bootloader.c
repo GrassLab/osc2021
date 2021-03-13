@@ -56,6 +56,7 @@ void parse_command (char *b) {
         unsigned long size = atoui(buffer);
 
         /* send kernel base address and size */
+        uart_send("\r\n");
         uart_send("+========================+\r\n");
         uart_send("|       kernel info      |\r\n");
         uart_send("+========================+\r\n");
