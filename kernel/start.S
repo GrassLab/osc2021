@@ -3,7 +3,7 @@
 .global _start
 
 _start:
-/*     // read cpu id, stop slave cores
+    // read cpu id, stop slave cores
     // read the content of mpidr_el1, indicating the core number, into x1
     mrs     x1, mpidr_el1
     // keep only the first and the second bit
@@ -38,5 +38,4 @@ _start:
     // whereas b is to simply branch and will not return
 4:  bl      main
     // for failsafe, halt this core too
-    b       1b */
-    bl main
+    b       1b

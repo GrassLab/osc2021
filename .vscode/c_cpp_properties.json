@@ -1,0 +1,12 @@
+{
+"configurations": [
+    {
+        "name": "Raspberry Pi",
+        "includePath": [
+            "${workspaceFolder}/kernel/include/",
+            "${workspaceFolder}/loader/include/"
+        ]
+    }
+],
+    "version": 4
+}
