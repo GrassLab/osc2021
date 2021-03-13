@@ -10,6 +10,7 @@ void kernel()
     char command[MAX_COMMAND_SIZE];
     while (1)
     {
+        puts("# ");
         get(command, MAX_COMMAND_SIZE);
         exec_command(command);
     }

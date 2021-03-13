@@ -3,6 +3,7 @@
 #include "string.h"
 #include "peripheral.h"
 #include "base_ops.h"
+#include "cpio.h"
 
 void exec_command(char *input)
 {
@@ -14,6 +15,12 @@ void exec_command(char *input)
     } else if (strcmp(input, "reboot") == 0) {
         puts("rebooting...\r\n");
         reboot(0);
+    } else if (strcmp(input, "open") == 0) {
+        puts("enter file name: ");
+        char filename[MAX_COMMAND_SIZE];
+        get(filename, MAX_COMMAND_SIZE);
+        cpio_read(filename);
+        
     } else {
         puts("Try another command\r\n");
     }

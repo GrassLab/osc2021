@@ -33,8 +33,8 @@ bootloader.img: $(filter $(OBJS_DIR)/bootloader/%.o $(OBJS_DIR)/lib/%.o, $(OBJ_F
 
 assets: $(SRC_DIR)/config.txt
 	@mkdir -p $(BUILD_DIR)
-	cp $< $(BUILD_DIR)
-	cd rootfs; find . | cpio -o -H newc > ../${BUILD_DIR}/initramfs.cpio
+	@cp $< $(BUILD_DIR)
+	@cd rootfs; find . | cpio -o -H newc > ../${BUILD_DIR}/initramfs.cpio
 
 
 
@@ -45,7 +45,7 @@ run:
 	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/bootloader.img -serial null -serial stdio -display none
 
 run.tty:
-	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/bootloader.img -serial null -serial pty -display none
+	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/bootloader.img -initrd $(BUILD_DIR)/initramfs.cpio -serial null -serial pty -display none
 
 debug:
 	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/bootloader.img -serial null -serial pty -display none -s -S
