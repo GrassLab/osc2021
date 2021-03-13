@@ -187,7 +187,11 @@ int _tryFetchFile() {
       uart_println("  [fetchFile] file addr:%x , size:%d", file, size);
     }
     for (unsigned long i = 0; i < size; i++) {
-      uart_send(file[i]);
+      if (file[i] == '\n' && i > 0 && file[i - 1] != '\r') {
+        uart_println("");
+      } else {
+        uart_send(file[i]);
+      }
     }
     uart_println("");
     return 0;
