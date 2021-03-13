@@ -60,7 +60,7 @@ void read(char **address, char *target, int count)
 void parse_cpio()
 {
 
-    char *ramfs = (char *)0x20000100;
+    char *ramfs = (char *)0x20000000;
 
     struct cpio_newc_header temp;
 
