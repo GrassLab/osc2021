@@ -8,28 +8,9 @@
 void cmdHelp();
 void cmdLoadKernel();
 
-typedef struct {
-  char *name;
-  char *help;
-  void (*func)(void);
-} Cmd;
-
-char buffer[MX_CMD_BFRSIZE + 1] = {0};
-int curInputSize = 0;
-
-Cmd cmdList[] = {
-    {.name = "help", .help = "Show avalible commands", .func = cmdHelp},
-    {.name = "load",
-     .help = "Load kernel image via uart",
-     .func = cmdLoadKernel},
-};
-
-void cmdHelp() {
-  uart_println("available commands:");
-  Cmd *end = cmdList + sizeof(cmdList) / sizeof(Cmd);
-  for (Cmd *c = cmdList; c != end; c++) {
-    uart_println("  %s  \t%s", c->name, c->help);
-  }
+void initShell(Shell *sh, char *bfr) {
+  sh->bfr = bfr;
+  sh->curInputSize = 0;
 }
 
 int parse_header_field() {
@@ -89,42 +70,43 @@ void cmdLoadKernel() {
     entry();
   }
 }
-void _bfrPush(char c) {
-  if (curInputSize < MX_CMD_BFRSIZE) {
-    buffer[curInputSize++] = c;
+
+void _bfrPush(Shell *sh, char c) {
+  if (sh->curInputSize < MX_CMD_BFRSIZE) {
+    sh->bfr[sh->curInputSize++] = c;
   }
 }
 
-int _bfrPop() {
-  if (curInputSize > 0) {
-    buffer[--curInputSize] = 0;
+int _bfrPop(Shell *sh) {
+  if (sh->curInputSize > 0) {
+    sh->bfr[--sh->curInputSize] = 0;
     return 0;
   }
   return -1;
 }
 
-void _bfrClear() {
-  curInputSize = 0;
-  buffer[0] = 0;
+void _bfrClear(Shell *sh) {
+  sh->curInputSize = 0;
+  sh->bfr[0] = 0;
 }
 
-void shellPrintPrompt() { uart_puts(" >"); };
+void shellPrintPrompt(Shell *sh) { uart_puts(" >"); };
 
-void shellInputLine() {
+void shellInputLine(Shell *sh) {
   enum KeyboardInput c;
   bool flagExit = false;
-  _bfrClear();
+  _bfrClear(sh);
 
   while (!flagExit) {
     flagExit = false;
     switch ((c = uart_getc())) {
     case KI_PRINTABLE_START ... KI_PRINTABLE_END:
-      _bfrPush(c);
+      _bfrPush(sh, c);
       uart_send(c);
       break;
     case KI_BackSpace:
     case KI_Delete:
-      if (!_bfrPop()) {
+      if (!_bfrPop(sh)) {
         uart_puts("\b \b");
       };
       break;
@@ -132,13 +114,10 @@ void shellInputLine() {
     case KI_CarrageReturn:
     case KI_LineFeed:
       flagExit = true;
-      buffer[curInputSize] = 0;
+      sh->bfr[sh->curInputSize] = 0;
       uart_puts("\r\n");
       if (CFG_LOG_ENABLE) {
-        uart_puts("GET:'");
-        uart_puts(buffer);
-        uart_puts("'");
-        uart_puts("\r\n");
+        uart_println("get: '%s'", sh->bfr);
       }
       break;
     default:
@@ -148,11 +127,16 @@ void shellInputLine() {
 }
 
 // Process command resides in buffer
-void shellProcessCommand() {
-  Cmd *end = cmdList + sizeof(cmdList) / sizeof(Cmd);
-  for (Cmd *c = cmdList; c != end; c++) {
-    if (!strcmp(c->name, buffer)) {
-      c->func();
-    }
+void shellProcessCommand(Shell *sh) {
+  if (!strcmp("help", sh->bfr)) {
+    uart_println("\n"
+                 "Available commands:\n"
+                 " help     Show avalible commands\n"
+                 " load     Load kernel image via uart\n");
+    return;
+  }
+  if (!strcmp("load", sh->bfr)) {
+    cmdLoadKernel();
+    return;
   }
 }

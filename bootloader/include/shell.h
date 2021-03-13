@@ -20,6 +20,12 @@ enum KeyboardInput {
   KI_Delete = 127,
 };
 
-void shellPrintPrompt();
-void shellInputLine();
-void shellProcessCommand();
+typedef struct {
+  int curInputSize;
+  char *bfr;
+} Shell;
+
+void initShell(Shell *sh, char *bfr);
+void shellPrintPrompt(Shell *sh);
+void shellInputLine(Shell *sh);
+void shellProcessCommand(Shell *sh);

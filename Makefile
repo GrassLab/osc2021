@@ -1,10 +1,10 @@
 .PHONY: setup shell clean run debug gdb build
 
 # target implementation to use
-IMPL_FOLDER ?= impl-c
-IS_BUILING_BOOT_LOADER = 0
-# IMPL_FOLDER ?= bootloader
-# IS_BUILING_BOOT_LOADER = 1
+# IMPL_FOLDER ?= impl-c
+# IS_BUILING_BOOT_LOADER = 0
+IMPL_FOLDER ?= bootloader
+IS_BUILING_BOOT_LOADER = 1
 
 QEMU = qemu-system-aarch64
 CROSS_GDB = aarch64-linux-gdb
@@ -75,6 +75,10 @@ run: all
 	@echo "${YELLOW} 🚧 Run kernel with QEMU${RESET}"
 	$(RUN_WITH_KERNEL) $(IMPL_KERNEL_IMG)
 
+run-local: all
+	@echo "${YELLOW} 🚧 Run kernel with QEMU${RESET}"
+	$(RUN_WITH_KERNEL_STDIO) $(IMPL_KERNEL_IMG)
+
 debug: all
 	@echo "${YELLOW} 🐛 Start debugging${RESET}"
 	@echo "${YELLOW}Open another terminal and use ${GREEN}make gdb${YELLOW} to connect to host${RESET}"
@@ -102,21 +106,21 @@ define DEBUG_SERVER_WITH_KERNEL
 	-kernel
 endef
 
-# define RUN_WITH_KERNEL
-# 	@echo "${GREEN} 📬 Multiplexing qemu pty device${RESET}"
-# 	$(QEMU) -M raspi3 \
-# 	-chardev pty,signal=on,id=char0 \
-# 	-serial null -serial chardev:char0 \
-# 	-display none \
-# 	-initrd $(INIT_RAM_FS) \
-# 	-kernel
-# endef
-
 define RUN_WITH_KERNEL
 	@echo "${GREEN} 📬 Multiplexing qemu pty device${RESET}"
 	$(QEMU) -M raspi3 \
-	-serial null -serial stdio \
+	-chardev pty,signal=on,id=char0 \
+	-serial null -serial chardev:char0 \
 	-display none \
 	-initrd $(INIT_RAM_FS) \
+	-kernel
+endef
+
+define RUN_WITH_KERNEL_STDIO
+	@echo "${GREEN} 📬 Multiplexing qemu pty device${RESET}"
+	$(QEMU) -M raspi3 \
+	-serial null -serial stdio \
+	-initrd $(INIT_RAM_FS) \
+	-display none \
 	-kernel
 endef
