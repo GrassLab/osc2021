@@ -6,6 +6,7 @@ res/*.cpio
 poetry.lock
 res/bootloader
 res/kernel
+.vscode
 
 #=========================
 #     MacOS

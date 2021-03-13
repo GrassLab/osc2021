@@ -2,33 +2,45 @@
 
 My Implementation of Operating System at [`OSC2021`][OSC21], NYCU.
 
+|   學號    | GitHub 帳號 | 姓名     | Email                       |
+| :-------: | ----------- | -------- | :-------------------------- |
+| `0856039` | `ianre657`  | `陳奕安` | ianchen.cs08[at]nycu.edu.tw |
+
+![demo][demo]
+
 [OSC21]: https://grasslab.github.io/NYCU_Operating_System_Capstone/
-
-## Author
-
-|   學號    | GitHub 帳號 | 姓名     | Email                    |
-| :-------: | ----------- | -------- | :----------------------- |
-| `0856039` | `ianre657`  | `陳奕安` | ianchen.cs08@nycu.edu.tw |
+[demo]: ./demo/lab2.gif
 
 ## Prerequisite
 
-+ Build only
++ Required
+  + [qemu][qemu]
+  + [Python3.7+][python]: https://www.python.org/downloads/
+  + Dependency for build scripts: `pip3 install -r requirements.txt`
++ Build for C implementation
   + [docker][docker]
-+ Dev tool
   + [clang-format][clang-format]: Format C code
-  + [qemu][qemu]: Run kernel image in emulater
-  + [Raspberry Pi Imager][imger]: SD card utilites
-  + A corss-gdb for arrch64: see below
++ Build for Rust implementation
+  1. Install [rust compiler][rs-install]
+  2. Change your toolchain to `nightly`
+  3. Install [cargo-binutils][cargo-binutils]
 
-+ (Optional)Cross compile rust implement without docker
-  1. Change your toolchain to `nightly`
-  2. Install [cargo-binutils][cargo-binutils]
-
+[python]: https://www.python.org/downloads/
+[rs-install]: https://www.rust-lang.org/tools/install
 [qemu]: https://www.qemu.org/download/
 [docker]: https://www.docker.com/
 [clang-format]: https://formulae.brew.sh/formula/clang-format
-[imger]: https://www.raspberrypi.org/software/
 [cargo-binutils]: https://github.com/rust-embedded/cargo-binutils
+
+## How-to
+
+| Usage                | Command          | Description                                    |
+| :------------------- | :--------------- | :--------------------------------------------- |
+| Build code           | `make`           | Generate output to `res`                       |
+| Cleanup binary files | `make clean`     | Delete all outputs                             |
+| Run Kernel           | `make run-stdio` | Generate kernel image:`kernel8.img`            |
+| Enter Virtualenv     | `make shell`     | Start a bash shell (with cross-compiling tool) |
+
 
 ### Compiling a cross gdb for `aarch64`
 
@@ -40,23 +52,3 @@ My Implementation of Operating System at [`OSC2021`][OSC21], NYCU.
 
 [gdb]: https://www.gnu.org/software/gdb/download/
 
-## How-to
-
-| Usage            | Command      | Description                                    |
-| :--------------- | :----------- | :--------------------------------------------- |
-| Build code       | `make`       | Generate kernel image:`kernel8.img`            |
-| Setup            | `make setup` | Rebuild docker image for cross-compiling       |
-| Run              | `make run`   | Run kernel image in `qemu`                     |
-| Enter Virtualenv | `make shell` | Start a bash shell (with cross-compiling tool) |
-
-## How to burn it into pi3
-
-**WIP**
-
-## Architecture
-
-**WIP**
-
-## Directory structure
-
-**WIP**
