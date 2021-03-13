@@ -9,7 +9,7 @@ My Implementation of Operating System at [`OSC2021`][OSC21], NYCU.
 ![demo][demo]
 
 [OSC21]: https://grasslab.github.io/NYCU_Operating_System_Capstone/
-[demo]: ./demo/lab2.gif
+[demo]: ./res/demo/lab2.gif
 
 ## Prerequisite
 
