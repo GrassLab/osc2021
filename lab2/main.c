@@ -5,6 +5,9 @@
 #define FILE_NAME_SIZE 64
 #define INITRAMFS_BASE 0x20000000
 // #define INITRAMFS_BASE 0x8000000
+#define PM_PASSWORD 0x5a000000
+#define PM_RSTC 0x3F10001c
+#define PM_WDOG 0x3F100024
 
 int BSSTEST = 0;
 char *cmd_lst[][2] = {
@@ -16,6 +19,7 @@ char *cmd_lst[][2] = {
     { "relo   ", "Relocate bootloader"},
     { "load   ", "Load image from host to pi, then jump to it"},
     { "showmem", "show memory contents"},
+    { "dtp    ", "device tree parse"},
     { "eocl", "end of cmd list"}
 };
 
@@ -23,9 +27,24 @@ char *cmd_lst[][2] = {
  * In theory, the extern can be any primitive data type.
  * For reasons which I am unaware, the convention is to
  * use a char.
+ * (extern char *bss_end, *start_begin;) will fail, and
+ * I still don't know why.
+ * https://sourceware.org/binutils/docs/ld/Source-Code-Reference.html
  */
 extern char bss_end[];
 extern char start_begin[];
+
+void reset(int tick){ // reboot after watchdog timer expire
+    put32(PM_RSTC, PM_PASSWORD | 0x20); // full reset
+    put32(PM_WDOG, PM_PASSWORD | tick); // number of watchdog tick
+}
+
+int do_reboot(void)
+{
+    reset(1);
+    uart_send_string("Rebooting...\r\n");
+    return 0;
+}
 
 void memzero(char *bss_begin, unsigned long len)
 {
@@ -300,7 +319,28 @@ int kernel_load_and_jump(void)
     return 0;
 }
 
+typedef unsigned int uint32_t;
+typedef unsigned long uint64_t;
+struct fdt_header {
+    uint32_t magic; // This field shall contain the value 0xd00dfeed (big-endian).
+    uint32_t totalsize;
+    uint32_t off_dt_struct;   // offset of the structure block from the beginning of the header.
+    uint32_t off_dt_strings;  // offset of the strings block from the beginning of the header.
+    uint32_t off_mem_rsvmap;  // offset of the mem.res. block from the beginning of the header.
+    uint32_t version;
+    uint32_t last_comp_version;
+    uint32_t boot_cpuid_phys;
+    uint32_t size_dt_strings; // length in bytes of the strings block section
+    uint32_t size_dt_struct;  // length in bytes of the structure block section
+};
 
+int do_dtp()
+{
+    unsigned long dt_base = 0x80000;
+    struct fdt_header *header = (struct fdt_header*)dt_base;
+    uart_send_int(header->magic);
+    return 0;
+}
 
 int cmd_handler(char *cmd)
 {
