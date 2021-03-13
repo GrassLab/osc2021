@@ -1,0 +1,6 @@
+file bootloader/kernel8.elf
+dir bootloader
+target remote :1234
+
+tui enable
+si

@@ -17,8 +17,8 @@ OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 CFLAGS = -Wall -I include -nostartfiles -ffreestanding -MMD
 CFLAGS += -g -ggdb
 
-TARGET = bootloader.img
-TARGET_ELF = bootloader.elf
+TARGET = kernel8.img
+TARGET_ELF = kernel8.elf
 
 all: directories $(TARGET)
 
