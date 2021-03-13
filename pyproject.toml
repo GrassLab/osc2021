@@ -13,6 +13,7 @@ rich = "^9.13.0"
 [tool.poetry.dev-dependencies]
 black = {version = "^20.8b1", allow-prereleases = true}
 isort = "^5.7.0"
+pylama = "^7.7.1"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"

@@ -93,7 +93,7 @@ class BuildProject:
 
     def build(self) -> bool:
         Path(self.target_folder).mkdir(exist_ok=True)
-        if run_cmd(f"{self.run_env} make -C {self.project_folder}") == False:
+        if run_cmd(f"{self.run_env} make -C {self.project_folder}") is False:
             return False
         if (
             copy2_dir(
@@ -101,14 +101,14 @@ class BuildProject:
                 src_dir=self.project_folder,
                 dst_dir=self.target_folder,
             )
-            == False
+            is False
         ):
             return False
         return True
 
     def clean(self) -> bool:
         shutil.rmtree(self.target_folder, ignore_errors=True)
-        if run_cmd(f"{self.run_env} make -C {self.project_folder} clean") == False:
+        if run_cmd(f"{self.run_env} make -C {self.project_folder} clean") is False:
             return False
         return True
 

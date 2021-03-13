@@ -1,4 +1,4 @@
-.PHONY: shell clean
+.PHONY: shell clean export better
 
 kernel_impl = impl-c
 # kernel_impl = impl-rs
@@ -35,9 +35,13 @@ clean:
 	$(RM) -rf scripts/__pycache__
 	@echo "${YELLOW} 🚚 Finish cleanup${RESET}"
 
-.PHONY: export
 export:
 	poetry export -f requirements.txt --output requirements.txt
+
+better:
+	poetry run isort scripts
+	poetry run black scripts
+	poetry run pylama scripts --ignore E501
 
 .PHONY: bootloader-stdio
 bootloader-stdio: all
