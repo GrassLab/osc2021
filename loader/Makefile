@@ -6,9 +6,10 @@ INCLUDE_DIR = include
 SRC_DIR = src
 OBJ_DIR = build
 
-CFLAGS = -Wall -O2 -ffreestanding -nostdlib -nostartfiles
+# CFLAGS = -Wall -O2 -ffreestanding -nostdlib -nostartfiles
 # CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
 # CFLAGS = -Wall -O2 -fno-builtin
+CFLAGS = -Wall -O2 -nostdlib -nostdinc
 CC = aarch64-linux-gnu-gcc
 LINKER = aarch64-linux-gnu-ld
 OBJ_CPY = aarch64-linux-gnu-objcopy
@@ -24,7 +25,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 bootloader.img: $(OBJS) link.ld
-	$(LINKER) -nostdlib -nostartfiles $(OBJS) -T link.ld -o bootloader.elf
+	$(LINKER) -nostdlib $(OBJS) -T link.ld -o bootloader.elf
 	$(OBJ_CPY) -O binary bootloader.elf bootloader.img
 
 clean:

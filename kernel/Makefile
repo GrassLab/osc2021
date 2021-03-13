@@ -5,8 +5,8 @@ INCLUDE_DIR = include
 SRC_DIR = src
 OBJ_DIR = build
 
-CFLAGS = -Wall -O2 -ffreestanding -nostdlib -nostartfiles
-# CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
+# CFLAGS = -Wall -O2 -ffreestanding -nostdlib
+CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib
 CC = aarch64-linux-gnu-gcc
 LINKER = aarch64-linux-gnu-ld
 OBJ_CPY = aarch64-linux-gnu-objcopy
@@ -22,7 +22,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 kernel8.img: start.o $(OBJS)
-	$(LINKER) -nostdlib -nostartfiles start.o $(OBJS) -T link.ld -o kernel8.elf
+	$(LINKER) -nostdlib start.o $(OBJS) -T link.ld -o kernel8.elf
 	$(OBJ_CPY) -O binary kernel8.elf kernel8.img
 
 clean:

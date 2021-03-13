@@ -1,14 +1,12 @@
-#include "uart.h"
 #include "shell.h"
-#include "printf.h"
+#include "uart.h"
 
 int main()
 {
     // set up serial console
     uart_init();
     // say hello
-    // uart_puts("Hello World!\n");
-    // printf("Hello World!\n");
+    uart_puts("Hello World!\n");
     // start shell
     shell_start();
 

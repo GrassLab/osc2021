@@ -126,10 +126,6 @@ char uart_getc()
  */
 void uart_puts(char *s)
 {
-    // uart_send('K');
-    // uart_send('\n');
-    // uart_send('\r');
-
     while (*s)
     {
         /* convert newline to carrige return + newline */

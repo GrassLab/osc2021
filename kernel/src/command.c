@@ -1,5 +1,6 @@
 #include "uart.h"
 #include "string.h"
+#include "cpio.h"
 
 void input_buffer_overflow_message(char cmd[])
 {
@@ -47,7 +48,7 @@ void command_timestamp()
 
 void command_cpio()
 {
-
+    parse_cpio();
 }
 
 void command_not_found(char *s)
