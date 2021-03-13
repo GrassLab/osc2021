@@ -45,12 +45,20 @@ void * memset (void *ptr, int value, int num)
 }
 
 
-// TODO: A~F
 int hextoi(char *hexStr)
 {
     int value = 0;
+    int tmpValue;
     while (*hexStr != '\0') {
-        value = (value << 4) + (*hexStr - '0');
+        if (*hexStr >= 65 && *hexStr <= 70) {
+            tmpValue = *hexStr - 55;
+        } else if (*hexStr >= 97 && *hexStr <= 102) {
+            tmpValue = *hexStr - 87;
+        } else {
+            tmpValue = *hexStr - '0';
+        }
+
+        value = (value << 4) + tmpValue;
         hexStr++;
     }
 
