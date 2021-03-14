@@ -1,0 +1,4 @@
+break *0x80190
+break readimg_jump
+break * 0x80194
+

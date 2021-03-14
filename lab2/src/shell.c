@@ -66,6 +66,10 @@ void loadimg() {
   size_t load_address;
   char buf[9]; 
   size_t img_size;
+  //count bootloader size
+  extern void *_start_bootloader;
+  extern void *_end_bootloader;
+  size_t _bootloader_size = (size_t) &_end_bootloader - (size_t) &_start_bootloader;
   //read load address
   uart_puts("Input the address to load image(0x): ");
   uart_readline(buf, 8);
@@ -79,13 +83,32 @@ void loadimg() {
   img_size = strtol(buf, 0, 16);
   uart_puts("\nimage size: 0x");
   uart_hex(img_size);
-  //read kernel img 
-  uart_puts("\nLoad image...\n");
+  uart_puts("\n");
+  //check bootloader, and image is overlap 
+  size_t img_end = load_address + img_size;
+  size_t relocated_readimg_jump = (size_t)&readimg_jump;
+  if(img_end > (size_t) &_start_bootloader) {
+    uart_puts("image overlapped to bootloader.\n");
+    size_t relocated_bootloader = img_end + BOOTLOADER_OFFSET;
+    //relocate bootloader
+    memcpy((char *)relocated_bootloader, &_start_bootloader, _bootloader_size);
+    //jump to rest of code 
+    relocated_readimg_jump = relocated_bootloader + ((size_t)&readimg_jump - (size_t)&_start_bootloader);
+    //relocated readimg_jump address
+    uart_puts("relocated rest of bootloader address: ");
+    uart_hex(relocated_readimg_jump);
+    uart_puts("\n");
+  }
+  //jump to readimg_jump
+  asm volatile ("mov x0, %0\n" "mov x1, %1\n" "mov sp, %2\n" "blr %3\n"::
+  "r" (load_address),
+  "r" (img_size),
+  "r" (load_address),
+	"r" (relocated_readimg_jump):"x0", "x1");
+}
+//read kernel img, and jump 
+void readimg_jump(size_t load_address, size_t img_size) {
   uart_read((char* )load_address, img_size);
-  uart_puts("\nJump to address...\n");
-  asm volatile("mov sp, %0" ::"r"(load_address));
   ((void (*)(void))(load_address))();
 }
-
-
 

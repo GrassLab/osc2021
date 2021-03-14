@@ -11,4 +11,5 @@ void memset(char* str, char c);
 
 long strtol(const char *__restrict nptr, char **__restrict endptr, int base);
 
+void* memcpy (void *dest, const void *src, size_t len);
 #endif

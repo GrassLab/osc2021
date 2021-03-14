@@ -21,7 +21,14 @@ SECTIONS
      *(COMMON);
     _bss_end = ALIGN(0x10);
   }
+  .bootloader : 
+  {
+	  _start_bootloader = .;
+	  *(.bootloader);
+	  _end_bootloader = .;
+  }
+
   
   
-  
+
 }

@@ -16,7 +16,6 @@ _kernel_loader:
 	mov sp, x0
 	ldr x0, =_bss_begin
 	ldr x1, =_bss_end
-	add x1, x1, #8
 _bss_init:
 	str xzr, [x0], #8
 	cmp x0, x1

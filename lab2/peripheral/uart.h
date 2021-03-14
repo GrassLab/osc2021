@@ -17,10 +17,10 @@
 
 void uart_init();
 void uart_send(unsigned int c);
-char uart_getc();
+__attribute__((__section__ (".bootloader"))) char uart_getc();
 void uart_puts(char* s);
 void uart_hex(unsigned int d);
-size_t uart_read(char* buf, size_t count);
+__attribute__((__section__ (".bootloader"))) size_t uart_read(char* buf, size_t count);
 size_t uart_readline(char* buf, size_t count);
 size_t uart_write(char* buf, size_t count);
 #endif
