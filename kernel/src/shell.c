@@ -1,17 +1,18 @@
 #include "shell.h"
 
+#include "io.h"
 #include "mini_uart.h"
 #include "string.h"
 
 void cmd_help() {
-  uart_puts("Command\t\tDescription\n");
-  uart_puts("---------------------------------------------\n");
-  uart_puts("help\t\tprint all available commands\n");
-  uart_puts("hello\t\tprint Hello World!\n");
-  uart_puts("reboot\t\treboot machine\n");
+  print_s("Command\t\tDescription\n");
+  print_s("---------------------------------------------\n");
+  print_s("help\t\tprint all available commands\n");
+  print_s("hello\t\tprint Hello World!\n");
+  print_s("reboot\t\treboot machine\n");
 }
 
-void cmd_hello() { uart_puts("Hello World!\n"); }
+void cmd_hello() { print_s("Hello World!\n"); }
 
 void cmd_reboot(int tick) {       // reboot after watchdog timer expire
   *PM_RSTC = PM_PASSWORD | 0x20;  // full reset
@@ -30,21 +31,21 @@ void receive_cmd() {
     char c = uart_getc();
     if (c == '\0') continue;  // to avoid weird character
     if (c == '\n') {          // '\r' is replaced with '\n'
-      uart_puts("\r\n");
+      print_s("\r\n");
       buffer[buffer_pos] = '\0';
       break;
     }
-    uart_send(c);
+    print_c(c);
     buffer[buffer_pos++] = c;
   }
 }
 
 void run_shell() {
-  uart_puts("************************************\n");
-  uart_puts("** Operating System Capstone 2021 **\n");
-  uart_puts("************************************\n");
+  print_s("************************************\n");
+  print_s("** Operating System Capstone 2021 **\n");
+  print_s("************************************\n");
   while (1) {
-    uart_puts("% ");
+    print_s("% ");
     clear_buffer();
     receive_cmd();
     if (strcmp(buffer, "help") == 0) cmd_help();

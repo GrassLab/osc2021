@@ -38,6 +38,17 @@ void uart_send(unsigned int c) {
   *AUX_MU_IO_REG = c;
 }
 
+char uart_getb() {
+  // wait until something is in the buffer
+  while (!(*AUX_MU_LSR_REG & 0x01)) {
+    asm volatile("nop");
+  }
+  // read character
+  char r = (char)(*AUX_MU_IO_REG);
+  // '\r' => '\n'
+  return r;
+}
+
 char uart_getc() {
   // wait until something is in the buffer
   while (!(*AUX_MU_LSR_REG & 0x01)) {
