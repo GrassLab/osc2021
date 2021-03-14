@@ -10,7 +10,7 @@ QEMU = qemu-system-aarch64
 BUILD_DIR = build
 SRC_DIR = src
 
-all: kernel8.img
+all: bootloader.img
 
 clean:
 	rm $(BUILD_DIR)/*
@@ -27,11 +27,11 @@ ASM_FILES = $(wildcard $(SRC_DIR)/*.S)
 OBJ_FILES = $(C_FILES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%_c.o)
 OBJ_FILES += $(ASM_FILES:$(SRC_DIR)/%.S=$(BUILD_DIR)/%_s.o)
 
-kernel8.elf: $(SRC_DIR)/linker.ld $(OBJ_FILES)
-	$(LD) -T $(SRC_DIR)/linker.ld -o $(BUILD_DIR)/kernel8.elf $(OBJ_FILES)
+bootloader.elf: $(SRC_DIR)/linker.ld $(OBJ_FILES)
+	$(LD) -T $(SRC_DIR)/linker.ld -o $(BUILD_DIR)/bootloader.elf $(OBJ_FILES)
 
-kernel8.img: kernel8.elf
-	$(OBJCOPY) $(OBJCOPYFLAGS) $(BUILD_DIR)/kernel8.elf $(BUILD_DIR)/kernel8.img
+bootloader.img: bootloader.elf
+	$(OBJCOPY) $(OBJCOPYFLAGS) $(BUILD_DIR)/bootloader.elf $(BUILD_DIR)/bootloader.img
 
 run:
-	$(QEMU) -M raspi3 -kernel $(BUILD_DIR)/kernel8.img -display none -serial null -serial stdio
+	$(QEMU) -M raspi3 -kernel $(BUILD_DIR)/bootloader.img -display none -serial null -serial pty
