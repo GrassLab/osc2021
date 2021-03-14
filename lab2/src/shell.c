@@ -95,7 +95,7 @@ void loadimg() {
     //jump to rest of code 
     relocated_readimg_jump = relocated_bootloader + ((size_t)&readimg_jump - (size_t)&_start_bootloader);
     //relocated readimg_jump address
-    uart_puts("relocated rest of bootloader address: ");
+    uart_puts("relocated rest of bootloader to address: ");
     uart_hex(relocated_readimg_jump);
     uart_puts("\n");
   }
