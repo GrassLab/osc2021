@@ -1,5 +1,6 @@
 ARMGNU = aarch64-linux-gnu
-FLAGS = -Wall -nostdlib -Iinclude/bootloader -Iinclude/kernel -Iinclude/lib -ffreestanding -Werror
+FLAGS = -Wall -nostdlib -ffreestanding -Werror
+INCLUDES = -Iinclude/bootloader -Iinclude/kernel -Iinclude/lib
 
 BUILD_DIR= build
 SRC_DIR = src
@@ -15,11 +16,11 @@ all: kernel8.img bootloader.img assets
 
 $(OBJS_DIR)/%_c.o: $(SRC_DIR)/%.c
 	@mkdir -p $(@D)
-	$(ARMGNU)-gcc $(FLAGS) -c $< -o $@
+	$(ARMGNU)-gcc $(FLAGS) $(INCLUDES) -c $< -o $@
 
 $(OBJS_DIR)/%_s.o: $(SRC_DIR)/%.S
 	@mkdir -p $(@D)
-	$(ARMGNU)-gcc $(FLAGS) -c $< -o $@
+	$(ARMGNU)-gcc $(FLAGS) $(INCLUDES) -c $< -o $@
 
 kernel8.img: $(filter $(OBJS_DIR)/kernel/%.o $(OBJS_DIR)/lib/%.o, $(OBJ_FILES)) $(SRC_DIR)/kernel/linker.ld
 	@mkdir -p $(BUILD_DIR)
@@ -31,7 +32,7 @@ bootloader.img: $(filter $(OBJS_DIR)/bootloader/%.o $(OBJS_DIR)/lib/%.o, $(OBJ_F
 	@$(ARMGNU)-ld -T $(SRC_DIR)/bootloader/linker.ld -o $(BUILD_DIR)/bootloader.elf $(filter $(OBJS_DIR)/bootloader/%.o $(OBJS_DIR)/lib/%.o, $(OBJ_FILES))
 	@$(ARMGNU)-objcopy $(BUILD_DIR)/bootloader.elf -O binary $(BUILD_DIR)/$@
 
-assets: $(SRC_DIR)/config.txt
+assets: $(SRC_DIR)/config.txt $(wildcard rootfs/*)
 	@mkdir -p $(BUILD_DIR)
 	@cp $< $(BUILD_DIR)
 	@cd rootfs; find . | cpio -o -H newc > ../${BUILD_DIR}/initramfs.cpio
@@ -42,11 +43,4 @@ clean:
 	rm -rf $(BUILD_DIR) $(OBJS_DIR)
 
 run:
-	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/bootloader.img -serial null -serial stdio -display none
-
-run.tty:
 	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/bootloader.img -initrd $(BUILD_DIR)/initramfs.cpio -serial null -serial pty -display none
-
-debug:
-	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/bootloader.img -serial null -serial pty -display none -s -S
-	

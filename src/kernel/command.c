@@ -10,6 +10,8 @@ void exec_command(char *input)
     if (strcmp(input, "help") == 0) {
         puts("1. help\r\n");
         puts("2. hello\r\n");
+        puts("3. reboot\r\n");
+        puts("4. open\r\n");
     } else if (strcmp(input, "hello") == 0) {
         puts("Hello World!\r\n");
     } else if (strcmp(input, "reboot") == 0) {

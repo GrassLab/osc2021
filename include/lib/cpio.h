@@ -1,8 +1,12 @@
 #ifndef _CPIO_H
 #define _CPIO_H
 
+// qemu use 0x8000000 as default
+#ifdef EMU
 #define RAMFS_ADDR (0x8000000)
-
+#else
+#define RAMFS_ADDR (0x100000)
+#endif
 
 typedef struct cpio_newc_header CPIO_NEWC_HEADER;
 typedef enum CPIO_ATTR CPIO_ATTR;
