@@ -3,7 +3,7 @@
 
 _start:
 	mrs    x1, mpidr_el1 // read cpu id
-	and    x1, x1, #3
+	and    x1, x1, #0xff
 	cbz    x1, 2f
 
 1:
@@ -11,7 +11,7 @@ _start:
 	b 1b
 2:
 	ldr    x1, =__stack_top
-	mov    sp, x1 //0x80000
+	mov    sp, x1
 
 	ldr    x1, =__bss_start
 	ldr    w2, =__bss_size

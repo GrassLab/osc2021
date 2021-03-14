@@ -51,8 +51,10 @@ void uart_puts(char *s){
     }
 }
 void uart_puts_bySize(char *s, int size){
-    for(int i = 0; i < size ;++i)
+    for(int i = 0; i < size ;++i){
+        if(*s == '\n') uart_send('\r');
         uart_send(*s++);
+    }
 }
 
 void uart_printint(unsigned long long int num){

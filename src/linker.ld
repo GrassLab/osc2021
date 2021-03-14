@@ -1,4 +1,4 @@
-__process_size = 0x4000;
+__process_size = 0x8000;
 
 SECTIONS
 {
