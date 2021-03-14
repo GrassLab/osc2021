@@ -1,14 +1,14 @@
 #include "shell.h"
 
 void shell() {
-  uart_puts("*****************************Hello World*****************************\n");
+  uart_puts("*****************************Hello World*****************************\r\n");
   uart_puts("% ");
-
   char command[256];
   memset(command, '\0');
   int i = 0;
   while(1) {
     char c = uart_getc();
+    c = c=='\r'?'\n':c;
     if(c != '\n') {
       command[i++] = c;
       uart_send(c);
@@ -27,9 +27,12 @@ void shell() {
 }
 void do_command(char* command) {
   if(strncmp(command, "help", 5) == 0) {
-        uart_puts("help: print all available commands\n");
-        uart_puts("hello: print Hello World!\n");
-        uart_puts("reboot: \n");
+        uart_puts("help: print all available commands.\n");
+        uart_puts("hello: print Hello World!.\n");
+        uart_puts("reboot: reboot rpi3.\n");
+        uart_puts("loadimg: load kernel image.\n");
+        uart_puts("ls: list cpio files.\n");
+        uart_puts("cat [file]: cat cpio file.\n");
   }
   else if(strncmp(command, "hello", 6) == 0) {
     uart_puts("Hello World!\n");
@@ -39,6 +42,20 @@ void do_command(char* command) {
   }
   else if(strncmp(command, "loadimg", 7) == 0) {
     loadimg();
+  }
+  else if(strncmp(command, "cat ", 4) == 0) {
+    get_file_content(command + 4, strlen(command + 4));
+  }
+  else if(strncmp(command, "ls", 3) == 0) {
+    get_all_pathname();
+  }
+  else if(strncmp(command, "lsbss", 6) == 0) {
+    extern void *_bss_begin;
+    extern void *_bss_end;
+    uart_puts("bss_begin: \n");
+    uart_hex((unsigned long)&_bss_begin);
+    uart_puts("\n_bss_end\n");
+    uart_hex((unsigned long)&_bss_end);
   }
   else {
     uart_puts("unknown command\n");

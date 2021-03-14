@@ -1,18 +1,13 @@
 #include <uart.h>
-#include "shell.h"
+#include <shell.h>
 #include <string.h>
 #include <mbox.h>
 #include <types.h>
-
+#include <cpio.h>
 void main() {
   
   uart_init();
-
-  /*extern void *_bss_begin;
-  extern void *_bss_end;
-  uart_hex((size_t)&_bss_begin);
-  uart_puts("\n");
-  uart_hex((size_t)&_bss_end);*/
+  cpio_parse_newc_header(CPIO_ADDRESS);
   //get_board_revision(); 
   //uart_hex(mbox[5]);
   shell();

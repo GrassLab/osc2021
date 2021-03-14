@@ -1,6 +1,6 @@
 #!/bin/bash
-tty=/dev/pts/3	
-#tty=/dev/pts/6
+#tty=/dev/pts/3	
+tty=/dev/ttyUSB0
 size=`stat --printf="%s" $1`
 echo $size
 printf "%08x" $size | sudo tee $tty

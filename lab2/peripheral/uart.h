@@ -22,4 +22,5 @@ void uart_puts(char* s);
 void uart_hex(unsigned int d);
 size_t uart_read(char* buf, size_t count);
 size_t uart_readline(char* buf, size_t count);
+size_t uart_write(char* buf, size_t count);
 #endif

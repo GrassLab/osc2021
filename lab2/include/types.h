@@ -14,4 +14,6 @@
 #define int8_t char
 
 #define size_t uint64_t
+
+#define null 0
 #endif

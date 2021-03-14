@@ -44,8 +44,7 @@ char uart_getc() {
   do{asm volatile("nop");}while(!(*AUX_MU_LSR_REG&0x01));
   /* read it and return */
   r=(char)(*AUX_MU_IO_REG);
-  /* convert carrige return to newline */
-  return r=='\r'?'\n':r;
+  return r;
 }
 
 /**
@@ -88,8 +87,8 @@ size_t uart_readline(char* buf, size_t count) {
   for(i = 0; i < count; i++) {
     c = uart_getc();
     if(c =='\n' || c == '\r') {
-      uart_send('\n');
       uart_send('\r');
+      uart_send('\n');
       i++;
       break;
     } 
@@ -97,5 +96,15 @@ size_t uart_readline(char* buf, size_t count) {
     buf[i] = c;
   }
   buf[i] = '\0';
+  return i;
+}
+
+size_t uart_write(char *buf, size_t count) {
+  size_t i;
+  for(i = 0; i < count; i++) {
+    if(*buf =='\n') 
+      uart_send('\r');
+    uart_send(*buf++);
+  }
   return i;
 }

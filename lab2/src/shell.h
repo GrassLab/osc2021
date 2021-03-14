@@ -4,7 +4,11 @@
 #include "reset.h"
 #include <uart.h>
 #include <types.h>
+#include <cpio.h>
+
 void shell();
 void do_command(char* command);
 void loadimg();
+
+
 #endif

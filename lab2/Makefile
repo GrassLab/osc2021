@@ -1,7 +1,7 @@
 CC = aarch64-linux-gnu-gcc
-CFLAGS = -Wall -ggdb -Og -nostdlib -nostartfiles -ffreestanding -Iinclude -Ilib -Iperipheral -Isrc
+CFLAGS = -Wall -ggdb -Og -nostdlib -nostartfiles -ffreestanding -Iinclude -Ilib -Iperipheral -Isrc -Irootfs
 LD = aarch64-linux-gnu-ld
-LDFLAGS = -T linker.ld
+LDFLAGS = -T src/linker.ld
 OBJCOPY = aarch64-linux-gnu-objcopy
 OBJCOPYFLAGS = -O binary
 BUILD_DIR=.
@@ -47,6 +47,7 @@ debug:
 		-display none\
                 -serial null\
                 -serial pty\
+		-initrd initramfs.cpio\
                 -S -s
 
 
