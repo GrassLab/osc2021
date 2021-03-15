@@ -73,6 +73,7 @@ def main():
         local_checksum = 0
         for i, b in enumerate(img.bytes()):
             local_checksum += int(b[0])
+            local_checksum %= 856039
             if i < 5:
                 # list of 1 bytes
                 d = b[0]
