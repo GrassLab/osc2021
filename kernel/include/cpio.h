@@ -3,6 +3,7 @@
 
 int hex2int(char *hex);
 int round2four(int origin, int option);
+void read(char **address, char *target, int count);
 
 struct cpio_newc_header
 {
@@ -11,7 +12,8 @@ struct cpio_newc_header
     char c_namesize[8];
 };
 
-void parse_cpio();
-void read(char **address, char *target, int count);
+void cpio_parse_header(char **address, char *file_name, char *file_content);
+void cpio_ls();
+void cpio_find_file(char file_name_to_find[]);
 
 #endif

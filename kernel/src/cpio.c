@@ -15,7 +15,7 @@ int hex2int(char *hex)
         else if (byte >= 'A' && byte <= 'F')
             byte = byte - 'A' + 10;
         // shift 4 to make space for new digit, and add the 4 bits of the new digit
-        value = (value << 4) | (byte & 0xF);
+        value = (value << 4) | byte;
     }
     return value;
 }
@@ -57,47 +57,71 @@ void read(char **address, char *target, int count)
     }
 }
 
-void parse_cpio()
+void cpio_parse_header(char **ramfs, char *file_name, char *file_content)
 {
+    struct cpio_newc_header header;
+    int file_size = 0, name_size = 0;
+
+    read(ramfs, header.c_magic, 6);
+    (*ramfs) += 48;
+    read(ramfs, header.c_filesize, 8);
+    (*ramfs) += 32;
+    read(ramfs, header.c_namesize, 8);
+    (*ramfs) += 8;
+
+    name_size = round2four(hex2int(header.c_namesize), 1);
+    file_size = round2four(hex2int(header.c_filesize), 2);
+
+    read(ramfs, file_name, name_size);
+    read(ramfs, file_content, file_size);
+
+    file_name[name_size] = '\0';
+    file_content[file_size] = '\0';
+}
+
+void cpio_ls()
+{
+    char file_name[100];
+    char file_content[500];
 
     char *ramfs = (char *)0x20000000;
 
-    struct cpio_newc_header temp;
-
-    char file_name[100];
-    char file_content[100];
-
-    int file_size = 0, name_size = 0;
-
-    uart_puts("Start parsing...\n");
-    uart_send('\n');
-
-    while(1)
+    while (1)
     {
-        temp = (const struct cpio_newc_header){0};
-
-        read(&ramfs, temp.c_magic, 6);
-        ramfs += 48;
-        read(&ramfs, temp.c_filesize, 8);
-        ramfs += 32;
-        read(&ramfs, temp.c_namesize, 8);
-        ramfs += 8;
-
-        name_size = round2four(hex2int(temp.c_namesize), 1);
-        file_size = round2four(hex2int(temp.c_filesize), 2);
-
-        read(&ramfs, file_name, name_size);
-        read(&ramfs, file_content, file_size);
-
-        file_name[name_size] = '\0';
-        file_content[file_size] = '\0';
+        cpio_parse_header(&ramfs, file_name, file_content);
 
         if ((strcmp(file_name, "TRAILER!!!") == 0))
             break;
 
         uart_puts(file_name);
         uart_send('\n');
-        uart_puts(file_content);
-        uart_send('\n');
     }
+}
+
+void cpio_find_file(char file_name_to_find[])
+{
+    char file_name[100];
+    char file_content[500];
+
+    char *ramfs = (char *)0x20000000;
+    int found = 0;
+
+    while(1)
+    {
+        cpio_parse_header(&ramfs, file_name, file_content);
+        if ((strcmp(file_name, file_name_to_find) == 0))
+        {
+            found = 1;
+            break;
+        }
+        else if ((strcmp(file_name, "TRAILER!!!") == 0))
+            break;
+    }
+
+    if (found)
+        uart_puts(file_content);
+    else
+        uart_puts("FILE NOT FOUND!");
+
+    uart_send('\n');
 }
