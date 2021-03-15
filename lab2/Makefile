@@ -48,7 +48,7 @@ debug:
                 -serial null\
                 -serial pty\
 		-initrd initramfs.cpio\
-                -S -s
+		-S -s
 
 
 
