@@ -1,5 +1,6 @@
 #include "shell.h"
 
+#include "cpio.h"
 #include "io.h"
 #include "mini_uart.h"
 #include "string.h"
@@ -10,6 +11,8 @@ void cmd_help() {
   print_s("help\t\tprint all available commands\n");
   print_s("hello\t\tprint Hello World!\n");
   print_s("reboot\t\treboot machine\n");
+  print_s("ls\t\tlist files in Cpio archive\n");
+  print_s("cat\t\tprint file content given pathname in Cpio archive\n");
 }
 
 void cmd_hello() { print_s("Hello World!\n"); }
@@ -18,6 +21,10 @@ void cmd_reboot(int tick) {       // reboot after watchdog timer expire
   *PM_RSTC = PM_PASSWORD | 0x20;  // full reset
   *PM_WDOG = PM_PASSWORD | tick;  // number of watchdog tick
 }
+
+void cmd_ls() { cpio_ls(); }
+
+void cmd_cat(char *pathname) { cpio_cat(pathname); }
 
 void clear_buffer() {
   buffer_pos = 0;
@@ -54,5 +61,7 @@ void run_shell() {
       cmd_reboot(100);
       break;
     }
+    if (strcmp(buffer, "ls") == 0) cmd_ls();
+    if (strncmp(buffer, "cat", 3) == 0) cmd_cat(&buffer[4]);
   }
 }

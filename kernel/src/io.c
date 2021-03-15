@@ -2,11 +2,11 @@
 
 #include "mini_uart.h"
 
-unsigned long long int hex2int(char *hex) {
+unsigned long long int hex2int(char *hex, int len) {
   unsigned long long int val = 0;
-  while (*hex) {
+  for (int i = 0; i < len; i++) {
     // get current character then increment
-    unsigned long long int byte = *hex++;
+    unsigned long long int byte = *(hex + i);
     if (byte >= '0' && byte <= '9')
       byte = byte - '0';
     else if (byte >= 'A' && byte <= 'F')
@@ -64,9 +64,9 @@ int read_i() {
 }
 
 unsigned long long int read_h() {
-  char str[50];
-  char *value = read_s(str, 50);
-  return hex2int(value + 2);  // first two characters are '0x'
+  char str[11];
+  char *value = read_s(str, 11);
+  return hex2int(value + 2, 8);  // first two characters are '0x'
 }
 
 void print_c(char c) { uart_send(c); }

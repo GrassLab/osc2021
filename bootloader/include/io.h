@@ -1,3 +1,5 @@
+#pragma once
+
 unsigned long long int hex2int(char *hex);
 int is_digit(char ch);
 char read_b();
