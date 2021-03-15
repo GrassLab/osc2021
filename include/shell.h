@@ -19,5 +19,6 @@ void simple_shell();
 void shell_hello();
 void shell_help();
 void shell_reboot();
+void shell_boot_uart();
 
 #endif

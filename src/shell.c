@@ -2,8 +2,9 @@
 #include "utils.h"
 #include "shell.h"
 #include "str_tool.h"
+#include "stdint.h"
 
-#define MAX_INPUT 10
+#define MAX_INPUT 100
 
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC 0x3F10001c
