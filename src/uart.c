@@ -58,10 +58,22 @@ void uart_puts_bySize(char *s, int size){
 }
 
 void uart_printint(unsigned long long int num){
-    for(int i = 0; i < 64; ++i){
+    if(num == 0) uart_send('0');
+    else{
+        if(num > 10) uart_printint(num / 10);
         uart_send(num % 10 + '0');
-        num /= 10;
     }
+    //uart_puts("\r\n");
+}
+void uart_printhex(unsigned long long int num){
+    char res[16];
+    for(int i = 0; i < 16; ++i, num >>= 4){
+        short int tmp = num % 16;
+        if(tmp >= 10) res[i] = tmp - 10 + 'a';
+        else res[i] = tmp + '0';
+    }
+    uart_puts("0x");
+    for(int i = 15; i >= 0; --i) uart_send(res[i]);
     uart_puts("\r\n");
 }
 char uart_get(){

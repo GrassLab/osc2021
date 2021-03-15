@@ -4,8 +4,10 @@
 #define PM_RSTC ((volatile unsigned int *)(0x3F10001c))
 #define PM_RSTS ((volatile unsigned int *)(0x3F100020))
 #define PM_WDOG ((volatile unsigned int *)(0x3F100024))
-#define SYS_CMD_NUM 6
-#define CPIO_ADDR ((char*)0x20000000) //QEMU(0x8000000)
+#define uint32_t unsigned long int
+#define uint64_t unsigned long long int
+#define SYS_CMD_NUM 7
+#define CPIO_ADDR ((char*)0x8000000) //QEMU(0x8000000)
 struct cpio_size_info{
     unsigned long long int file_size, file_padding, name_size, name_padding;
     unsigned long long int offset;
@@ -37,5 +39,8 @@ void sys_cat(char*);
 void extract_header(struct cpio_newc_header *, struct cpio_size_info *);
 unsigned long long int hex2int(char*, int);
 void *__memset(void*, int, int);
+uint32_t sys_get32bits(char*);
+uint64_t sys_get64bits(char*);
+
 
 #endif

@@ -1,5 +1,5 @@
 __process_size = 0x8000;
-
+__dtb_addr = 0x120000;
 SECTIONS
 {
  . = 0x80000;

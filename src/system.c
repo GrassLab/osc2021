@@ -2,6 +2,7 @@
 #include "string.h"
 #include "uart.h"
 #include "bootloader.h"
+#include "dtb_parser.h"
 
 struct cmd{
     char input[20];
@@ -15,10 +16,22 @@ struct cmd cmd_list[SYS_CMD_NUM] = {
     {.input = "reboot", .description="reset raspi3",.callback = sys_reboot},
     {.input = "loadimg", .description="load new kernel",.callback = bootloader_loadimg},
     {.input = "ls", .description="list rootfs",.callback = sys_list},
-    {.input = "cat", .description="show content of file", .callback = sys_cat}
+    {.input = "cat", .description="show content of file", .callback = sys_cat},
+    {.input = "show_dtb",. description="show device tree information", .callback = parse_dtb}
 };
 
 
+uint32_t sys_get32bits(char* ptr){
+    uint32_t res = 0;
+    for(int i = 0; i < 4; ++i){
+        res <<= 8;
+        res += ptr[i];
+    }
+    return res;
+}
+uint64_t sys_get64bits(char* ptr){
+    return ((uint64_t)sys_get32bits(ptr) << 32) + (uint64_t)(sys_get32bits(ptr + 4));
+}
 unsigned long long int hex2int(char* addr, const int size){
     unsigned long long int res = 0;
     char c;

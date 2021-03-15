@@ -26,7 +26,7 @@ test:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none
 
 test_lab2:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -initrd ../initramfs.cpio
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -dtb ../OSDI/bcm2710-rpi-3-b-plus.dtb
 
 test_qemu_lab2:
 	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial pty -display none -initrd ../initramfs.cpio
