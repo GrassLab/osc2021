@@ -1,9 +1,9 @@
 #ifndef _UTILS
 #define _UTILS
 
-/* funcs */
 extern void _moveTo(void *, unsigned int);
 extern void _branch(void *);
+
 char *itoa(int num, char *str) {
   int i = 0;
   char buff[64];
@@ -88,5 +88,19 @@ void print_int(int i) {
   char buff[buff_size];
   uart_puts(itoa(i, buff));
   uart_puts("\r\n");
+}
+
+unsigned long long int to_int(char *buff, unsigned int size) {
+  unsigned long long int result = 0;
+  for (int i = 0; i < size - 1; i++, result <<= 8) result += buff[i];
+  result += buff[size - 1];
+  return result;
+}
+
+void print_char(char *buff, int size) {
+  char str[buff_size];
+  mem_reset(str, buff_size);
+  for (int i = 0; i < size; i++) str[i] = buff[i];
+  uart_puts(str);
 }
 #endif /*_UTILS */

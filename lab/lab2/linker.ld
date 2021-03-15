@@ -21,13 +21,13 @@ SECTIONS
     _bss_top = .;
     *(.bss)
   }
-  bss_size =  SIZEOF(.bss);
+  bss_size =  SIZEOF(.bss) >> 3;
   .heap :
   {
     . = ALIGN(8);
     _heap_top = .;
   }
-  . = _start + _heap_stack_size;
+  . = . + _heap_stack_size;
   .stack :
   {
     . = ALIGN(8);

@@ -23,12 +23,7 @@ struct cpio_newc_header {
   char c_namesize[8];
   char c_check[8];
 };
-unsigned long long int to_int(char *buff, unsigned int size) {
-  unsigned long long int result = 0;
-  for (int i = 0; i < size - 1; i++, result <<= 8) result += buff[i];
-  result += buff[size - 1];
-  return result;
-}
+
 int cpio_info(struct cpio_newc_header **cpio_ptr, char **cpio_addr,
               char **context) {
   *cpio_ptr = (struct cpio_newc_header *)(*cpio_addr);
@@ -52,9 +47,3 @@ int cpio_info(struct cpio_newc_header **cpio_ptr, char **cpio_addr,
   return context_size;
 }
 
-void print_char(char *buff, int size) {
-  char str[buff_size];
-  mem_reset(str, buff_size);
-  for (int i = 0; i < size; i++) str[i] = buff[i];
-  uart_puts(str);
-}

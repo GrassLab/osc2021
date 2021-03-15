@@ -9,6 +9,7 @@ void do_help() {
   uart_puts("help: print available commands\r\n");
   uart_puts("reboot: restart device\r\n");
   uart_puts("ls: list file\r\n");
+  uart_puts("cat: print file context\r\n");
 }
 void do_except(char *buff) {
   uart_puts("No command: ");
