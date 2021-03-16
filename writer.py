@@ -30,8 +30,6 @@ with open(args.filename, 'rb') as file:
         device.write(str('\n').encode())
         device.flush()
 
-        sum = 0
-
         for i in range(length):
             device.write(raw[i: i+1])
             device.flush()
