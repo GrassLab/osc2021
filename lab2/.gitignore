@@ -1,4 +1,5 @@
 *.txt
 *.img
 *.elf
-ramdisk
+*.cpio
+*.o
