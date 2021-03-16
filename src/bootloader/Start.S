@@ -9,12 +9,12 @@ _start:
     adr     x4, _end
     cmp     x0, x1
     beq     after_moved
-moving:
+relocation:
     cmp     x4, x0
     bls     to_target
     ldr     x3, [x0], #8
     str     x3, [x1], #8
-    b       moving
+    b       relocation
 
 to_target:
     br x2
