@@ -7,7 +7,7 @@ RES_DIR = res
 SRC_DIR = src
 
 ##############
-C_FILES = $(wildcard $(SRC_DIR)/*.c)
+C_FILES = $(wildcard $(SRC_DIR)/*.c)		#colon: substitution
 ASM_FILES = $(wildcard $(SRC_DIR)/*.S)
 OBJ_FILES = $(C_FILES:$(SRC_DIR)/%.c=$(RES_DIR)/%_c.o)
 OBJ_FILES += $(ASM_FILES:$(SRC_DIR)/%.S=$(RES_DIR)/%_s.o)
