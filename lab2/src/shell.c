@@ -9,9 +9,15 @@ void shell() {
   while(1) {
     char c = uart_getc();
     c = c=='\r'?'\n':c;
-    if(c != '\n') {
+    if(c != '\n' && c != '\x7f') {
       command[i++] = c;
       uart_send(c);
+    }
+    else if(c == '\x7f') {
+      uart_send('\x08');
+      uart_send(' ');
+      uart_send('\x08');
+      command[--i] = '\0';
     }
     else {
       command[i] = '\0';
@@ -31,7 +37,9 @@ void do_command(char* command) {
         uart_puts("hello: print Hello World!.\n");
         uart_puts("reboot: reboot rpi3.\n");
         uart_puts("loadimg: load kernel image.\n");
-        uart_puts("ls: list cpio files.\n");
+        uart_puts("lscpio: list cpio files.\n");
+        uart_puts("lsdtb: list dtb node name.\n");
+        uart_puts("lsdtbprop [node name]: list [node name] property.\n");
         uart_puts("cat [file]: cat cpio file.\n");
   }
   else if(strncmp(command, "hello", 6) == 0) {
@@ -46,7 +54,7 @@ void do_command(char* command) {
   else if(strncmp(command, "cat ", 4) == 0) {
     get_file_content(command + 4, strlen(command + 4));
   }
-  else if(strncmp(command, "ls", 3) == 0) {
+  else if(strncmp(command, "lscpio", 3) == 0) {
     get_all_pathname();
   }
   else if(strncmp(command, "lsbss", 6) == 0) {
@@ -56,6 +64,12 @@ void do_command(char* command) {
     uart_hex((unsigned long)&_bss_begin);
     uart_puts("\n_bss_end\n");
     uart_hex((unsigned long)&_bss_end);
+  }
+  else if(strncmp(command, "lsdtb", 6) == 0) {
+    devicetree_parse(get_dtb_address(), DISPLAY_DEVICE_NAME, null);
+  }
+  else if(strncmp(command, "lsdtbprop", 9) == 0) {
+    devicetree_parse(get_dtb_address(), DISPLAY_DEVICE_PROPERTY, command + 10);
   }
   else {
     uart_puts("unknown command\n");
@@ -100,15 +114,19 @@ void loadimg() {
     uart_puts("\n");
   }
   //jump to readimg_jump
-  asm volatile ("mov x0, %0\n" "mov x1, %1\n" "mov sp, %2\n" "blr %3\n"::
+  asm volatile ("mov x0, %0\n" "mov x1, %1\n" "mov sp, %2\n" "mov x2, %3\n" "blr %4\n"::
   "r" (load_address),
   "r" (img_size),
   "r" (load_address),
-	"r" (relocated_readimg_jump):"x0", "x1");
+  "r" (get_dtb_address()),
+	"r" (relocated_readimg_jump):"x0", "x1", "x2");
 }
 //read kernel img, and jump 
-void readimg_jump(size_t load_address, size_t img_size) {
+void readimg_jump(size_t load_address, size_t img_size, size_t dtb_address) {
   uart_read((char* )load_address, img_size);
-  ((void (*)(void))(load_address))();
+  asm volatile ("mov x0, %0\n" "mov sp, %1\n" "blr %2\n"::
+  "r" (dtb_address),
+  "r" (load_address),
+	"r" (load_address));
+  //((void (*)(void))(load_address))();
 }
-

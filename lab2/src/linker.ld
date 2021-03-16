@@ -27,8 +27,4 @@ SECTIONS
 	  *(.bootloader);
 	  _end_bootloader = .;
   }
-
-  
-  
-
 }

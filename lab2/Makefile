@@ -48,6 +48,7 @@ debug:
                 -serial null\
                 -serial pty\
 		-initrd initramfs.cpio\
+		-dtb bcm2710-rpi-3-b-plus.dtb\
 		-S -s
 
 

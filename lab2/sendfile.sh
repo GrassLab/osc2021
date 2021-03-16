@@ -1,5 +1,5 @@
 #!/bin/bash
-#tty=/dev/pts/3	
+#tty=/dev/pts/8
 tty=/dev/ttyUSB0
 size=`stat --printf="%s" $1`
 echo $size
