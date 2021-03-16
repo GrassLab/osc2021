@@ -67,14 +67,14 @@ void uart_printint(unsigned long long int num){
 }
 void uart_printhex(unsigned long long int num){
     char res[16];
-    for(int i = 0; i < 16; ++i, num >>= 4){
+    for(int i = 0; i < 8; ++i, num >>= 4){
         short int tmp = num % 16;
         if(tmp >= 10) res[i] = tmp - 10 + 'a';
         else res[i] = tmp + '0';
     }
     uart_puts("0x");
-    for(int i = 15; i >= 0; --i) uart_send(res[i]);
-    uart_puts("\r\n");
+    for(int i = 7; i >= 0; --i) uart_send(res[i]);
+    //uart_puts("\r\n");
 }
 char uart_get(){
     char res;

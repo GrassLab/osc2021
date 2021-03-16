@@ -2,6 +2,7 @@
 #define __DTB_PARSER_H__
 #include "uart.h"
 #include "system.h"
+#include "string.h"
 
 
 #define FDT_BEGIN_NODE 0x00000001
@@ -45,7 +46,8 @@ struct dt_node{
 
 void parse_dtb(char*);
 void extract_fdt_header(char*, struct fdt_header*);
-char* unflatten_fdt(char* addr, struct fdt_header* header);
-char* parse_node_property(char* addr, struct fdt_header* header);
-char* __align_byte(char* addr);
+char* unflatten_fdt(char* addr, struct fdt_header* header, int depth);
+char* parse_node_property(char* addr, struct fdt_header* header, int depth);
+char* __print_string_align(char* addr);
+void __print_alignchar(char c, int depth);
 #endif

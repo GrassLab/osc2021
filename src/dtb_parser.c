@@ -23,71 +23,109 @@ void parse_dtb(char* args){
         uart_send(*tmp);
     }
     char* addr = (char*)(fdt_addr + header.off_dt_struct);
-    while(sys_get32bits(addr) != FDT_END){
-        addr = unflatten_fdt(addr, &header);
+    
+    while(sys_get32bits(addr) != FDT_END ){
+        //uart_printhex(sys_get32bits(addr)); uart_puts("\r\n");
+        if(sys_get32bits(addr) == FDT_END_NODE){
+            addr += 4;
+            continue;
+        }
+        addr = unflatten_fdt(addr, &header, 0);
+        if(addr >= (header.off_dt_strings + header.address)){
+            break;
+        }
+        //addr += 4;
     }
+    uart_printhex(sys_get32bits(addr));
 }
-char* parse_node_property(char* addr, struct fdt_header* header){
+char* parse_node_property(char* addr, struct fdt_header* header, int depth){
     uint32_t token = sys_get32bits(addr); addr += 4;
     // uart_printhex(token);
     uint32_t len = sys_get32bits(addr); addr += 4;
     uint32_t nameoff = sys_get32bits(addr); addr += 4;
-    //uart_printint(nameoff);
-    uart_puts("name: ");
+    // uart_printhex(len);
+    // uart_printhex(nameoff);
+    __print_alignchar(' ', depth + 2); // uart_puts("Property: ");
     uart_puts((char*)(header->off_dt_strings + nameoff + header->address));
-    uart_puts("\r\nproperty value: ");
-    for(uint32_t i = 0; i < len; ++i){
-        uart_send(*addr);
-        ++addr;
+    uart_puts(" = ");
+    char* name = (char*)(header->off_dt_strings + nameoff + header->address);
+    if(strcmp("compatible", name) == 0 || strcmp("model", name) == 0
+        || strcmp("status", name) == 0 || strcmp("name", name) == 0 || strcmp("device_type", name) == 0){
+        uart_send('\"');
+        int cnt = 0;
+        for(uint32_t i = 0; i < len;){
+            if(cnt > 0) uart_send(',');
+            uart_puts(addr + i);
+            i += strlen(addr + i) + 1;
+            // else uart_send(addr[i]);
+        }
+        uart_send('\"');
+        //uart_puts("\r\n");
+    }
+    else if(strcmp("phandle", name) == 0 || strcmp("#address-cells", name) == 0 || strcmp("#size-cells", name) == 0
+            || strcmp("virtual-reg", name) == 0 || strcmp("interrupt-parent", name) == 0){
+        uart_send('<');
+        uart_printint(sys_get32bits(addr));
+        uart_send('>');
+        // uart_printint(res);
+        // uart_puts("\r\n");
+    }
+    else {
+        uart_send('<');
+        for(uint32_t i = 0;i < len; i += 4){
+            uint32_t res = sys_get32bits(addr + i);
+            uart_printhex(res);
+            uart_send(' ');
+        }
+        uart_send('>');
+        //uart_puts("\r\n");
     }
     uart_puts("\r\n");
-    
-    addr += (need_padding(len, 4));
-    return addr + 4;
+    return addr + len + need_padding(len, 4);
 }
-char* unflatten_fdt(char* addr, struct fdt_header* header){
+
+char* unflatten_fdt(char* addr, struct fdt_header* header, int depth){
     while(sys_get32bits(addr) == FDT_NOP)
         addr += 4;
     uint32_t begin_tag = sys_get32bits(addr); addr += 4;
-    if(begin_tag == FDT_BEGIN_NODE){
+    // if(begin_tag == FDT_BEGIN_NODE){
+        __print_alignchar('|', depth);
         uart_puts("node name: ");
-        uart_puts(addr);
+        
+        addr = __print_string_align(addr);
         uart_puts("\r\n");
-        addr = __align_byte(addr);
+
         while(sys_get32bits(addr) == FDT_NOP)
             addr += 4;
         while(sys_get32bits(addr) == FDT_PROP){
-            addr = parse_node_property(addr, header);
+            // uart_puts("parse pro\r\n");
+            addr = parse_node_property(addr, header, depth);
         }
-        uart_printhex(sys_get32bits(addr));
-        if(sys_get32bits(addr) == FDT_BEGIN_NODE){
-            addr = unflatten_fdt(addr, header);
-            while(sys_get32bits(addr) == FDT_NOP)
+        
+        while(sys_get32bits(addr) == FDT_BEGIN_NODE){
+            addr = unflatten_fdt(addr, header, depth + 1);
+            
+        }
+        while(sys_get32bits(addr) == FDT_NOP)
                 addr += 4;
-        }
-        if(sys_get32bits(addr) == FDT_END_NODE){
+        if(sys_get32bits(addr) == FDT_END_NODE ){
+            //uart_puts("node end\r\n");
             addr += 4;
+            depth -= 1;
         }
+        
         return addr;
-    }
-    else {
-        uart_printhex(sys_get32bits(addr));
-        uart_puts("not begin\r\n");
-
-    }
-    return addr + 4;
+    // }
+    
+    return addr;
 }
-char* __align_byte(char* addr){
-    short int cnt = 1;
-    while(*addr != '\0'){
-        cnt = (cnt + 1)%4;
-        ++addr;
-    }
-    while(cnt != 0){
-        cnt = (cnt + 1)%4;
-        ++addr; 
-    }
-    return addr + 1;
+void __print_alignchar(char c, int depth){
+    for(int i = 0; i < (depth << 2) ; ++i) uart_send(c);
+}
+char* __print_string_align(char* addr){
+    uart_puts(addr);
+    int len = strlen(addr); // exclude '\0'
+    return addr + len + 1 + need_padding(len + 1, 4);
 }
 void extract_fdt_header(char* fdt_addr, struct fdt_header* header){
     header->magic               = sys_get32bits(fdt_addr);
