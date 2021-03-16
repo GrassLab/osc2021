@@ -17,7 +17,7 @@ struct cmd cmd_list[SYS_CMD_NUM] = {
     {.input = "loadimg", .description="load new kernel",.callback = bootloader_loadimg},
     {.input = "ls", .description="list rootfs",.callback = sys_list},
     {.input = "cat", .description="show content of file", .callback = sys_cat},
-    {.input = "show_dtb",. description="show device tree information", .callback = parse_dtb}
+    {.input = "dtb",. description="show device tree information", .callback = parse_dtb}
 };
 
 
@@ -77,7 +77,7 @@ void sys_list(char* args){
 void system_command(char* buf){
     char *args = buf;
     int arg_idx = 0;
-    for(; buf[arg_idx] != '\0'; ++arg_idx){
+    for(; buf[arg_idx] != '\0'; ++arg_idx, ++args){
         if(buf[arg_idx] == ' '){
             buf[arg_idx] = '\0';
             args = buf + arg_idx + 1;
@@ -90,7 +90,6 @@ void system_command(char* buf){
             break;
         }
     }
-
     return;
 }
 void sys_cat(char* args){

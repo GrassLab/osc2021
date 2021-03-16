@@ -46,7 +46,7 @@ struct dt_node{
 
 void parse_dtb(char*);
 void extract_fdt_header(char*, struct fdt_header*);
-char* unflatten_fdt(char* addr, struct fdt_header* header, int depth);
+char* unflatten_fdt(char* addr, struct fdt_header* header,char* args, int depth);
 char* parse_node_property(char* addr, struct fdt_header* header, int depth);
 char* __print_string_align(char* addr);
 void __print_alignchar(char c, int depth);

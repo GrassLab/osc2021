@@ -1,5 +1,5 @@
 CC = aarch64-linux-gnu-gcc
-CFLAG = -fPIC -Iinclude -fno-stack-protector -nostdlib -nostartfiles -ffunction-sections
+CFLAG = -fPIC -Iinclude -fno-stack-protector -nostdlib -nostartfiles -ffunction-sections -fno-builtin
 SF =
 ifndef SF
 	SF=start.S
@@ -17,7 +17,7 @@ start.o: $(SRC_DIR)start.S
 kernel8.img: $(SRC_DIR)start.o $(OBJS)
 	aarch64-linux-gnu-ld $(SRC_DIR)start.o $(OBJS) -T $(SRC_DIR)linker.ld -nostdlib -o kernel8.elf
 	aarch64-linux-gnu-objcopy -O binary kernel8.elf kernel8.img
-	
+
 clean:
 	-rm $(SRC_DIR)*.o
 	-rm kernel8.elf kernel8.img
@@ -29,7 +29,7 @@ test_lab2:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -dtb ../OSDI/bcm2710-rpi-3-b-plus.dtb
 
 test_qemu_lab2:
-	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial pty -display none -initrd ../initramfs.cpio
+	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial pty -display none -initrd ../initramfs.cpio -dtb ../OSDI/bcm2710-rpi-3-b-plus.dtb
 
 check:
 	aarch64-linux-gnu-readelf -s kernel8.elf
