@@ -48,3 +48,11 @@ int strncmp(const char *s1, const char *s2, unsigned n) {
   }
   return c1 - c2;
 }
+
+int strlen(const char *s) {
+  int len = 0;
+  while (s[len] != '\0') {
+    len++;
+  }
+  return len;
+}

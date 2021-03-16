@@ -21,7 +21,5 @@ typedef struct {
   char c_check[8];
 } cpio_newc_header;
 
-unsigned long long align_up(unsigned long long addr,
-                            unsigned long long alignment);
 void cpio_ls();
 void cpio_cat(char *filename);

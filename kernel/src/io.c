@@ -1,25 +1,7 @@
 #include "io.h"
 
 #include "mini_uart.h"
-
-unsigned long long int hex2int(char *hex, int len) {
-  unsigned long long int val = 0;
-  for (int i = 0; i < len; i++) {
-    // get current character then increment
-    unsigned long long int byte = *(hex + i);
-    if (byte >= '0' && byte <= '9')
-      byte = byte - '0';
-    else if (byte >= 'A' && byte <= 'F')
-      byte = byte - 'A' + 10;
-    else if (byte >= 'a' && byte <= 'f')
-      byte = byte - 'a' + 10;
-
-    val = (val << 4) | (byte & 0xF);
-  }
-  return val;
-}
-
-int is_digit(char ch) { return (ch >= '0') && (ch <= '9'); }
+#include "utils.h"
 
 char read_b() { return uart_getb(); }
 
@@ -82,7 +64,7 @@ void print_i(int x) {
   print_c(x % 10 + '0');
 }
 
-void print_h(int x) {
+void print_h(uint32_t x) {
   print_s("0x");
   for (int c = 28; c >= 0; c -= 4) {
     int n = (x >> c) & 0xF;

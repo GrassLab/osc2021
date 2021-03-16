@@ -11,6 +11,10 @@ _start:
     b hang_loop
 
 master:
+    // save dtb loading address
+    ldr x1, =0x9000000
+    str x0, [x1]
+
     // clear bss segment
     ldr x0, =__bss_start
     ldr x1, =__bss_size

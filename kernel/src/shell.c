@@ -1,6 +1,7 @@
 #include "shell.h"
 
 #include "cpio.h"
+#include "dtb.h"
 #include "io.h"
 #include "mini_uart.h"
 #include "string.h"
@@ -13,6 +14,7 @@ void cmd_help() {
   print_s("reboot\t\treboot machine\n");
   print_s("ls\t\tlist files in Cpio archive\n");
   print_s("cat\t\tprint file content given pathname in Cpio archive\n");
+  print_s("dtb\t\tparse and print the flattened devicetree\n");
 }
 
 void cmd_hello() { print_s("Hello World!\n"); }
@@ -25,6 +27,8 @@ void cmd_reboot(int tick) {       // reboot after watchdog timer expire
 void cmd_ls() { cpio_ls(); }
 
 void cmd_cat(char *pathname) { cpio_cat(pathname); }
+
+void cmd_dtb() { dtb_parse(); }
 
 void clear_buffer() {
   buffer_pos = 0;
@@ -63,5 +67,6 @@ void run_shell() {
     }
     if (strcmp(buffer, "ls") == 0) cmd_ls();
     if (strncmp(buffer, "cat", 3) == 0) cmd_cat(&buffer[4]);
+    if (strcmp(buffer, "dtb") == 0) cmd_dtb();
   }
 }

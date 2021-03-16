@@ -3,11 +3,6 @@
 #include "io.h"
 #include "string.h"
 
-unsigned long long align_up(unsigned long long addr,
-                            unsigned long long alignment) {
-  return (addr + alignment - 1) & (~(alignment - 1));
-}
-
 void cpio_ls() {
   unsigned long long ptr = RAMFS_ADDR;
   cpio_newc_header *header;

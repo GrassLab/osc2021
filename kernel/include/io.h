@@ -1,7 +1,7 @@
 #pragma once
 
-unsigned long long int hex2int(char *hex, int len);
-int is_digit(char ch);
+#include "utils.h"
+
 char read_b();
 char read_c();
 char *read_s(char *str, int max_size);
@@ -10,4 +10,4 @@ unsigned long long int read_h();
 void print_c(char ch);
 void print_s(char *ch);
 void print_i(int x);
-void print_h(int x);
+void print_h(uint32_t x);
