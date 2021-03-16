@@ -26,4 +26,3 @@ I follow the instruction in lab0, loading bootcode.bin, fixup.dat and start.elf 
 * shell.c: Where I implement the simple shell.
 * utils.S: defines put32, get32 function and delay function that is used in UART initialization.
 * mini_uart.c: initialization function, uart_getc, uart_putc and uart_puts are defined here.
-
