@@ -1,5 +1,6 @@
 #include "util.h"
 #include "mmio.h"
+#include "shell.h"
 
 char *gets(char *str) {
   char c = '\0';
@@ -7,6 +8,12 @@ char *gets(char *str) {
   int buff_end = 0;
   do {
     c = uart_getc();
+    //uart_setc(c+' ');
+    if (c == 8) { // backspace, ^H works on screen, BS not working
+      puts("\b \b");
+      buff_end--;
+      continue;
+    }
     str[buff_end++] = c;
     uart_setc(c);
   } while (c != '\n');

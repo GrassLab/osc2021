@@ -3,6 +3,7 @@
 # set build parameters
 LANG ?= c # defualt set to C, use `LANG=rust make` to change implementation language
 ENV ?= release # default set to release mode, use `ENV=debug make` to change to debug mode
+SD_MEDIA ?= 4DFF-0A36
 
 ifeq ($(LANG), rust)
 	SRC_ROOT=rust-impl
@@ -29,7 +30,7 @@ OBJ_FILES=boot/boot.o $(SRC_ROOT)/kernel.o $(SRC_ROOT)/lib/util.o $(SRC_ROOT)/li
 
 LINKER_SCRIPT=linker.lds
 
-.PHONY: all clean img elf obj
+.PHONY: all clean img elf obj install
 
 all: $(IMAGE)
 	@echo ""
@@ -56,3 +57,7 @@ obj: $(OBJ_FILES)
 
 clean:
 	rm -f $(IMAGE) $(ELF_FILE) $(OBJ_FILES)
+
+install:
+#cp ./setup/* /run/media/calee/$(SD_MEDIA)
+	cp ./kernel8.img /run/media/calee/$(SD_MEDIA)

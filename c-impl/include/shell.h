@@ -2,9 +2,10 @@
 #define __SHELL_H_
 
 
-void help();
-void hello();
-void reboot();
-void cmd(const char *);
+int help();
+int hello();
+int reboot();
+int cmd(const char *);
+void shell();
 
 #endif // __SHELL_H_

@@ -3,9 +3,9 @@
 .globl _start
 _start:
   // disable multi core
-  //mrs   x0, mpidr_el1
-  //and   x0, x0, #3
-  //cbnz  x0, _hang
+  mrs   x0, mpidr_el1
+  and   x0, x0, #3
+  cbnz  x0, _hang
   // Set stack pointer to #LOW_MEMORY (0xffffffff)
   ldr   x0, =_start
   mov   sp, x0
