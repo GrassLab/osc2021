@@ -25,16 +25,12 @@ def dumpImg(dev,k_addr='0xa0000',kernel='kernel87.img'):
     dev.write(str.encode(str(k_size)+'\n'))
 
     with open(kernel,"rb") as f:
-        #print("test\n")
         waitFor('...\r\n',dev)
-        #print("test\n")
         for i in range(k_size):
             dev.write(f.read(1))
-            #print("test\n")
             waitFor('.',dev,False)
 
 if __name__=='__main__':
-    #src=input('src(\'/dev/ttyUSB0\')?')
     br=115200
     dev=serial.Serial("/dev/ttyUSB0",br)
 

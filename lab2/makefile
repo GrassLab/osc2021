@@ -2,6 +2,7 @@ KERNEL:=kernel8
 LINKER:=linker.ld
 CFLAGS:=-nostdinc -nostdlib -nostartfiles
 LIB = ./lib
+CPIO:=initramfs.cpio
 all: $(KERNEL).img
 
 $(KERNEL).img:start.o rd.o main.o lib/uart.o  lib/shell.o lib/stringUtils.o lib/initrd.o
@@ -9,12 +10,14 @@ $(KERNEL).img:start.o rd.o main.o lib/uart.o  lib/shell.o lib/stringUtils.o lib/
 	aarch64-linux-gnu-objcopy -O binary $(KERNEL).elf $@
 
 cpio:
-	ls *.md *.c  | cpio -H hpodc -o >ramdisk
+	cd rootfs;\
+	ls *.txt   | cpio -H newc -o >../$(CPIO);\
+	cd ..;
 
 start.o:start.S
 	aarch64-linux-gnu-gcc $(CFLAGS) -c $<
-rd.o:ramdisk
-	aarch64-linux-gnu-ld -r -b binary -o rd.o ramdisk
+rd.o:$(CPIO)
+	aarch64-linux-gnu-ld -r -b binary -o rd.o $(CPIO)
 %.o:%.c
 	aarch64-linux-gnu-gcc $(CFLAGS) -o $@ -c $<
 $(LIB)/%.o:$(LIB)/%.c
@@ -28,5 +31,6 @@ run:
 onboard:
 	sudo screen /dev/ttyUSB0 115200
 
+.SILENT:clean
 clean:
-	rm *.o *.elf *.img $(LIB)/*.o 
+	-@ rm -f *.cpio *.o *.elf *.img $(LIB)/*.o 

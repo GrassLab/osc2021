@@ -39,37 +39,40 @@ int memcmp(void *s1, void *s2, int n)
 
 /* POSIX ustar header format */
 typedef struct {                /* byte offset */
-  char name[100];               /*   0 */
-  char mode[8];                 /* 100 */
-  char uid[8];                  /* 108 */
-  char gid[8];                  /* 116 */
-  char size[12];                /* 124 */
-  char mtime[12];               /* 136 */
-  char chksum[8];               /* 148 */
-  char typeflag;                /* 156 */
-  char linkname[100];           /* 157 */
-  char magic[6];                /* 257 */
-  char version[2];              /* 263 */
-  char uname[32];               /* 265 */
-  char gname[32];               /* 297 */
-  char devmajor[8];             /* 329 */
-  char devminor[8];             /* 337 */
-  char prefix[167];             /* 345 */
+    char name[100];               /*   0 */
+    char mode[8];                 /* 100 */
+    char uid[8];                  /* 108 */
+    char gid[8];                  /* 116 */
+    char size[12];                /* 124 */
+    char mtime[12];               /* 136 */
+    char chksum[8];               /* 148 */
+    char typeflag;                /* 156 */
+    char linkname[100];           /* 157 */
+    char magic[6];                /* 257 */
+    char version[2];              /* 263 */
+    char uname[32];               /* 265 */
+    char gname[32];               /* 297 */
+    char devmajor[8];             /* 329 */
+    char devminor[8];             /* 337 */
+    char prefix[167];             /* 345 */
 } __attribute__((packed)) tar_t;
 
 /* cpio hpodc format */
 typedef struct {
-    char magic[6];      /* Magic header '070707'. */
-    char dev[6];        /* device number. */
-    char ino[6];        /* "i-node" number. */
-    char mode[6];       /* Permisions. */
-    char uid[6];        /* User ID. */
-    char gid[6];        /* Group ID. */
-    char nlink[6];      /* Number of hard links. */
-    char rdev[6];       /* device major/minor number. */
-    char mtime[11];     /* Modification time. */
-    char namesize[6];   /* Length of filename in bytes. */
-    char filesize[11];  /* File size. */
+    char magic[6];
+    char ino[8];
+    char mode[8];
+    char uid[8];
+    char gid[8];
+    char nlink[8];
+    char mtime[8];
+    char filesize[8];
+    char devmajor[8];
+    char devminor[8];
+    char rdevmajor[8];
+    char rdevminor[8];
+    char namesize[8];
+    char check[8];
 } __attribute__((packed)) cpio_t;
 
 /**
@@ -125,20 +128,20 @@ void initrd_list(char *buf)
         buf+=(((fs+511)/512)+1)*512;
     }
     // if it's a cpio archive. Cpio also has a trailer entry
-    while(!memcmp(buf,"070707",6) && memcmp(buf+sizeof(cpio_t),"TRAILER!!",9)) {
+    while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_t),"TRAILER!!",9)) {
         cpio_t *header = (cpio_t*)buf;
-        int ns=oct2bin(header->namesize,6);
-        int fs=oct2bin(header->filesize,11);
+        int ns=oct2bin(header->namesize,8);
+        int fs=oct2bin(header->filesize,8);
         // print out meta information
-        uart_hex(oct2bin(header->mode,6));  // mode (access rights + type)
+        uart_hex(oct2bin(header->mode,8));  // mode (access rights + type)
         uart_send(' ');
         uart_hex((unsigned int)((unsigned long)buf)+sizeof(cpio_t)+ns);
         uart_send(' ');
         uart_hex(fs);                       // file size in hex
         uart_send(' ');
-        uart_hex(oct2bin(header->uid,6));   // user id in hex
+        uart_hex(oct2bin(header->uid,8));   // user id in hex
         uart_send('.');
-        uart_hex(oct2bin(header->gid,6));   // group id in hex
+        uart_hex(oct2bin(header->gid,8));   // group id in hex
         uart_send('\t');
         uart_puts(buf+sizeof(cpio_t));      // filename
         uart_puts("\n");
