@@ -61,7 +61,7 @@ bootloader.img: $(BOOT_SRC_DIR)/bootloader.ld $(BOOT_OBJ_FILES) $(UTILS_OBJ_FILE
 	$(ARMGNU)-objcopy $(RES_DIR)/bootloader.elf -O binary $@
 
 $(RAMFS): rootfs
-	find $< | cpio -o -H newc > $@
+	cd rootfs; find . | cpio -o -H newc > ../$@; cd ..;
 
 run:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -initrd $(RAMFS)

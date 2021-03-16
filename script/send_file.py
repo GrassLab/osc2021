@@ -26,8 +26,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     with serial.Serial(args.target_pth, 115200, xonxoff=True) as tty:
-        # magic = 0x01020304.to_bytes(4, 'big')
-        # send_all_data(tty, magic)
+        magic = 0x01020304.to_bytes(4, 'big')
+        send_all_data(tty, magic)
 
         file_size = Path(args.src_file_pth).stat().st_size.to_bytes(8, 'little')
         send_all_data(tty, file_size)
