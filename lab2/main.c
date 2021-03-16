@@ -49,6 +49,8 @@ void cmdhandler() {
     } else if (strcmp(cmdBuffer, "reboot")) {
         uart_putchar("\n>>Start rebooting...\n");
         reset(100);
+    } else if (strcmp(cmdBuffer, "loadimg")) {
+        
     } else {
         uart_putchar("\n>> Unsupported command, ");
         uart_putchar("Command input: ");
