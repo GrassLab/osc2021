@@ -26,7 +26,9 @@ $(LIB)/%.o:$(LIB)/%.c
 
 
 run:
-	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio
+#	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio
+	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio -initrd ./initramfs.cpio
+
 
 onboard:
 	sudo screen /dev/ttyUSB0 115200

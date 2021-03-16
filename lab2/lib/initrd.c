@@ -37,26 +37,6 @@ int memcmp(void *s1, void *s2, int n)
 //#define memcmp __builtin_memcmp
 //#endif
 
-/* POSIX ustar header format */
-typedef struct {                /* byte offset */
-    char name[100];               /*   0 */
-    char mode[8];                 /* 100 */
-    char uid[8];                  /* 108 */
-    char gid[8];                  /* 116 */
-    char size[12];                /* 124 */
-    char mtime[12];               /* 136 */
-    char chksum[8];               /* 148 */
-    char typeflag;                /* 156 */
-    char linkname[100];           /* 157 */
-    char magic[6];                /* 257 */
-    char version[2];              /* 263 */
-    char uname[32];               /* 265 */
-    char gname[32];               /* 297 */
-    char devmajor[8];             /* 329 */
-    char devminor[8];             /* 337 */
-    char prefix[167];             /* 345 */
-} __attribute__((packed)) tar_t;
-
 /* cpio hpodc format */
 typedef struct {
     char magic[6];
@@ -90,6 +70,54 @@ int oct2bin(char *s, int n)
     return r;
 }
 
+unsigned long hexToDex(char *s){
+    unsigned long r = 0;
+    for(int i = 0 ;i < 8 ; ++i){
+        if(s[i] >= '0' && s[i] <= '9'){
+            r = r* 16 + s[i]-'0';
+        }else{
+            r = r * 16 + s[i]-'a'+'10';
+        }
+    }
+    return r;
+}
+
+void printFilecontent(cpio_t *addr){
+    unsigned long size = hexToDex(addr->filesize);
+    unsigned long ns = hexToDex(addr->namesize);
+    //int ns = hexToDex(addr -> namesize);
+    char* path = (char*)(addr+1);
+    char *data = (char *)(path+ns);
+        for(int i = 0; i < size ; ++i){
+            uart_send(data[i]);
+        }
+
+
+//	char* path=(char*)(addr+1);
+	//char* data=path+ns;
+	//if(memcmp(path,"TRAILER!!",9)==0)return ;
+
+//	uart_printf("Path: %s\n",path);
+	//uart_puts("---Data---\n");
+	//for(int i=0;i<size;++i){
+	//	if(data[i])uart_send(data[i]);
+	//}
+	//uart_puts("----------\n");
+
+}
+cpio_t* findFile(cpio_t* buf, char* str){
+    while(1){
+    unsigned long size = hexToDex(buf->filesize);
+    unsigned long ns = hexToDex(buf->namesize);
+        char* path=(char*)(buf+1);
+        char* data=path+ns;
+        if(compString(path,"TRAILER!!!")==0)break;
+        if(compString(path,str)==0)return buf;
+        buf=(cpio_t*)(data+size);
+    }
+
+return 0;
+}
 /**
  * List the contents of an archive
  */
@@ -98,35 +126,9 @@ void initrd_list(char *buf)
     char *types[]={"regular", "link  ", "symlnk", "chrdev", "blkdev", "dircty", "fifo  ", "???   "};
 
     uart_puts("Type     Offset   Size     Access rights\tFilename\n");
-
+        cpio_t* addr = (cpio_t*)0x8000000;
+        cpio_t* cool = findFile(addr,"a.txt");
     // iterate on archive's contents
-    while(!memcmp(buf+257,"ustar",5)) {
-        // if it's an ustar archive
-        tar_t *header=(tar_t*)buf;
-        int fs=oct2bin(header->size,11);
-        // print out meta information
-        uart_puts(types[header->typeflag-'0']);
-        uart_send(' ');
-        uart_send(' ');
-        uart_hex((unsigned int)((unsigned long)buf)+sizeof(tar_t));
-        uart_send(' ');
-        uart_hex(fs);               // file size in hex
-        uart_send(' ');
-        uart_puts(header->mode);    // access bits in octal
-        uart_send(' ');
-        uart_puts(header->uname);   // owner
-        uart_send('.');
-        uart_puts(header->gname);   // group
-        uart_send('\t');
-        uart_puts(buf);             // filename
-        if(header->typeflag=='2') {
-            uart_puts(" -> ");      // symlink target
-            uart_puts(header->linkname);
-        }
-        uart_puts("\n");
-        // jump to the next file
-        buf+=(((fs+511)/512)+1)*512;
-    }
     // if it's a cpio archive. Cpio also has a trailer entry
     while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_t),"TRAILER!!",9)) {
         cpio_t *header = (cpio_t*)buf;
@@ -147,5 +149,8 @@ void initrd_list(char *buf)
         uart_puts("\n");
         // jump to the next file
         buf+=(sizeof(cpio_t)+ns+fs);
+        printFilecontent(cool);
     }
 }
+
+
