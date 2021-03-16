@@ -89,34 +89,17 @@ char* unflatten_fdt(char* addr, struct fdt_header* header, int depth){
         addr += 4;
     uint32_t begin_tag = sys_get32bits(addr); addr += 4;
     // if(begin_tag == FDT_BEGIN_NODE){
-        __print_alignchar('|', depth);
-        uart_puts("node name: ");
-        
-        addr = __print_string_align(addr);
-        uart_puts("\r\n");
-
-        while(sys_get32bits(addr) == FDT_NOP)
-            addr += 4;
-        while(sys_get32bits(addr) == FDT_PROP){
-            // uart_puts("parse pro\r\n");
-            addr = parse_node_property(addr, header, depth);
-        }
-        
-        while(sys_get32bits(addr) == FDT_BEGIN_NODE){
-            addr = unflatten_fdt(addr, header, depth + 1);
-            
-        }
-        while(sys_get32bits(addr) == FDT_NOP)
-                addr += 4;
-        if(sys_get32bits(addr) == FDT_END_NODE ){
-            //uart_puts("node end\r\n");
-            addr += 4;
-            depth -= 1;
-        }
-        
-        return addr;
-    // }
+    __print_alignchar('|', depth);
+    uart_puts("node name: ");
     
+    addr = __print_string_align(addr);
+    uart_puts("\r\n");
+
+    while(sys_get32bits(addr) == FDT_NOP)  addr += 4;
+    while(sys_get32bits(addr) == FDT_PROP) addr = parse_node_property(addr, header, depth);
+    while(sys_get32bits(addr) == FDT_BEGIN_NODE) addr = unflatten_fdt(addr, header, depth + 1);
+    while(sys_get32bits(addr) == FDT_NOP) addr += 4;
+    if(sys_get32bits(addr) == FDT_END_NODE ) addr += 4;
     return addr;
 }
 void __print_alignchar(char c, int depth){
