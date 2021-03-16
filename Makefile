@@ -7,6 +7,7 @@ RES_DIR = res
 SRC_DIR = src
 BOOT_SRC_DIR = src/bootloader
 UTILS_SRC_DIR = utils
+RAMFS = initramfs.cpio
 ##############
 C_FILES = $(wildcard $(SRC_DIR)/*.c)
 ASM_FILES = $(wildcard $(SRC_DIR)/*.S)
@@ -26,7 +27,7 @@ UTILS_OBJ_FILES += $(UTILS_ASM_FILES:$(UTILS_SRC_DIR)/%.S=$(RES_DIR)/%_s.o)
 
 .PHONY: clean run
 
-all: kernel8.img bootloader.img
+all: kernel8.img bootloader.img $(RAMFS)
 
 #############################################
 $(RES_DIR)/%_c.o: $(SRC_DIR)/%.c
@@ -59,8 +60,11 @@ bootloader.img: $(BOOT_SRC_DIR)/bootloader.ld $(BOOT_OBJ_FILES) $(UTILS_OBJ_FILE
 	$(ARMGNU)-ld -T $< -o $(RES_DIR)/bootloader.elf $(BOOT_OBJ_FILES) $(UTILS_OBJ_FILES)
 	$(ARMGNU)-objcopy $(RES_DIR)/bootloader.elf -O binary $@
 
+$(RAMFS): rootfs
+	find $< | cpio -o -H newc > $@
+
 run:
-	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -display none -serial null -serial stdio
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -initrd $(RAMFS)
 
 clean:
-	rm -rf $(RES_DIR)/* *.img
+	rm -rf $(RES_DIR)/* *.img *.cpio

@@ -1,4 +1,4 @@
-// #include "stdint.h"
+#include "stdint.h"
 
 int strcmp(char *s1, char *s2){
     while(*s1!='\0' && *s2!='\0' && *s1==*s2){
@@ -8,16 +8,16 @@ int strcmp(char *s1, char *s2){
     return *s1 - *s2;
 }
 
-// char* itoa(int64_t num, int base){
-//     static char buf[30] = {0};
-//     int i = 25;
-//     if(num == 0){
-//         buf[i] = '0';
-//         return &buf[i];
-//     }
+char* itoa(int64_t val, int base){
+    static char buf[32] = {0};
+    int i = 30;
+    if (val == 0) {
+        buf[i] = '0';
+        return &buf[i];
+    }
 
-//     for(; num && i; i--, num/=base)
-//         buf[i] = "0123456789abcdef"[num%base];
-    
-//     return &buf[i+1];
-// }
+    for (; val && i; --i, val /= base)
+        buf[i] = "0123456789abcdef"[val % base];
+
+    return &buf[i + 1];
+}
