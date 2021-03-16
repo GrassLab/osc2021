@@ -21,6 +21,28 @@ void cmd_reboot(int tick) {       // reboot after watchdog timer expire
 }
 
 void cmd_loadimg() {
+  // relocate bootloader
+  extern void *_start;
+  extern void *_end;
+  unsigned long long bootloader_size =
+      (unsigned long long)&_end - (unsigned long long)&_start;
+
+  char *original_addr = (char *)&_start;
+  char *relocated_addr = (char *)0x1000000;
+
+  for (unsigned long long i = 0; i < bootloader_size; i++) {
+    *(relocated_addr + i) = *(original_addr + i);
+  }
+  print_s("relocate bootloader done\n");
+
+  // jump to read_image() in relocated bootloader
+  unsigned long long relocated_read_image =
+      (unsigned long long)relocated_addr +
+      ((unsigned long long)&read_image - (unsigned long)original_addr);
+  ((void (*)())relocated_read_image)();
+}
+
+void read_image() {
   print_s("Please send the image with UART.\r\n");
 
   // read image
@@ -29,7 +51,7 @@ void cmd_loadimg() {
   for (int i = 0; i < img_size; i++) {
     *(base_addr + i) = read_b();
   }
-  print_s("read done\n");
+  print_s("read kernel image done\n");
 
   // jump to kernel
   ((void (*)())(long long int)base_addr)();
