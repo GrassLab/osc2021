@@ -1,4 +1,4 @@
-.section ".text.boot"
+.section ".text.relocate"
 
 // Rpi 3 has 4 CPUs and load this file to GPU to run. 
 // let only one  processor handle this by let the other 3 processors enter low power mode by instruction "wfi"  
@@ -29,5 +29,17 @@ _entry:
     ldr   x1, =_start                       // ldr => load register, ",=" involves ARM pseudo instruction  
     mov   sp, x1                            // copy the address of "_start" to stack pointer 
 
-    bl    main                              // bl => branch with link, unconditional jump to where link is 
+    bl    relocate                          // bl => branch with link, unconditional jump to the relocation c code
     b     _low_power_mode
+
+
+
+.section ".text.boot"
+
+.global _main
+
+_main:
+    bl    main
+_halt:
+    wfe
+    b     _halt
