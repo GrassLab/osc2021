@@ -23,6 +23,7 @@ typedef struct {
 
 void dtb_parse();
 void dtb_parse_node(uint64_t struct_addr, uint64_t strings_addr);
+uint64_t print_node(uint64_t struct_addr, uint64_t strings_addr, int depth);
 uint64_t print_property(uint64_t struct_addr, uint64_t strings_addr, int depth);
 uint32_t dtb_read_int(uint64_t *addr_ptr);
 char *dtb_read_string(uint64_t *addr_ptr);
