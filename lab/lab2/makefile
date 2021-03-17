@@ -5,7 +5,7 @@ ifeq ($(OS), Windows_NT)
 	GNU_LD=aarch64-none-linux-gnu-ld
 	GNU_GCC=aarch64-none-linux-gnu-gcc
 	DEL=del
-	SERIAL=COM1
+	SERIAL=COM3
 	CONNECT=putty -load "OSDI"
 	PYTHON=python
 else
@@ -54,10 +54,12 @@ clean:
 	$(DEL) *.o *.elf *.img
 
 d:
-	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -display none -d in_asm 
+	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -display none -d in_asm  -initrd initramfs.cpio 
 
 r:
-	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial $(SERIAL) -display none -initrd initramfs.cpio
+	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial stdio -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb
+
+	# qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial $(SERIAL) -display none -initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb
 	# qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial $(SERIAL) -display none 
 	# qemu-system-aarch64 -M raspi3 -kernel kernel.img -serial null -serial pty -display none 
 	# qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial stdio -display none 
@@ -70,4 +72,4 @@ connect:
 	$(CONNECT)
 
 send:
-	$(PYTHON) ./send.py $(v)
+	sudo $(PYTHON) ./send.py $(v)

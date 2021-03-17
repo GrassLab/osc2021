@@ -1,5 +1,8 @@
 #ifndef _UTILS
 #define _UTILS
+#define buff_size 64
+typedef unsigned int uint32_t;
+typedef unsigned long long int uint64_t;
 
 extern void _moveTo(void *, unsigned int);
 extern void _branch(void *);
@@ -12,6 +15,7 @@ char *itoa(int num, char *str) {
   for (int j = 0; j < i; j++) str[j] = buff[i - j - 1];
   return str;
 }
+
 int atoi_size(char *str, unsigned int size) {
   int num = 0;
   for (int i = 0; i < size; i++, num *= 10) num += (int)(str[i] - '0');
@@ -49,12 +53,22 @@ int atoHex(char *str) {
 void mem_reset(char *buff, int size) {
   for (int i = 0; i < size; i++) buff[i] = '\0';
 }
-
+int strlen(char *str) {
+  int i = 0;
+  while (str[i] != '\0') i++;
+  return i;
+}
 int strcmp(char *array_1, char *array_2) {
   int i;
   for (i = 0; array_1[i] != '\0'; i++)
     if (array_1[i] != array_2[i]) return 0;
   if (array_2[i] != '\0') return 0;
+  return 1;
+}
+int strcmpLen(char *array_1, char *array_2, int len) {
+  int i;
+  for (i = 0; i < len; i++)
+    if (array_1[i] != array_2[i]) return 0;
   return 1;
 }
 void readline(char *buff) {
@@ -102,5 +116,50 @@ void print_char(char *buff, int size) {
   mem_reset(str, buff_size);
   for (int i = 0; i < size; i++) str[i] = buff[i];
   uart_puts(str);
+}
+
+unsigned long int big2little(unsigned long int addr) {
+  return ((addr >> 24) & 0x000000FF) | ((addr << 8) & 0x00FF0000) |
+         ((addr >> 8) & 0x0000FF00) | ((addr << 24) & 0xFF000000);
+}
+void print_hc(char x) {
+  for (int c = 4; c >= 0; c -= 4) {
+    int n = (x >> c) & 0xF;
+    n += n > 9 ? 'A' - 10 : '0';
+    uart_send(n);
+  }
+};
+
+void print_h(unsigned long int x) {
+  uart_puts("0x");
+  for (int c = 28; c >= 0; c -= 4) {
+    int n = (x >> c) & 0xF;
+    n += n > 9 ? 'A' - 10 : '0';
+    uart_send(n);
+  }
+  uart_puts("\r\n");
+};
+int get_int32(unsigned int **addr) {
+  int result = **addr;
+  (*addr)++;
+  return result;
+}
+int get_int64(unsigned long long int **addr) {
+  unsigned long long int result = **addr;
+  (*addr)++;
+  return result;
+}
+int get_char8(char **addr) {
+  int result = **addr;
+  (*addr)++;
+  return result;
+}
+int align(int reminder, int base) { return (base - (reminder % base)) % base; }
+int find(char *sub, char *str) {
+  int i, len = strlen(sub);
+  if (len == 0) return strlen(str) + 1;
+  for (i = 0; str[i] != '\0'; i++)
+    if (strcmpLen(sub, &str[i], len)) return i;
+  return -1;
 }
 #endif /*_UTILS */

@@ -1,5 +1,5 @@
 _heap_stack_size = 8M;
-
+_save_dts = 0x9000000;
 SECTIONS
 {
   . = 0x80000;

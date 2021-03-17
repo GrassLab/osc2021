@@ -34,16 +34,15 @@ int cpio_info(struct cpio_newc_header **cpio_ptr, char **cpio_addr,
 
   /* get cpio header size */
   unsigned long long int header_size =
-      CPIO_SIZE + c_namesize + (4 - (CPIO_SIZE + c_namesize) % 4) % 4;
+      CPIO_SIZE + c_namesize + align(CPIO_SIZE + c_namesize, 4);
 
   /* get cpio context size */
   unsigned long long int context_size =
       atoHex_size((*cpio_ptr)->c_filesize, CPIO_OTHERS_BYTES);
-  unsigned long long int size = context_size + (4 - (context_size % 4)) % 4;
+  unsigned long long int size = context_size + align(context_size, 4);
   *context = (*cpio_addr) + header_size;
 
   /* move to next cpio header */
   *cpio_addr += header_size + size;
   return context_size;
 }
-

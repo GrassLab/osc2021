@@ -1,7 +1,5 @@
 #include "bootloader.h"
 
-#include "uart.h"
-#include "utils.h"
 void do_reset(int tick) {         // reboot after watchdog timer expire
   *PM_RSTC = PM_PASSWORD | 0x20;  // full reset
   *PM_WDOG = PM_PASSWORD | tick;  // number of watchdog tick
@@ -56,6 +54,64 @@ void do_load() {
                                                  (unsigned long int)SHIFT_ADDR);
   func_call((char *)KERNEL_ADDR);
 }
+
+/* dts block */
+
+void do_dtb(char *buff) {
+  /* get device name*/
+  int k = 0;
+  while (buff[k] != '\0') k++;
+  buff = &buff[k + 1];
+  /* test block*/
+  struct fdt_header *dts_header = *(struct fdt_header **)_save_dts;
+  /* shift to struct offset*/
+  char *fp = (char *)dts_header + big2little(dts_header->off_dt_struct),
+       name[buff_size];
+  int deep = -1, device_len = strlen(buff);
+  while (1) {
+    int FDT_NODE = big2little(get_int32((unsigned int **)&fp));
+
+    if (FDT_NODE == 0x00000001) {
+      char c;
+      int i;
+      for (i = 1; (c = get_char8(&fp)) != '\0'; i++) name[i - 1] = c;
+      name[i - 1] = '\0';
+      fp += align(i, 4);
+
+      if ((device_len == 0) | (find(buff, name) > -1)) {
+        if (!device_len)
+          for (int i = 0; i < deep; i++) uart_send('>');
+        uart_puts("name: ");
+        uart_puts(name);
+        uart_puts("\r\n");
+      }
+      deep++;
+    } else if (FDT_NODE == 0x00000002)
+      deep--;
+    else if (FDT_NODE == 0x00000003) {
+      /* FDT_PROP struct */
+      int len = big2little(get_int32((unsigned int **)&fp));
+      int nameoff = big2little(get_int32((unsigned int **)&fp));
+      if (device_len == 0) {
+        for (int i = 0; i < deep; i++) uart_send(' ');
+      }
+      if (find(buff, name) > -1) {
+        uart_puts("  ");
+        dtb_valueTypePrint((char *)dts_header +
+                               big2little(dts_header->off_dt_strings) + nameoff,
+                           &fp, len);
+      } else
+        for (int i = 0; i < len; i++) get_char8(&fp);
+      fp += align(len, 4);
+    } else if (FDT_NODE == 0x00000004)
+      continue;
+    else if (FDT_NODE == 0x00000009)
+      break;
+  }
+}
+
+/* dts block */
+
 void shell() {
   char buff[buff_size];
   /* say hello */
@@ -77,6 +133,8 @@ void shell() {
       return;
     } else if (strcmp(buff, "load"))
       do_load();
+    else if (strcmp(buff, "dtb"))
+      do_dtb(buff);
     else
       do_except(buff);
   }
