@@ -42,5 +42,6 @@ assets: $(SRC_DIR)/config.txt $(wildcard rootfs/*)
 clean:
 	rm -rf $(BUILD_DIR) $(OBJS_DIR)
 
+#TODO: set emu tag when compiling debuging code
 run:
 	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/bootloader.img -initrd $(BUILD_DIR)/initramfs.cpio -serial null -serial pty -display none

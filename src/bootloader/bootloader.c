@@ -1,5 +1,6 @@
 #include "mini_uart.h"
 #include "string.h"
+#include "bootloader.h"
 
 void* bootloader(void *kernel_entry)
 {
@@ -28,8 +29,6 @@ void* bootloader(void *kernel_entry)
                 }
 
                 *kernel_tmp = kernel_code;
-                
-                // putchar(kernel_code);
 
                 if (buffer[0] == 'e' && buffer[1] == 'n' && buffer[2] == 'd') {
                     kernel_tmp -= 2;
@@ -42,11 +41,25 @@ void* bootloader(void *kernel_entry)
 
             break;
         }
-
     }
-
 
     puts("finished\r\n\n");
     
     return kernel_entry;
+}
+
+void do_relocate(void *target)
+{
+    char *pAddr = BOOTLOADER_ADDRESS;
+    char *targetTmp = (char *)target;
+    
+    while (pAddr != BOOTLOADER_STACK_TOP)
+    {
+        *targetTmp = *pAddr;
+
+        targetTmp++;
+        pAddr++;
+    }
+
+    return;
 }

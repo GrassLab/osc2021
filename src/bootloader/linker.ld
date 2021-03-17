@@ -1,9 +1,10 @@
-_stack_top = 0x61000;
-_kernel_begin = 0x81000;
+_begin = 0x80000;
+_stack_top = 0x81000;
+_relocate_addr = 0x60000;
 
 SECTIONS
 {
-    . = 0x60000;
+    . = _begin;
     .text.boot : { *(.text.boot) }
     .text : { *(.text) }
     .data : 

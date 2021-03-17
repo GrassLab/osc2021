@@ -1,8 +1,9 @@
+_begin = 0x80000;
 _stack_top = 0x480000;
 
 SECTIONS
 {
-    . = 0x81000;
+    . = _begin;
     .text : {
         *(.text.start) 
         *(.text)
