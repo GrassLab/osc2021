@@ -1,44 +1,27 @@
-SECTIONS												/* Use the SECTIONS keyword to declare a section, the following is its content */
+SECTIONS
 {
-    . = 0x80000;										/* move the 'location counter' to 0x80000 */
-    .text : 											/* assign .text section */
+    . = 0x80000;
+    .text :
 	{ 
-		KEEP(*(.text.boot)) 							/* make sure .text.boot will not be remove by linker-time garbage collection. */
-		*(.text .text.*) 								/* *(.text .text.*) is all .text and .text. */
+		KEEP(*(.text.boot))
+		*(.text .text.*)
 	}	
-    .rodata : 											/* assign .rodata section */
+    .rodata :
 	{ 
-		*(.rodata .rodata.*) 							/* *(.rodata .rodata.*) is all .rodata and .rodata. */
+		*(.rodata .rodata.*)
 	}					
-    .data : 											/* assign .data section */
+    .data :
 	{ 
-		*(.data .data.*) 								/* *(.data .data.*) is all .data and .data. */
+		*(.data .data.*)
 	}						
-    .bss (NOLOAD) : 									/* assign .bss section, NOLOAD means not load at runtime */
+    .bss (NOLOAD) :
 	{									
-        . = ALIGN(16);									/* aligned to 16-byte boundaries. ex.0x0000000000080000 */
-        __bss_start = .;								/* assign __bss_start to the current memory position */
-        *(.bss .bss.*)									/* *(.bss .bss.*) is all .bss and .bss. */
-        *(COMMON)										/* assign uninitialized data section */
-        __bss_end = .;									/* assign __bss_end to the current memory position */
+        . = ALIGN(16);
+        __bss_start = .;
+        *(.bss .bss.*)
+        *(COMMON)
+        __bss_end = .;
     }
-    _end = .;											/* assign _end to the current memory position */
+    _end = .;
 }
-__bss_size = (__bss_end - __bss_start) >> 3;			/* _bss_size set to 8 */
-
-/*
-	KEEP: make sure the section will not be remove by linker-time garbage collection.
-	.text: code section
-	.rodata: stores read-only data, e.g. const variables and strings
-	.bss : uninitialized data section (weak symbol) e.g. global var init to zero
-	.data : initialized data section (strong symbol)
-	NOLOAD : Does not load at runtime (because bss section is full of zero)
-	COMMON : uninitialized data section (weak symbol) e.g. global var just declare
-	
-	[example]
-	const int a = 0; 	// .rodata
-	int b = 3;  		// .data
-	int c = 0;  		// .bss
-	int d;      		// COMMON
-	
-*/
+__bss_size = (__bss_end - __bss_start) >> 3;

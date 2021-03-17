@@ -14,7 +14,7 @@ void cmd_init()
 		cmd[i] = 0;
 }
 
-void cmd_handle() // parse command
+void cmd_handle()
 {
 	uart_putstr("\r");
 
@@ -32,7 +32,7 @@ void cmd_handle() // parse command
 	{
 		uart_putstr("\rreboot .... \n");
 		raspi3_reboot(100);
-		while(1);  // wait for reboot
+		while(1);
 	}
 	else if(strlen(cmd) != 0)
 	{
@@ -49,7 +49,6 @@ void main()
 	cmd_init();
 	uart_init();
 	
-	// put welcome ascii art
 	uart_putstr("\r");
 	uart_putstr("      .~~.   .~~.       \n");
 	uart_putstr("     '. \\ ' ' / .'     \n");
@@ -67,12 +66,11 @@ void main()
 	char c2;
 	while(1)
 	{
-		c = uart_getchar(); // get char from user
+		c = uart_getchar();
 		
-		// https://codertw.com/%E7%A8%8B%E5%BC%8F%E8%AA%9E%E8%A8%80/45106/
 		switch(c)
 		{
-			case '\n':	// 0X0A '\n' newline, parse command
+			case '\n':
 				while(cmd[cmdSize] != 0)
 					cmdSize++;
 				cmd[cmdSize] = '\0';
@@ -80,12 +78,12 @@ void main()
 				uart_putstr("\r\n");
 				cmd_handle();
 				
-				for(int i = 0; i < cmdSize; i++)  // store last command
+				for(int i = 0; i < cmdSize; i++)
 					last_cmd[i] = cmd[i];
 				
 				cmd_init();
 				break;
-			case 127: // backspace
+			case 127:
 				if(cmdSize > 0)
 				{
 					cmdSize--;
@@ -95,12 +93,12 @@ void main()
 				break;
 			case '[':
 				c2 = uart_getchar();
-				if (c2 == 'A')	// cursor up
+				if (c2 == 'A')
 				{
-					for(int i = 0; i < cmdSize; i++) // clear input
+					for(int i = 0; i < cmdSize; i++)
 						uart_putstr("\b \b");
 					cmd_init();
-					for(int i = 0; i < CMDSIZE; i++) // input last command
+					for(int i = 0; i < CMDSIZE; i++)
 					{
 						if(last_cmd[i] == 0)
 							break;
@@ -110,19 +108,19 @@ void main()
 						cmdSize++;
 					}
 				}
-				else if (c2 == 'C' && cmdSize < strlen(cmd)) // cursor left
+				else if (c2 == 'C' && cmdSize < strlen(cmd))
 				{
 					uart_putstr("\033[C");
 					cmdSize++;
 				}
-				else if (c2 == 'D' && cmdSize > 0) // cursor right
+				else if (c2 == 'D' && cmdSize > 0)
 				{
 					uart_putstr("\033[D");
 					cmdSize--;
 				}
 				break;
 			default:
-				if (c > 31 && c < 127)	// visible ascii
+				if (c > 31 && c < 127)
 				{
 					cmd[cmdSize] = c;
 					cmdSize++;
@@ -131,7 +129,7 @@ void main()
 				break;
 		}
 		
-		if (cmdSize >= CMDSIZE)	// cmd length > CMDSIZE
+		if (cmdSize >= CMDSIZE)
 		{
 			uart_putstr("\ncommand too long !\n# ");
 			cmd_init();

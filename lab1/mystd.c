@@ -1,6 +1,5 @@
 #include "uart.h"
 
-// calculate string length
 int strlen(char *s)
 {
 	int size = 0;
@@ -14,7 +13,6 @@ int strlen(char *s)
 	return size;
 }
 
-// compare two string is equal ?
 int strcmp(char *s1, char *s2)
 {
 	int len1 = strlen(s1);
