@@ -25,6 +25,6 @@
 #ifndef __INITRD__
 #define __INITRD__
 
-void initrd_list(char *buf);
+void cpio();
 
 #endif

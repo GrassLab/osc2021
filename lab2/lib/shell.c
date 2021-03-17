@@ -2,6 +2,7 @@
 #include "../include/stringUtils.h"
 #include "../include/shell.h"
 #include "../include/utils.h"
+#include "../include/initrd.h"
 #define MAX_BUF_SIZE 128
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC (volatile unsigned int*)0x3F10001c
@@ -89,6 +90,8 @@ static void parse_input(char *buffer){
         reset();
     }else if(compString("loadimg\n",buffer) == 0){
         loadimg();
+    }else if(compString("find\n",buffer) == 0){
+        cpio();
     }else{
         uart_puts("No Such Command\n");
     }

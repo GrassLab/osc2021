@@ -83,12 +83,15 @@ unsigned long hexToDex(char *s){
 }
 
 void printFilecontent(cpio_t *addr){
-    unsigned long size = hexToDex(addr->filesize);
-    unsigned long ns = hexToDex(addr->namesize);
+        unsigned long psize=hexToDex(addr->namesize),dsize=hexToDex(addr->filesize);
+		if((sizeof(cpio_t)+psize)&3)psize+=4-((sizeof(cpio_t)+psize)&3);
+		if(dsize&3)dsize+=4-(dsize&3);
+    //unsigned long size = hexToDex(addr->filesize);
+    //unsigned long ns = hexToDex(addr->namesize);
     //int ns = hexToDex(addr -> namesize);
     char* path = (char*)(addr+1);
-    char *data = (char *)(path+ns);
-        for(int i = 0; i < size ; ++i){
+    char *data = (char *)(path+psize);
+        for(int i = 0; i < dsize ; ++i){
             uart_send(data[i]);
         }
 
@@ -107,49 +110,72 @@ void printFilecontent(cpio_t *addr){
 }
 cpio_t* findFile(cpio_t* buf, char* str){
     while(1){
-    unsigned long size = hexToDex(buf->filesize);
-    unsigned long ns = hexToDex(buf->namesize);
+        unsigned long psize=hexToDex(buf->namesize),dsize=hexToDex(buf->filesize);
+		if((sizeof(cpio_t)+psize)&3)psize+=4-((sizeof(cpio_t)+psize)&3);
+		if(dsize&3)dsize+=4-(dsize&3);
+
+//    unsigned long size = hexToDex(buf->filesize);
+ //   unsigned long ns = hexToDex(buf->namesize);
         char* path=(char*)(buf+1);
-        char* data=path+ns;
+        char* data=path+psize;
         if(compString(path,"TRAILER!!!")==0)break;
         if(compString(path,str)==0)return buf;
-        buf=(cpio_t*)(data+size);
+        buf=(cpio_t*)(data+dsize);
+        uart_puts("1");
     }
 
 return 0;
 }
+
+
+void getName(char* target){
+	uart_puts("Please enter file name: ");
+	int cnt=0;
+	while(1){
+		target[cnt++]=uart_getc();
+		uart_send(target[cnt-1]);
+		if(target[cnt-1]=='\n')break;
+	}
+	target[--cnt]=0;
+}
 /**
  * List the contents of an archive
  */
-void initrd_list(char *buf)
+void cpio(char *buf)
 {
     char *types[]={"regular", "link  ", "symlnk", "chrdev", "blkdev", "dircty", "fifo  ", "???   "};
 
     uart_puts("Type     Offset   Size     Access rights\tFilename\n");
         cpio_t* addr = (cpio_t*)0x8000000;
-        cpio_t* cool = findFile(addr,"a.txt");
     // iterate on archive's contents
     // if it's a cpio archive. Cpio also has a trailer entry
-    while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_t),"TRAILER!!",9)) {
-        cpio_t *header = (cpio_t*)buf;
-        int ns=oct2bin(header->namesize,8);
-        int fs=oct2bin(header->filesize,8);
-        // print out meta information
-        uart_hex(oct2bin(header->mode,8));  // mode (access rights + type)
-        uart_send(' ');
-        uart_hex((unsigned int)((unsigned long)buf)+sizeof(cpio_t)+ns);
-        uart_send(' ');
-        uart_hex(fs);                       // file size in hex
-        uart_send(' ');
-        uart_hex(oct2bin(header->uid,8));   // user id in hex
-        uart_send('.');
-        uart_hex(oct2bin(header->gid,8));   // group id in hex
-        uart_send('\t');
-        uart_puts(buf+sizeof(cpio_t));      // filename
-        uart_puts("\n");
-        // jump to the next file
-        buf+=(sizeof(cpio_t)+ns+fs);
-        printFilecontent(cool);
+    //while(!memcmp(buf,"070701",6) && memcmp(buf+sizeof(cpio_t),"TRAILER!!!",10)) {
+    //    cpio_t *header = (cpio_t*)buf;
+    //    int ns=oct2bin(header->namesize,8);
+    //    int fs=oct2bin(header->filesize,8);
+    //    // print out meta information
+    //    uart_hex(oct2bin(header->mode,8));  // mode (access rights + type)
+    //    uart_send(' ');
+    //    uart_hex((unsigned int)((unsigned long)buf)+sizeof(cpio_t)+ns);
+    //    uart_send(' ');
+    //    uart_hex(fs);                       // file size in hex
+    //    uart_send(' ');
+    //    uart_hex(oct2bin(header->uid,8));   // user id in hex
+    //    uart_send('.');
+    //    uart_hex(oct2bin(header->gid,8));   // group id in hex
+    //    uart_send('\t');
+    //    uart_puts(buf+sizeof(cpio_t));      // filename
+    //    uart_puts("\n");
+    //    // jump to the next file
+    //    buf+=(sizeof(cpio_t)+ns+fs);
+    //}
+    char target[100];
+    getName(target); 
+    cpio_t* entry = findFile(addr,target);
+    if(entry){
+        printFilecontent(entry);
+    }else{
+        uart_puts("no such file\n"); 
     }
 }
 

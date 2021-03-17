@@ -10,7 +10,7 @@ void main()
     uart_init();
     // say hello
     uart_puts("Hello World!\n");
-    initrd_list((char*)&_binary_initramfs_cpio_start);
+//    initrd_list((char*)&_binary_initramfs_cpio_start);
     //uart_puts(&__text_start);
     // echo everything back
     while(1) {

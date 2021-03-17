@@ -11,8 +11,7 @@ $(KERNEL).img:start.o rd.o main.o lib/uart.o  lib/shell.o lib/stringUtils.o lib/
 
 cpio:
 	cd rootfs;\
-	ls *.txt   | cpio -H newc -o >../$(CPIO);\
-	cd ..;
+	find . | cpio -H newc -o >../$(CPIO);
 
 start.o:start.S
 	aarch64-linux-gnu-gcc $(CFLAGS) -c $<
