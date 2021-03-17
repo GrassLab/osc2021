@@ -21,6 +21,7 @@ void parse_command (char *b) {
         uart_send("vcm: get vc memory\r\n");
         uart_send("x/[num]gx [address]: print value in memory\r\n");
         uart_send("load: load kernel image via mini-uart\r\n");
+        uart_send("fdt: show flattened device tree address\r\n");
     }
     else if (!strcmp(b, "reboot")) {
         reset(10000);
@@ -71,7 +72,10 @@ void parse_command (char *b) {
     else if (!strcmp(b, "jump")) {
         jump_address(0x80000);
     }
-    else if (!strcmp(b, "test")) {
+    else if (!strcmp(b, "fdt")) {
+        uart_sendh(bootloader_info[0]);
+        //uart_sendh((u64)&(bootloader_info[0]));
+        uart_send("\r\n");
     }
     else if (mem_print(b)) {
     }

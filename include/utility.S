@@ -23,6 +23,11 @@ get__start:
     ldr x0, =_start
     ret
 
+.global bootloader_info
 .global jump_address
 jump_address:
-    br x0
+    mov x20, x0
+    ldr x4, =bootloader_info
+    ldp x0, x1, [x4]
+    ldp x2, x3, [x4, #0x10]
+    br x20

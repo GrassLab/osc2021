@@ -29,3 +29,4 @@ __bss_size = (__bss_start - __bss_end) >> 3;
 __stack_base = __text_start << 1;
 bootloader_start = __text_start;
 bootloader_end = _end;
+bootloader_offset = 0x80000 - __text_start;

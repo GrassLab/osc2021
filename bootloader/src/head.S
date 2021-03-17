@@ -1,6 +1,17 @@
 .section ".text.start"
 .global _start
+.extern bootloader_info
+
 _start:
+    /* store flatten device tree */
+    mov x20, x0
+    mov x21, x1
+    ldr x0, =bootloader_info
+    ldr x1, =bootloader_offset
+    add x0, x0, x1
+    stp x20, x21, [x0]
+    stp x2, x3, [x0, #16]
+
     mov x1, #8
     tst x1, #8
     b.eq bss_init_loop

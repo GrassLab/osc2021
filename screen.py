@@ -116,6 +116,8 @@ def auto_load ():
     print(get_until('$ '), end='')
 
 
+#auto_load()
+
 while True:
     command = input()
     if command == 'exit':
@@ -123,9 +125,6 @@ while True:
 
     if command == 'load':
         auto_load()
-        continue
-
-    if command == 'test':
         continue
 
     if command == 'reboot':

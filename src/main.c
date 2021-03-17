@@ -6,6 +6,8 @@
 #include "debug.h"
 #include "loader.h"
 #include "cpio.h"
+#include "flattened_devicetree.h"
+#include "data_type.h"
 #define BUFFER_SIZE 64
 
 void parse_command (char *b) {
@@ -27,6 +29,9 @@ void parse_command (char *b) {
         uart_send("version: show rapi version\r\n");
         uart_send("vcm: get vc memory\r\n");
         uart_send("x/[num]gx [address]: print value in memory\r\n");
+        uart_send("fdt_info: show flattened device tree information\r\n");
+        uart_send("show_fdt: show all flattened device tree nodes\r\n");
+        uart_send("fdt [node]: search [node] information\r\n");
     }
     else if (!strcmp(b, "reboot")) {
         uart_send("reboot~~\n");
@@ -58,8 +63,43 @@ void parse_command (char *b) {
     else if (!strcmp(token, "cat")) {
         cpio_cat_interface(b);
     }
+    else if (!strcmp(token, "fdt_info")) {
+        show_fdt_info();
+    }
+    else if (!strcmp(b, "show_fdt")) {
+        show_all_fdt();
+    }
     else if (!strcmp(b, "test")) {
-        cpio_cat_file("test.txt");
+        show_all_fdt();
+    }
+    else if (!strcmp(b, "test1")) {
+        unsigned long tmp = (unsigned long) fdt_head;
+        tmp += get_fdt_header_off_dt_struct();
+        u32 *ptr = (u32 *)tmp;
+        uart_sendh(tmp);
+        uart_send("\r\n");
+        //uart_sendh((unsigned long) ptr);
+        int flag = 0;
+        for (int i = 0; i < 100; i++) {
+            if (flag) {
+                flag = 0;
+                uart_send((char *) &ptr[i]);
+            }
+            if (ptr[i] == FDT_PROP_BIG) {
+                uart_send((char *) &ptr[i + 3]);
+                uart_send(" \r\n");
+            }
+
+            uart_send("\t");
+            uart_sendh((unsigned long) &ptr[i]);
+            uart_send(": ");
+
+            uart_sendh(u32_b2l(ptr[i]));
+            uart_send(" \r\n");
+            if (u32_b2l(ptr[i]) == 0x1)
+                flag = 1;
+        }
+        uart_send("\r\n");
     }
     else if (mem_print(b)) {
     }
@@ -70,6 +110,7 @@ void parse_command (char *b) {
 
 int main () {
     uart_init();
+    fdt_head = (FDT_HEADER *) bootloader_info[0];
 
     char buffer[BUFFER_SIZE];
 

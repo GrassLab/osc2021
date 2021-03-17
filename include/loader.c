@@ -2,6 +2,8 @@
 #include "uart.h"
 #include "utility.h"
 
+u64 bootloader_info[4] __attribute__ ((aligned (16)));
+
 unsigned long remote_load (unsigned long *base, unsigned long size) {
     unsigned long hex = 0, buf64 = 0;
     uart_sendh(hex);
