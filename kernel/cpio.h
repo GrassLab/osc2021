@@ -53,7 +53,7 @@ struct cpio_info {
  * @return             The location of the file in memory; NULL if the index
  *                     exceeds the number of files in the CPIO archive.
  */
-void *cpio_get_entry(void *archive, int index, const char name[100][100], unsigned long *size);
+void *cpio_get_entry(void *archive, int index, const char **name, unsigned long *size);
 
 /**
  * Retrieve file information from a provided file name

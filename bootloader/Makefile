@@ -1,6 +1,6 @@
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
-CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
+CFLAGS = -Wall -ffreestanding -nostdinc -nostdlib -nostartfiles
 CC = aarch64-linux-gnu-gcc-8
 LINKER = aarch64-linux-gnu-ld
 OBJ_CPY = aarch64-linux-gnu-objcopy

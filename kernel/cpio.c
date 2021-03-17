@@ -88,7 +88,7 @@ int cpio_parse_header(struct cpio_header *archive,
  *
  * Runs in O(n) time.
  */
-void *cpio_get_entry(void *archive, int n, const char name[100][100], unsigned long *size)
+void *cpio_get_entry(void *archive, int n, const char **name, unsigned long *size)
 {
     int i;
     struct cpio_header *header = archive;

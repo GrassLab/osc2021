@@ -4,7 +4,6 @@
 #include "cpio.h"
 
 void shell_welcome_message() {
-    uart_puts("\n");
     uart_puts(" _   _      _ _       \n");
     uart_puts("| | | |    | | |      \n");
     uart_puts("| |_| | ___| | | ___  \n");
