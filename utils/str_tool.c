@@ -8,6 +8,13 @@ int strcmp(char *s1, char *s2){
     return *s1 - *s2;
 }
 
+int32_t strlen(char *s){
+    int32_t s_size = 0;
+    while(*(s+s_size) != 0)
+        s_size += 1;
+    return s_size;
+}
+
 char* itoa(int64_t val, int base){
     static char buf[32] = {0};
     int i = 30;

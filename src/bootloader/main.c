@@ -9,28 +9,8 @@ union large_int_by_byte{
 
 void boot_main(){
     uart_init();
-
     union large_int_by_byte program;
     volatile uint8_t *program_addr = (volatile uint8_t *)0x80000;
-
-    while(1) {
-        uint8_t data;
-        data = uart_getc();
-        if (data != 1) continue;
-label_1:
-        data = uart_getc();
-        if (data == 1) goto label_1;
-        if (data != 2) continue;
-        
-        data = uart_getc();
-        if (data == 1) goto label_1;
-        if (data != 3) continue;
-        
-        data = uart_getc();
-        if (data == 1) goto label_1;
-        if (data != 4) continue;
-        break;
-    }
 
     for(int i=0; i<8; i++)
         program.int_by_byte[i] = uart_getc();

@@ -3,6 +3,7 @@
 #include "shell.h"
 #include "str_tool.h"
 #include "stdint.h"
+#include "device_tree.h"
 
 #define MAX_INPUT 100
 
@@ -19,7 +20,9 @@ struct CMD command[] = {
     {.name="hello", .help="print Hello World!", .func=shell_hello},
     {.name="help", .help="print all available commands", .func=shell_help},
     {.name="reboot", .help="reboot the machine", .func=shell_reboot},
-    {.name="ls", .help="list all the file", .func=shell_ls}
+    {.name="ls", .help="list all the file", .func=shell_ls},
+    {.name="pdtinfo", .help="print Device Tree Info", .func=print_dt_info},
+    {.name="parsedt", .help="parse Device Tree", .func=parse_dt}
 };
 
 char input_buffer[MAX_INPUT+1];
@@ -193,8 +196,7 @@ void shell_ls(){
                 uart_putc('\r');
             uart_putc(file_content[i]);
         }
-            
-        // uart_puts(file_content);
+
         uart_puts("\r\n");
         uart_puts("File Size: ");
         uart_puts(itoa(file_size, 10));
@@ -205,5 +207,4 @@ void shell_ls(){
         cur_addr = (uint64_t)((cur_addr + name_size + 3) & (~3));
         cur_addr = (uint64_t)((cur_addr + file_size + 3) & (~3));
     }
-
 }
