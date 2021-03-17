@@ -13,7 +13,8 @@ if __name__ == '__main__':
         "-s", 
         "--src_file_pth",
         type=str, 
-        help='source file path'
+        help='source file path',
+        default='../kernel8.img'
     )
     parser.add_argument(
         "-t", 
@@ -38,3 +39,4 @@ if __name__ == '__main__':
                 if data == b'':
                     break
                 send_all_data(tty, data)
+        print("finish sending kernel8.img\n")
