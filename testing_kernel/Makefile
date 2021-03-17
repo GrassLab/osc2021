@@ -18,7 +18,8 @@ kernel8.img: start.o $(OBJS)
 	$(OBJ_CPY) -O binary kernel8.elf kernel8.img
 
 clean:
-	rm kernel8.elf *.o >/dev/null 2>/dev/null || true
+	rm kernel8.elf kernel8.img *.o >/dev/null 2>/dev/null || true
 
 run:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -initrd ../initramfs.cpio
+
