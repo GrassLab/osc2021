@@ -2,9 +2,7 @@
 #include "include/reset.h"
 
 extern char _kernel;
-
 const char info[] = "Trying to load kernel.img from UART...";
-char buf[0x100];
 
 void load_kernel() {
   unsigned int size;
