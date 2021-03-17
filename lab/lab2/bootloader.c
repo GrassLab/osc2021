@@ -101,7 +101,7 @@ void do_dtb(char *buff) {
                                big2little(dts_header->off_dt_strings) + nameoff,
                            &fp, len);
       } else
-        for (int i = 0; i < len; i++) get_char8(&fp);
+        fp += len;
       fp += align(len, 4);
     } else if (FDT_NODE == 0x00000004)
       continue;
