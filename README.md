@@ -23,7 +23,7 @@ In Lab 1, we will practice bare metal programming by implementing a simple shell
 │
 ├── src                 # source files
 │   ├── command.c       # source file to process command
-│   ├── main.c          # int main
+│   ├── main.c          #  main
 │   ├── shell.c         # source file to process shell flow
 │   ├── start.S         # source code for booting
 │   ├── string.c        # source file to implement some function in <string.h>
@@ -58,6 +58,11 @@ In Lab 1, we will practice bare metal programming by implementing a simple shell
 | reboot    | reset rpi3                    |
 
 
+## How to interact with Rpi3
+- miniUART (UART1)
+```
+$ sudo screen /dev/ttyUSB0 115200
+```
 
 ## How to build
 
