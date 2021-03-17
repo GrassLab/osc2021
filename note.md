@@ -155,7 +155,7 @@ cd ..
 將 cpio archive 檔移至 SD 卡中，接者在 ``config.txt`` 中指定 name 與 loading address。
 
 ```
-initramfs initramfs.cpio 0x20000000
+initramfs initramfs.cpio 0x8000000
 ```
 
 

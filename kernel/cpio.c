@@ -1,13 +1,3 @@
-/*
- * Copyright 2014, NICTA
- *
- * This software may be distributed and modified according to the terms of
- * the BSD 2-Clause license. Note that NO WARRANTY is provided.
- * See "LICENSE_BSD2.txt" for details.
- *
- * @TAG(NICTA_BSD)
- */
-
 #include "cpio.h"
 #include "string.h"
 
@@ -17,7 +7,6 @@
 #define NULL ((void *)0)
 #endif
 
-/* Align 'n' up to the value 'align', which must be a power of two. */
 static unsigned long align_up(unsigned long n, unsigned long align)
 {
     return (n + align - 1) & (~(align - 1));
@@ -45,12 +34,6 @@ static unsigned long parse_hex_str(char *s, unsigned int max_len)
     return r;
 }
 
-
-/*
- * Parse the header of the given CPIO entry.
- *
- * Return -1 if the header is not valid, 1 if it is EOF.
- */
 int cpio_parse_header(struct cpio_header *archive,
         const char **filename, unsigned long *_filesize, void **data,
         struct cpio_header **next)
@@ -81,60 +64,6 @@ int cpio_parse_header(struct cpio_header *archive,
     return 0;
 }
 
-/*
- * Get the location of the data in the n'th entry in the given archive file.
- *
- * We also return a pointer to the name of the file (not NUL terminated).
- *
- * Return NULL if the n'th entry doesn't exist.
- *
- * Runs in O(n) time.
- */
-void *cpio_get_entry(void *archive, int n, const char **name, unsigned long *size)
-{
-    int i;
-    struct cpio_header *header = archive;
-    void *result = NULL;
-
-    /* Find n'th entry. */
-    for (i = 0; i <= n; i++) {
-        struct cpio_header *next;
-        int error = cpio_parse_header(header, name, size, &result, &next);
-        if (error)
-            return NULL;
-        header = next;
-    }
-
-    return result;
-}
-
-/*
- * Find the location and size of the file named "name" in the given 'cpio'
- * archive.
- *
- * Return NULL if the entry doesn't exist.
- *
- * Runs in O(n) time.
- */
-void *cpio_get_file(void *archive, const char *name, unsigned long *size)
-{
-    struct cpio_header *header = archive;
-
-    /* Find n'th entry. */
-    while (1) {
-        struct cpio_header *next;
-        void *result;
-        const char *current_filename;
-
-        int error = cpio_parse_header(header, &current_filename,
-                size, &result, &next);
-        if (error)
-            return NULL;
-        if (strncmp(current_filename, name, -1) == 0)
-            return result;
-        header = next;
-    }
-}
 
 int cpio_info(void *archive, struct cpio_info *info) {
     struct cpio_header *header, *next;

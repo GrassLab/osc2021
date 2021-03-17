@@ -2,6 +2,7 @@
 #include "string.h"
 #include "uart.h"
 #include "cpio.h"
+#include "type.h"
 
 void shell_welcome_message() {
     uart_puts(" _   _      _ _       \n");
@@ -70,12 +71,17 @@ void command_reboot() {
 void command_cpio_info() {
     struct cpio_info info;
 
-    if(cpio_info((struct cpio_header *)CPIO_ARCHIVE_LOCATION, &info)) {
+    char output_buffer[50] = { 0 };
+    uart_puts("CPIO_ARCHIVE_LOCATION: ");
+    itoa((uint64_t)CPIO_ARCHIVE_LOCATION, output_buffer, 10);
+    uart_puts(output_buffer);
+    uart_puts("\n");
+
+
+    if(cpio_info((uint64_t *)CPIO_ARCHIVE_LOCATION, &info)) {
         uart_puts("Error on cpio_info command\n");
         return;
     }
-
-    char output_buffer[30];
 
     uart_puts("file count: ");
     itoa(info.file_count, output_buffer, 10);
@@ -91,7 +97,7 @@ void command_cpio_info() {
 void command_ls() {
     struct cpio_info info;
 
-    if(cpio_info((struct cpio_header *)CPIO_ARCHIVE_LOCATION, &info)) {
+    if(cpio_info((uint64_t *)CPIO_ARCHIVE_LOCATION, &info)) {
         uart_puts("Error on cpio_info command\n");
         return;
     }
@@ -103,7 +109,7 @@ void command_ls() {
         for(int j = 0; j < 100; j++)
             ls_buffer[i][j] = 0;
 
-    cpio_ls((struct cpio_header *)CPIO_ARCHIVE_LOCATION, ls_buffer, buf_len);
+    cpio_ls((uint64_t *)CPIO_ARCHIVE_LOCATION, ls_buffer, buf_len);
 
     for(int i = 0; i < info.file_count; i++) {
         char output_buffer[10] = {0};

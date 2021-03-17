@@ -1,13 +1,7 @@
 #ifndef _LCD_CPIO_H_
 #define _LCD_CPIO_H_
 
-// https://www.freebsd.org/cgi/man.cgi?query=cpio&sektion=5
-// https://github.com/SEL4PROJ/libcpio/blob/master/include/cpio/cpio.h
-
-#define CPIO_ARCHIVE_LOCATION 0x20000000
-
-// for Qemu
-// #define CPIO_ARCHIVE_LOCATION 0x8000000
+#define CPIO_ARCHIVE_LOCATION 0x8000000
 
 /* Magic identifiers for the "cpio" file format. */
 #define CPIO_HEADER_MAGIC "070701"
@@ -31,56 +25,13 @@ struct cpio_header {
 	char	   c_check[8];       /* Checksum, ignored in New ASCII Format. */ 
 };
 
-/**
- * Stores information about the underlying implementation.
- */
+
 struct cpio_info {
-    /// The number of files in the CPIO archive
     unsigned int file_count;
-    /// The maximum size of a file name
     unsigned int max_path_sz;
 };
 
-
-/**
- * Retrieve file information from a provided CPIO list index
- * @param[in] archive  The location of the CPIO archive
- * @param[in] index    The index of the CPIO entry to query
- * @param[out] name    A pointer to the file name of the entry. This name is not
- *                     NULL terminated but it will not exceed max_path_sz as
- *                     reported by cpio_info.
- * @param[out] size    The size of the file in question
- * @return             The location of the file in memory; NULL if the index
- *                     exceeds the number of files in the CPIO archive.
- */
-void *cpio_get_entry(void *archive, int index, const char **name, unsigned long *size);
-
-/**
- * Retrieve file information from a provided file name
- * @param[in] archive  The location of the CPIO archive
- * @param[in] name     The name of the file in question.
- * @param[out] size    The retrieved size of the file in question
- * @return             The location of the file in memory; NULL if the file
- *                     does not exist.
- */
-void *cpio_get_file(void *archive, const char *name, unsigned long *size);
-
-/**
- * Retrieves information about the provided CPIO archive
- * @param[in] archive  The location of the CPIO archive
- * @param[out] info    A CPIO info structure to populate
- * @return             Non-zero on error.
- */
 int cpio_info(void *archive, struct cpio_info *info);
-
-/**
- * Writes the list of file names contained within a CPIO archive into 
- * a provided buffer
- * @param[in] archive  The location of the CPIO archive
- * @param[in] buf      A memory location to store the CPIO file list to
- * @param[in] buf_len  The length of the provided buf
- */
 void cpio_ls(void *archive, char buf[100][100], unsigned long buf_len);
-
 
 #endif
