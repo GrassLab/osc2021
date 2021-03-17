@@ -11,6 +11,8 @@
 #include "cpio.h"
 #include "string.h"
 
+#include "uart.h"
+
 #ifndef NULL
 #define NULL ((void *)0)
 #endif
@@ -141,6 +143,8 @@ int cpio_info(void *archive, struct cpio_info *info) {
     int error;
     unsigned long size, current_path_sz;
 
+    uart_puts("[debug] Cpio Info\n");
+
     if (info == NULL) return 1;
     info->file_count = 0;
     info->max_path_sz = 0;
@@ -150,8 +154,10 @@ int cpio_info(void *archive, struct cpio_info *info) {
         error = cpio_parse_header(header, &current_filename, &size,
                 &result, &next);
         if (error == -1) {
+            uart_puts("[debug] Fail to parse header\n");
             return error;
         } else if (error == 1) {
+            uart_puts("[debug] EOF\n");
             /* EOF */
             return 0;
         }

@@ -44,13 +44,12 @@ void command_controller(char *cmd) {
 
 void command_help() {
     uart_puts("========================================\n");
-    uart_puts("Usage\t:\t<command> \n");
-    uart_puts("  help\t:\tprint all available commands.\n");
-    uart_puts("  hello\t:\tprint Hello World!\n");
-    uart_puts("  reboot:\treboot ths system.\n");
-    uart_puts("  cpio_info:\tshow cpio info.\n");
-    uart_puts("  ls:\tshow cpio list.\n");
-    uart_puts("  read:\tread file from index.\n");
+    uart_puts("Usage\t\t:\t<command> \n");
+    uart_puts("  help\t\t:\tprint all available commands.\n");
+    uart_puts("  hello\t\t:\tprint Hello World!\n");
+    uart_puts("  reboot\t:\treboot ths system.\n");
+    uart_puts("  cpio_info\t:\tshow cpio info.\n");
+    uart_puts("  ls\t\t:\tshow cpio list.\n");
     uart_puts("========================================\n");
 }
 
@@ -71,7 +70,7 @@ void command_reboot() {
 void command_cpio_info() {
     struct cpio_info info;
 
-    if(cpio_info((void *)CPIO_ARCHIVE_LOCATION, &info)) {
+    if(cpio_info((struct cpio_header *)CPIO_ARCHIVE_LOCATION, &info)) {
         uart_puts("Error on cpio_info command\n");
         return;
     }
@@ -92,7 +91,7 @@ void command_cpio_info() {
 void command_ls() {
     struct cpio_info info;
 
-    if(cpio_info((void *)CPIO_ARCHIVE_LOCATION, &info)) {
+    if(cpio_info((struct cpio_header *)CPIO_ARCHIVE_LOCATION, &info)) {
         uart_puts("Error on cpio_info command\n");
         return;
     }
@@ -104,7 +103,7 @@ void command_ls() {
         for(int j = 0; j < 100; j++)
             ls_buffer[i][j] = 0;
 
-    cpio_ls((void *)CPIO_ARCHIVE_LOCATION, ls_buffer, buf_len);
+    cpio_ls((struct cpio_header *)CPIO_ARCHIVE_LOCATION, ls_buffer, buf_len);
 
     for(int i = 0; i < info.file_count; i++) {
         char output_buffer[10] = {0};
