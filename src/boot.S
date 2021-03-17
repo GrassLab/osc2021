@@ -12,6 +12,7 @@ _start:
 bsszero:
   ldr x0, =__bss_begin
   ldr x1, =__bss_end
+  sub x1, x1, x0
 
 loopbsszero:
   cbz x1, init
