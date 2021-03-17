@@ -4,6 +4,8 @@
 
 unsigned long remote_load (unsigned long *base, unsigned long size) {
     unsigned long hex = 0, buf64 = 0;
+    uart_sendh(hex);
+    uart_send("\r\n");
 
     for (unsigned long i = 0; i < size; i++) {
         char c = uart_getc();
@@ -14,6 +16,8 @@ unsigned long remote_load (unsigned long *base, unsigned long size) {
             hex ^= buf64;
             *base++ = buf64;
             buf64 = 0;
+            uart_sendh(hex);
+            uart_send("\r\n");
         }
     }
     return hex;

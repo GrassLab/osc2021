@@ -38,7 +38,12 @@ MINI-UART := -serial null -serial stdio
 # flag
 TEST_IMG := $(BOOTLOADER).img
 UART := UART_MINI # UART_MINI or UART_PL011
-CCFLAG := -Wall -nostdlib -Og -D$(UART) -I$(INC_DIR)
+ifeq ($(tar), raspi3)
+TAR = M_RASPI3
+else
+TAR = M_QEMU
+endif
+CCFLAG := -Wall -nostdlib -Og -D$(UART) -D$(TAR) -I$(INC_DIR)
 ASMFLAG := -Isrc
 
 # cpio archive
@@ -46,6 +51,10 @@ CPIO_DIR := rootfs
 CPIO_FILES := $(wildcard $(CPIO_DIR)/*)
 CPIO := initramfs.cpio
 QEMU_CPIO := -initrd $(CPIO)
+
+# flattened devicetree (dtb)
+DTB := bcm2710-rpi-3-b-plus.dtb
+QEMU_DTB := -dtb $(DTB)
 
 all: $(BOOTLOADER).img $(KERNEL).img $(CPIO)
 
@@ -90,13 +99,13 @@ $(CPIO): $(CPIO_FILES)
 
 # debug tools
 exe:
-	$(QEMU) -M raspi3 -kernel $(TEST_IMG) $(QEMU_CPIO) -display none -serial null -serial pty
+	$(QEMU) -M raspi3 -kernel $(TEST_IMG) $(QEMU_CPIO) $(QEMU_DTB) -display none -serial null -serial pty
 
 dump:
 	$(QEMU) -M raspi3 -kernel $(TEST_IMG) -display none -d in_asm
 
 debug:
-	$(QEMU) -M raspi3 -kernel $(TEST_IMG) -display none -S -s $(MINI-UART)
+	$(QEMU) -M raspi3 -kernel $(TEST_IMG) $(QEMU_CPIO) $(QEMU_DTB) -display none -S -s $(MINI-UART)
 
 gdb:
 	@echo "target remote :1234"

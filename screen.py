@@ -35,70 +35,103 @@ def get_line ():
         if b == b'\n':
             break
         buf += b
+    # remove \r
+    return buf.decode('utf-8')[:-1]
+
+def get_until (token):
+    buf = b''
+    while True:
+        buf += ser.read(1)
+        if buf.find(str.encode(token)) >= 0:
+            break
     return buf.decode('utf-8')
+
 
 def send (message):
     message = str.encode(message + '\n')
     ser.write(message)
 
-def load_kernel (fileName):
-    size = os.path.getsize(fileName)
+def load_data (buf, base_address=0x80000):
     base_address = 0x80000
-    aligned_size = (size // 8) * 8 + 16
-    #nonblock_read()
+    buf += (8 - (len(buf) % 8)) * b'\x00'
+    end_tag = 0x00000000deadbeef
+    buf += end_tag.to_bytes(8, byteorder='little')
+    aligned_size = len(buf)
+
     send('load')
     nonblock_clear()
     send(f'{base_address}')
     nonblock_clear()
     send(f'{aligned_size}')
 
+    while True:
+        line = get_line()
+        # wait for 0x0
+        if line == '0x0':
+            break
+        else:
+            print(line)
+
+    print("start sending:")
+    checksum = 0x0
+    count = 0
+    totalCount = 40
+    isFail = False
+    print("[", end='')
+    sys.stdout.flush()
+
+    for i in range(aligned_size // 8):
+        chunck = buf[i * 8: i * 8 + 8]
+        ser.write(chunck)
+        checksum ^= int.from_bytes(chunck, byteorder='little')
+        recv_check = int(get_line(), 0)
+        if checksum == recv_check:
+            pass
+        else:
+            isFail = True
+        currCount = i * 8 * totalCount // aligned_size
+        print("=" * (currCount - count), end='')
+        sys.stdout.flush()
+        count = currCount
+
+    if not isFail:
+        print("=" * (totalCount - count) + "] 100%")
+
+
+def load_kernel (fileName):
+    size = os.path.getsize(fileName)
     f = open(fileName, 'rb')
-    chunk = []
-    longb = b''
-    checksum = 0
+    image = b''
     while True:
         c = f.read(1)
         if not c:
             break
-        longb += c
-        if len(longb) == 8:
-            ser.write(longb)
-            checksum ^= int.from_bytes(longb, byteorder='little')
-            longb = b''
-
-    longb += b'\x00' * (8 - size % 8)
-    end_tag = 0x00000000deadbeef
-    checksum ^= int.from_bytes(longb, byteorder='little') ^ end_tag
-    longb += end_tag.to_bytes(8, byteorder='little')
-    ser.write(longb)
-    for i in range(6):
-        print(get_line())
-    checksum_str = get_line()
-    checksum_recv = int(checksum_str.split(' ')[1], 0)
-    print(checksum_str)
-    if checksum_recv == checksum:
-        print('\nsuceed to load kernel~~~~~~')
-        nonblock_clear()
-        return True
-    else:
-        print('\n!!!! fail to load kernel !!!!')
-        nonblock_clear()
-        return False
+        image += c
+    load_data(image)
 
 def auto_load ():
-    if load_kernel('kernel8.img'):
-        nonblock_clear()
-        send('jump')
-        nonblock_read()
+    load_kernel('kernel8.img')
+    get_until('$ ')
+    send('jump')
+    print(get_until('$ '), end='')
 
 
-auto_load()
 while True:
     command = input()
     if command == 'exit':
         break
+
     if command == 'load':
-        load_kernel ('kernel8.img')
+        auto_load()
+        continue
+
+    if command == 'test':
+        continue
+
+    if command == 'reboot':
+        send('reboot')
+        print(get_until('bootloader'), end='')
+        print(get_until('$ '), end='')
         continue
 
     if command.find('LOAD ') == 0:

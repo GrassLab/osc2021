@@ -2,7 +2,11 @@
 #include "uart.h"
 #include "string.h"
 
+#ifdef M_RASPI3
+CPIO_HEADER *cpio_base_address = (CPIO_HEADER *) 0x20000000;
+#else
 CPIO_HEADER *cpio_base_address = (CPIO_HEADER *) 0x8000000;
+#endif
 
 void print_chars (char *addr, unsigned int len) {
     for (int i = 0; i < len; i++) {

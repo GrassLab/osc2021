@@ -23,7 +23,6 @@ void parse_command (char *b) {
         uart_send("load: load kernel image via mini-uart\r\n");
     }
     else if (!strcmp(b, "reboot")) {
-        uart_send("reboot~~\n");
         reset(10000);
     }
     else if (!strcmp(b, "time")) {
@@ -67,10 +66,7 @@ void parse_command (char *b) {
         uart_sendh(size);
         uart_send("\r\n");
 
-        long checksum = remote_load((unsigned long *)address, size);
-        uart_send("checksum: ");
-        uart_sendh(checksum);
-        uart_send("\r\n");
+        remote_load((unsigned long *)address, size);
     }
     else if (!strcmp(b, "jump")) {
         jump_address(0x80000);
