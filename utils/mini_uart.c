@@ -4,12 +4,12 @@
 
 void uart_init(){
     unsigned int selector;
-//pin14=> TXD1    pin15=> RXD1
-    selector = get32(GPFSEL1);  //GPFSEL1 register controls alternative function for pin 10~19
+
+    selector = get32(GPFSEL1);
     selector &= ~(7<<12);       // clean gpio 14
-    selector |= 2<<12;          // set alt5 at gpio14 (010 is alt5)
+    selector |= 2<<12;          // set alt5 at gpio14
     selector &= ~(7<<15);       // clean gpio 15
-    selector |= 2<<15;          // set alt5 at gpio 15 (010 is alt5)
+    selector |= 2<<15;          // set alt5 at gpio 15
     put32(GPFSEL1, selector);
 
     put32(GPPUD, 0);            // disable pull-up/down
@@ -30,14 +30,13 @@ void uart_init(){
 }
 
 void uart_putc(char c){
-    while(!(get32(AUX_MU_LSR_REG)&0x20));   //verify whether the device is ready to transmit or receive data
+    while(!(get32(AUX_MU_LSR_REG)&0x20));
     put32(AUX_MU_IO_REG, c);
 }
 
 char uart_getc(void){
-    while(!(get32(AUX_MU_LSR_REG)&0x01));   //verify whether the device is ready to transmit or receive data
-    char c = (char)get32(AUX_MU_IO_REG);
-    return c == '\r' ? '\n' : c;
+    while(!(get32(AUX_MU_LSR_REG)&0x01));
+    return get32(AUX_MU_IO_REG);
 }
 
 void uart_puts(char* str){

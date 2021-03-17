@@ -4,25 +4,23 @@
 
 | 學號 | GitHub 帳號 | 姓名 | Email |
 | --- | ----------- | --- | --- |
-|`309551092`| `samuelyen36` | `顏劭庭` | samuelyen.cs05@g2.nctu.edu.tw |
+|`309551057`| `karljackab` | `李智嘉` | karljackab@gmail.com |
 
 ## How to build
-Makefile is ready to be used.
-> make
-
+- Please prepare 'qemu-system-aarch64' enumerator
+- Simply type ```make``` to build the OS
 
 ## How to run
-I add another command to run the code in qemu.
-> make run
+- ```make run``` to start the enumerator
 
 ## How to burn it into pi3
-I follow the instruction in lab0, loading bootcode.bin, fixup.dat and start.elf into SD card, and also put our kernel8.img into Rpi3. Then, we can start the board to check the result.
+1. Replace the ```kernel8.img``` file to the new one which previous ```make``` had created
+2. You can connect to your pi3 by UART
 
-## Architecture
-* linker.ld: linker script of this homework.
-* boot.S: bootloader, clear bss and setup stack pointer and jump to kernel function.
-* mm.S: defines memzero function.
-* kernel.c: our kernel function, I call simple shell here.
-* shell.c: Where I implement the simple shell.
-* utils.S: defines put32, get32 function and delay function that is used in UART initialization.
-* mini_uart.c: initialization function, uart_getc, uart_putc and uart_puts are defined here.
+<!-- ## Architecture
+
+**WIP**
+
+## Directory structure
+
+**WIP** -->
