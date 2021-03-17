@@ -1,5 +1,6 @@
 #include "uart.h"
 #include "shell.h"
+#include "printf.h"
 
 /* Initial Logo */
 //   ___  ____  ____ ___   ____   ___ ____  _  __   __                 
@@ -21,8 +22,10 @@ int main()
     // set up serial console
     uart_init();
     
+    init_printf(0, putc);
+
     // say hello
-    uart_puts(init_logo);
+    printf(init_logo);
 
     // start shell
     shell_start();

@@ -62,4 +62,9 @@ char uart_getc();
  */
 void uart_puts(char *s);
 
+/**
+ * This function is required by printf function
+ */ 
+void putc ( void* p, char c);
+
 #endif

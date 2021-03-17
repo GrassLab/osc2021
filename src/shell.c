@@ -1,8 +1,8 @@
-
 #include "shell.h"
 #include "string.h"
 #include "command.h"
 #include "uart.h"
+#include "cpio.h"
 
 void shell_start () 
 {
@@ -31,7 +31,7 @@ void shell_start ()
 
 enum SPECIAL_CHARACTER parse ( char c )
 {
-    if (c == '\177') // back space. TODO: Maybe compare with '\r' is better to read
+    if (c == '\177') // back space
         return BACK_SPACE;
         
     if ( !(c < 128 && c >= 0) )
@@ -72,6 +72,8 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
             else if ( !strcmp(buffer, "hello"       ) ) command_hello();
             else if ( !strcmp(buffer, "timestamp"   ) ) command_timestamp();
             else if ( !strcmp(buffer, "reboot"      ) ) command_reboot();
+            // else if ( !strcmp(buffer, "ls"          ) ) command_cpio_ls((void *) 0x20000000);
+            else if ( !strncmp(buffer, "cat ", 3    ) ) command_getCpioFile((void *) INITRAMFS_ADDR, buffer + 4);
             else                                        command_not_found(buffer);
         }
             

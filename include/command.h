@@ -8,5 +8,6 @@ void command_hello ();
 void command_timestamp ();
 void command_not_found ( char * );
 void command_reboot ();
-
+void command_cpio_ls(void *);
+void command_getCpioFile(void *, char *);
 #endif
