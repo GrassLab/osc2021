@@ -114,12 +114,27 @@ void reverse(char *str,int index)
 }
 
 void uart_send_int(int number) {
-    int i = 0, j; 
+    int i = 0, j;
     char str[100];
-    while (number) { 
-        str[i++] = (number % 10) + '0'; 
-        number = number / 10; 
-    } 
+    while (number) {
+        str[i++] = (number % 10) + '0';
+        number = number / 10;
+    }
+    reverse(str, i);
+    for ( j = 0 ; j < i ; j++) {
+        uart_send(str[j]);
+    }
+    // uart_send('\r\n');
+    return ; 
+}
+
+void uart_send_uint(unsigned int number) {
+    int i = 0, j;
+    char str[100];
+    while (number) {
+        str[i++] = (number % 10) + '0';
+        number = number / 10;
+    }
     reverse(str, i);
     for ( j = 0 ; j < i ; j++) {
         uart_send(str[j]);
