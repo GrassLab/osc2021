@@ -1,6 +1,6 @@
 #include "io.h"
 #include "uart.h"
-#include "util.h"
+#include "bl_util.h"
 
 void recv_section() {
   uart_put_raw('S');

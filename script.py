@@ -1,6 +1,6 @@
 import pwn
 import argparse
-from send_kernel import * 
+from send_kernel import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-t', '--tty', help='target tty', default='/dev/ttyUSB0')

@@ -1,7 +1,7 @@
 #include "uart.h"
 
 #include "gpio.h"
-#include "util.h"
+#include "bl_util.h"
 
 void uart_init() {
   register unsigned int r;

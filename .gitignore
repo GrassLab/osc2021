@@ -6,3 +6,5 @@ build
 rootfs
 __pycache__
 initramfs.cpio
+*.dts
+*.dtb

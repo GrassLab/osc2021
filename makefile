@@ -55,7 +55,9 @@ debug: all
 
 burn: $(SDB) $(MOUNT_DIR) all
 	sudo mount $(SDB) $(MOUNT_DIR) && \
-	sudo cp $(BL).img $(MOUNT_DIR)/kernel8.img && \
+	sudo cp $(BL).img $(MOUNT_DIR)/$(BL).img && \
+	sudo cp $(INITRAMFS) $(MOUNT_DIR)/$(INITRAMFS) && \
+	sudo cp config.txt $(MOUNT_DIR)/config.txt && \
 	sudo umount $(MOUNT_DIR) 
 
 $(MOUNT_DIR):
@@ -66,6 +68,11 @@ $(ROOTFS):
 	echo "test" > $(ROOTFS)/test.txt
 
 $(INITRAMFS): $(ROOTFS)
+	cd $(ROOTFS) && \
+	find . | cpio -o -H newc > ../$(INITRAMFS) && \
+	cd ..
+
+genfs:
 	cd $(ROOTFS) && \
 	find . | cpio -o -H newc > ../$(INITRAMFS) && \
 	cd ..
