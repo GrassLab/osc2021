@@ -6,6 +6,11 @@
 #define PM_WDOG ((volatile unsigned int *)(0x3F100024))
 #define SHIFT_ADDR 0x100000
 #define KERNEL_ADDR 0x4000000
+#define FDT_NODE_BEGIN 0x00000001
+#define FDT_NOP 0x00000004
+#define FDT_NODE_END 0x00000002
+#define FDT_END 0x00000009
+#define FDT_PROP 0x00000003
 
 extern char _end[];
 extern char _start[];
@@ -44,5 +49,66 @@ void dtb_valueTypePrint(char *name, char **fp, int len) {
       if (i < len - 1) uart_puts(":");
     }
     uart_puts("\r\n");
+  }
+}
+
+void test_probe(char *compatible) {
+  int k = 0;
+  while (compatible[k] != '\0') k++;
+  compatible = &compatible[k + 1];
+  /* test led*/
+  struct fdt_header *dts_header = *(struct fdt_header **)_save_dts;
+  /* shift to struct offset*/
+  char *fp = (char *)dts_header + big2little(dts_header->off_dt_struct),
+       name[buff_size];
+  int deep = -1;
+  int bool = 0;
+  while (1) {
+    int FDT_NODE = big2little(get_int32((unsigned int **)&fp));
+
+    if (FDT_NODE == FDT_NODE_BEGIN) {
+      char c;
+      int i;
+      for (i = 1; (c = get_char8(&fp)) != '\0'; i++) name[i - 1] = c;
+      name[i - 1] = '\0';
+      fp += align(i, 4);
+      deep++;
+    } else if (FDT_NODE == FDT_NODE_END) {
+      bool = 0;
+      deep--;
+    } else if (FDT_NODE == FDT_PROP) {
+      /* FDT_PROP struct */
+      int len = big2little(get_int32((unsigned int **)&fp));
+      int nameoff = big2little(get_int32((unsigned int **)&fp));
+      char *type =
+          (char *)dts_header + big2little(dts_header->off_dt_strings) + nameoff;
+      if (strcmp("compatible", type)) {
+        char *value = fp;
+        fp += len;
+        while (value < fp) {
+          if (find(compatible, value) > -1) {
+            uart_puts("name: ");
+            uart_puts(name);
+            uart_puts("\r\n");
+            uart_puts("compatible: ");
+            uart_puts(value);
+            uart_puts("\r\n");
+            bool = 1;
+            break;
+          } else
+            value += strlen(value) + 1;
+        }
+
+      } else if (bool)
+        dtb_valueTypePrint((char *)dts_header +
+                               big2little(dts_header->off_dt_strings) + nameoff,
+                           &fp, len);
+      else
+        fp += len;
+      fp += align(len, 4);
+    } else if (FDT_NODE == FDT_NOP)
+      continue;
+    else if (FDT_NODE == FDT_END)
+      break;
   }
 }

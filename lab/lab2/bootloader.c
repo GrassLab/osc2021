@@ -10,6 +10,7 @@ void do_help() {
   uart_puts("help: print available commands\r\n");
   uart_puts("hello: print Hello World!\r\n");
   uart_puts("reboot: restart device\r\n");
+  uart_puts("dtb: print device tree\r\n");
 }
 void do_except(char *buff) {
   uart_puts("No command: ");
@@ -71,7 +72,7 @@ void do_dtb(char *buff) {
   while (1) {
     int FDT_NODE = big2little(get_int32((unsigned int **)&fp));
 
-    if (FDT_NODE == 0x00000001) {
+    if (FDT_NODE == FDT_NODE_BEGIN) {
       char c;
       int i;
       for (i = 1; (c = get_char8(&fp)) != '\0'; i++) name[i - 1] = c;
@@ -86,9 +87,9 @@ void do_dtb(char *buff) {
         uart_puts("\r\n");
       }
       deep++;
-    } else if (FDT_NODE == 0x00000002)
+    } else if (FDT_NODE == FDT_NODE_END)
       deep--;
-    else if (FDT_NODE == 0x00000003) {
+    else if (FDT_NODE == FDT_PROP) {
       /* FDT_PROP struct */
       int len = big2little(get_int32((unsigned int **)&fp));
       int nameoff = big2little(get_int32((unsigned int **)&fp));
@@ -103,9 +104,9 @@ void do_dtb(char *buff) {
       } else
         fp += len;
       fp += align(len, 4);
-    } else if (FDT_NODE == 0x00000004)
+    } else if (FDT_NODE == FDT_NOP)
       continue;
-    else if (FDT_NODE == 0x00000009)
+    else if (FDT_NODE == FDT_END)
       break;
   }
 }
@@ -135,6 +136,8 @@ void shell() {
       do_load();
     else if (strcmp(buff, "dtb"))
       do_dtb(buff);
+    else if (strcmp(buff, "try"))
+      test_probe(buff);
     else
       do_except(buff);
   }
