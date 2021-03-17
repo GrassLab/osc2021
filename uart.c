@@ -24,8 +24,8 @@
  */
 
 #include "gpio.h"
+#include "uart.h"
 
-/* Auxilary mini UART registers */
 #define AUX_ENABLE      ((volatile unsigned int*)(MMIO_BASE+0x00215004))
 #define AUX_MU_IO       ((volatile unsigned int*)(MMIO_BASE+0x00215040))
 #define AUX_MU_IER      ((volatile unsigned int*)(MMIO_BASE+0x00215044))
@@ -100,6 +100,14 @@ void uart_send(unsigned int c) {
     
     /* write the character to the buffer */
     *AUX_MU_IO=c;
+
+    if (c == '\n') {
+        do {
+            asm volatile("nop");
+        } while(!(*AUX_MU_LSR&0x20));
+
+        *AUX_MU_IO = '\r';
+    }
 }
 
 /* Send a string without newline  */

@@ -3,6 +3,7 @@
 #include "uart.h"
 
 void shell_welcome_message() {
+	uart_puts("\n");
 	uart_puts("┏┓┏┳━━┳┓┏┓┏━━┓\n");
 	uart_puts("┃┗┛┃━━┫┃┃┃┃╭╮┃\n");
 	uart_puts("┃┏┓┃━━┫┃┫┗┫╰╯┃\n");
