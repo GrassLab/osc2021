@@ -17,7 +17,7 @@ struct cmd cmd_list[SYS_CMD_NUM] = {
     {.input = "loadimg", .description="load new kernel",.callback = bootloader_loadimg},
     {.input = "ls", .description="list rootfs",.callback = sys_list},
     {.input = "cat", .description="show content of file", .callback = sys_cat},
-    {.input = "dtb",. description="show device tree information", .callback = parse_dtb}
+    {.input = "dtb_init", .description="init device by calling driver", .callback = dtb_init}
 };
 
 

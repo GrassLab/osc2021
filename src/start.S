@@ -11,8 +11,8 @@ _start:
 	b 1b
 2:
 	
-	//ldr    x1, =__dtb_addr
-	//str    x0, [x1]
+	// ldr    x1, =__dtb_addr
+	// str    x0, [x1]
 	ldr    x1, =__stack_top
 	mov    sp, x1
 

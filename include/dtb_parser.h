@@ -3,7 +3,7 @@
 #include "uart.h"
 #include "system.h"
 #include "string.h"
-
+#include "utils.h"
 
 #define FDT_BEGIN_NODE 0x00000001
 #define FDT_END_NODE 0x00000002
@@ -11,43 +11,16 @@
 #define FDT_NOP 0x00000004
 #define FDT_END 0x00000009
 
-struct fdt_header {
-    uint32_t address;
-    uint32_t magic;
-    uint32_t totalsize;
-    uint32_t off_dt_struct;
-    uint32_t off_dt_strings;
-    uint32_t off_mem_rsvmap;
-    uint32_t version;
-    uint32_t last_comp_version;
-    uint32_t boot_cpuid_phys;
-    uint32_t size_dt_strings;
-    uint32_t size_dt_struct;
-};
-struct fdt_reserve_entry{
-    char* address;
-    uint64_t size;
-};
-struct fdt_tag_header{
-    uint32_t tag;
-    char* name;
-};
-struct node_property{
-    struct property* next_property;
-    uint32_t len;
-    uint32_t nameoff;
-};
 
-struct dt_node{
-    struct dt_node* child;
-    char* name;
-    struct node_property* property;
-};
 
-void parse_dtb(char*);
-void extract_fdt_header(char*, struct fdt_header*);
-char* unflatten_fdt(char* addr, struct fdt_header* header,char* args, int depth);
-char* parse_node_property(char* addr, struct fdt_header* header, int depth);
-char* __print_string_align(char* addr);
+void dtb_init(char* args);
+void parse_dtb(char*, void*);
+int __check_dtb(struct fdt_header*);
+void extract_fdt_header(struct fdt_header*);
+void unflatten_fdt(char** addr, struct fdt_header* header,char* args, int depth, void(*callback)(char*, struct fdt_header*, int));
+void parse_node_property(char** addr, struct fdt_header* header, int depth);
+void __print_string_align(char** addr);
 void __print_alignchar(char c, int depth);
+short __check_compatible(char**, struct fdt_header*, char*);
+void __show_device_node_info(char* node_addr, struct fdt_header* header, int depth);
 #endif
