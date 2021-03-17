@@ -1,4 +1,4 @@
-# My OSDI 2020 - LAB 01
+# My OSDI 2020 - LAB 02
 
 ## Author
 
@@ -6,8 +6,16 @@
 | -----------| -------------- | ---- | -------------------------- |
 | 0856167    | Yunyung        | 許振揚| yungyung7654321@gmail.com  |
 
-## Introduction
-In Lab 1, we will practice bare metal programming by implementing a simple shell. we need to set up mini UART, and let our host and rpi3 can communicate through it.
+### Goals of this lab
+- Implement a bootloader that loads kernel images through UART.
+
+- Write a program to parse cpio archive
+
+- Implement bootloader self relocation 
+
+- Understand what’s initial ramdisk.
+
+- Understand what’s devicetree.
 
 ## Directory structure
 
