@@ -12,7 +12,7 @@ parser.add_argument("-b", "--baudrate", help="serial baudrate", default=115200)
 
 args = parser.parse_args()
 
-def bytes_from_file(filename, chunksize=8192):
+def bytes_from_file(filename, chunksize=16384):
     with open(filename, "rb") as f:
         chunk = f.read(chunksize)
         return chunk

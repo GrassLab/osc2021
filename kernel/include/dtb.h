@@ -21,9 +21,18 @@ typedef struct {
   uint32_t size_dt_struct;
 } fdt_header;
 
-void dtb_parse();
-void dtb_parse_node(uint64_t struct_addr, uint64_t strings_addr);
+void mailbox_probe(uint64_t struct_addr, uint64_t strings_addr, int depth);
+void gpio_probe(uint64_t struct_addr, uint64_t strings_addr, int depth);
+void rtx3080ti_probe(uint64_t struct_addr, uint64_t strings_addr, int depth);
+void default_probe(uint64_t struct_addr, uint64_t strings_addr, int depth);
+int check_compatibility(uint64_t struct_addr, uint64_t strings_addr,
+                        char *compatible_name);
+
+void dtb_print(int all);
+void dtb_parse(uint64_t struct_addr, uint64_t strings_addr,
+               void (*callback)(uint64_t, uint64_t, int));
+uint64_t ignore_current_node(uint64_t struct_addr, uint64_t strings_addr);
 uint64_t print_node(uint64_t struct_addr, uint64_t strings_addr, int depth);
 uint64_t print_property(uint64_t struct_addr, uint64_t strings_addr, int depth);
-uint32_t dtb_read_int(uint64_t *addr_ptr);
-char *dtb_read_string(uint64_t *addr_ptr);
+uint32_t dtb_read_int(uint64_t addr_ptr);
+// char *dtb_read_string(uint64_t *addr_ptr);

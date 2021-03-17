@@ -28,7 +28,7 @@ void cmd_ls() { cpio_ls(); }
 
 void cmd_cat(char *pathname) { cpio_cat(pathname); }
 
-void cmd_dtb() { dtb_parse(); }
+void cmd_dtb_print(int all) { dtb_print(all); }
 
 void clear_buffer() {
   buffer_pos = 0;
@@ -59,14 +59,21 @@ void run_shell() {
     print_s("% ");
     clear_buffer();
     receive_cmd();
-    if (strcmp(buffer, "help") == 0) cmd_help();
-    if (strcmp(buffer, "hello") == 0) cmd_hello();
-    if (strcmp(buffer, "reboot") == 0) {
+    if (strcmp(buffer, "help") == 0) {
+      cmd_help();
+    } else if (strcmp(buffer, "hello") == 0) {
+      cmd_hello();
+    } else if (strcmp(buffer, "reboot") == 0) {
       cmd_reboot(100);
       break;
+    } else if (strcmp(buffer, "ls") == 0) {
+      cmd_ls();
+    } else if (strncmp(buffer, "cat", 3) == 0) {
+      cmd_cat(&buffer[4]);
+    } else if (strcmp(buffer, "dtb") == 0) {
+      cmd_dtb_print(0);
+    } else if (strcmp(buffer, "dtb all") == 0) {
+      cmd_dtb_print(1);
     }
-    if (strcmp(buffer, "ls") == 0) cmd_ls();
-    if (strncmp(buffer, "cat", 3) == 0) cmd_cat(&buffer[4]);
-    if (strcmp(buffer, "dtb") == 0) cmd_dtb();
   }
 }
