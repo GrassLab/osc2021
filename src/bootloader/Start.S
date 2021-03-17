@@ -3,6 +3,8 @@
 .section ".text.boot"
 
 _start:
+    ldr     x1, =0x100000
+    str     x0, [x1]            // store dt loading address to 0x1000000
     adr     x0, _start
     ldr     x1, =0x70000
     mov     x2, x1

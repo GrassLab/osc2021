@@ -64,7 +64,7 @@ $(RAMFS): rootfs
 	cd rootfs; find . | cpio -o -H newc > ../$@; cd ..;
 
 run:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -initrd $(RAMFS)
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -initrd $(RAMFS) -dtb bcm2710-rpi-3-b-plus.dtb
 
 clean:
 	rm -rf $(RES_DIR)/* *.img *.cpio
