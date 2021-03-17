@@ -10,7 +10,7 @@
 
 
 
-static char* commanlist[] = {"help" , "hello", "reboot", "loadimg"};
+static char* commanlist[] = {"help" , "hello", "reboot", "loadimg", "find" };
 
 static void read_input(char *buffer){
     int size = 0;
@@ -42,7 +42,7 @@ static void hello(){
 
 static void help(){
     uart_puts("Available Commands:\n");
-    for(int i =0 ; i < 4 ; ++i){
+    for(int i =0 ; i < 5 ; ++i){
         uart_puts(commanlist[i]);
         uart_puts("\t");
     }

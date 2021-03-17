@@ -26,22 +26,7 @@
 #include "../include/gpio.h"
 #include "../include/uart.h"
 /* Auxilary mini UART registers */
-#define AUX_ENABLE      ((volatile unsigned int*)(MMIO_BASE+0x00215004))
-#define AUX_MU_IO       ((volatile unsigned int*)(MMIO_BASE+0x00215040))
-#define AUX_MU_IER      ((volatile unsigned int*)(MMIO_BASE+0x00215044))
-#define AUX_MU_IIR      ((volatile unsigned int*)(MMIO_BASE+0x00215048))
-#define AUX_MU_LCR      ((volatile unsigned int*)(MMIO_BASE+0x0021504C))
-#define AUX_MU_MCR      ((volatile unsigned int*)(MMIO_BASE+0x00215050))
-#define AUX_MU_LSR      ((volatile unsigned int*)(MMIO_BASE+0x00215054))
-#define AUX_MU_MSR      ((volatile unsigned int*)(MMIO_BASE+0x00215058))
-#define AUX_MU_SCRATCH  ((volatile unsigned int*)(MMIO_BASE+0x0021505C))
-#define AUX_MU_CNTL     ((volatile unsigned int*)(MMIO_BASE+0x00215060))
-#define AUX_MU_STAT     ((volatile unsigned int*)(MMIO_BASE+0x00215064))
-#define AUX_MU_BAUD     ((volatile unsigned int*)(MMIO_BASE+0x00215068))
 
-/**
- * Set baud rate and characteristics (115200 8N1) and map to GPIO
- */
 void uart_init()
 {
     register unsigned int r;
@@ -68,7 +53,7 @@ void uart_init()
 
 
     while(*AUX_MU_LSR&0x01){
-        char c = *(AUX_MU_IO);
+        char c = (char)*AUX_MU_IO;
     }
 }
 
@@ -77,6 +62,9 @@ void uart_init()
  */
 void uart_send(unsigned int c) {
     /* wait until we can send */
+    if(c == '\n'){
+        uart_send('\r');
+    }
     do{asm volatile("nop");}while(!(*AUX_MU_LSR&0x20));
     /* write the character to the buffer */
     *AUX_MU_IO=c;
@@ -120,8 +108,6 @@ void uart_hex(unsigned int d) {
 void uart_puts(char *s) {
     while(*s) {
         /* convert newline to carrige return + newline */
-        if(*s=='\n')
-            uart_send('\r');
         uart_send(*s++);
     }
 }
