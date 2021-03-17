@@ -28,7 +28,7 @@ struct cpio_header {
 	char	   c_rdevmajor[8];
 	char	   c_rdevminor[8];
 	char	   c_namesize[8];    /* Length of filename in bytes. */
-	char	   c_check[8];       /* Checksum. */ 
+	char	   c_check[8];       /* Checksum, ignored in New ASCII Format. */ 
 };
 
 /**

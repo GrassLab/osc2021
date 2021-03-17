@@ -2,3 +2,4 @@
 *.img
 *.o
 initramfs.cpio
+*.out
