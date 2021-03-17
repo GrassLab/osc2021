@@ -4,10 +4,10 @@
 // https://www.freebsd.org/cgi/man.cgi?query=cpio&sektion=5
 // https://github.com/SEL4PROJ/libcpio/blob/master/include/cpio/cpio.h
 
-// #define CPIO_ARCHIVE_LOCATION 0x20000000
+#define CPIO_ARCHIVE_LOCATION 0x20000000
 
 // for Qemu
- #define CPIO_ARCHIVE_LOCATION 0x8000000
+// #define CPIO_ARCHIVE_LOCATION 0x8000000
 
 /* Magic identifiers for the "cpio" file format. */
 #define CPIO_HEADER_MAGIC "070701"

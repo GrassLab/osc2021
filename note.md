@@ -114,92 +114,11 @@ void command_jump_to_kernel() {
 ```
 
 #### Host
-```c=
-void send_img_through_uart() {
-	char *device = "/dev/ttyUSB0";
-	int serial_fd = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_NONBLOCK);
-
-	if(serial_fd == -1) {
-		fprintf(stderr, "\r *** Fail to open %s ... *** \n", device);
-		return ;
-	}
-
-	fprintf(stderr,"\r *** Listening on %s ... *** \n", device);
-
-	bool running = true;
-	counter = 0;
-
-	while(running) {
-		char c;
-		ssize_t len = read(serial_fd, &c, 1);
-
-		if(len == 0) {
-			counter = 0;
-			continue;
-		}
-
-		if(c == '\x03')
-			counter++;
-
-		if(counter == 3) {
-			counter = 0;
-
-			/* send kernel's size */
-			char *kfile = "kernel.img";
-			int file_fd = open(kfile, O_RDONLY);
-
-			ssize_t size = lseek(file_fd, 0L, SEEK_END);
-
-			if (size > 0x200000) {
-				fprintf(stderr,"\r *** Kernel too big %s ... *** \n", kfile);
-				return 1;
-			}
-
-			fprintf(stderr, "\r *** Sending kernel %s [%zd byte] *** \n", kfile, size);
-
-			/* sending kernel's size to Rpi3 */
-			for (int i = 0; running & (i < 4); ++i) {
-				char c = (size >> 8 * i) & 0xFF;
-				write(serial_fd, &c, 1));
-			}
-
-			/* wait for OK */
-			char buf[2] = {0};
-
-			for (int i = 0; running && (i < 2); ++i) {
-				read(fd, &ok_buf[i], 1));
-				if (ok_buf[i] == 0) 
-					i--; 
-			}
-
-			if (ok_buf[0] != 'O' || ok_buf[1] != 'K') {
-				fprintf(stderr, "\r *** Error after sending size, got '%c%c' [0x%02x 0x%02x] *** \n", ok_buf[0], ok_buf[1], uint8_t(ok_buf[0]), uint8_t(ok_buf[1]));
-				return;
-			}
-
-			while(running && (size > 0)) {
-				char buf[65536];
-				ssize_t pos = 0;
-				ssize_t len = read(file_fd, buf, BUF_SIZE));
-				size -= len;
-				while(running && (len > 0)) {
-					ssize_t len2 = write(fd, &buf[pos], len);
-					len -= len2;
-					pos += len2;
-				}
-			}
-		fprintf(stderr, "### finished sending\n\r");
-
-		if (running) {
-			ssize_t len = write(STDOUT_FILENO, &c, 1));
-			if (len == 0) {
-				running = false;
-				break;
-			}
-		}
-	}
-	close(serial_fd);
-}
+```python=
+with open('/dev/ttyUSB0', "wb", buffering = 0) as tty:
+    tty.write(p32(len(kernel)))
+    sleep(1)
+    tty.write(kernel)
 ```
 
 

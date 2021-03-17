@@ -38,8 +38,8 @@ void command_controller(char *cmd) {
     if      (!strcmp("help"            , cmd))     { command_help(); } 
     else if (!strcmp("hello"           , cmd))     { command_hello(); }
 	else if (!strcmp("reboot"          , cmd))     { command_reboot(); }
-    else if (!strcmp("load kernel"     , cmd))     { command_load_image(); }
-    else if (!strcmp("jump kernel"     , cmd))     { command_jump_to_kernel(); }
+    else if (!strcmp("load_image"      , cmd))     { command_load_image(); }
+    else if (!strcmp("jump_image"      , cmd))     { command_jump_to_kernel(); }
     else    { command_not_found(); }
 }
 
@@ -106,6 +106,8 @@ void command_load_image() {
 		}
 		uart_send('O');
 		uart_send('K');
+
+		uart_send('\n');
 
 		/* start receiving img */
 		char *address_counter = load_address;

@@ -12,7 +12,6 @@ void command_reboot();
 
 void command_cpio_info();
 void command_ls();
-// void command_read_file_from_index();
 
 void command_not_found();
 
