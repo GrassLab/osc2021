@@ -12,7 +12,7 @@
 
 static char* commanlist[] = {"help" , "hello", "reboot", "loadimg", "find" };
 
-static void read_input(char *buffer){
+void read_input(char *buffer){
     int size = 0;
     while(size<MAX_BUF_SIZE){
         buffer[size] = uart_getc();
@@ -21,7 +21,7 @@ static void read_input(char *buffer){
             break;
         }
     }
-    buffer[size] = '\0';
+    buffer[--size] = '\0';
 }
 
 void reset(){ // reboot after watchdog timer expire
@@ -82,15 +82,15 @@ static void loadimg(){
 static void parse_input(char *buffer){
     if(*buffer == '\0'){
         return ;
-    }else if(compString("help\n",buffer) == 0){
+    }else if(compString("help",buffer) == 0){
         help();
-    }else if(compString("hello\n",buffer) == 0){
+    }else if(compString("hello",buffer) == 0){
         hello();
-    }else if(compString("reboot\n",buffer) == 0){
+    }else if(compString("reboot",buffer) == 0){
         reset();
-    }else if(compString("loadimg\n",buffer) == 0){
+    }else if(compString("loadimg",buffer) == 0){
         loadimg();
-    }else if(compString("find\n",buffer) == 0){
+    }else if(compString("find",buffer) == 0){
         cpio();
     }else{
         uart_puts("No Such Command\n");
