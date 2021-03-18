@@ -20,7 +20,7 @@ struct dentry {
 
 struct file {
   struct inode *file_node;
-  struct inode *dir_node;
+  // struct inode *dir_node;
 };
 
 struct super_block_operations {
@@ -43,6 +43,7 @@ struct super_block {
   const char *fs_name;
   struct mount_list *mnt_l;
   struct super_block_operations sb_ops;
+  void *internal;
 };
 
 struct vfsmount {

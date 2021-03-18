@@ -18,4 +18,5 @@ serial = pwn.serialtube(tty, baudrate=baudrate,  convert_newlines=False)
 
 send_kernel(serial, kernel_file)
 
+# print(serial.recvuntil("/"))
 serial.interactive()
