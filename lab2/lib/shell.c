@@ -52,7 +52,7 @@ static void help(){
 
 static void loadimg(){
 
-	unsigned long k_addr=0x40000,k_size=0;
+	unsigned long k_addr=0,k_size=0;
 	char c;
 	uart_puts("Please enter kernel load address (Hex): ");
 
@@ -75,7 +75,7 @@ static void loadimg(){
 		}
 
 		uart_puts("loading...\n");
-		asm volatile("br %0\n"::"r"(k_addr));
+		asm volatile("br %0\n"::"r"(k_addr)); // (assembler template:output operand:input operand: clobber??) %0 is number of operand "r" means register
 }
 
 
