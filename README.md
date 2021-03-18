@@ -47,7 +47,7 @@ Move bootloader.img, initramfs.cpio and config.txt into sd card
     + the uart bootloader in sd card
 + kernel_sender
     + send kernel through uart from host to rpi3
-+ cpio kernel
++ kernel
     + kernel that support cpio
 
 ## Directory structure
