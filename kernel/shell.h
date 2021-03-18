@@ -5,7 +5,7 @@
 
 enum SPECIAL_CHARACTER
 {
-    BACK_SPACE = 8,
+    BACK_SPACE = 127,
     LINE_FEED = 10,
     CARRIAGE_RETURN = 13,
 

@@ -35,8 +35,5 @@ void main()
     // say hello
     uart_puts("Hello World!\n");
 
-    // read cpio
-    ReadCpio();
-
     ShellStart();
 }

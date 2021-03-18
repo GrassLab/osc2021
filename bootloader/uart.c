@@ -77,6 +77,14 @@ char uart_getc() {
     return r=='\r'?'\n':r;
 }
 
+char uart_mygetc() {
+    char r;
+
+    do{asm volatile("nop");}while(!(*AUX_MU_LSR&0x01));
+    r=(char)(*AUX_MU_IO);
+    return r;
+}
+
 /**
  * Display a string
  */

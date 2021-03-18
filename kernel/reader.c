@@ -1,38 +1,169 @@
 #include "reader.h"
 #include "uart.h"
+#include "string.h"
 
-char* address_cpio = (char*)0x2000;
+const int FILE_NUM_LIMITED = 100;
+char * address_cpio = (char*)0x2000;
+struct cpio_file cpio_archive[100];
 
-struct cpio_newc_header {
-    char    c_magic[6];
-    char    c_ino[8];
-    char    c_mode[8];
-    char    c_uid[8];
-    char    c_gid[8];
-    char    c_nlink[8];
-    char    c_mtime[8];
-    char    c_filesize[8];
-    char    c_devmajor[8];
-    char    c_devminor[8];
-    char    c_rdevmajor[8];
-    char    c_rdevminor[8];
-    char    c_namesize[8];
-    char    c_check[8];
-};
+void Cpiols()
+{
+    ReadCpio();
+    PrintCpio();
+}
 
-struct cpio_newc_header cpio_header;
+void Cpiocat(char arg[])
+{
+    ReadCpio();
+    PrintFileContent(arg);
+}
+
+void ReadBytesData(char data[], int offset, int bytes)
+{
+    for (int i = 0; i < bytes; ++i)
+    {
+       data[i] = *(address_cpio + offset + i);
+    }
+}
 
 void ReadCpio()
 {
-    uart_puts("Start to read cpio files...\n");
+    int isEnd = 0;
+    int count = 0;
+    int offset = 0;
 
-    ReadCpioHeader();
+    while (!isEnd)
+    {
+        ReadCpioHeader(&cpio_archive[count], offset);
+	isEnd = ReadCpioContent(&cpio_archive[count], offset);
+
+	offset += cpio_archive[count].size;
+	
+	++count;
+    }
 }
 
-void ReadCpioHeader()
+void PrintCpio()
 {
-    for (int i = 0; i < 10 ; ++i)
+    for (int i = 0; i < FILE_NUM_LIMITED; ++i)
     {
-        uart_send(*(address_cpio + i));
+        if (!strcmp(cpio_archive[i].filename, "TRAILER!!!"))
+        {
+	    uart_puts("\n");
+            break;
+	}
+	else
+	{
+	    uart_puts("\t");
+	    uart_puts(cpio_archive[i].filename);
+	}
     }
+}
+
+void PrintFileContent(char arg[])
+{
+    for (int i = 0; i < FILE_NUM_LIMITED; ++i)
+    {
+        if (!strcmp(cpio_archive[i].filename, "TRAILER!!!"))
+	{
+	    uart_puts("File: ");
+	    uart_puts(arg);
+	    uart_puts(" is not found.\n");
+	    break;
+	}
+	else if (!strcmp(cpio_archive[i].filename, arg))
+	{
+	    uart_puts(cpio_archive[i].contents);
+	    break;
+        }
+    }
+}
+
+void ReadCpioHeader(struct cpio_file * cpio_, int offset)
+{
+    ReadBytesData(cpio_->cpio_header.c_magic, offset, 6);
+    offset += 6;
+
+    ReadBytesData(cpio_->cpio_header.c_ino, offset, 8);
+    offset += 8;
+    
+    ReadBytesData(cpio_->cpio_header.c_mode, offset, 8);
+    offset += 8;
+    
+    ReadBytesData(cpio_->cpio_header.c_uid, offset, 8);
+    offset += 8;
+    
+    ReadBytesData(cpio_->cpio_header.c_gid, offset, 8);
+    offset += 8;
+    
+    ReadBytesData(cpio_->cpio_header.c_nlink, offset, 8);
+    offset += 8;
+    
+    ReadBytesData(cpio_->cpio_header.c_mtime, offset, 8);
+    offset += 8;   
+    
+    ReadBytesData(cpio_->cpio_header.c_filesize, offset, 8);
+    offset += 8;
+   
+    ReadBytesData(cpio_->cpio_header.c_devmajor, offset, 8);
+    offset += 8;
+    
+    ReadBytesData(cpio_->cpio_header.c_devminor, offset, 8);
+    offset += 8;
+    
+    ReadBytesData(cpio_->cpio_header.c_rdevmajor, offset, 8);
+    offset += 8;
+    
+    ReadBytesData(cpio_->cpio_header.c_rdevminor, offset, 8);
+    offset += 8;
+   
+    ReadBytesData(cpio_->cpio_header.c_namesize, offset, 8);
+    offset += 8;
+    
+    ReadBytesData(cpio_->cpio_header.c_check, offset, 8); 
+    
+    cpio_->size = 110;
+}
+
+int Hex2Int(char byte[])
+{
+    int res = 0;
+
+    for(int i = 0; i < 8; ++i)
+    {
+        if (byte[i] >= '0' && byte[i] <= '9') byte[i] -= '0';
+	else if (byte[i] >= 'A' && byte[i] <= 'F') byte[i] = byte[i] - 'A' + 10;
+
+        res |= byte[i] << (8 - i - 1) * 4;
+    }
+
+    return res;
+}
+
+int ReadCpioContent(struct cpio_file * cpio_, int offset)
+{
+    int isEnd = 0;
+    int namesize = Hex2Int(cpio_->cpio_header.c_namesize);
+    int filesize = Hex2Int(cpio_->cpio_header.c_filesize);
+
+    for (int i = 0; i < namesize - 1; ++i)
+    {
+        cpio_->filename[i] = *(address_cpio + offset + cpio_->size + i);
+    }
+    cpio_->filename[namesize - 1] = '\0';
+    cpio_->size = (cpio_->size + namesize + 3) & (~3);
+
+    for (int i = 0; i < filesize; ++i)
+    {
+        cpio_->contents[i] = *(address_cpio + offset + cpio_->size + i);
+    }
+    cpio_->contents[filesize] = '\0';
+    cpio_->size = (cpio_->size + filesize + 3 ) & (~3);
+
+    if (!strcmp(cpio_->filename, "TRAILER!!!"))
+    {
+        isEnd = 1;
+    }
+
+    return isEnd;
 }

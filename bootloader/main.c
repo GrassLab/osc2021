@@ -24,6 +24,7 @@
  */
 
 #include "uart.h"
+#include "string.h"
 
 void main()
 {
@@ -40,15 +41,22 @@ void main()
     int kernel_size = 0;
     for (int i = 0; i < 4; ++i)
     {
-        char c = uart_getc();
+        char c = uart_mygetc();
 
-        kernel_size |= c << i * 8;
+        kernel_size |= c << (i * 8);
     }
+
+    uart_puts("KernelSize: ");
+    
+    char temp[10];
+    itoa(kernel_size, temp, 0);
+    uart_puts(temp);
+    uart_puts("\n");
 
     char *start_address = (char *)0x80000;
     for (int i = 0; i < kernel_size; ++i)
     {
-	char c = uart_getc();
+	char c = uart_mygetc();
 
 	*(start_address + i) = c;
     }

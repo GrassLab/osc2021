@@ -5,6 +5,8 @@ void InputBufferOverflowMessage(char []);
 
 void CommandHelp();
 void CommandHello();
+void CommandCpiols();
+void CommandCpiocat(char *);
 void CommandTimestamp();
 void CommandNotFound(char *);
 void CommandReboot();

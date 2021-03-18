@@ -10,6 +10,7 @@ with open('/dev/ttyUSB0', 'rb+', buffering = 0) as tty:
 
         tty.write(len(kernel_data).to_bytes(4, 'little'))
 
+#        print(len(kernel_data).to_bytes(4, 'little')[1])
         tty.write(kernel_data)
 
         print('......Done!')

@@ -89,7 +89,7 @@ void reverse ( char * s )
     for ( i = 0; i < strlen(s) / 2; i++ ) 
     {
         temp = s[strlen(s) - i - 1];
-        s[strlen(s) - i - 1] = s[0];
-        s[0] = temp;
+        s[strlen(s) - i - 1] = s[i];
+        s[i] = temp;
     }
 }

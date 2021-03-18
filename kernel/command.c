@@ -1,6 +1,7 @@
 #include "command.h"
 #include "uart.h"
 #include "string.h"
+#include "reader.h"
 
 void InputBufferOverflowMessage(char cmd[])
 {
@@ -17,6 +18,8 @@ void CommandHelp()
     uart_puts("Valid Command:\n");
     uart_puts("\thelp:\t\tprint this help.\n");
     uart_puts("\thello:\t\tprint \"Hello World!\"\n");
+    uart_puts("\tls:\tls cpio file.\n");
+    uart_puts("\tcat [filename]:\t cat cpio file content");
     uart_puts("\ttimestamp:\tget current timestamp.\n");
     uart_puts("\n");
 }
@@ -24,6 +27,16 @@ void CommandHelp()
 void CommandHello()
 {
     uart_puts("Hello World!\n");
+}
+
+void CommandCpiols()
+{
+    Cpiols();    
+}
+
+void CommandCpiocat(char arg[])
+{
+    Cpiocat(arg);
 }
 
 void CommandTimestamp()
