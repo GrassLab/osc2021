@@ -82,12 +82,15 @@ void cpio_parse_header(char **ramfs, char *file_name, char *file_content)
 void cpio_ls()
 {
     char file_name[100];
-    char file_content[500];
+    char file_content[1000];
 
     char *ramfs = (char *)0x20000000;
 
     while (1)
     {
+        strset(file_name, '0', 100);
+        strset(file_content, '0', 1000);
+
         cpio_parse_header(&ramfs, file_name, file_content);
 
         if ((strcmp(file_name, "TRAILER!!!") == 0))
@@ -101,14 +104,18 @@ void cpio_ls()
 void cpio_find_file(char file_name_to_find[])
 {
     char file_name[100];
-    char file_content[500];
+    char file_content[1000];
 
     char *ramfs = (char *)0x20000000;
     int found = 0;
 
     while(1)
     {
+        strset(file_name, '0', 100);
+        strset(file_content, '0', 1000);
+
         cpio_parse_header(&ramfs, file_name, file_content);
+
         if ((strcmp(file_name, file_name_to_find) == 0))
         {
             found = 1;
