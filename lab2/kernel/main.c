@@ -34,7 +34,8 @@ void callback(int type, const char *name, const void *data, uint32_t size) {
       
     case FDT_END_NODE:
       indent--;
-      write_indent(indent);
+      if (indent>0)
+        write_indent(indent);
       puts_uart("}");
       break;
 
