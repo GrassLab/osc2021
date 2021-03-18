@@ -6,30 +6,27 @@
 | --- | ----------- | --- | --- |
 |`L091197`| `andykuo8766` | `郭紘安` | andykuo8766@gapp.nthu.edu.tw |
 
-## Files
-| File          | Content                                               | 
-| --------------| ----------------------------------------------------- | 
-| command.c(.h) | code for action to deal with different shell command  |
-| gpio.c        | some gpio config                                      |
-| main.c        | main program                                          |
-| math.c(.h)    | code for replace standard math.h                      |
-| shell.c(.h)   | code for control the shell behave                     |
-| string.c(.h)  | code for replace standard math.h                      |
-| uart.c(.h)    | code for uart opertaion                               |
-| link.ld       | linker script                                         |
-
-## How to build
-```bootloader
+## How to build bootloader
 ```bash
 cd bootloader
 make
 ```
-
+## How to build kernel
+```bash
+cd kernel8
+make
+```
 
 ## Simple Shell
 | command   | description                   | 
 | ----------| ----------------------------- | 
-| hello     | print Hello World!            |
-| help      | print all available commands  |
-| reboot    | reboot rpi3                   |
-| cancel    | cancel reboot rpi3            |
+| hello     | Print hello world.            |
+| help      | List commands.                |
+| reset     | Reset raspi3.                 |
+| loadimg   | Load new kernel.              |
+| ls        | List rootfs.                  |
+| cat       | Show content of file.         |
+| dtb_ls    | List device tree.             |
+| dtb_cat   | Parse device tree.            |
+
+
