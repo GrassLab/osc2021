@@ -3,7 +3,7 @@
 #include "command.h"
 #include "uart.h"
 #include "cpio.h"
-
+#include "printf.h"
 void shell_start () 
 {
     int buffer_counter = 0;
@@ -70,9 +70,9 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
 
             if      ( !strcmp(buffer, "help"        ) ) command_help();
             else if ( !strcmp(buffer, "hello"       ) ) command_hello();
-            else if ( !strcmp(buffer, "timestamp"   ) ) command_timestamp();
+            // else if ( !strcmp(buffer, "timestamp"   ) ) command_timestamp();
             else if ( !strcmp(buffer, "reboot"      ) ) command_reboot();
-            // else if ( !strcmp(buffer, "ls"          ) ) command_cpio_ls((void *) 0x20000000);
+            else if ( !strcmp(buffer, "ls"          ) ) command_cpio_ls((void *) INITRAMFS_ADDR);
             else if ( !strncmp(buffer, "cat ", 3    ) ) command_getCpioFile((void *) INITRAMFS_ADDR, buffer + 4);
             else                                        command_not_found(buffer);
         }

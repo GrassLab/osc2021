@@ -68,6 +68,8 @@ void command_reboot ()
 }
 
 void command_cpio_ls(void *initramfs_addr) {
+    //printf("command_cpio_ls() execuated");
+    //printf("%p", initramfs_addr);
     cpio_ls(initramfs_addr);
 }
 
