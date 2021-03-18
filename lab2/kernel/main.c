@@ -2,17 +2,54 @@
 #include "include/reset.h"
 #include "include/string.h"
 #include "include/cpio.h"
+#include "include/dtb.h"
 
 extern char _cpio_buf[];
+extern void *_dtb_ptr;
 
 char buffer[0x100];
 const char hello[] = "Hello world!";
 const char * const commands[] = {
   "hello",
   "cpio",
+  "parse-dtb",
   "reboot",
   "help"
 };
+
+int indent = 0;
+
+void write_indent(int n) {
+  while (n--) write_uart(" ", 1);
+}
+
+void callback(int type, const char *name, const void *data, uint32_t size) {
+  switch(type) {
+    case FDT_BEGIN_NODE:
+      write_indent(indent);
+      print_uart(name);
+      puts_uart("{");
+      indent++;
+      break;
+      
+    case FDT_END_NODE:
+      indent--;
+      write_indent(indent);
+      puts_uart("}");
+      break;
+
+    case FDT_NOP:
+      break;
+
+    case FDT_PROP:
+      write_indent(indent);
+      puts_uart(name);
+      break;
+
+    case FDT_END:
+      break;
+  }
+}
 
 void shell() {
   for (;;) {
@@ -38,6 +75,10 @@ void shell() {
           puts_uart("file not found.");
         }
       }
+
+    } else if (!strcmp("parse-dtb", buffer)) {
+      if (_dtb_ptr)
+        traverse_device_tree(_dtb_ptr, callback);
 
     } else if (!strcmp("reboot", buffer)) {
       puts_uart("reboot machine");

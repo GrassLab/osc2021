@@ -89,13 +89,17 @@ int interact_readline_uart(char *buffer) {
     return count;
 }
 
-void puts_uart(const char *buffer) {
+void print_uart(const char *buffer) {
     int i = 0;
     while (buffer[i] != '\0') {
         while (!(*AUX_MU_LSR_REG & TRANSMITTER_EMPTY_BIT)) __wfe();
         *(char *)AUX_MU_IO_REG = buffer[i];
         i++;
     }
+}
+
+void puts_uart(const char *buffer) {
+    print_uart(buffer);
     write_uart("\n\r", 2);
 }
 

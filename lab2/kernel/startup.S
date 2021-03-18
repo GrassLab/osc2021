@@ -2,6 +2,8 @@
 .section ".text"
 
 _start:
+  ldr x1, =_dtb_ptr
+  str x0, [x1]
   ldr x20, =_sbss
   ldr x21, =_ebss
 
@@ -22,6 +24,10 @@ bss_loop_end:
 
   bl main
   wfe
+
+.global _dtb_ptr
+.section .data
+_dtb_ptr: .dc.a 0x0
 
 .section ".vector"
 .balign 0x800

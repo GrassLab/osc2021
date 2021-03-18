@@ -8,6 +8,7 @@ SECTIONS
   { 
     *(.bl_relo)
     _bl_entry = .;
+    *(.text._startup)
     *(.text)
     *(.rodata)
   }
