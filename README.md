@@ -19,13 +19,13 @@
 | link.ld       | linker script                                         |
 
 ## How to build
+```bootloader
 ```bash
+cd bootloader
 make
 ```
-## Run on QEMU
-```bash
-make run
-```
+
+
 ## Simple Shell
 | command   | description                   | 
 | ----------| ----------------------------- | 
