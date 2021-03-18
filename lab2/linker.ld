@@ -2,7 +2,7 @@ ENTRY(_start)
 
 SECTIONS
 {
-    . = 0x80000;
+    . = 0x60000;
     .text : { KEEP(*(.text.boot)) }
     .text :  { *(.text) }
     .rodata : { *(.rodata) }

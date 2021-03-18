@@ -90,10 +90,10 @@ int main() {
                     break;
                 }
             }
-            uart_puts(img_size);
+            //uart_puts(img_size);
             
             size = myAtoi(img_size)*10;
-            volatile unsigned char *kernel = (void *)(long)0x00080000;
+            volatile unsigned char *kernel = (void *)(long)0x80000;
             //uart_puts("\n");
 
             uart_puts("Start loading kernel...\n");
@@ -107,8 +107,8 @@ int main() {
                 size--;
             }
             uart_puts("Complete loading\n");
-            
-            
+            kernel = (void *)(long)0x80000;
+            asm volatile("br %0" : "=r"((unsigned long int*)kernel));           
             
         }
         else {
