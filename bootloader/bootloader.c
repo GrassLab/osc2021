@@ -42,18 +42,11 @@ void loadimg() {
 
     // read kernel image then save to 0x80000
     volatile unsigned char *new_address = (unsigned char *)0x80000;
-    int checksum = 0;
     for(int i = 0; i < kernel_size; i++) {
         unsigned char c = uart_getc();
-        checksum += c;
         new_address[i] = c;
     }
     
-    char *checksum_s;
-    itoa(checksum, checksum_s);
-    uart_puts("Loading done! Checksum is: ");
-    uart_puts(checksum_s);
-    uart_puts("\n");
     uart_puts("new kernel\n");
 
     for(int i = 0; i < 10000; i++) {

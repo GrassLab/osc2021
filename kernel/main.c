@@ -14,6 +14,7 @@ void hello() {
 void help() {
     uart_puts("help: print all available commands\n");
     uart_puts("hello: print Hello World!\n");
+    uart_puts("reboot: reboot\n");
     uart_puts("ls: list all file\n");
 }
 
