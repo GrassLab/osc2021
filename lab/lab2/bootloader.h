@@ -52,63 +52,54 @@ void dtb_valueTypePrint(char *name, char **fp, int len) {
   }
 }
 
-void test_probe(char *compatible) {
-  int k = 0;
-  while (compatible[k] != '\0') k++;
-  compatible = &compatible[k + 1];
-  /* test led*/
-  struct fdt_header *dts_header = *(struct fdt_header **)_save_dts;
-  /* shift to struct offset*/
-  char *fp = (char *)dts_header + big2little(dts_header->off_dt_struct),
-       name[buff_size];
-  int deep = -1;
-  int bool = 0;
-  while (1) {
-    int FDT_NODE = big2little(get_int32((unsigned int **)&fp));
-
-    if (FDT_NODE == FDT_NODE_BEGIN) {
-      char c;
-      int i;
-      for (i = 1; (c = get_char8(&fp)) != '\0'; i++) name[i - 1] = c;
-      name[i - 1] = '\0';
-      fp += align(i, 4);
-      deep++;
-    } else if (FDT_NODE == FDT_NODE_END) {
-      bool = 0;
-      deep--;
-    } else if (FDT_NODE == FDT_PROP) {
-      /* FDT_PROP struct */
-      int len = big2little(get_int32((unsigned int **)&fp));
-      int nameoff = big2little(get_int32((unsigned int **)&fp));
-      char *type =
-          (char *)dts_header + big2little(dts_header->off_dt_strings) + nameoff;
-      if (strcmp("compatible", type)) {
-        char *value = fp;
-        fp += len;
-        while (value < fp) {
-          if (find(compatible, value) > -1) {
-            uart_puts("name: ");
-            uart_puts(name);
-            uart_puts("\r\n");
-            uart_puts("compatible: ");
-            uart_puts(value);
-            uart_puts("\r\n");
-            bool = 1;
-            break;
-          } else
-            value += strlen(value) + 1;
-        }
-
-      } else if (bool)
-        dtb_valueTypePrint((char *)dts_header +
-                               big2little(dts_header->off_dt_strings) + nameoff,
-                           &fp, len);
-      else
-        fp += len;
-      fp += align(len, 4);
-    } else if (FDT_NODE == FDT_NOP)
-      continue;
-    else if (FDT_NODE == FDT_END)
-      break;
+void dtb_printNode(char *name, char *value, int len, char *type, int FDT_NODE,
+                   int deep) {
+  if (FDT_NODE == FDT_NODE_BEGIN) {
+    uart_puts("name: ");
+    uart_puts(name);
+    uart_puts("\r\n");
+  } else if (FDT_NODE == FDT_PROP) {
+    uart_puts(type);
+    uart_puts(": ");
+    if (strcmp("compatible", type) || strcmp("model", type) ||
+        strcmp("status", type) || strcmp("name", type) ||
+        strcmp("device_type", type)) {
+      for (int i = 0; i < len; i++) uart_send(value[i]);
+      uart_puts("\r\n");
+    } else if (strcmp("phandle", type) || strcmp("#address-cells", type) ||
+               strcmp("#size-cells", type) || strcmp("virtual-reg", type) ||
+               strcmp("interrupt-parent", type)) {
+      print_h(big2little(get_int32((unsigned int **)&value)));
+    } else {
+      if (len == 0) uart_puts("N/A");
+      for (int i = 0; i < len; i++) {
+        print_hc(get_char8(&value));
+        if (i < len - 1) uart_puts(":");
+      }
+      uart_puts("\r\n");
+    }
   }
+}
+
+int dtb_getNode(char **fp, char **name, char **value, int *len, char **type,
+                int *FDT_NODE, struct fdt_header *header, int deep) {
+  *FDT_NODE = big2little(get_int32((unsigned int **)fp));
+  if (*FDT_NODE == FDT_NODE_BEGIN) {
+    *name = *fp;
+    *fp += strlen(*name) + 1 + align(strlen(*name) + 1, 4);
+    return ++deep;
+  } else if (*FDT_NODE == FDT_PROP) {
+    *len = big2little(get_int32((unsigned int **)fp));
+    *type = (char *)header + big2little(header->off_dt_strings) +
+            big2little(get_int32((unsigned int **)fp));
+    *value = *fp;
+    uart_puts("");  // unknown bug, if remove *fp add result will error
+    (*fp) += (align(*len, 4) + (*len));
+  } else if (*FDT_NODE == FDT_NODE_END)
+    return --deep;
+  else if (*FDT_NODE == FDT_NOP)
+    ;
+  else if (*FDT_NODE == FDT_END)
+    return 0;
+  return deep;
 }

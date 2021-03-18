@@ -122,6 +122,7 @@ unsigned long int big2little(unsigned long int addr) {
   return ((addr >> 24) & 0x000000FF) | ((addr << 8) & 0x00FF0000) |
          ((addr >> 8) & 0x0000FF00) | ((addr << 24) & 0xFF000000);
 }
+
 void print_hc(char x) {
   for (int c = 4; c >= 0; c -= 4) {
     int n = (x >> c) & 0xF;

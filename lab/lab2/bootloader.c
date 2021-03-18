@@ -11,6 +11,7 @@ void do_help() {
   uart_puts("hello: print Hello World!\r\n");
   uart_puts("reboot: restart device\r\n");
   uart_puts("dtb: print device tree\r\n");
+  uart_puts("install: print driver function match devices\r\n");
 }
 void do_except(char *buff) {
   uart_puts("No command: ");
@@ -57,61 +58,65 @@ void do_load() {
 }
 
 /* dts block */
-
 void do_dtb(char *buff) {
   /* get device name*/
   int k = 0;
   while (buff[k] != '\0') k++;
   buff = &buff[k + 1];
-  /* test block*/
+
+  /* get fdt header*/
   struct fdt_header *dts_header = *(struct fdt_header **)_save_dts;
+
   /* shift to struct offset*/
-  char *fp = (char *)dts_header + big2little(dts_header->off_dt_struct),
-       name[buff_size];
-  int deep = -1, device_len = strlen(buff);
-  while (1) {
-    int FDT_NODE = big2little(get_int32((unsigned int **)&fp));
-
+  char *fp = (char *)dts_header + big2little(dts_header->off_dt_struct);
+  int device_len = strlen(buff);
+  int deep = 1, len, FDT_NODE;
+  char *name, *value, *type;
+  while (deep) {
+    deep = dtb_getNode(&fp, &name, &value, &len, &type, &FDT_NODE, dts_header,
+                       deep);
     if (FDT_NODE == FDT_NODE_BEGIN) {
-      char c;
-      int i;
-      for (i = 1; (c = get_char8(&fp)) != '\0'; i++) name[i - 1] = c;
-      name[i - 1] = '\0';
-      fp += align(i, 4);
-
-      if ((device_len == 0) | (find(buff, name) > -1)) {
-        if (!device_len)
-          for (int i = 0; i < deep; i++) uart_send('>');
-        uart_puts("name: ");
-        uart_puts(name);
-        uart_puts("\r\n");
-      }
-      deep++;
-    } else if (FDT_NODE == FDT_NODE_END)
-      deep--;
-    else if (FDT_NODE == FDT_PROP) {
-      /* FDT_PROP struct */
-      int len = big2little(get_int32((unsigned int **)&fp));
-      int nameoff = big2little(get_int32((unsigned int **)&fp));
-      if (device_len == 0) {
+      if (device_len == 0)
+        for (int i = 2; i < deep; i++) uart_send('>');
+    } else if (FDT_NODE == FDT_PROP) {
+      if (device_len == 0)
         for (int i = 0; i < deep; i++) uart_send(' ');
-      }
-      if (find(buff, name) > -1) {
-        uart_puts("  ");
-        dtb_valueTypePrint((char *)dts_header +
-                               big2little(dts_header->off_dt_strings) + nameoff,
-                           &fp, len);
-      } else
-        fp += len;
-      fp += align(len, 4);
-    } else if (FDT_NODE == FDT_NOP)
-      continue;
-    else if (FDT_NODE == FDT_END)
-      break;
+      if (find(buff, name) > -1) uart_puts("  ");
+    }
+    if (find(buff, name) > -1)
+      dtb_printNode(name, value, len, type, FDT_NODE, deep);
   }
 }
 
-/* dts block */
+void do_probe(char *buff) {
+  /* get compatible name */
+  int k = 0;
+  while (buff[k] != '\0') k++;
+  buff = &buff[k + 1];
+
+  /* get fdt header*/
+  struct fdt_header *dts_header = *(struct fdt_header **)_save_dts;
+
+  /* shift to struct offset*/
+  char *fp = (char *)dts_header + big2little(dts_header->off_dt_struct);
+  int deep = 1, len, FDT_NODE, bool = 0;
+  char *name, *value, *type;
+  while (deep) {
+    deep = dtb_getNode(&fp, &name, &value, &len, &type, &FDT_NODE, dts_header,
+                       deep);
+    if (FDT_NODE == FDT_NODE_BEGIN || FDT_NODE == FDT_NODE_END)
+      bool = 0;
+    else if (FDT_NODE == FDT_PROP && strcmp("compatible", type)) {
+      for (int i = 0; i < len; i++, value += strlen(value))
+        if (find(buff, value) > -1) {
+          dtb_printNode(name, value, len, type, FDT_NODE_BEGIN, deep);
+          bool = 1;
+          break;
+        }
+    }
+    if (bool) dtb_printNode(name, value, len, type, FDT_NODE, deep);
+  }
+}
 
 void shell() {
   char buff[buff_size];
@@ -136,8 +141,8 @@ void shell() {
       do_load();
     else if (strcmp(buff, "dtb"))
       do_dtb(buff);
-    else if (strcmp(buff, "try"))
-      test_probe(buff);
+    else if (strcmp(buff, "install"))
+      do_probe(buff);
     else
       do_except(buff);
   }

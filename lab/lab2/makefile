@@ -72,4 +72,4 @@ connect:
 	$(CONNECT)
 
 send:
-	sudo $(PYTHON) ./send.py $(v)
+	$(PYTHON) ./send.py $(v)
