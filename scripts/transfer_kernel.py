@@ -53,7 +53,13 @@ def main():
         f"    :package:image size: [white]{img.size()} bytes", style="bold green"
     )
 
-    tty = SerialSender(portname=arg.tty, dry=arg.dry)
+    tty = SerialSender(portname=arg.tty, dry=arg.dry, console=console)
+
+    def print_all_from_tty():
+        for i in range(10):
+            # Prevent raspi3 from overloading
+            time.sleep(0.03)
+            tty.read()
 
     # Protocal
     # 1. send command to use
@@ -67,9 +73,11 @@ def main():
     check_sum = encode_literal_num(img.check_sum(), 32)
     tty.send(check_sum)
 
+    print_all_from_tty()
+
     # 4. send the whole kernel in binary format
     total_bytes = img.size()
-    with TransferProgress(console, total_bytes) as p:
+    with TransferProgress(console, total_bytes + 1) as p:
         local_checksum = 0
         for i, b in enumerate(img.bytes()):
             local_checksum += int(b[0])
@@ -88,14 +96,22 @@ def main():
                     f"byte [green]{i}[reset]: {d:02x}(hex), {d:3d}(dec), checksum:{local_checksum}"
                 )
             tty.send(b)
+            tty.read()
             p.advance_bytes(1)
+
+        # Read output from raspi3
+        print_all_from_tty()
+        p.advance_bytes(1)
+    tty.send("reboot\n".encode("utf-8"))
 
 
 class SerialSender:
-    def __init__(self, portname: str, baud: int = 115200, dry=True):
+    def __init__(self, portname: str, console=None, baud: int = 115200, dry=True):
         self.portname: str = portname
         self.baud: int = baud
         self.dry: bool = dry
+        self.screen: str = ""
+        self.console = console if console else Console()
         if not dry:
             self.serial: Any = serial.Serial(self.portname, self.baud)
 
@@ -104,6 +120,8 @@ class SerialSender:
             time.sleep(0.0003)
         else:
             self.serial.write(data)
+            # Prevent raspi3 from overloading
+            time.sleep(0.003)
 
     def sendln(self, s: str):
         s += "\n"
@@ -113,6 +131,22 @@ class SerialSender:
     def send(self, data: bytes):
         assert type(data) == bytes
         self._write(data)
+
+    def read(self):
+        if self.serial.in_waiting:
+            self.screen += self.serial.read(size=self.serial.in_waiting).decode("utf-8")
+
+            while True:
+                possible_lines = self.screen.split("\r\n")
+                if len(possible_lines) > 1:
+                    data = possible_lines[0].strip()
+                    self.screen = "\r\n".join(possible_lines[1:])
+                    indent = " " * 50
+                    self.console.print(
+                        indent + f"[yellow]\[rpi3][blue]{data}[reset]"
+                    )  # noqa
+                else:
+                    break
 
 
 class KernelImg:
