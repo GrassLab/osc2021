@@ -29,13 +29,8 @@ void cpio_read(char *path)
 
 CPIO_NEWC_HEADER * cpio_find_addr(CPIO_NEWC_HEADER *pCurrentFile, char *targetName)
 {
+    // c_namesize is 1 byte greater than real name size
     int namesize = cpio_attr_value(pCurrentFile, C_NAMESIZE) - 1;
-    
-    if (namesize <= 0) {
-        /// end of ramfs
-        return 0;
-    }
-
 
     char curName[20];
     memset(curName, 0, sizeof(char) * 20);
@@ -43,12 +38,14 @@ CPIO_NEWC_HEADER * cpio_find_addr(CPIO_NEWC_HEADER *pCurrentFile, char *targetNa
     // get current filename
     char *pTemp = (char *)(pCurrentFile + 1);
 
-    // c_namesize is 1 byte greater than real name size
+
     for (int i = 0; i < namesize; i++, pTemp++) {
         curName[i] = *pTemp;
     }
 
-    if (strcmp(curName, targetName) == 0) {
+    if (strcmp(curName, "TRAILER!!!") == 0) {
+        return 0;
+    } else if (strcmp(curName, targetName) == 0) {
         // this file is the target
         return pCurrentFile;
     } else {
