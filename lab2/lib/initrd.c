@@ -5,22 +5,24 @@
 
 /* cpio hpodc format */
 typedef struct {
-    char magic[6];
-    char ino[8];
-    char mode[8];
-    char uid[8];
-    char gid[8];
-    char nlink[8];
-    char mtime[8];
+    char magic[6]; //070701
+    char ino[8];  //inodes number from disk
+    char mode[8]; //specifies both the regular permissions and file type
+    char uid[8]; //userid
+    char gid[8]; //groupid
+    char nlink[8];  //number of links to this file
+    char mtime[8];  //modification time
     char filesize[8];
     char devmajor[8];
     char devminor[8];
     char rdevmajor[8];
     char rdevminor[8];
     char namesize[8];
-    char check[8];
-} __attribute__((packed)) cpio_t;
-
+    char check[8]; //always set to 0 by writers and ignored by reader
+} __attribute__((packed)) cpio_t; // tell compiler don't do the alignment in order to save memory space
+/*
+    convert hexadecimal string into decimal
+ */
 unsigned long hexToDex(char *s){
     unsigned long r = 0;
     for(int i = 0 ;i < 8 ; ++i){
@@ -32,13 +34,18 @@ unsigned long hexToDex(char *s){
     }
     return r;
 }
-
+/*
+ align to multiple of 4
+ */
 void Align_4(void* size){
     unsigned long* x =(unsigned long*) size;
     if((*x)&3){
         (*x) += 4-((*x)&3);
     }
 }
+/*
+ print file content
+ */
 
 static void printFilecontent(cpio_t *addr){
     unsigned long psize = hexToDex(addr->namesize), dsize=hexToDex(addr->filesize);
@@ -88,15 +95,16 @@ void cpio()
     // if it's a cpio archive. Cpio also has a trailer entry
     while(compString((char*)(addr+1),"TRAILER!!!")!=0) {
         unsigned long psize=hexToDex(addr->namesize),dsize=hexToDex(addr->filesize);
-        if((sizeof(cpio_t)+psize)&3)psize+=4-((sizeof(cpio_t)+psize)&3);
-        if(dsize&3)dsize+=4-(dsize&3);
+        unsigned long HPP = sizeof(cpio_t) + psize;
 
-        char* path=(char*)(addr+1);
-        char* data=path+psize;
+        Align_4(&HPP);
+        Align_4(&dsize);
+
+        char *data = (char*)((char*)addr + HPP);
         // print out meta information
         uart_hex(dsize);      // file size in hex
         uart_puts("\t");
-        uart_puts(path);      // filename
+        uart_puts((char *)(addr+1));      // filename
         uart_puts("\n");
         // jump to the next file
         addr=(cpio_t*)(data+dsize);

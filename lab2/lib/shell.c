@@ -52,7 +52,7 @@ static void help(){
 
 static void loadimg(){
 
-	unsigned long k_addr=0,k_size=0;
+	unsigned long k_addr=0x40000,k_size=0;
 	char c;
 	uart_puts("Please enter kernel load address (Hex): ");
 
