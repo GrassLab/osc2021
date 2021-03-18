@@ -70,6 +70,6 @@ void Terminal::Ls() {
         MiniUART::PutS("File content:\r\n");
         MiniUART::PutS(cpio.filecontent, cpio.filesize);
         MiniUART::PutS("\r\n===============================\r\n");
-        header = reinterpret_cast<cpio_newc_header*>((reinterpret_cast<uint64_t>(header) + sizeof(cpio_newc_header) + cpio.namesize + cpio.filesize + 3) & ~3);
+        header = cpio.next;
     }
 }

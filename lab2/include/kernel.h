@@ -7,7 +7,11 @@ class Kernel {
 public:
     static void Reset(uint32_t tick);
     inline static void Delay(uint64_t cycle) {
-        while (cycle--) asm volatile("");
+        asm volatile("subs %x[cycle], %x[cycle], #1\n"
+                     "bne -4"
+                     : "=r"(cycle)
+                     : [cycle] "0"(cycle >> 1)
+                     : "cc");
     }
 };
 #endif

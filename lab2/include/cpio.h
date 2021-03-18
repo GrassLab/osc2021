@@ -27,8 +27,10 @@ public:
     uint64_t namesize;
     char* filename;
     char* filecontent;
+    cpio_newc_header* next;
 private:
     int Hex2int(uint8_t hex);
+    char* Align4(char* ptr);
 };
 
 #endif
