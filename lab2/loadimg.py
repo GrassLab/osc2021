@@ -25,7 +25,7 @@ def dumpImg(dev,k_addr='0xa0000',kernel='kernel87.img'):
     dev.write(str.encode(str(k_size)+'\n'))
 
     with open(kernel,"rb") as f:
-        waitFor('...\n',dev)
+        waitFor('...\r\n',dev)
         for i in range(k_size):
             dev.write(f.read(1))
             waitFor('.',dev,False)
