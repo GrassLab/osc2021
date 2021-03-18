@@ -52,6 +52,10 @@ void PrintCpio()
 	    uart_puts("\n");
             break;
 	}
+	if (!strcmp(cpio_archive[i].filename, "."))
+	{
+	    continue;
+	}
 	else
 	{
 	    uart_puts("\t");

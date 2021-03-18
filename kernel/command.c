@@ -19,7 +19,7 @@ void CommandHelp()
     uart_puts("\thelp:\t\tprint this help.\n");
     uart_puts("\thello:\t\tprint \"Hello World!\"\n");
     uart_puts("\tls:\tls cpio file.\n");
-    uart_puts("\tcat [filename]:\t cat cpio file content");
+    uart_puts("\tcat [filename]:\t cat cpio file content\n");
     uart_puts("\ttimestamp:\tget current timestamp.\n");
     uart_puts("\n");
 }
