@@ -1,10 +1,16 @@
 SECTIONS
 {
-	. = 0x60000;
+	. = 0x80000;
 	.text :
 	{
 		KEEP(*(.text.boot))
 		*(.text)
+	}
+	_relocate_start = .;
+	.text.relocate :
+	{
+		KEEP(*(.text.bootloader))
+		KEEP(*(.text.io))
 	}
 	.rodata :
 	{
@@ -20,6 +26,7 @@ SECTIONS
 		*(.bss)
 		_bss_end = .;
 	}
+	_relocate_end = .;
 }
 
 _bss_size = (_bss_end - _bss_start) >> 3;

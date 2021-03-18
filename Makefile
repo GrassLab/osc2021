@@ -32,7 +32,7 @@ asm:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -d in_asm
 
 run: all
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -initrd initramfs.cpio
 
 debug: all
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -S -s

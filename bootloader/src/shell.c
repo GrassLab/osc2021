@@ -9,13 +9,16 @@
 #define PM_WDOG        ((volatile unsigned int*)(0x3F100024))
 
 /* Load img */
-#define KERNEL_ADDR     0x100000
+#define KERNEL_ADDR     0x80000
 
 /* Key */
 #define LEFT_BRACKET    (char)91
 #define DELETE          (char)127
 #define TAB             (char)9
 #define ESC             (char)27
+
+extern char _relocate_start;
+extern char _relocate_end;
 
 static void reset(int tick) {
     *PM_RSTC = PM_PASSWORD | 0x20;
@@ -27,8 +30,21 @@ static void cancel_reset() {
     *PM_WDOG = PM_PASSWORD | 0;
 }
 
+__attribute__((section(".text.bootloader"))) void bootloader(unsigned int kernel_size,
+                                                             unsigned long long checksum) {
+    char *kernel_addr = (char*)KERNEL_ADDR;
+    for (int i = 0; i < kernel_size; i++) {
+        char c = uart_getc();
+        *(kernel_addr + i) = c;
+        checksum -= (int)c;
+    }
+    if (!checksum) {
+        void (*start_os)(void) = (void*)kernel_addr;
+        start_os();
+    }
+}
+
 static void load_img() {
-    print("Start loading kernel image\n");
     print("Please send kernel image from UART now\n");
     unsigned int kernel_size = (int)uart_getc();
     for (int i = 1; i < 4; i++) {
@@ -43,24 +59,18 @@ static void load_img() {
         checksum += (int)c;
     }
 
-    print("kernel size: ");
+    print("Kernel size: ");
     print_int(kernel_size);
-    print("\nLoading...");
-    char *kernel = (char*)KERNEL_ADDR;
-    for (int i = 0; i < kernel_size; i++) {
-        char c = uart_getc();
-        *(kernel + i) = c;
-        checksum -= (int)c;
+    unsigned int bootloader_size = (unsigned int)(&_relocate_end - &_relocate_start);
+    char *new_addr = (char*)((kernel_size / 0x10000 + 1) * 0x10000 + KERNEL_ADDR);
+    char *old_addr = (char*)&_relocate_start;
+    print("\nRelocating bootloader.....\n");
+    for (int i = 0; i < bootloader_size; i++) {
+        *(new_addr + i) = *(old_addr + i);
     }
-    if (checksum) {
-        print("\nData error\n");
-    }
-    else {
-        print("\nDone\n\n");
-        print("Start OS...\n");
-        void (*start_os)(void) = (void*)kernel;
-        start_os();
-    }
+    print("Loading kernel.....\n\n");
+    void (*start_bootloader)(unsigned int, unsigned long long) = (void*)new_addr;
+    start_bootloader(kernel_size, checksum);
 }
 
 static void cmd_controler(const char *cmd) {
@@ -70,9 +80,12 @@ static void cmd_controler(const char *cmd) {
     }
 
     if (!strcmp(cmd, "help")) {
-        print("help\n");
-        print("loadimg\n");
-        print("reboot\n");
+        print("help:\n");
+        print("    List all available command.\n");
+        print("loadimg:\n");
+        print("    Load kernel image via UART.\n");
+        print("reboot:\n");
+        print("    Reboot raspberry pi.\n");
     }
     else if (!strcmp(cmd, "loadimg")) {
         load_img();

@@ -19,9 +19,9 @@ def send_img():
         tty.write(file_size.to_bytes(4, byteorder="big"))
         checksum = get_sum(bytedata)
         tty.write(checksum.to_bytes(5, byteorder="big"))
+    time.sleep(1)
     with open(device_address, 'wb') as tty:
         tty.write(bytedata)
-        time.sleep(1)
 
 if __name__ == "__main__":
     parameter = sys.argv

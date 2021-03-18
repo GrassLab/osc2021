@@ -1,5 +1,6 @@
 #include "uart.h"
 #include "utils.h"
+#include "cpio.h"
 
 #define CMD_LEN 128
 
@@ -24,6 +25,16 @@ static void cancel_reset() {
     *PM_WDOG = PM_PASSWORD | 0;
 }
 
+static void ls() {
+    for (int i = 0; i < file_count; i++) {
+        print("File name: ");
+        print(file_list[i].file_name);
+        print("\n");
+        print("File content: ");
+        print(file_list[i].file_content);
+    }
+}
+
 static void cmd_controler(const char *cmd) {
     /* Eliminate space at the front */
     while (*cmd == (char)32) {
@@ -33,10 +44,14 @@ static void cmd_controler(const char *cmd) {
     if (!strcmp(cmd, "help")) {
         print("help\n");
         print("hello\n");
+        print("ls\n");
         print("reboot\n");
     }
     else if (!strcmp(cmd, "hello")) {
         print("Hello world\n");
+    }
+    else if (!strcmp(cmd, "ls")) {
+        ls();
     }
     else if (!strcmp(cmd, "reboot")) {
         print("Rebooting.....\n\n");

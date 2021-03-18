@@ -28,19 +28,19 @@ void uart_init() {
     *AUX_MU_CNTL = 3; /* Enable tx rx */
 }
 
-char uart_getc() {
+__attribute__((section(".text.io"))) char uart_getc() {
     char c;
     while (!(*AUX_MU_LSR & 0x01)) {}
     c = (char)(*AUX_MU_IO);
     return c;
 }
 
-void uart_putc(char c) {
+__attribute__((section(".text.io"))) void uart_putc(char c) {
     while (!(*AUX_MU_LSR & 0x20)) {}
     *AUX_MU_IO = c;
 }
 
-void print(const char *s) {
+__attribute__((section(".text.io"))) void print(const char *s) {
     while (*s) {
         if (*s == '\n') {
             uart_putc('\r');
@@ -49,7 +49,7 @@ void print(const char *s) {
     }
 }
 
-void print_int(unsigned long long num) {
+__attribute__((section(".text.io"))) void print_int(unsigned long long num) {
     if (!num) {
         uart_putc('0');
         return ;
