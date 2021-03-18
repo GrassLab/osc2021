@@ -1,3 +1,0 @@
-kernel_address=0x60000
-kernel=bootloader.img
-arm64_bit=1
