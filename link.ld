@@ -25,11 +25,11 @@
 
 SECTIONS
 {
-    . = 0x80000;
-    .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
+    . = 0x60000;
+    .text : { KEEP(*(.text.boot)) *(.text .text.*) }
     .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
     PROVIDE(_data = .);
-    .data : { *(.data .data.* .gnu.linkonce.d*) }
+    .data : { *(.data .data.*) }
     .bss (NOLOAD) : {
         . = ALIGN(16);
         __bss_start = .;
