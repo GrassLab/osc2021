@@ -62,6 +62,7 @@ int main(){
   uart_puts("> ");
 
   char cmd[1000];
+  cmd[0] = '\0';
   int cmd_end = 0;
 
   //char get_c[10];
