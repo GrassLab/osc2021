@@ -1,1 +1,0 @@
-image for lab1

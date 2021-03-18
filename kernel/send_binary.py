@@ -1,7 +1,7 @@
 import time
 import os
 
-kernel_file = 'test/kernel9.img'
+kernel_file = 'build/kernel8.img'
 kernel_size = os.path.getsize(kernel_file)
 
 with open(kernel_file, 'rb') as kernel_f:    

@@ -1,19 +1,10 @@
 #include "uart.h"
 #include "utils.h"
+#include "string.h"
 
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC (volatile unsigned int*)0x3F10001c
 #define PM_WDOG (volatile unsigned int*)0x3F100024
-
-int strcmp(char *a, char *b) {
-    while(*a != '\0') {
-        if(*a != *b) return 1;
-        a++;
-        b++;
-    }
-    if(*a != *b) return 1;
-    return 0;
-}
 
 
 void hello() {
@@ -23,6 +14,7 @@ void hello() {
 void help() {
     uart_puts("help: print all available commands\n");
     uart_puts("hello: print Hello World!\n");
+    uart_puts("ls: list all file\n");
 }
 
 void reset(int tick){ // reboot after watchdog timer expire
@@ -41,40 +33,107 @@ void reboot() {
 }
 
 
-void loadimg() {
+void getFileData(char *target) {
+    uart_puts("Please enter file name: ");
+    uart_read_line(target, 1);
+    uart_send('\r');
+    volatile unsigned char *cpio_address = (unsigned char *) 0x20000000;
+    
+    int i = 0;
+    while(1) {
+        int file_size = 0;
+        int name_size = 0;
+        cpio_address += 54;
+        file_size = atoi(subStr(cpio_address, 8), 16);
+        cpio_address += 40;
+        name_size = atoi(subStr(cpio_address, 8), 16);
 
-    // read the kernel size    
-    char input[20];
-    uart_read_line(input, 0);
-    uart_puts("\r");
-    int kernel_size = atoi(input);
+        /*
+        char *s;
+        itoa(name_size, s);
+        uart_puts(s);
+        uart_puts("\n");
 
-    char s[20];
-    itoa(kernel_size, s);
-    uart_puts("Kernel size is: ");
-    uart_puts(s);
-    uart_puts("\n");
+        char *s1;
+        itoa(file_size, s1);
+        uart_puts(s1);
+        uart_puts("\n");
+        */
 
-    // read kernel image then save to 0x80000
-    char *new_address = (char *)0x80000;
-    int checksum = 0;
-    for(int i = 0; i < kernel_size; i++) {
-        unsigned char c = uart_getc();
-        checksum += c;
-        new_address[i] = c;
+        name_size += (name_size+110) % 4 != 0 ? 4 - (name_size+110) % 4 : 0;
+        file_size += file_size % 4 != 0 ? 4 - file_size % 4 : 0;
+        
+        cpio_address += 16;
+
+        char *path_name = cpio_address;
+        if(!strcmp(path_name, "TRAILER!!!")) {
+            uart_puts("No such file\n");
+            break;
+        }
+
+        cpio_address += name_size;
+        unsigned char *file_data = cpio_address;
+        if(!strcmp(path_name, target)) {
+            for(int i = 0; i < file_size; i++) {
+                if(file_data[i] == '\n') {
+                    uart_send('\r');
+                }
+                uart_send(file_data[i]);
+                
+            }
+            uart_puts("\n");
+            break;
+        }
+        cpio_address += file_size;
     }
-    
-    char checksum_s[20];
-    itoa(checksum, checksum_s);
-    uart_puts("Loading done! Checksum is: ");
-    uart_puts(checksum_s);
-    uart_puts("\n");
-    
-
-    void (*jump_to_new_kernel)(void) = new_address;
-    jump_to_new_kernel();
 }
 
+void list_file() {
+    volatile unsigned char *cpio_address = (unsigned char *) 0x20000000;
+    
+    int i = 0;
+    while(1) {
+        int file_size = 0;
+        int name_size = 0;
+        cpio_address += 54;
+        file_size = atoi(subStr(cpio_address, 8), 16);
+        cpio_address += 40;
+        name_size = atoi(subStr(cpio_address, 8), 16);
+
+        /*
+        char *s;
+        itoa(name_size, s);
+        uart_puts(s);
+        uart_puts("\n");
+
+        char *s1;
+        itoa(file_size, s1);
+        uart_puts(s1);
+        uart_puts("\n");
+        */
+
+        name_size += (name_size+110) % 4 != 0 ? 4 - (name_size+110) % 4 : 0;
+        file_size += file_size % 4 != 0 ? 4 - file_size % 4 : 0;
+        
+        cpio_address += 16;
+
+        char *path_name = cpio_address;
+        if(!strcmp(path_name, "TRAILER!!!")) break;
+        uart_puts(path_name);
+        uart_puts("\n");
+
+        cpio_address += name_size;
+        unsigned char *file_data = cpio_address;
+        //for(int i = 0; i < file_size; i++) {
+        //    uart_send(file_data[i]);
+        //}
+        //uart_puts("\n");
+
+        cpio_address += file_size;
+    }
+    char target[100];
+    getFileData(target);
+}
 
 void main() {
     uart_init();
@@ -87,7 +146,7 @@ void main() {
         uart_puts("#");
         char input[20];
         uart_read_line(input, 1);
-        uart_puts("\r");
+        uart_send('\r');
 
         if(!strcmp(input, "hello")) {
             hello();
@@ -98,8 +157,8 @@ void main() {
         else if(!strcmp(input, "reboot")) {
             reboot();
         }
-        else if(!strcmp(input, "loadimg")) {
-            loadimg();
+        else if(!strcmp(input, "ls")) {
+            list_file();
         }
         else {
             uart_puts("Error: ");
