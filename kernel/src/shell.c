@@ -23,6 +23,10 @@ int reboot() {
   return 0;
 }
 
+int load_kernel() {
+  return 0;
+}
+
 int _clear() {
   puts("\n\r");
   return 0;
@@ -41,6 +45,8 @@ int cmd(const char *buff) {
     return hello();
   } else if (!strcmp(buff, "reboot")) {
     return reboot();
+  } else if (!strcmp(buff, "load")) {
+    return load_kernel();
   } else if (!strcmp(buff, "test")) {
     return _test();
   } else if (!strcmp(buff, "")) {

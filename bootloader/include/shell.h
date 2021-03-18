@@ -5,6 +5,7 @@
 int help();
 int hello();
 int reboot();
+int load_kernel();
 int cmd(const char *);
 void shell();
 

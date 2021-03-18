@@ -1,41 +1,36 @@
 # OSC 2021, check https://github.com/GrassLab/osc2021
+include Makefile.inc
 
 # set build parameters
-LANG ?= c # defualt set to C, use `LANG=rust make` to change implementation language
-ENV ?= release # default set to release mode, use `ENV=debug make` to change to debug mode
-SD_MEDIA ?= 4DFF-0A36
+LANG     ?= c # defualt set to C, use `LANG=rust make` to change implementation language
+SD_MEDIA ?= /run/media/calee/4DFF-0A36
 
-ifeq ($(LANG), rust)
-	SRC_ROOT=rust-impl
-else
-	SRC_ROOT=c-impl
-endif
+#ifeq ($(LANG), rust)
+#	SRC_ROOT=rust-impl
+#else
+#	SRC_ROOT=c-impl
+#endif
+KERNEL_ROOT=kernel
 
-CC=clang
-CFLAGS=-mcpu=cortex-a53 --target=aarch64-rpi3-elf -Wall -nostdinc -nostdlib -I $(SRC_ROOT)/include
-ifeq ($(ENV), debug)
-	CFLAGS+=-g -O0
-endif
-
-#LD=aarch64-linux-gnu-ld
-LD=ld.lld
-LDFLAGS+=-m aarch64elf -nostdlib -L $(SRC_ROOT)/lib
-
-OBJCPY=llvm-objcopy
-OBJCPYFLAGS=--output-target=aarch64-rpi3-elf -O binary
+LDFLAGS+= -L $(KERNEL_ROOT)/lib
 
 IMAGE=kernel8.img
 ELF_FILE=kernel8.elf
-OBJ_FILES=boot/boot.o $(SRC_ROOT)/kernel.o $(SRC_ROOT)/lib/util.o $(SRC_ROOT)/lib/shell.o $(SRC_ROOT)/lib/mmio.o
+OBJ_FILES=boot/boot.o $(KERNEL_OBJ) #$(addprefix $(KERNEL_ROOT)/, $(KERNEL_OBJ))
 
 LINKER_SCRIPT=linker.lds
 
-.PHONY: all clean img elf obj install
+.PHONY: all clean img elf obj install bootloader
 
 all: $(IMAGE)
 	@echo ""
 	@echo "==============================="
 	@echo "$(IMAGE) image build completed!"
+
+include kernel/Makefile
+
+bootloader:
+	make -C bootloader
 
 img: $(IMAGE)
 $(IMAGE): %.img: %.elf
@@ -55,9 +50,11 @@ obj: $(OBJ_FILES)
 # Compile from C to obj file
 	$(CC) $(CFLAGS) -c $< -o $@
 
-clean:
+clean: kercln
+	make -C bootloader clean
 	rm -f $(IMAGE) $(ELF_FILE) $(OBJ_FILES)
 
 install:
-#cp ./setup/* /run/media/calee/$(SD_MEDIA)
-	cp ./kernel8.img /run/media/calee/$(SD_MEDIA)
+#cp ./setup/* $(SD_MEDIA)
+	cp bootloader/config.txt $(SD_MEDIA)
+	cp bootloader/bootloader.img $(SD_MEDIA)

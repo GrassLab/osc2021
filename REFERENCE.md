@@ -29,3 +29,7 @@
 
 ### UART
 - GPIO: https://www.slideshare.net/raspberrypi-tw/raspberry-pigpiolookinside
+
+## Lab 2
+
+- [Boot options in config.txt](https://www.raspberrypi.org/documentation/configuration/config-txt/boot.md)
