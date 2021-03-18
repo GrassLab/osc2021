@@ -14,7 +14,7 @@
 * **Lab 2: Booting**
     * [Branch](https://github.com/andykuo8766/osc2021/tree/LAB-02)
 * **Lab 3: Allocator**
-    * [Branch]
+    * [Branch](https://github.com/andykuo8766/osc2021/tree/LAB-03)
 * **Lab 4: Multitasking**
     * [Branch]
 * **Lab 5: Virtual Memory**
