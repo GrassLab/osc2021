@@ -102,7 +102,7 @@ def main():
         # Read output from raspi3
         print_all_from_tty()
         p.advance_bytes(1)
-    tty.send("reboot\n".encode("utf-8"))
+    # tty.send("reboot\n".encode("utf-8"))
 
 
 class SerialSender:
