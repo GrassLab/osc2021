@@ -47,7 +47,7 @@ impl Shell {
             let kb = Keyboard::parse(uart::getc());
             match kb {
                 Keyboard::NewLine(_) => {
-                    print!("{}", "\n");
+                    print!("{}", "\r\n");
                     log!("Press enter!");
                     self.log_buffer_status();
                     break;

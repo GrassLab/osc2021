@@ -28,6 +28,7 @@
 #include "gpio.h"
 #include "string.h"
 #include <stdarg.h>
+#include <stdint.h>
 
 /* Auxilary mini UART registers */
 #define AUX_ENABLE ((volatile unsigned int *)(MMIO_BASE + 0x00215004))
@@ -92,15 +93,24 @@ void uart_send(unsigned int c) {
  * Receive a character
  */
 char uart_getc() {
-  char r;
+  char r = (char)uart_getu8();
+  /* convert carrige return to newline */
+  return r == '\r' ? '\n' : r;
+}
+
+/**
+ * Receive data directly from uart
+ */
+uint8_t uart_getu8() {
+  uint8_t r;
   /* wait until something is in the buffer */
   do {
     asm volatile("nop");
   } while (!(*AUX_MU_LSR & 0x01));
   /* read it and return */
-  r = (char)(*AUX_MU_IO);
+  r = (uint8_t)(*AUX_MU_IO);
   /* convert carrige return to newline */
-  return r == '\r' ? '\n' : r;
+  return r;
 }
 
 /**
@@ -138,7 +148,7 @@ void uart_println(char *fmt, ...) {
         i = -i;
         uart_send('-');
       }
-      uart_puts(itoa(i, 10));
+      uart_puts(itoa((int64_t)i, 10));
       break;
     case 'x':
       i = va_arg(arg, int);
@@ -155,47 +165,5 @@ void uart_println(char *fmt, ...) {
     }
   }
   uart_puts("\r\n");
-  va_end(arg);
-}
-
-// same as println, but without a newline at the end
-void uart_printf(char *fmt, ...) {
-  unsigned int i;
-  char *s;
-
-  va_list arg;
-  va_start(arg, fmt);
-  for (; fmt; fmt++) {
-    // Send leading chars
-    while (*fmt != '%' && *fmt) {
-      uart_send(*fmt++);
-    }
-    if (*fmt == 0)
-      break;
-    // Start parsing %..
-    fmt++;
-    switch (*fmt) {
-    case 'd':
-      i = va_arg(arg, int);
-      if (i < 0) {
-        i = -i;
-        uart_send('-');
-      }
-      uart_puts(itoa(i, 10));
-      break;
-    case 'x':
-      i = va_arg(arg, int);
-      uart_puts("0x");
-      uart_puts(itoa((int64_t)i, 16));
-      break;
-    case 's':
-      s = va_arg(arg, char *);
-      uart_puts(s);
-      break;
-    case '%':
-      uart_send('%');
-      break;
-    }
-  }
   va_end(arg);
 }

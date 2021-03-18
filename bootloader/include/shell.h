@@ -9,7 +9,7 @@ typedef enum AnsiEscType {
 } AnsiEscType;
 
 enum KeyboardInput {
-  KI_BackSpace = '\b',             // 8
+  KI_BackSpace = '\b',             // 18
   KI_LineFeed = '\n',              // 10
   KI_CarrageReturn = '\r',         // 13
   KI_Esc = '\e',                   // 27
@@ -20,6 +20,12 @@ enum KeyboardInput {
   KI_Delete = 127,
 };
 
-void shellPrintPrompt();
-void shellInputLine();
-void shellProcessCommand();
+typedef struct {
+  int curInputSize;
+  char *bfr;
+} Shell;
+
+void initShell(Shell *sh, char *bfr);
+void shellPrintPrompt(Shell *sh);
+void shellInputLine(Shell *sh);
+void shellProcessCommand(Shell *sh);

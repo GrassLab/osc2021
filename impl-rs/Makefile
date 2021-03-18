@@ -1,6 +1,6 @@
 
 TARGET    = aarch64-unknown-none-softfloat
-KERNEL_BIN = kernel8.img
+KERNEL_IMG = kernel8.img
 LINKER_FILE = src/linker.ld
 DEBUG = 1
 
@@ -21,7 +21,6 @@ ifneq ($(DEBUG), 1)
     COMPILER_ARGS += --release
 endif
 
-
 RUSTC_CMD  = cargo rustc $(COMPILER_ARGS)
 OBJCOPY_CMD = rust-objcopy \
     -O binary
@@ -29,16 +28,17 @@ ifneq ($(DEBUG), 1)
     OBJCOPY_CMD += --strip-all
 endif
 
-all: $(KERNEL_BIN)
+all: $(KERNEL_IMG)
 
 $(KERNEL_ELF): FORCE
 	RUSTFLAGS="$(RUSTFLAGS)" $(RUSTC_CMD)
 
-$(KERNEL_BIN): $(KERNEL_ELF)
-	$(OBJCOPY_CMD) $(KERNEL_ELF) $(KERNEL_BIN)
+$(KERNEL_IMG): $(KERNEL_ELF)
+	$(OBJCOPY_CMD) $(KERNEL_ELF) $(KERNEL_IMG)
+	cp $(KERNEL_ELF) kernel8.elf
 
 clean:
 	cargo clean
-	$(RM)  kernel8.img
+	$(RM)  $(KERNEL_IMG) kernel8.elf
 
 FORCE:
