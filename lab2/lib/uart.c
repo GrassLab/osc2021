@@ -1,4 +1,4 @@
-#include "reg.h"
+#include "include/reg.h"
 
 #define DATA_READY_BIT (1 << 0)
 #define TRANSMITTER_EMPTY_BIT (1 << 5)
@@ -34,13 +34,13 @@ void mini_uart_init() {
     //*INPUT_ENABLE_REGISTER_1 = AUX_INT_ENABLE_BIT;
 }
 
-void __wfe() {
+static void __wfe() {
     //asm("wfe");
 }
 
 /* TODO: wfe not work ? */
-void read_uart(char *buffer, int count) {
-    for (int i = 0; i < count; i++) {
+void read_uart(char *buffer, int len) {
+    for (int i = 0; i < len; i++) {
         while (!(*AUX_MU_LSR_REG & DATA_READY_BIT)) __wfe();
         buffer[i] = *AUX_MU_IO_REG & 0xff;
     }
@@ -89,14 +89,28 @@ int interact_readline_uart(char *buffer) {
     return count;
 }
 
-
-
-void puts_uart(const char *buffer) {
+void print_uart(const char *buffer) {
     int i = 0;
     while (buffer[i] != '\0') {
         while (!(*AUX_MU_LSR_REG & TRANSMITTER_EMPTY_BIT)) __wfe();
         *(char *)AUX_MU_IO_REG = buffer[i];
         i++;
     }
+}
+
+void puts_uart(const char *buffer) {
+    print_uart(buffer);
     write_uart("\n\r", 2);
+}
+
+void write_num_uart(unsigned long num) {
+  int n = 0;
+  char buf[20];
+  while (num) {
+    buf[n++] = (num % 10) + '0';
+    num /= 10;
+  }
+  for (int i = n-1; i >= 0; --i) {
+    write_uart(&buf[i], 1);
+  }
 }

@@ -6,8 +6,8 @@ _start:
   ldr x21, =_ebss
 
   /* setup interrupt vector base */
-  ldr x0, =_svector
-  msr VBAR_EL2, x0
+  //ldr x0, =_svector
+  //msr VBAR_EL2, x0
 
 bss_loop:
   cmp x20, x21
