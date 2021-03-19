@@ -2,21 +2,29 @@
 
 ## Author
 
-| 學號 | GitHub 帳號 | 姓名 | Email |
-| --- | ----------- | --- | --- |
-|`0856085`| `t0037799` | `林濬維` | jwlin.cs08g@nctu.edu.tw |
+| 學號        | GitHub 帳號  | 姓名    | Email                      |
+| ---------- | ----------- | ------- | -------------------------- |
+| `A091514`  | `kishow01`  | `林昌德` | kishow01@gmail.com         |
 
 ## How to build
-
-**WIP**
+``make``
 
 ## How to run
-
-**WIP**
+``make run``
 
 ## How to burn it into pi3
+download firmware from https://github.com/raspberrypi/firmware/tree/master/boot.
 
-**WIP**
++ necessary
+    + bootcode.bin
+        + bootloader, loaded by the SoC on boot. 
+        + setup and loads one of the start*.elf files.
+    + fixup.dat
+        + linker files and are matched pairs with the start*.elf files
+    + start.elf
+        + binary blobs (firmware) that are loaded on to the VideoCore in the SoC, which then take over the boot process. start.elf is the basic firmware.
+
+Finally, put the firmware and your kernel image into the FAT partition.
 
 ## Architecture
 
