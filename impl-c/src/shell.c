@@ -1,6 +1,7 @@
 #include "shell.h"
 #include "bool.h"
 #include "cfg.h"
+#include "cpio.h"
 #include "string.h"
 #include "uart.h"
 
@@ -9,6 +10,7 @@
 #define PM_WDOG ((volatile unsigned int *)0x3F100024)
 
 void cmdHello();
+void cmdLs();
 void cmdHelp();
 void cmdReboot();
 
@@ -24,6 +26,7 @@ int curInputSize = 0;
 
 Cmd cmdList[] = {
     {.name = "hello", .help = "Greeting", .func = cmdHello},
+    {.name = "ls", .help = "list files", .func = cmdLs},
     {.name = "help", .help = "Show avalible commands", .func = cmdHelp},
     {.name = "reboot", .help = "Reboot device", .func = cmdReboot},
 };
@@ -32,10 +35,16 @@ void cmdHello() { uart_println("Hello!!"); }
 void cmdHelp() {
   uart_println("available commands:");
   Cmd *end = cmdList + sizeof(cmdList) / sizeof(Cmd);
+  const int minIndent = 8;
   for (Cmd *c = cmdList; c != end; c++) {
-    uart_println("  %s  \t%s", c->name, c->help);
+    uart_printf("  %s", c->name);
+    for (int i = minIndent - strlen(c->name); i > 0; i--) {
+      uart_puts(" ");
+    }
+    uart_println("%s", c->help);
   }
 }
+void cmdLs() { cpioLs((void *)RAMFS_ADDR); }
 void cmdReboot() {
   uart_println("reboot");
   *PM_RSTC = PM_PASSWORD | 0x20;
@@ -160,7 +169,7 @@ void shellInputLine() {
       buffer[curInputSize] = 0;
       uart_puts("\r\n");
       if (CFG_LOG_ENABLE) {
-        uart_println("GET:'%s'", buffer);
+        uart_println("buffer: '%s'", buffer);
       }
       break;
     default:
@@ -170,12 +179,34 @@ void shellInputLine() {
   }
 }
 
+int _tryFetchFile() {
+  unsigned long size;
+  uint8_t *file = (uint8_t *)cpioGetFile((void *)RAMFS_ADDR, buffer, &size);
+  if (file != NULL) {
+    if (CFG_LOG_ENABLE) {
+      uart_println("  [fetchFile] file addr:%x , size:%d", file, size);
+    }
+    for (unsigned long i = 0; i < size; i++) {
+      if (file[i] == '\n' && i > 0 && file[i - 1] != '\r') {
+        uart_println("");
+      } else {
+        uart_send(file[i]);
+      }
+    }
+    uart_println("");
+    return 0;
+  }
+  return 1;
+}
+
 // Process command resides in buffer
 void shellProcessCommand() {
   Cmd *end = cmdList + sizeof(cmdList) / sizeof(Cmd);
   for (Cmd *c = cmdList; c != end; c++) {
     if (!strcmp(c->name, buffer)) {
       c->func();
+      return;
     }
   }
+  _tryFetchFile();
 }

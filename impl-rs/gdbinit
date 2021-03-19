@@ -1,0 +1,6 @@
+file impl-rs/target/aarch64-unknown-none-softfloat/debug/kernel
+dir impl-rs
+target remote :1234
+
+tui enable
+si

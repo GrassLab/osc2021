@@ -1,3 +1,0 @@
-file osc/kernel8.elf
-dir osc
-target remote :1234

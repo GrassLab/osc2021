@@ -7,6 +7,7 @@ int main() {
   uart_println("-------------------------------");
   uart_println(" Operating System Capstone 2021");
   uart_println("-------------------------------");
+  uart_println(" input filename to see file content");
 
   while (1) {
     shellPrintPrompt();
