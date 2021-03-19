@@ -1,0 +1,10 @@
+qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -initrd initramfs.cpio
+qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial pty -display none -initrd initramfs.cpio
+sudo screen /dev/pts/1 115200
+sudo screen /dev/ttyUSB0 115200
+with open('/dev/pts/1', 'w', buffering = 0) as tty:
+    tty.write(b'h')
+with open('/dev/ttyUSB0', "wb", buffering = 0) as tty:
+  tty.write(b'help')
+T7RabcF34-EC220
+1048576
