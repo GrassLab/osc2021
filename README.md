@@ -7,21 +7,22 @@
 |`0856085`| `t0037799` | `林濬維` | jwlin.cs08g@nctu.edu.tw |
 
 ## How to build
-
-**WIP**
+```bash
+make
+```
 
 ## How to run
-
-**WIP**
-
-## How to burn it into pi3
-
-**WIP**
-
-## Architecture
-
-**WIP**
+```bash
+qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio
+```
 
 ## Directory structure
 
-**WIP**
+| File          | Content                                               | 
+| --------------| ----------------------------------------------------- | 
+| gpio.h        | some gpio config                                      |
+| main.c        | main program                                          |
+| myshell.c(.h) | code for control the shell behavior                   |
+| uart.c(.h)    | code for uart opertaion                               |
+| linker.ld     | linker script                                         |
+| start.S       | startup program                                       |
