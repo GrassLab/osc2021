@@ -3,22 +3,39 @@
 .global _start
 
 _start:
-    mrs     x1, mpidr_el1
-    and     x1, x1, #3
-    cbz     x1, 2f
-1:  
-    wfe
-    b       1b
-2:
-    ldr     x1, =_start
-    mov     sp, x1
-    ldr     x1, =__bss_start
-    ldr     w2, =__bss_size
-3:  
-    cbz     w2, 4f
+    mov     x10, x0
+    mov     x11, x1
+    mov     x12, x2
+    mov     x13, x3
+
+    ldr     x4, =0x80000
+    mov     sp, x4
+    mov     x1, x4
+    ldr     x2, =_start
+    ldr     w3, =_bl_size
+
+_reloc_loop:
+    ldr     x4, [x1], #8
+    str     x4, [x2], #8
+    sub     w3, w3, #1
+    cbnz    w3, _reloc_loop
+
+    ldr     x1, =_bss_start
+    ldr     w2, =_bss_size
+    cbz     w2, _bootloader
+
+_bss_init_loop:  
     str     xzr, [x1], #8
     sub     w2, w2, #1
-    b       3b
-4:  
-    bl      main
-    b       1b
+    cbnz    w2, _bss_init_loop
+
+_bootloader:
+    bl      bootloader-0x20000
+
+.section ".text.halt"
+
+.global _halt
+
+_halt:
+    wfe
+    b _halt

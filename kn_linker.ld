@@ -1,19 +1,20 @@
 SECTIONS
 {
     . = 0x80000;
-    .text : { KEEP(*(.text.boot)) *(.text .text.*) }
+    .text : { *(.text .text.*) }
+
+    . = ALIGN(4096);
     .rodata : { *(.rodata .rodata.*) }
+
+    . = ALIGN(4096);
     PROVIDE(_data = .);
     .data : { *(.data .data.*) }
-    .bss (NOLOAD) : {
-        . = ALIGN(16);
-        __bss_start = .;
+
+    . = ALIGN(4096);
+    .bss : {
         *(.bss .bss.*)
         *(COMMON)
-        __bss_end = .;
     }
-    _end = .;
 
    /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
 }
-__bss_size = (__bss_end - __bss_start) >> 3;
