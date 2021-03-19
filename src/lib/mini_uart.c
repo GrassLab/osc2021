@@ -1,6 +1,6 @@
 #include "peripheral.h"
 #include "mini_uart.h"
-#include "ops.h"
+#include "base_ops.h"
 
 void init_uart()
 {
@@ -14,9 +14,9 @@ void init_uart()
     put32(GPFSEL1,selector);
 
     put32(GPPUD,0);
-    delay(150);
+    wait(150);
     put32(GPPUDCLK0,(1<<14)|(1<<15));
-    delay(150);
+    wait(150);
     put32(GPPUDCLK0,0);
 
     put32(AUXENB, 1);
@@ -25,11 +25,11 @@ void init_uart()
     put32(AUX_MU_LCR_REG, 3);
     put32(AUX_MU_MCR_REG, 0);
     put32(AUX_MU_BAUD_REG, 270); // set baud rate
-    put32(AUX_MU_IIR_REG, 6); // ?
+    put32(AUX_MU_IIR_REG, 6);
     put32(AUX_MU_CNTL_REG, 3);
 }
 
-void send_char(char c)
+int putchar(char c)
 {
     while(1) {
         if (get32(AUX_MU_LSR_REG) & 0x20) {
@@ -37,20 +37,23 @@ void send_char(char c)
         }
     }
 
-    put32(AUX_MU_IO_REG, c);
+    put32(AUX_MU_IO_REG, (unsigned char)c);
+
+    return (unsigned char)c;
 }
 
-void send_string(char *str)
+int puts(const char *str)
 {
     int i = 0;
-    while(str[i] != '\0')
-    {
-        send_char(str[i]);
+    while(str[i] != '\0') {
+        putchar(str[i]);
         i++;
     }
+
+    return 0;
 }
 
-char receive_char()
+int getchar()
 {
     while(1) {
         if (get32(AUX_MU_LSR_REG) & 0x01) {

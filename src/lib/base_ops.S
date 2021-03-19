@@ -8,8 +8,8 @@ get32:
     ldr w0, [x0]
     ret
 
-.globl delay
-delay:
+.globl wait
+wait:
 	subs x0, x0, #1
-	bne delay
+	bne wait
 	ret
