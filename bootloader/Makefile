@@ -13,7 +13,7 @@ GDBFLAGS = -x ./debug.gdb
 BUILD_DIR = build
 ELF = kernel8.elf
 IMG = kernel8.img
-SRC = $(wildcard kernel/*.S) $(wildcard kernel/*.c)
+SRC = $(wildcard *.S) $(wildcard *.c)
 OBJ = start.o $(filter-out start.o, $(wildcard *.o))
 
 
@@ -27,34 +27,12 @@ kernel8:
 	$(OBJCOPY) $(OBJCOPYFLAGS) $(BUILD_DIR)/$(ELF) $(BUILD_DIR)/$(IMG)
 	rm $(OBJ)
 
-debug:
-	qemu-system-aarch64 -M raspi3\
-		-kernel $(BUILD_DIR)/$(IMG)\
-		-display none\
-		-serial null\
-		-serial stdio\
-		-S -s\
-		-initrd initramfs.cpio\
-
-debug_cpio:
-	qemu-system-aarch64 -M raspi3\
-		-kernel $(BUILD_DIR)/$(IMG)\
-		-display none\
-		-serial null\
-		-serial stdio\
-		-S -s\
-		-initrd initramfs.cpio
 run:
 	qemu-system-aarch64 -M raspi3\
 		-kernel $(BUILD_DIR)/$(IMG)\
 		-display none\
 		-serial null\
 		-serial stdio\
-		-initrd initramfs.cpio\
-		
-
-gdb:
-	$(GDB) $(GDBFLAGS)
 
 clean:
 	rm -rf $(BUILD_DIR)
