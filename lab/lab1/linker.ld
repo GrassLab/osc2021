@@ -28,18 +28,18 @@ SECTIONS
   bss_size =  SIZEOF(.bss);
   .heap :
   {
-    . = ALIGN(4);
+    . = ALIGN(8);
     _heap_top = .;
     . = . + _heap_size;
-    . = ALIGN(4);
+    . = ALIGN(8);
     _heap_bottom = .;
   }
   .stack :
   {
-    . = ALIGN(4);
+    . = ALIGN(8);
     _stack_bottom = .;
     . = . + _stack_size;
-    . = ALIGN(4);
+    . = ALIGN(8);
     _stack_top = .;
   }
 }
