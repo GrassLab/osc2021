@@ -17,5 +17,11 @@ kernel8.img: start.o link.ld $(OBJS)
 clean:
 	rm kernel8.elf *.o
 
-run:
+run: kernel8.img
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio
+
+asm: kernel8.img
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -d in_asm -serial null -serial pty
+
+pty: kernel8.img
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial pty -initrd ../lab2/initramfs.cpio

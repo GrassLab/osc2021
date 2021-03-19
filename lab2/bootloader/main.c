@@ -1,33 +1,10 @@
 # include "uart.h"
 # include "utli.h"
+# include "gpio.h"
 
-//itoa
-void int_to_str(int n, char *s){
-  char tmp[100];
-  int idx = 0;
-  do{
-    tmp[idx] = (char)((n%10) + 48);
-    idx++;
-    n /= 10;
-  } while(n > 0);
-  for (int i=0; i<idx; i++){
-    s[i] = tmp[idx-i-1];
-  }
-  s[idx] = '\0';
-}
+//# include "relocate.h"
 
-//str compare
-int str_cmp(char *s1, char *s2){
-  int i = 0;
-  if (s1[0] == '\0' && s2[0] == '\0') return 1;
-  while(s1[i]){
-    if (s1[i] != s2[i]) return 0;
-    i++;
-  }
-
-  if (s2[i] == '\0') return 1;
-  return 0;
-}
+extern unsigned char __stack_top, _begin, _end;
 
 void invoke_cmd(char *cmd){
   if (cmd[0] == '\0') return;
@@ -39,12 +16,16 @@ void invoke_cmd(char *cmd){
     uart_puts("--------| ----------------------------\n");
     uart_puts("hello   | print Hello World!\n");
     uart_puts("help    | print all available commands\n");
+    uart_puts("loadimg | Load kernal image from UART\n");
     uart_puts("reboot  | reboot pi\n");
   }
   else if (str_cmp(cmd, "reboot") == 1){
     uart_puts("Rebooting ...\n");
     reset();
     while(1);
+  }
+  else if (str_cmp(cmd, "loadimg") == 1){
+    loadimg();
   }
   else{
     uart_puts("Command [");
@@ -53,13 +34,53 @@ void invoke_cmd(char *cmd){
   }
 }
 
+/*
+void show_mainf_addr(){
+  char hex_c[20];
+  void (*func_p)(char) = &main;
+  int_to_hex(func_p, hex_c);
+  uart_puts(hex_c);
+  uart_puts("\n");
+}
+*/
+
 int main(){
+  //relocate();
   uart_init();
   uart_puts("Hi!\n");
   uart_puts("Welcome to Eric's system ~\n");
-  uart_puts("(Lab1)\n");
+  uart_puts("(Bootloader)\n");
   uart_flush();
-  uart_puts("> ");
+  char hex_c[20];
+  /*
+  for (unsigned long i = 0; i<20; i++){
+    int_to_hex(i, hex_c);
+    uart_puts(hex_c);
+    uart_puts("\n");
+  }
+  
+  int_to_hex(&__stack_top, hex_c);
+  uart_puts(hex_c);
+  uart_puts("\n");
+  int_to_hex(&_begin, hex_c);
+  uart_puts(hex_c);
+  uart_puts("\n");
+  int_to_hex(&_end, hex_c);
+  uart_puts(hex_c);
+  uart_puts("\n");
+  uart_flush();
+  void (*func_p)(char) = &invoke_cmd;
+  int_to_hex(func_p, hex_c);
+  uart_puts(hex_c);
+  uart_puts("\n");
+  void * cpc = __builtin_return_address(0);
+  int_to_hex(cpc, hex_c);
+  uart_puts("Main pc = ");
+  uart_puts(hex_c);
+  uart_puts("\n");
+  //show_mainf_addr();
+  */
+
 
   char cmd[1000];
   cmd[0] = '\0';

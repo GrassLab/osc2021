@@ -1,36 +1,16 @@
 # include "uart.h"
 # include "utli.h"
+# include "cpio.h"
+# include "my_math.h"
+# include "my_string.h"
 
-//itoa
-void int_to_str(int n, char *s){
-  char tmp[100];
-  int idx = 0;
-  do{
-    tmp[idx] = (char)((n%10) + 48);
-    idx++;
-    n /= 10;
-  } while(n > 0);
-  for (int i=0; i<idx; i++){
-    s[i] = tmp[idx-i-1];
-  }
-  s[idx] = '\0';
-}
 
-//str compare
-int str_cmp(char *s1, char *s2){
-  int i = 0;
-  if (s1[0] == '\0' && s2[0] == '\0') return 1;
-  while(s1[i]){
-    if (s1[i] != s2[i]) return 0;
-    i++;
-  }
-
-  if (s2[i] == '\0') return 1;
-  return 0;
-}
 
 void invoke_cmd(char *cmd){
   if (cmd[0] == '\0') return;
+  char sub_cmd3[4];
+  for (int i=0;i<3;i++) sub_cmd3[i] = cmd[i];
+  sub_cmd3[3] = '\0';
   if (str_cmp(cmd, "hello") == 1){
     uart_puts("Hello World!\n");
   }
@@ -46,6 +26,14 @@ void invoke_cmd(char *cmd){
     reset();
     while(1);
   }
+  else if (str_cmp(cmd, "ls") == 1){
+    list();
+  }
+  else if (str_cmp(sub_cmd3, "cat") == 1){
+    char *cat_file_name = cmd+3;
+    while(cat_file_name[0] == ' ') cat_file_name++;
+    show_file(cat_file_name);
+  }
   else{
     uart_puts("Command [");
     uart_puts(cmd);
@@ -57,9 +45,8 @@ int main(){
   uart_init();
   uart_puts("Hi!\n");
   uart_puts("Welcome to Eric's system ~\n");
-  uart_puts("(Lab1)\n");
+  uart_puts("(Lab2)\n");
   uart_flush();
-  uart_puts("> ");
 
   char cmd[1000];
   cmd[0] = '\0';
