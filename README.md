@@ -4,24 +4,16 @@
 
 | 學號 | GitHub 帳號 | 姓名 | Email |
 | --- | ----------- | --- | --- |
-|`0856085`| `t0037799` | `林濬維` | jwlin.cs08g@nctu.edu.tw |
+|`0886003`| `ChristineShih` | `石涵琳` | ooxxooooxxooo@gmail.com |
 
 ## How to build
 
-**WIP**
+make
 
-## How to run
+## How to run (qemu)
 
-**WIP**
+make run 
 
 ## How to burn it into pi3
 
-**WIP**
-
-## Architecture
-
-**WIP**
-
-## Directory structure
-
-**WIP**
+manullay clone .img file into sd card 
