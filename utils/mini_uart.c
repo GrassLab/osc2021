@@ -36,8 +36,7 @@ void uart_putc(char c){
 
 char uart_getc(void){
     while(!(get32(AUX_MU_LSR_REG)&0x01));
-    char c = (char)get32(AUX_MU_IO_REG);
-    return c == '\r' ? '\n' : c;
+    return get32(AUX_MU_IO_REG);
 }
 
 void uart_puts(char* str){
