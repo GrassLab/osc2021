@@ -11,6 +11,8 @@ int buffer_pos;
 void cmd_help();
 void cmd_hello();
 void cmd_reboot();
+void cmd_loadimg();
+void read_image();
 void clear_buffer();
 void receive_cmd();
 void run_shell();
