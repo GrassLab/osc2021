@@ -4,18 +4,19 @@
 
 #include <Types.h>
 
+#define MMIO_BASE 0x3f000000
+
 namespace valkyrie::kernel::io {
 
 template <typename T>
-T read(const size_t src_addr) {
-  return *reinterpret_cast<const T*>(src_addr);
+T get(const size_t addr) {
+  return *reinterpret_cast<const T*>(addr);
 }
 
 template <typename T>
-void write(const size_t dest_addr, const T data) {
-  *reinterpret_cast<T*>(dest_addr) = data;
+void put(const size_t addr, const T data) {
+  *reinterpret_cast<T*>(addr) = data;
 }
-
 
 inline void delay(size_t cycles) {
   while (cycles--) {
@@ -25,4 +26,4 @@ inline void delay(size_t cycles) {
 
 }  // namespace valkyrie::kernel::io
 
-#endif  // VALKYRIE_MINI_UART_H_
+#endif  // VALKYRIE_IO_H_

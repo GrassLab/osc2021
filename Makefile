@@ -1,5 +1,5 @@
 CXX = aarch64-linux-gnu-g++
-CXXFLAGS = -Iinclude -Wall -ffreestanding -nostdinc -nostdlib -nostartfiles
+CXXFLAGS = -Iinclude -Wall -ffreestanding -nostdinc -nostdlib -nostartfiles -fno-threadsafe-statics
 
 LD = aarch64-linux-gnu-ld
 LDFLAGS = -T scripts/linker.ld
@@ -27,7 +27,7 @@ valkyrie:
 	$(OBJCOPY) $(OBJCOPYFLAGS) $(BUILD_DIR)/$(ELF) $(BUILD_DIR)/$(IMG)
 
 run-debug:
-	qemu-system-aarch64 -M raspi3\
+	qemu-system-aarch64 -M raspi3b\
 		-kernel $(BUILD_DIR)/$(IMG)\
 		-display none\
 		-serial null\
@@ -37,6 +37,7 @@ run-debug:
 run:
 	qemu-system-aarch64 -M raspi3\
 		-kernel $(BUILD_DIR)/$(IMG)\
+		-initrd initramfs.cpio\
 		-display none\
 		-serial null\
 		-serial stdio
@@ -47,4 +48,3 @@ gdb:
 clean:
 	find . -type f -iname "*.o" | xargs rm
 	rm -rf $(BUILD_DIR)
-

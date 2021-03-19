@@ -47,6 +47,7 @@
 // [2] https://s-matyukevich.github.io/raspberry-pi-os/docs/lesson01/rpi-os.html
 #include <MiniUART.h>
 
+#include <Console.h>
 #include <IO.h>
 #include <String.h>
 
@@ -54,41 +55,44 @@ namespace valkyrie::kernel {
 
 MiniUART::MiniUART() {
   // Configure GPFSEL1 register to set both gpio14 and gpio15 to use ALT5.
-  uint32_t reg = io::read<uint32_t>(GPFSEL1);
+  uint32_t reg = io::get<uint32_t>(GPFSEL1);
   reg &= ~(0b111 << 12);     // clear the 12~15th bits (gpio14)
   reg |= GPFSEL_ALT5 << 12;  // set ALT5 to 12~15th bits (gpio14)
   reg &= ~(0b111 << 15);     // clear the 15~18th bits (gpio15)
   reg |= GPFSEL_ALT5 << 15;  // set ALT5 to 15~18th bits (gpio15)
-  io::write<uint32_t>(GPFSEL1, reg);
+  io::put<uint32_t>(GPFSEL1, reg);
 
   // Disable GPIO PUD (Pull-Up/Down) by configuring PUD register.
-  io::write(GPPUD, PUD_DISABLED);               // disable PUD
-  io::delay(150);                               // `nop` 150 times
-  io::write(GPPUDCLK0, (1 << 14) | (1 << 15));  // set GPPUDCLK0
-  io::delay(150);                               // `nop` 150 times
-  io::write(GPPUD, PUD_DISABLED);               // remove the control signal
-  io::write(GPPUDCLK0, 0);                      // remove the clock
+  io::put<uint32_t>(GPPUD, PUD_DISABLED);               // disable PUD
+  io::delay(150);                                       // `nop` 150 times
+  io::put<uint32_t>(GPPUDCLK0, (1 << 14) | (1 << 15));  // set GPPUDCLK0
+  io::delay(150);                                       // `nop` 150 times
+  io::put<uint32_t>(GPPUD, PUD_DISABLED);               // remove the control signal
+  io::put<uint32_t>(GPPUDCLK0, 0);                      // remove the clock
 
   // Enable mini UART.
-  io::write(AUX_ENABLES, 1);        // enable mini UART and access to mini UART registers
-  io::write(AUX_MU_CNTL_REG, 0);    // disable tx and rx during configuration
-  io::write(AUX_MU_IER_REG, 0);     // disable interrupts
-  io::write(AUX_MU_LCR_REG, 3);     // sets the data size to 8 bit
-  io::write(AUX_MU_MCR_REG, 0);     // disable auto flow control
-  io::write(AUX_MU_BAUD_REG, 270);  // set baud rate to 115200
-  io::write(AUX_MU_IIR_REG, 6);     // no FIFO
-  io::write(AUX_MU_CNTL_REG, 3);    // re-enable tx and rx
+  io::put<uint32_t>(AUX_ENABLES, 1);        // enable mini UART and access to mini UART registers
+  io::put<uint32_t>(AUX_MU_CNTL_REG, 0);    // disable tx and rx during configuration
+  io::put<uint32_t>(AUX_MU_IER_REG, 0);     // disable interrupts
+  io::put<uint32_t>(AUX_MU_LCR_REG, 3);     // sets the data size to 8 bit
+  io::put<uint32_t>(AUX_MU_MCR_REG, 0);     // disable auto flow control
+  io::put<uint32_t>(AUX_MU_BAUD_REG, 270);  // set baud rate to 115200
+  io::put<uint32_t>(AUX_MU_IIR_REG, 6);     // no FIFO
+  io::put<uint32_t>(AUX_MU_CNTL_REG, 3);    // re-enable tx and rx
+
+  // Register MiniUART as the driver for console.
+  console::initialize(this);
 }
 
 
 uint8_t MiniUART::recv() {
-  while (!(io::read<uint32_t>(AUX_MU_LSR_REG) & 1));
-  return io::read<uint8_t>(AUX_MU_IO_REG);
+  while (!(io::get<uint32_t>(AUX_MU_LSR_REG) & 1));
+  return io::get<uint8_t>(AUX_MU_IO_REG);
 }
 
 void MiniUART::send(const uint8_t byte) {
-  while (!(io::read<uint32_t>(AUX_MU_LSR_REG) & 0x20));
-  io::write(AUX_MU_IO_REG, byte);
+  while (!(io::get<uint32_t>(AUX_MU_LSR_REG) & 0x20));
+  io::put<uint8_t>(AUX_MU_IO_REG, byte);
 }
 
 
@@ -110,16 +114,32 @@ void MiniUART::putchar(const char c) {
 
 
 void MiniUART::gets(char* s) {
+  const char* const begin = s;
   char c;
-  while ((c = getchar()) != '\n') *s++ = c;
+
+  while ((c = getchar()) != '\n') {
+    if (c == 0x7f) {  // is backspace
+      if (s > begin) {
+        *s-- = 0;
+        putchar('\b');
+        putchar(' ');
+        putchar('\b');
+      }
+    } else {
+      *s++ = c;
+    }
+  }
+
   *s = 0;
 }
 
-void MiniUART::puts(const char* s) {
+void MiniUART::puts(const char* s, bool newline) {
   for (size_t i = 0; i < strlen(s); i++) {
     putchar(s[i]);
   }
-  putchar('\n');
+  if (newline) {
+    putchar('\n');
+  }
 }
 
 }  // namespace valkyrie::kernel

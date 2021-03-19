@@ -1,21 +1,19 @@
-ENTRY(__kernel_loader)
-
-SECTIONS
-{
+SECTIONS {
   . = 0x80000;
 
-  .text :
-  {
+  .text ALIGN(0x10) : {
     *(.text)
   }
 
-  .data :
-  {
+  .data ALIGN(0x10) : {
+    start_ctors = .;
+    KEEP(*( .init_array ));
+    KEEP(*(SORT_BY_INIT_PRIORITY( .init_array.* )));
+    end_ctors = .;
     *(.data)
   }
 
-  .bss  :
-  {
+  .bss ALIGN(0x10) : {
     _bss_start = .;
     *(.bss)
     _bss_end = .;

@@ -1,88 +1,64 @@
 // Copyright (c) 2021 Marco Wang <m.aesophor@gmail.com>. All rights reserved.
 #include <Kernel.h>
 
-#include <IO.h>
-#include <String.h>
+#include <Console.h>
+#include <Shell.h>
+#include <Task.h>
 
-#define PM_PASSWORD 0x5a000000
-#define PM_RSTC 0x3F10001c
-#define PM_WDOG 0x3F100024
+extern "C" [[noreturn]] void _halt(void);
 
 namespace valkyrie::kernel {
 
-Kernel::Kernel() : _mini_uart() {}
+Kernel* Kernel::get_instance() {
+  static Kernel instance;
+  return &instance;
+}
+
+Kernel::Kernel()
+    : _mini_uart(),
+      _mailbox(),
+      _initrd_cpio(reinterpret_cast<const char*>(CPIO_BASE)),
+      _exception_manager(*ExceptionManager::get_instance()) {
+  printk("starting valkyrie OS...\n");
+  print_hardware_info();
+
+  printk("parsing cpio archive at 0x%x\n", CPIO_BASE);
+  _initrd_cpio.parse();
+
+  //printk("switching to EL1...\n");
+  //_exception_manager.switch_to_exception_level(1);
+  //_exception_manager.enable_irqs();
+}
 
 
 void Kernel::run() {
-  puts("Valkyrie Operating System");
-  puts("=========================");
-
+  //printk("switching to EL0... (≧▽ ≦) \n");
+  //_exception_manager.switch_to_exception_level(0, /*new_sp=*/0x20000);
+  //asm volatile("mov sp, %0" :: "r" (0x20000));
 
   // Lab1 SimpleShell
-  char buf[256];
-
-  while (true) {
-    memset(buf, 0, sizeof(buf));
-    putchar('$');
-    putchar(' ');
-    gets(buf);
-    puts(buf);
-
-    if (!strcmp(buf, "help")) {
-      puts("usage:");
-      puts("help   - Print all available commands");
-      puts("hello  - Print Hello World!");
-      puts("reboot - Reboot machine");
-    } else if (!strcmp(buf, "hello")) {
-      puts("Hello World!");
-    } else if (!strcmp(buf, "reboot")) {
-      puts("Rebooting...");
-      reboot();
-    } else {
-      puts("command not found");
-    }
-  }
-
-  puts("bye...");
-  while (1);
+  Shell shell;
+  shell.run();
 }
 
-void Kernel::reboot() {
-  reset(100);
+void Kernel::panic(const char* msg) {
+  printk("Kernel panic: %s\n", msg);
+  printk("---[ end Kernel panic: %s\n", msg);
+  _halt();
+}
+
+void Kernel::print_hardware_info() {
+  auto board_revision = _mailbox.get_board_revision();
+  printk("board revision: 0x%x\n", board_revision);
+
+  auto vc_memory_info = _mailbox.get_vc_memory();
+  printk("VC core base address: 0x%x\n", vc_memory_info.first);
+  printk("VC core size: 0x%x\n", vc_memory_info.second);
 }
 
 
-void Kernel::gets(char* s) {
-  _mini_uart.gets(s);
-}
-
-void Kernel::puts(const char* s) {
-  _mini_uart.puts(s);
-}
-
-void Kernel::putchar(const char c) {
-  _mini_uart.putchar(c);
-}
-
-
-void Kernel::reset(int tick) {  // reboot after watchdog timer expire
-  io::write(PM_RSTC, PM_PASSWORD | 0x20);  // full reset
-  io::write(PM_WDOG, PM_PASSWORD | tick);  // number of watchdog tick
-}
-
-void Kernel::cancel_reset() {
-  io::write(PM_RSTC, PM_PASSWORD | 0);  // full reset
-  io::write(PM_WDOG, PM_PASSWORD | 0);  // number of watchdog tick
-}
-
-
-extern "C" void kmain(char* bss_start, char* bss_end) {
-  // Initialize bss segment to 0
-  valkyrie::kernel::memset(bss_start, 0, bss_end - bss_start);
-  
-  // Run the kernel
-  valkyrie::kernel::Kernel kernel;
-  kernel.run();
+ExceptionManager* Kernel::get_exception_manager() {
+  return &_exception_manager;
 }
 
 }  // namespace valkyrie::kernel
