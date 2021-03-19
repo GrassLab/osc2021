@@ -6,39 +6,32 @@
 | -----------| -------------- | ----- | --------------------------- |
 | 309551054  | Brothre23      | 于兆良 | daveyu824.cs09g@nctu.edu.tw |
 
-## Files
+## How To Run
 
-| File          | Content                               |
-| --------------| --------------------------------------|
-| command.c(.h) | dealing with different shell commands |
-| gpio.c        | some gpio config                      |
-| main.c        | main program                          |
-| math.c(.h)    | replica of the standard math.h        |
-| shell.c(.h)   | controlling the shell behavior        |
-| string.c(.h)  | replica of the standard string.h      |
-| start.S       | setting up the booting process        |
-| uart.c(.h)    | uart opertaion                        |
-| link.ld       | linker script                         |
+- Build Kernel
 
-## Build
+ ~~~shell
+ cd Kernel
+ make
+ cd ..
+ ~~~
 
-```bash
-make
-```
+- Build Bootloader & Deploy to Raspberry Pi
 
-## Run on QEMU
+ ~~~shell
+ cd loader
+ make
+ make deploy
+ cd ..
+ ~~~
 
-```bash
-make run
-```
+- Send Kernel
 
-## Deploy to Pi 3
-
-```bash
-make deploy
-```
-
-(Remember to change the mounting point.)
+ ~~~shell
+ sudo python writer.py
+ ~~~
+  
+ (Remember to run as sudo, or you will get an error.)
 
 ## Simple Shell
 
@@ -48,3 +41,52 @@ make deploy
 | help      | print all available commands  |
 | timestamp | print current timestamp       |
 | reboot    | reset rpi3                    |
+| cpio      | read initramfs.cpio           |
+
+## Directory Structure
+
+~~~shell
+├── LICENSE
+├── README.md
+├── initramfs.cpio
+├── kernel
+│   ├── Makefile
+│   ├── build
+│   ├── include
+│   │   ├── command.h
+│   │   ├── cpio.h
+│   │   ├── gpio.h
+│   │   ├── math.h
+│   │   ├── printf.h
+│   │   ├── shell.h
+│   │   ├── string.h
+│   │   └── uart.h
+│   ├── link.ld
+│   ├── src
+│   │   ├── command.c
+│   │   ├── cpio.c
+│   │   ├── main.c
+│   │   ├── math.c
+│   │   ├── printf.c
+│   │   ├── shell.c
+│   │   ├── string.c
+│   │   └── uart.c
+│   └── start.S
+├── loader
+│   ├── Makefile
+│   ├── build
+│   ├── include
+│   │   ├── gpio.h
+│   │   ├── math.h
+│   │   ├── printf.h
+│   │   └── uart.h
+│   ├── link.ld
+│   └── src
+│       ├── main.c
+│       ├── math.c
+│       ├── printf.c
+│       ├── start.S
+│       └── uart.c
+└── writer.py
+
+~~~
