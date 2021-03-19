@@ -1,11 +1,7 @@
 
 help
-hello
 loadimg
+0x80000
+../lab2/kernel8.img
+help
 123
-help
-help
-help
-help
-help
-reboot

@@ -21,7 +21,7 @@ _start:
 4:
 
 //stack init
-	ldr x1, =_start
+	ldr x1, =__stk_start
 	mov sp, x1
 
 //jump to main
