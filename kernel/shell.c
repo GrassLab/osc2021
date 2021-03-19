@@ -34,27 +34,50 @@ void CommandController(enum SPECIAL_CHARACTER input_parse, char c, char buffer[]
         if ((*counter) > 0)
 		(*counter)--;
 	
-	uart_send(c);
+	uart_send((char)8); // BACK_CHAR
 	uart_send(' ');
-	uart_send(c);
+	uart_send((char)8);
     }
     else if (input_parse == NEW_LINE)
     {
-        uart_send(c);
-
-        if (*counter == MAX_BUFFER_LEN)
+        uart_puts("\n");
+        
+	if (*counter == MAX_BUFFER_LEN)
         {
             InputBufferOverflowMessage(buffer);
         }
         else
         {
-            buffer[(*counter)] = '\0';
+            buffer[(*counter)] = '\0';	
 
-            if      (!strcmp(buffer, "help"     )) CommandHelp();
-	    else if (!strcmp(buffer, "hello"    )) CommandHello();
-	    else if (!strcmp(buffer, "timestamp")) CommandTimestamp();
-	    else if (!strcmp(buffer, "reboot"   )) CommandReboot();
-	    else                                   CommandNotFound(buffer);
+	    int count = 0;
+	    char command[50] = "", arg[50] = "";
+            for (int i = 0; i < strlen(buffer) && i < 30 - 1; ++i)
+	    {
+	        if (buffer[i] == ' ' && count == 0)
+		{
+		    command[i] = '\0';
+		    count = i + 1;
+		}
+		else if (count != 0)
+		{
+		    arg[i - count] = buffer[i];
+		    arg[i - count + 1] = '\0';
+		}
+		else
+		{
+		    command[i] = buffer[i];
+		    command[i + 1] = '\0';
+		}
+	    }
+
+            if      (!strcmp(buffer,  "help"     )) CommandHelp();
+	    else if (!strcmp(buffer,  "hello"    )) CommandHello();
+	    else if (!strcmp(buffer,  "ls"       )) CommandCpiols();
+	    else if (!strcmp(buffer,  "timestamp")) CommandTimestamp();
+	    else if (!strcmp(buffer,  "reboot"   )) CommandReboot();
+	    else if (!strcmp(command, "cat"      )) CommandCpiocat(arg); 
+	    else                                    CommandNotFound(buffer);
 	}
 
 	(*counter) = 0;
