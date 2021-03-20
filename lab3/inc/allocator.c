@@ -11,21 +11,11 @@
 //A_SIZE=0.2G
 
 static int frame_table[F_NUM*2]={0,1,};
+static unsigned long addr_table[F_NUM*2];
+static int index_table[F_NUM];
 
 unsigned long toAddr(int i){//id!=0
-	unsigned long ret=A_BASE;
-	int msb=31;
-	while(1){
-		if(i&(1<<msb))break;
-		msb--;
-	}
-	unsigned long cur_size=A_SIZE;
-	for(int cur_pos=msb-1;cur_pos>=0;--cur_pos){
-		cur_size/=2;
-		if(i&(1<<cur_pos)){//right tree
-			ret+=cur_size;
-		}
-	}
+	unsigned long ret=addr_table[i];
 	#if debug
 		uart_printf("[0x%x] => (0x%x)\n",i,ret);
 	#endif
@@ -33,17 +23,7 @@ unsigned long toAddr(int i){//id!=0
 }
 
 int toIndex(unsigned long addr){
-	int ret=1;
-	unsigned long offset=addr-A_BASE,cur_size=A_SIZE;
-	while(offset){
-		cur_size/=2;
-		if(offset<cur_size){//left tree
-			ret*=2;
-		}else{//right tree
-			ret=ret*2+1;
-			offset-=cur_size;
-		}
-	}
+	int ret=index_table[(addr-A_BASE)/F_SIZE];
 	#if debug
 		uart_printf("(0x%x) => [0x%x]\n",addr,ret);
 	#endif
@@ -80,19 +60,21 @@ int getFrame(int i,int tar_size,int cur_size){
 	return getFrame(i*2,tar_size,cur_size/2);
 }
 
-int findFrame(int i,int tar_size,int cur_size){
+int findFrame(int i,int tar_size,int cur_size,int offset){
 	if(cur_size<F_SIZE||tar_size>cur_size)return 0;
 	if(frame_table[i]){
 		//do some cutting
 		i=getFrame(i,tar_size,cur_size);
+		addr_table[i]=A_BASE+offset;
+		index_table[(addr_table[i]-A_BASE)/F_SIZE]=i;
 		#if debug
 		uart_printf("[0x%x] has been allocated.\n",i);
 		#endif
 		return i;
 	}
-	int ret=findFrame(i*2,tar_size,cur_size/2);//left tree
+	int ret=findFrame(i*2,tar_size,cur_size/2,offset);//left tree
 	if(ret)return ret;
-	return findFrame(i*2+1,tar_size,cur_size/2);//right tree
+	return findFrame(i*2+1,tar_size,cur_size/2,offset+cur_size/2);//right tree
 }
 
 void* falloc(int size){//raspi 3 b+ have 1G RAM
@@ -108,7 +90,7 @@ void* falloc(int size){//raspi 3 b+ have 1G RAM
 	reclaimFrame(id4);
 	reclaimFrame(id2);
 	reclaimFrame(id3);*/
-	return (void*)toAddr(findFrame(1,size,A_SIZE));
+	return (void*)toAddr(findFrame(1,size,A_SIZE,0));
 }
 
 void ffree(unsigned long addr){
