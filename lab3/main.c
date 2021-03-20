@@ -2,6 +2,7 @@
 #include "inc/reboot.h"
 #include "inc/mailbox.h"
 #include "inc/cpio.h"
+#include "inc/allocator.h"
 
 #define min(a,b) ((a)<(b)?(a):(b))
 
@@ -111,6 +112,8 @@ void shell(){
 			loadImg();
 		}else if(strcmp(buffer,"archive")==0){
 			dumpArchive();
+		}else if(strcmp(buffer,"falloc")==0){
+			falloc(87);
 		}else{
 			uart_puts("Error: No such command \"");
 			uart_puts(buffer);
