@@ -53,7 +53,7 @@ if __name__=='__main__':
 			k_addr=getLine(f)
 			kernel=getLine(f)
 			dumpImg(dev,k_addr=k_addr[:-1],kernel=kernel[:-1])
-		elif cmd=='archive\n':
+		elif cmd=='archive\n' or cmd=='falloc\n' or cmd=='ffree\n':
 			waitFor(': ',dev)
 			name=getLine(f)
 			dev.write(str.encode(name))

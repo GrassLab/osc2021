@@ -23,8 +23,8 @@ start.o:start.S
 
 run:
 	make all
-	qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial stdio -initrd ./archive/initramfs.cpio
-	#qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial pty -initrd ./archive/initramfs.cpio
+	#qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial stdio -initrd ./archive/initramfs.cpio
+	qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial pty -initrd ./archive/initramfs.cpio
 
 onboard:
 	sudo screen /dev/ttyUSB0 115200

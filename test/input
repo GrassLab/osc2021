@@ -1,7 +1,19 @@
 
 help
-loadimg
-0x80000
-../lab2/kernel8.img
-help
-123
+falloc
+0x1000
+falloc
+0x1000
+falloc
+0x1000
+falloc
+0x1000
+ffree
+0x10000000
+ffree
+0x10003000
+ffree
+0x10002000
+ffree
+0x10001000
+
