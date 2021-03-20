@@ -103,6 +103,8 @@ void shell(){
 			uart_puts("          reboot\n");
 			uart_puts("          loadimg\n");
 			uart_puts("          archive\n");
+			uart_puts("          falloc\n");
+			uart_puts("          ffree\n");
 		}else if(strcmp(buffer,"hello")==0){
 			uart_puts("Hello World!\n");
 		}else if(strcmp(buffer,"reboot")==0){
@@ -113,7 +115,13 @@ void shell(){
 		}else if(strcmp(buffer,"archive")==0){
 			dumpArchive();
 		}else if(strcmp(buffer,"falloc")==0){
-			falloc(87);
+			uart_printf("Size(Hex): ");
+			unsigned long ret=uart_getX(1);
+			falloc(ret);
+		}else if(strcmp(buffer,"ffree")==0){
+			uart_printf("Address(Hex): ");
+			unsigned long ret=uart_getX(1);
+			ffree(ret);
 		}else{
 			uart_puts("Error: No such command \"");
 			uart_puts(buffer);

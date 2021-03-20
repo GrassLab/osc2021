@@ -74,6 +74,24 @@ unsigned char uart_getb(){//for data transfer
 	return r;
 }
 
+unsigned long uart_getX(int display){
+	unsigned long ret=0;
+	char c;
+	while(1){
+		c=uart_getc();
+		if(display)uart_send(c);
+		if(c=='\n')break;
+		if(c>='0'&&c<='9'){
+			ret=ret*16+c-'0';
+		}else if(c>='a'&&c<='f'){
+			ret=ret*16+c-'a'+10;
+		}else if(c>='A'&&c<='F'){
+			ret=ret*16+c-'A'+10;
+		}
+	}
+	return ret;
+}
+
 void uart_puts(char *s){
 	while(*s){
 		uart_send(*s);
