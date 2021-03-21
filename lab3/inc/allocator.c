@@ -8,91 +8,156 @@
 #define A_SIZE 0x10000000
 #define F_SIZE (1<<12)
 #define F_NUM (A_SIZE/F_SIZE)
+#define TLEVEL 20
 //A_SIZE=0.2G
 
-static int frame_table[F_NUM*2]={0,1,};
-static unsigned long addr_table[F_NUM*2];
-static int index_table[F_NUM];
+typedef struct{
+	int beg,end;
+	int data[F_NUM+1];//+1 for end
+}List;
 
-unsigned long toAddr(int i){//id!=0
-	unsigned long ret=addr_table[i];
+int listInsert(List* l,int v){
+	int ret=l->end;
+	l->data[ret]=v;
+	l->end=(l->end+1)%(F_NUM+1);
+	return ret;//insert position
+}
+
+int listGet(List* l,int i){
+	int ret=l->data[i];
+	l->data[i]=l->data[l->beg];
+	l->beg=(l->beg+1)%(F_NUM+1);
+	return ret;//item value
+}
+
+static List lists[TLEVEL];
+static int frame_table[F_NUM*2];//record position of list
+static unsigned long i2addr[F_NUM*2];
+static int addr2i[F_NUM];
+
+int __lg(int v){
+	int ret=-1;
+	while(v){
+		++ret;
+		v>>=1;
+	}
+	return ret;
+}
+
+unsigned long __toAddr(int i){//id!=0
+	int root=31;
+	while(1){
+		if(i&(1<<root)){
+			--root;
+			break;
+		}
+		--root;
+	}
+	unsigned long ret=0;
+	unsigned long delta=A_SIZE/2;
+	while(root>=0){
+		if(i&(1<<root))ret+=delta;
+		--root;
+		delta/=2;
+	}
+	return ret+A_BASE;
+}
+
+unsigned long toAddr(int i){
+	unsigned long ret=i2addr[i];
+
 	#if debug
-		uart_printf("[0x%x] => (0x%x)\n",i,ret);
+	uart_printf("[0x%x] => (0x%x)\n",i,ret);
 	#endif
+
 	return ret;
 }
 
 int toIndex(unsigned long addr){
-	int ret=index_table[(addr-A_BASE)/F_SIZE];
+	int ret=addr2i[(addr-A_BASE)/F_SIZE];
+
 	#if debug
-		uart_printf("(0x%x) => [0x%x]\n",addr,ret);
+	uart_printf("(0x%x) => [0x%x]\n",addr,ret);
 	#endif
+
 	return ret;
 }
 
 void reclaimFrame(int i){
-	frame_table[i]=1;
-	int p=i;
-	while(p/2){
-		p=p/2;
-		if(frame_table[p*2]&&frame_table[p*2+1]){
-			frame_table[p*2]=frame_table[p*2+1]=0;
-			frame_table[p]=1;
-			#if debug
-			uart_printf("-[0x%x]&[0x%x] is merged to [0x%x].\n",p*2,p*2+1,p);
-			#endif
-		}else{
-			break;
-		}
-	}
 	#if debug
 	uart_printf("[0x%x] has been freed.\n",i);
 	#endif
+
+	int p=i;
+	int level=__lg(p);
+	while(frame_table[p^1]>=0){
+		listGet(&lists[level],frame_table[p^1]);
+		frame_table[p^1]=-1;
+
+		#if debug
+		uart_printf("-[0x%x]&[0x%x] is merged to [0x%x].\n",p,p^1,p/2);
+		#endif
+
+		p=p/2;
+		--level;
+	}
+
+	frame_table[p]=listInsert(&lists[level],p);
 }
 
 int getFrame(int i,int tar_size,int cur_size){
-	frame_table[i]=0;
-	if(cur_size==F_SIZE||tar_size*2>cur_size)return i;
-	frame_table[i*2]=frame_table[i*2+1]=1;
-	#if debug
-	uart_printf("-[0x%x] is partitioned to [0x%x]&[0x%x].\n",i,i*2,i*2+1);
-	#endif
-	return getFrame(i*2,tar_size,cur_size/2);
+	int level=__lg(i);
+	while(1){
+		if(cur_size==F_SIZE||tar_size*2>cur_size)return i;
+		frame_table[i*2+1]=listInsert(&lists[level+1],i*2+1);
+
+		i*=2;
+		cur_size/=2;
+		level++;
+
+		#if debug
+		uart_printf("-[0x%x] is partitioned to [0x%x]&[0x%x].\n",i/2,i,i^1);
+		#endif
+	}
 }
 
-int findFrame(int i,int tar_size,int cur_size,int offset){
-	if(cur_size<F_SIZE||tar_size>cur_size)return 0;
-	if(frame_table[i]){
-		//do some cutting
-		i=getFrame(i,tar_size,cur_size);
-		addr_table[i]=A_BASE+offset;
-		index_table[(addr_table[i]-A_BASE)/F_SIZE]=i;
-		#if debug
-		uart_printf("[0x%x] has been allocated.\n",i);
-		#endif
-		return i;
+int findFrame(int tar_size){
+	for(int i=TLEVEL-1;i>=0;--i){
+		int cur_size=A_SIZE>>i;
+		int beg=lists[i].beg;
+		int end=lists[i].end;
+		if(cur_size>=F_SIZE&&cur_size>=tar_size&&beg!=end){
+			int ret=listGet(&lists[i],beg);
+			frame_table[ret]=-1;
+
+			ret=getFrame(ret,tar_size,cur_size);
+			i2addr[ret]=__toAddr(ret);
+			addr2i[(i2addr[ret]-A_BASE)/F_SIZE]=ret;
+
+			#if debug
+			uart_printf("[0x%x] has been allocated.\n",ret);
+			#endif
+
+			return ret;
+		}
 	}
-	int ret=findFrame(i*2,tar_size,cur_size/2,offset);//left tree
-	if(ret)return ret;
-	return findFrame(i*2+1,tar_size,cur_size/2,offset+cur_size/2);//right tree
+
+	#if debug
+	uart_printf("Can't find a proper space.\n");
+	#endif
+	return 0;
 }
 
 void* falloc(int size){//raspi 3 b+ have 1G RAM
-	/*int id1=findFrame(1,A_SIZE/4,A_SIZE);
-	toIndex(toAddr(id1));
-	int id2=findFrame(1,A_SIZE/4,A_SIZE);
-	toIndex(toAddr(id2));
-	int id3=findFrame(1,A_SIZE/4,A_SIZE);
-	toIndex(toAddr(id3));
-	int id4=findFrame(1,A_SIZE/4,A_SIZE);
-	toIndex(toAddr(id4));
-	reclaimFrame(id1);
-	reclaimFrame(id4);
-	reclaimFrame(id2);
-	reclaimFrame(id3);*/
-	return (void*)toAddr(findFrame(1,size,A_SIZE,0));
+	return (void*)toAddr(findFrame(size));
 }
 
 void ffree(unsigned long addr){
 	reclaimFrame(toIndex(addr));
+}
+
+void allocator_init(){
+	frame_table[0]=-1;
+	frame_table[1]=listInsert(&lists[0],1);
+	for(int i=2;i<F_NUM*2;++i)frame_table[i]=-1;
 }

@@ -17,3 +17,19 @@ ffree
 ffree
 0x10001000
 
+falloc
+0x1000
+falloc
+0x1000
+falloc
+0x1000
+falloc
+0x1000
+ffree
+0x10000000
+ffree
+0x10001000
+ffree
+0x10002000
+falloc
+0x1000
