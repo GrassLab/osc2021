@@ -165,19 +165,16 @@ typedef struct _Pool{
 }Pool;
 
 int reclaimChunk(Pool* pool,unsigned long addr){
-	while(pool){
-		unsigned long tmp=(unsigned long)pool;
-		if(addr>=tmp&&addr<tmp+F_SIZE){
-			int index=(addr-tmp-sizeof(Pool))/pool->size;
-			pool->mask[index/64]^=1<<(index%64);
+	unsigned long tmp=(unsigned long)pool;
+	if(addr>=tmp&&addr<tmp+F_SIZE){
+		int index=(addr-tmp-sizeof(Pool))/pool->size;
+		pool->mask[index/64]^=1<<(index%64);
 
-			#if debug
-			uart_printf("(0x%x) has been freed.\n",addr);
-			#endif
+		#if debug
+		uart_printf("(0x%x) has been freed.\n",addr);
+		#endif
 
-			return 1;
-		}
-		pool=pool->next;
+		return 1;
 	}
 	return 0;
 }
@@ -198,6 +195,8 @@ void* findChunk(Pool* pool){
 				#endif
 
 				return (void*)ret;
+			}else{
+				break;
 			}
 		}
 	}
@@ -228,9 +227,7 @@ void* dalloc(int size){
 
 void dfree(unsigned long addr){
 	if((addr-A_BASE)%F_SIZE){
-		for(int i=0;i<4;++i){
-			if(reclaimChunk(pools[i],addr))break;
-		}
+		reclaimChunk((Pool*)(addr-(addr-A_BASE)%F_SIZE),addr);
 	}else{
 		ffree(addr);
 	}
