@@ -156,8 +156,100 @@ void ffree(unsigned long addr){
 	reclaimFrame(toIndex(addr));
 }
 
+/*------------------------------------------*/
+
+typedef struct _Pool{
+	int size;
+	struct _Pool* next;
+	long mask[4];
+}Pool;
+
+int reclaimChunk(Pool* pool,unsigned long addr){
+	while(pool){
+		unsigned long tmp=(unsigned long)pool;
+		if(addr>=tmp&&addr<tmp+F_SIZE){
+			int index=(addr-tmp-sizeof(Pool))/pool->size;
+			pool->mask[index/64]^=1<<(index%64);
+
+			#if debug
+			uart_printf("(0x%x) has been freed.\n",addr);
+			#endif
+
+			return 1;
+		}
+		pool=pool->next;
+	}
+	return 0;
+}
+
+void* findChunk(Pool* pool){
+	for(int i=0;i<4;++i){
+		long mask=pool->mask[i];
+		long lowbit=mask&-mask;
+		if(lowbit){//exist space
+			long offset=0;
+			for(int j=0;((1<<j)&lowbit)==0;++j)offset+=1;
+			if(sizeof(Pool)+(64*i+offset+1)*pool->size <= F_SIZE){//not exeed current frame
+				pool->mask[i]^=1<<offset;
+				unsigned long ret=(unsigned long)(pool+1)+(64*i+offset)*pool->size;
+
+				#if debug
+				uart_printf("(0x%x) has been allocated.\n",ret);
+				#endif
+
+				return (void*)ret;
+			}
+		}
+	}
+
+	//no space
+	if(!pool->next){
+		Pool* tmp=(Pool*)falloc(F_SIZE);
+		tmp->size=pool->size;
+		tmp->next=0;
+		for(int i=0;i<4;++i){
+			tmp->mask[i]=-1;
+		}
+		pool->next=tmp;
+	}
+	return findChunk(pool->next);
+}
+
+Pool* pools[4];//12, 32, 48, ...
+
+void* dalloc(int size){
+	for(int i=0;i<4;++i){
+		if(size<=pools[i]->size){
+			return findChunk(pools[i]);
+		}
+	}
+	return falloc(size);
+}
+
+void dfree(unsigned long addr){
+	if((addr-A_BASE)%F_SIZE){
+		for(int i=0;i<4;++i){
+			if(reclaimChunk(pools[i],addr))break;
+		}
+	}else{
+		ffree(addr);
+	}
+}
+
+/*------------------------------------------*/
+
 void allocator_init(){
 	frame_table[0]=-1;
 	frame_table[1]=listInsert(&lists[0],1);
 	for(int i=2;i<F_NUM*2;++i)frame_table[i]=-1;
+
+	int chunk_size[4]={12,32,48,1024};
+	for(int i=0;i<4;++i){
+		pools[i]=(Pool*)falloc(F_SIZE);
+		pools[i]->size=chunk_size[i];
+		pools[i]->next=0;
+		for(int j=0;j<4;++j){
+			pools[i]->mask[j]=-1;
+		}
+	}
 }

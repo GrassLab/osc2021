@@ -122,6 +122,14 @@ void shell(){
 			uart_printf("Address(Hex): ");
 			unsigned long ret=uart_getX(1);
 			ffree(ret);
+		}else if(strcmp(buffer,"dalloc")==0){
+			uart_printf("Size(Hex): ");
+			unsigned long ret=uart_getX(1);
+			dalloc(ret);
+		}else if(strcmp(buffer,"dfree")==0){
+			uart_printf("Address(Hex): ");
+			unsigned long ret=uart_getX(1);
+			dfree(ret);
 		}else{
 			uart_puts("Error: No such command \"");
 			uart_puts(buffer);
