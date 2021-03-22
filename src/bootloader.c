@@ -1,6 +1,6 @@
+#include "bl_util.h"
 #include "io.h"
 #include "uart.h"
-#include "bl_util.h"
 
 void recv_section() {
   uart_put_raw('S');
@@ -11,16 +11,16 @@ void recv_section() {
   unsigned char checksum = 0;
 
   if (section_type == 'A') {
-    for (unsigned int i = 0; i < section_size; i++) {
+    for (unsigned long i = 0; i < section_size; i++) {
       *section_addr++ = 0;
     }
   } else if (section_type == 'D') {
-    for (unsigned int i = 0; i < section_size; i++) {
+    for (unsigned long i = 0; i < section_size; i++) {
       *section_addr = uart_get_raw();
       checksum ^= *section_addr++;
     }
   } else {
-    system_error("recv control failed");
+    sys_error("recv control failed");
   }
 
   uart_put_raw(checksum);
@@ -42,14 +42,14 @@ void *recv_kernel() {
 
   // recv kernel entry point
   if (recv_status != 'K') {
-    system_error("recv control failed");
+    sys_error("recv control failed");
   }
 
   kernel = (void *)recv_ll();
 
   // end transmission
   if (uart_get_raw() != 'E') {
-    system_error("recv control failed");
+    sys_error("recv control failed");
   }
 
   return kernel;

@@ -1,12 +1,14 @@
 SECTIONS
 {
     . = 0x80000;
+    kn_start = .;
+
     .text : { *(.text .text.*) }
 
     . = ALIGN(4096);
     .rodata : { *(.rodata .rodata.*) }
 
-    . = ALIGN(4096);
+    . = ALIGN(16);
     PROVIDE(_data = .);
     .data : { *(.data .data.*) }
 
@@ -15,6 +17,9 @@ SECTIONS
         *(.bss .bss.*)
         *(COMMON)
     }
+
+    . = ALIGN(4096);
+    kn_end = .;
 
    /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
 }
