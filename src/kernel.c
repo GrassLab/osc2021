@@ -54,12 +54,12 @@ void kernel() {
   // init_heap((void *)INIT_HEAP_START, INIT_HEAP_SIZE);
   init_buddy((char *)(&kn_end));
 
-  kfree((void *)0x3f000000);
-  kfree((void *)0x0);
-  kfree((void *)0x60000);
-  kfree((void *)(&kn_start));
-  kfree((void *)(&kn_end));
-  log_buddy();
+  // kfree((void *)0x3f000000);
+  // kfree((void *)0x0);
+  // kfree((void *)0x60000);
+  // kfree((void *)(&kn_start));
+  // kfree((void *)(&kn_end));
+  // log_buddy();
 
   // init_rootfs(new_ramfs());
 

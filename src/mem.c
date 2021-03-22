@@ -229,9 +229,41 @@ void init_buddy(char *stat_ptr) {
 //   setprevfree(nextchunk(chunk_start));
 // }
 
+
 void *alloc_page(size_t size) {
+  log("alloc page: ");
+  log_hex(size);
+  log("\n");
   size = pad(size, PAGE_SIZE);
-  return NULL;
+  size_t target_ord = 51 - __builtin_clzl(size);
+  if((((1 << (target_ord + 12)) - 1) & size) != 0) {
+    target_ord++;
+  }
+
+  size_t find_ord = target_ord;
+  while(list_empty(&bs.free_list[find_ord])) {
+    find_ord++;
+    if(find_ord >= BUDDY_MAX) {
+      log("out of memory\n");
+      return NULL;
+    }
+  }
+  void *new_chunk = (void *)bs.free_list[find_ord].fd;
+  pop_list((list_head *)new_chunk);
+  size_t pn = ptr_to_pagenum(new_chunk);
+  set_buddy_flag(buddy_stat[pn], BUDDY_USE);
+  set_buddy_ord(buddy_stat[pn], target_ord);
+
+  while (find_ord > target_ord) {
+    log("release\n");
+    find_ord--;
+    size_t bd = buddy_pagenum(pn, find_ord);
+    set_buddy_flag(buddy_stat[bd], BUDDY_FREE);
+    set_buddy_ord(buddy_stat[bd], find_ord);
+    push_list(&bs.free_list[find_ord], (list_head *)pagenum_to_ptr(bd));
+  }
+
+  return new_chunk;
 }
 
 // void *alloc_heap(size_t size) {
