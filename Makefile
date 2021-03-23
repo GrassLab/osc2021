@@ -39,5 +39,14 @@ asm: $(DST_DIR)/kernel8.img
 run: $(DST_DIR)/kernel8.img
 	qemu-system-aarch64 -M raspi3 -kernel $(DST_DIR)/kernel8.img -display none -serial null -serial stdio
 
+run_pty_gdb: $(DST_DIR)/kernel8.img
+	qemu-system-aarch64 -M raspi3 -kernel $(DST_DIR)/kernel8.img -display none -serial null -serial pty -S -s
+
+run_pty: $(DST_DIR)/kernel8.img
+	qemu-system-aarch64 -M raspi3 -kernel $(DST_DIR)/kernel8.img -display none -serial null -serial pty
+
+gdb: $(DST_DIR)/
+	qemu-system-aarch64 -M raspi3 -kernel $(DST_DIR)/kernel8.img -display none -S -s
+
 clean:
 	rm -rf $(SRC_DIR)/*.o $(DST_DIR)/kernel8.*

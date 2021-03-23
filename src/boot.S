@@ -1,7 +1,5 @@
 .section ".text.boot"
-
 .global _start
-
 _start:
 // use one cpu to boot
   mrs x4, mpidr_el1
@@ -21,7 +19,7 @@ loopbsszero:
   cbnz x1, loopbsszero
   
 init:
-  ldr x0, =_start
+  ldr x0, =__relocate_address
   mov sp, x0
   bl main
   b loop

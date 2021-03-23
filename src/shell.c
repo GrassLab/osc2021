@@ -14,6 +14,9 @@ void shell_cmd(char* cmd) {
     else if(!strcmp(cmd, "reboot")) {
         reset(100);
     }
+    else if(!strcmp(cmd, "loadimg")) {
+        loadimg();
+    }
     else if(!strcmp(cmd, "")) {
     }
     else {
