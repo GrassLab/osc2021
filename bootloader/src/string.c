@@ -96,6 +96,7 @@ int atoi (const char * str) {
     return res;
 }
 
+
 void reverse ( char * s )
 {
     int i;
@@ -107,18 +108,4 @@ void reverse ( char * s )
         s[strlen(s) - i - 1] = s[0];
         s[0] = temp;
     }
-}
-
-int strncmp(const char *a, const char *b, unsigned long n)
-{
-    unsigned long i;
-    for (i = 0; i < n; i++) {
-        if (a[i] != b[i]) {
-            return a[i] - b[i];
-        }
-        if (a[i] == 0) {
-            return 0;
-        }
-    }
-    return 0;
 }

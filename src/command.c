@@ -1,6 +1,9 @@
 #include "uart.h"
 #include "string.h"
 #include "shell.h"
+#include "cpio.h"
+#include "printf.h"
+
 void input_buffer_overflow_message ( char cmd[] )
 {
     uart_puts("Follow command: \"");
@@ -18,6 +21,8 @@ void command_help ()
     uart_puts("\thello:\t\tprint \"Hello World!\".\n");
     uart_puts("\ttimestamp:\tget current timestamp.\n");
     uart_puts("\treboot:\t\treset rpi3.\n");
+    uart_puts("\tls:\t\tPrint cpio file list.\n");
+    uart_puts("\tcat {filename}:\tPrint content in {filename} \n");
     uart_puts("\n");
 }
 
@@ -60,4 +65,24 @@ void command_reboot ()
     *PM_RSTC = PM_PASSWORD | 100;
     
 	while(1);
+}
+
+void command_cpio_ls(void *initramfs_addr) {
+    //printf("command_cpio_ls() execuated");
+    //printf("%p", initramfs_addr);
+    cpio_ls(initramfs_addr);
+}
+
+void command_getCpioFile(void *initramfs_addr, char *buf)
+{
+    unsigned long fileSize;
+    char *result = cpio_get_file(initramfs_addr, buf, &fileSize);
+    if (result != NULL) {
+        for (int i = 0;i < fileSize;i++) {
+            printf("%c", result[i]);
+        }
+        printf("\n");
+    } else {
+        printf("'%s' file  not exist!\n", buf);
+    }
 }
