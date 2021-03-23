@@ -4,10 +4,11 @@
 #include "include/cpio.h"
 #include "include/dtb.h"
 
-extern char _cpio_buf[];
 extern void *_dtb_ptr;
-
+char *initrd_ptr;
+int indent = 0;
 char buffer[0x100];
+
 const char hello[] = "Hello world!";
 const char * const commands[] = {
   "hello",
@@ -17,7 +18,16 @@ const char * const commands[] = {
   "help"
 };
 
-int indent = 0;
+
+static uint32_t get_be_int(const void *ptr) {
+    const unsigned char *bytes = ptr;
+    uint32_t ret = bytes[3];
+    ret |= bytes[2] << 8;
+    ret |= bytes[1] << 16;
+    ret |= bytes[0] << 24;
+
+    return ret;
+}
 
 void write_indent(int n) {
   while (n--) write_uart(" ", 1);
@@ -52,6 +62,13 @@ void callback(int type, const char *name, const void *data, uint32_t size) {
   }
 }
 
+void get_initrd(int type, const char *name, const void *data, uint32_t size) {
+  puts_uart(name);
+  if (type == FDT_PROP && !strcmp(name, "linux,initrd-start")) {
+    initrd_ptr = (char *)(uintptr_t)get_be_int(data);
+  }
+}
+
 void shell() {
   for (;;) {
     write_uart("> ", 2);
@@ -67,9 +84,9 @@ void shell() {
 
     } else if (!strncmp("cpio", buffer, 4)) {
       if (strlen(buffer) < 6) {
-        cpio_list_file(_cpio_buf);
+        cpio_list_file(initrd_ptr);
       } else {
-        const char *content = cpio_get_content(&buffer[5], _cpio_buf);
+        const char *content = cpio_get_content(&buffer[5], initrd_ptr);
         if (content) {
           puts_uart(content);
         } else {
@@ -89,6 +106,9 @@ void shell() {
 }
 
 int main() {
+  print_uart("ptr: ");
+  write_num_uart((unsigned long)_dtb_ptr);
+  traverse_device_tree(_dtb_ptr, get_initrd);
   shell();
   return 0;
 }

@@ -39,7 +39,4 @@ SECTIONS
 
   . = 0x200000;
   _estack = .;
-
-  . = 0x20000000;
-  _cpio_buf = .;
 }

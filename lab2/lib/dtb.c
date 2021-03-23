@@ -30,7 +30,7 @@ static uint32_t align_up(uint32_t size, int alignment) {
 
 static int parse_struct(uintptr_t ptr, uintptr_t strings, uint32_t totalsize, dtb_callback cb) {
   uintptr_t end = ptr + totalsize;
-  
+
   while (ptr < end) {
     uint32_t token = get_be_int((char *)ptr);
     ptr += 4;
