@@ -27,7 +27,7 @@ kernel8.img: start.o $(OBJS)
 clean:
 	rm kernel8.elf kernel8.img start.o build/*.o >/dev/null 2>/dev/null || true
 
-run:
+run: all
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio
 
 deploy:

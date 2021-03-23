@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "gpio.h": "c",
+        "uart.h": "c",
+        "math.h": "c",
+        "printf.h": "c",
+        "stdarg.h": "c",
+        "cpio.h": "c",
+        "string.h": "c",
+        "cstdio": "c",
+        "command.h": "c",
+        "memory.h": "c"
+    }
+}
