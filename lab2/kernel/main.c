@@ -63,7 +63,6 @@ void callback(int type, const char *name, const void *data, uint32_t size) {
 }
 
 void get_initrd(int type, const char *name, const void *data, uint32_t size) {
-  puts_uart(name);
   if (type == FDT_PROP && !strcmp(name, "linux,initrd-start")) {
     initrd_ptr = (char *)(uintptr_t)get_be_int(data);
   }
@@ -106,8 +105,6 @@ void shell() {
 }
 
 int main() {
-  print_uart("ptr: ");
-  write_num_uart((unsigned long)_dtb_ptr);
   traverse_device_tree(_dtb_ptr, get_initrd);
   shell();
   return 0;
