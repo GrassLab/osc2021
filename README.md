@@ -51,3 +51,5 @@ Move bootloader.img, initramfs.cpio and config.txt into sd card
     + kernel that support cpio
 
 ## Directory structure
+
+**WIP**
