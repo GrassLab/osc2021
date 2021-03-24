@@ -1,0 +1,25 @@
+SECTIONS
+{
+	. = 0x80000;
+    __program_start = .;
+    .text :
+    { 
+        KEEP(*(.text.boot))
+        *(.text) 
+    }
+    .data :
+    {
+        *(.data) 
+    }
+    .bss(NOLOAD) :
+    {
+        . = ALIGN(16);
+        __bss_start = .;
+        *(.bss)
+        __bss_end = .;
+    }
+    __program_end = .;
+}
+__bss_size = (__bss_end - __bss_start) >> 3;
+__program_size = (__program_end - __program_start);
+
