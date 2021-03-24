@@ -29,7 +29,7 @@ clean:
 	- rm *.o $(ELF_TARGET) $(TARGET) > /dev/null 2> /dev/null
 
 run:
-	$(QEMU) -M raspi3 -kernel $(TARGET) -serial null -serial stdio --display none
+	$(QEMU) -M raspi3 -kernel $(TARGET) -serial null -serial stdio -display none
 
 debug:
-	$(QEMU) -M raspi3 -kernel $(TARGET) -serial null -serial stdio -S -s
+	$(QEMU) -M raspi3 -kernel $(TARGET) -serial null -serial stdio -display none -S -s
