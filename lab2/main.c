@@ -1,4 +1,7 @@
 #include "include/mini_uart.h"
+#include "include/mm.h"
+#include "include/cutils.h"
+#include "include/test.h"
 // #include "include/initramfs.h"
 #include "utils.h"
 #define CMD_SIZE 64
@@ -23,6 +26,9 @@ char *cmd_lst[][2] = {
     { "showmem", "show memory contents"},
     { "dtp    ", "device tree parse"},
     { "size   ", "show type size"},
+    { "mm     ", "show memory management"},
+    { "testbs ", "test buddy system"},
+    { "testks ", "test kmalloc system"},
     { "eocl", "This won't print out (end of cmd list)"}
 };
 
@@ -63,45 +69,6 @@ void memzero(char *bss_begin, unsigned long len)
     return;
 }
 
-int strlen(char *str)
-{ // '\0' doesn't count.
-    int cnt;
-    char *str_ptr;
-
-    cnt = 0;
-    str_ptr = str;
-    while (*str_ptr++ != '\0')
-        cnt++;
-    return cnt;
-}
-
-int strcmp(char *str1, char *str2)
-{
-    int i;
-
-    i = 0;
-    while (str1[i] != '\0') {
-        if (str1[i] != str2[i])
-            return 1;
-        i++;
-    }
-    if (str2[i] != '\0')
-        return 1;
-    return 0;
-}
-
-int strcmp_with_len(char *str1, char *str2, int len)
-{ // compare two strings with at most len characters
-    for (int i = 0; i < len; ++i) {
-        if (str1[i] != str2[i])
-            return 1;
-        // if come to here, str1[i] == str2[i]
-        if (str1[i] == '\0')
-            return 0;
-    }
-    return 0;
-}
-
 int do_help(void)
 {
     for (int i = 0; strcmp(cmd_lst[i][0], "eocl"); ++i) {
@@ -136,69 +103,6 @@ struct cpio_newc_header {
     char c_check[8];
 };
 
-int hex_string_to_int(char *hex_str, int len)
-{
-    int num, base;
-    char *ch;
-
-    num = 0;
-    base = 1;
-    ch = hex_str + len - 1;
-    while(ch >= hex_str) {
-        if (*ch >= 'A')
-            num += (base*(10 + *ch - 'A'));
-        else
-            num += (base*(*ch - '0'));
-        base *= 16;
-        ch--;
-    }
-    return num;
-}
-
-unsigned long hex_string_to_unsigned_long(char *hex_str, int len)
-{
-    unsigned long num;
-    int base;
-    char *ch;
-
-    num = 0;
-    base = 1;
-    ch = hex_str + len - 1;
-    while(ch >= hex_str) {
-        if (*ch >= 'A')
-            num += (base*(10 + *ch - 'A'));
-        else
-            num += (base*(*ch - '0'));
-        base *= 16;
-        ch--;
-    }
-    return num;
-}
-
-int dec_string_to_int(char *dec_str, int len)
-{
-    unsigned long num;
-    int base;
-    char *ch;
-
-    num = 0;
-    base = 1;
-    ch = dec_str + len - 1;
-    while(ch >= dec_str) {
-        num += (base*(*ch - '0'));
-        base *= 10;
-        ch--;
-    }
-    return num;
-}
-
-char *align_upper(char *addr, int alignment)
-{
-    char *res;
-    int r = (unsigned long)addr % alignment;
-    res = r ? addr + alignment - r : addr;
-    return res;
-}
 
 int cat_file_initramfs()
 {
@@ -495,7 +399,17 @@ int cmd_handler(char *cmd)
         return do_dtp();
     if (!strcmp(cmd, "size"))
         return show_type_size();
-
+    if (!strcmp(cmd, "mm"))
+        return show_mm();
+    if (!strcmp(cmd, "testbs"))
+        return _test_buddy_system();
+    if (!strcmp(cmd, "testks"))
+        return _test_kmalloc_system();
+    if (!strcmp(cmd, "lz")){
+        uart_send_int(lead_zero(8));
+        uart_send_string("\r\n");
+        return 0;
+    }
     uart_send_string("Command '");
     uart_send_string(cmd);
     uart_send_string("' not found\r\n");
@@ -508,6 +422,8 @@ int kernel_main(char *sp)
     char cmd_buf[CMD_SIZE];
 
     uart_init();
+    mem_init();
+    dynamic_mem_init();
     uart_send_string("Welcome to RPI3-OS\r\n");
     while (1) {
         uart_send_string("user@rpi3:~$ ");

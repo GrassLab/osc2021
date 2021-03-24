@@ -8,4 +8,5 @@ void reverse(char *str,int index);
 void uart_send_int(int number);
 void uart_send_uint(unsigned int number);
 void uart_send_long(long number);
+void uart_send_ulong(unsigned long number);
 

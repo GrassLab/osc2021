@@ -1,119 +1,86 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <sys/mman.h>
-struct cpio_newc_header {
-    char c_magic[6];
-    char c_ino[8];
-    char c_mode[8];
-    char c_uid[8];
-    char c_gid[8];
-    char c_nlink[8];
-    char c_mtime[8];
-    char c_filesize[8];
-    char c_devmajor[8];
-    char c_devminor[8];
-    char c_rdevmajor[8];
-    char c_rdevminor[8];
-    char c_namesize[8];
-    char c_check[8];
-};
+#include "include/mini_uart.h"
+#include "include/mm.h"
+#include "include/cutils.h"
+#include "utils.h"
+#include "include/test.h"
 
-int hex_string_to_int(char *hex_str, int len)
+int _test_buddy_system(void)
 {
-	int num, base;
-	char *ch;
+    struct page *A, *B, *C, *D;
+    uart_send_string("================= Start =====================\r\n");
+    show_mm();
+    uart_send_string("=================alloc A=====================\r\n");
+    A = get_free_frames(1);
+    show_mm();
+    uart_send_string("=================alloc B=====================\r\n");
+    B = get_free_frames(2);
+    show_mm();
+    uart_send_string("=================alloc C=====================\r\n");
+    C = get_free_frames(1);
+    show_mm();
+    uart_send_string("=================alloc D=====================\r\n");
+    D = get_free_frames(2);
+    show_mm();
 
-	num = 0;
-	base = 1;
-	ch = hex_str + len - 1;
-	while(ch >= hex_str) {
-		if (*ch >= 'A')
-			num += (base*(10 + *ch - 'A'));
-		else
-			num += (base*(*ch - '0'));
-		base *= 16;
-		ch--;
-	}
-	return num;
-}
+    uart_send_string("=================free B=====================\r\n");
+    free_frames(B);
+    show_mm();
+    uart_send_string("=================free D=====================\r\n");
+    free_frames(D);
+    show_mm();
+    uart_send_string("=================free A=====================\r\n");
+    free_frames(A);
+    show_mm();
+    uart_send_string("=================free C=====================\r\n");
+    free_frames(C);
+    show_mm();
 
-char *align_upper(char *addr, int alignment)
-{
-	char *res;
-	int r = (unsigned long)addr % alignment;
-	res = r ? addr + alignment - r : addr;
-	return res;
-}
-
-int strcmp(char *str1, char *str2)
-{
-    int i;
-
-    i = 0;
-    while (str1[i] != '\0') {
-        if (str1[i] != str2[i])
-            return 1;
-        i++;
-    }
-    if (str2[i] != '\0')
-        return 1;
     return 0;
 }
 
-int main(int argc, char const *argv[])
+int _test_kmalloc_system(void)
 {
-	char buf[120];
-	int cnt;
-	struct stat st;
-	struct cpio_newc_header *ent;
-	int filesize, namesize, remainder;
-	char *name_start, *data_start;
-	int fd;
-	if ((fd = open("initramfs.cpio", O_RDONLY)) == -1)
-		perror("fd");
-	fstat(fd, &st);
-	int size = st.st_size;
+    char *A, *B, *C, *D, *E, *F, *G, *H, *I, *J;
+    int num = 25;
+    // show_mm();
+uart_send_string("========== alloc A ==============\r\n");
+    A = kmalloc(num);
+    for (int i = 0; i < num; ++i)
+        A[i] = '0' + i;
+uart_send_string("========== alloc B ==============\r\n");
+    B = kmalloc(num);
+uart_send_string("========== alloc C ==============\r\n");
+    C = kmalloc(num);
+uart_send_string("========== alloc DEFGHI ==============\r\n");
+    D = kmalloc(24);
+    E = kmalloc(24);
+    F = kmalloc(24);
+    G = kmalloc(24);
+    H = kmalloc(24);
+    I = kmalloc(24);
+    J = kmalloc(12287);
+    // J = kmalloc(2048);
+    for (int i = 0; i < 100; ++i)
+        J[i] = '0' + i;
+    uart_send_ulong((unsigned long)J);
+    show_mm();
 
-	printf("size=%d, fd=%d\n", size, fd);
-	char *pyc_addr = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
-	if (pyc_addr == MAP_FAILED)
-		perror("mmap");
+uart_send_string("========== free B ==============\r\n");
+    kfree(B);
 
-	ent = (struct cpio_newc_header*)pyc_addr;
-	while (1)
-	{
-		namesize = hex_string_to_int(ent->c_namesize, 8);
-		filesize = hex_string_to_int(ent->c_filesize, 8);
-		name_start = ((char *)ent) + sizeof(struct cpio_newc_header);
-		data_start = align_upper(name_start + namesize, 4);
-		printf("name=%s\n", name_start);
-		printf("data=%s\n", data_start);
-		ent = (struct cpio_newc_header*)align_upper(data_start + filesize, 4);
+uart_send_string("========== free C ==============\r\n");
 
-		if (!strcmp(name_start, "TRAILER!!!"))
-			break;
-	}
-	printf("Bye\n");
-
-	// struct cpio_newc_header *ent = malloc(sizeof(struct cpio_newc_header));
-
-	// cnt = read(fd, ent, sizeof(struct cpio_newc_header));
-	// printf("fd=%d, cnt=%d\n", fd, cnt);
-	// for (int i = 0; i < 8; ++i)
-	// {
-	// 	printf("%c", *(ent->c_namesize+i));
-	// }
-
-	// struct cpio_newc_header ent;
-	// cnt = read(fd, &ent, sizeof(struct cpio_newc_header));
-	// printf("fd=%d, cnt=%d\n", fd, cnt);
-	// for (int i = 0; i < 8; ++i)
-	// {
-	// 	printf("%c", *(ent.c_namesize+i));
-	// }
-	return 0;
+    kfree(C);
+uart_send_string("========== free A ==============\r\n");
+    kfree(A);
+uart_send_string("========== free DEFGHI ==============\r\n");
+    kfree(D);
+    kfree(E);
+    kfree(F);
+    kfree(G);
+    kfree(H);
+    kfree(I);
+    kfree(J);
+    show_mm();
+    return 0;
 }

@@ -1,19 +1,24 @@
 .globl put32
 put32:
-	str w1,[x0]
-	ret
+    str w1,[x0]
+    ret
 
 .globl get32
 get32:
-	ldr w0,[x0]
-	ret
+    ldr w0,[x0]
+    ret
 
 .globl delay
 delay:
-	subs x0, x0, #1
-	bne delay
-	ret
+    subs x0, x0, #1
+    bne delay
+    ret
 
 .globl branch_to_address
 branch_to_address:
     br x1
+
+.globl lead_zero
+lead_zero:
+    clz w0, w0
+    ret
