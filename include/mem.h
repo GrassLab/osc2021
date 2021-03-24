@@ -7,26 +7,26 @@
 #define STARTUP_MAX 16  // max reserve slot
 #define PAGE_SIZE 4096
 #define PAGE_SIZE_CTZ 12
-// #define SMALLBIN_SiZE 14   // 0x20 ~ 0xf0
-// #define MIDDLEBIN_SIZE 15  // 0x100 ~ 0xf00
-// #define INIT_HEAP_START 0x20000
-// #define INIT_HEAP_SIZE 0x40000
 
 extern unsigned long long mem_size;
 
 void *kmalloc(unsigned long size);
 void kfree(void *ptr);
 
-int reserve_mem(void *addr, unsigned long size);
 void init_buddy(char *ps);
-// void init_heap(void *heap_start, size_t heap_size);
+void init_slab();
+void *register_slab(size_t size);
 
 void *alloc_page(size_t size);
-// void *alloc_heap(size_t size);
+int reserve_mem(void *addr, unsigned long size);
+void *alloc_slab(void *slab_tok);
 
 void free_page(void *ptr);
-// void free_heap(void *ptr);
 void free_reserve(void *ptr);
+void free_slab(void *ptr, void *slab);
+void free_unknow_slab(void *ptr);
 
 void log_buddy();
+void check_buddy_stat();
+void check_slab();
 #endif

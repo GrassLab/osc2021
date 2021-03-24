@@ -49,20 +49,26 @@ void kernel() {
   reserve_mem((void *)(&kn_end), mem_size / PAGE_SIZE);     // buddy system
   reserve_mem((void *)0x3f000000, 0x1000000);               // MMIO
 
-  // reserve_mem((void *)INIT_HEAP_START, INIT_HEAP_SIZE);     // 64 page heap
-
-  // init_heap((void *)INIT_HEAP_START, INIT_HEAP_SIZE);
   init_buddy((char *)(&kn_end));
+  init_slab();
 
-  // kfree((void *)0x3f000000);
-  // kfree((void *)0x0);
-  // kfree((void *)0x60000);
-  // kfree((void *)(&kn_start));
-  // kfree((void *)(&kn_end));
-  // log_buddy();
+  log("20\n");
+  for(int i = 0; i < 126; i++) {
+    kmalloc(0x20);
+  }
+  log("30\n");
+  for(int i = 0; i < 83; i++) {
+    kmalloc(0x30);
+  }
+  log("40\n");
+  for(int i = 0; i < 64; i++) {
+    kmalloc(0x40);
+  }
+  kmalloc(0x40);
+
+  check_slab();
 
   // init_rootfs(new_ramfs());
-
   // dentry root;
   // init_dentry(&root);
 
