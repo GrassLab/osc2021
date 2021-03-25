@@ -30,7 +30,7 @@ static inline void list_add_tail(list_head_t *new_, list_head_t *head)
     __list_add(new_, head->prev, head);
 }
 
-//concatenate list
+// concatenate list
 static inline void list_cat(list_head_t *new_h, list_head_t *new_t, list_head_t *head)
 {
     new_h->prev = head;

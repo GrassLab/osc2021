@@ -1,29 +1,61 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#define MEMORY_START        0x90000
-#define PAGE_SIZE           4096
-#define MAX_ORDER           9
-#define MAX_SIZE_IN_PAGE    (1 << MAX_ORDER)
-#define MAX_PAGE_NUMBER     4096
+#define MEMORY_START            0x90000
 
-// static void* NULL = 0;
+#define PAGE_SHIFT              12
+#define PAGE_SIZE               (1 << PAGE_SHIFT)
+#define MAX_BUDDY_ORDER         9
+#define MAX_BLOCK_SIZE          (1 << MAX_BUDDY_ORDER)
+#define MAX_PAGE_NUMBER         4096
+
+#define MIN_OBJECT_ORDER        4
+#define MAX_OBJECT_ORDER        11
+#define MIN_OBJECT_SIZE         (1 << MIN_OBJECT_ORDER)
+#define MAX_OBJECT_SIZE         (1 << MAX_OBJECT_ORDER)
+#define MAX_ALLOCATOR_NUMBER    MAX_OBJECT_ORDER - MIN_OBJECT_ORDER + 1
+#define MAX_OBJECT_IN_A_PAGE    PAGE_SIZE / (1 << MIN_OBJECT_ORDER) 
+
+static void* NULL = 0;
 
 #include "list.h"
 
 struct page
 {
-    // must be put in the front
-    struct list_head list;
+    struct list_head list;                          // must be put in the front
+
     int order;
+
+    unsigned char hole_used[MAX_OBJECT_IN_A_PAGE];  // keep which hole is available
+    struct object_allocator *allocator;
+    int max_object_count;                           // how many objects this page can store
+    int object_count;                               // how many objects this page stores currently
+
     int page_number;
     int used;
     void *address;
 };
 
+struct object_allocator
+{
+    struct page *current_page;
+    struct page *preserved_empty;
+    struct list_head partial;
+    struct list_head full;
+    int object_size;
+};
+
 void init_buddy();
+void init_object_allocator();
+void init_memory();
+
 struct page *block_allocation(int order);
 void block_free(struct page *block);
+void *object_allocation(int token);
+void object_free(void *object);
+
+void *memory_allocation(int size);
+void memory_free(void *address);
 
 int find_buddy(int page_number, int order);
 
