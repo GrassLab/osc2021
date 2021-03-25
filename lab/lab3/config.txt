@@ -1,0 +1,5 @@
+kernel_address=0x80000
+kernel=bootloader.img
+arm_64bit=1
+initramfs initramfs.cpio 0x8000000
+
