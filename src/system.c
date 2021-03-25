@@ -115,6 +115,15 @@ void sys_cat(char* args){
         uart_puts("\r\n");
     }
 }
+void swap(int* a, int* b){
+    int tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+void* malloc(int size){
+    memFrame* ptr = buddy_alloc(size);
+    return (void*)(ptr->addr);
+}
 void sys_help(char* args){
     uart_puts("[Command] : [Description]\r\n");
     for(int i = 0; i < SYS_CMD_NUM; ++i){

@@ -1,13 +1,19 @@
 #ifndef __SYSTEM_H__
 #define __SYSTEM_H__
+#include "utils.h"
+#include "buddy.h"
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC ((volatile unsigned int *)(0x3F10001c))
 #define PM_RSTS ((volatile unsigned int *)(0x3F100020))
 #define PM_WDOG ((volatile unsigned int *)(0x3F100024))
-#define uint32_t unsigned long int
-#define uint64_t unsigned long long int
+
 #define SYS_CMD_NUM 7
 #define CPIO_ADDR ((char*)0x20000000) //QEMU(0x8000000)
+#define KB 0x400
+#define MB 0x100000
+
+
+
 struct cpio_size_info{
     unsigned long long int file_size, file_padding, name_size, name_padding;
     unsigned long long int offset;
@@ -42,6 +48,6 @@ void *__memset(void*, int, int);
 uint32_t sys_get32bits(char*);
 uint64_t sys_get64bits(char*);
 unsigned long long int need_padding(unsigned long long int size, unsigned long long int multiplier);
-
-
+void swap(int*, int*);
+void* malloc(int);
 #endif

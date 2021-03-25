@@ -60,7 +60,7 @@ void uart_puts_bySize(char *s, int size){
 void uart_printint(unsigned long long int num){
     if(num == 0) uart_send('0');
     else{
-        if(num > 10) uart_printint(num / 10);
+        if(num >= 10) uart_printint(num / 10);
         uart_send(num % 10 + '0');
     }
     //uart_puts("\r\n");
