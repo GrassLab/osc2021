@@ -1,6 +1,7 @@
 #ifndef _UTILS
 #define _UTILS
 #define buff_size 64
+#define GB 0x40000000
 #define MB 0x100000
 #define KB 0x400
 typedef unsigned int uint32_t;
