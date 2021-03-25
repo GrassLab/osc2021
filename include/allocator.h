@@ -1,0 +1,1 @@
+static int get_page_from_buckets(int order);
