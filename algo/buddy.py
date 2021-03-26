@@ -1,264 +1,277 @@
-from typing import List, Optional
+import math
+import sys
+from dataclasses import dataclass, field
+from typing import List, Optional, Tuple, Iterable
 
+from rich.columns import Columns
 from rich.console import Console
+from rich.table import Table
+from rich.console import RenderGroup
+from rich.panel import Panel
 
 console = Console()
 
-
-class Info:
-    num_tree_layers = 4
-
-    arr_size = 2 ** num_tree_layers
-    frame_size_in_kb = 4
-
-    @classmethod
-    def show(cls):
-        console.print(f"layers: [yellow]{Info.num_tree_layers}")
-        console.print(f"framesize: [yellow]{Info.arr_size}")
+# A placeholder for values that is not available
+NOT_AVAILABLE = sys.maxsize
 
 
-def min_exp_statisfy(request_size: int) -> int:
-    """Find the minimal exp of 2 that 2^exp >= request_size """
+def min_exp_statisfy(request: int) -> int:
+    """Find the minimal exp of 2 that 2^exp >= requested size """
     pow = 0
-    while 2 ** pow < request_size:
+    while 2 ** pow < request:
         pow += 1
-    if pow > Info.num_tree_layers:
-        raise RuntimeError(
-            f"Request allocation size({request_size}) is larger than max_limit:{Info.arr_size}"
-        )
     return pow
 
 
-class FreeNode:
-    def __init__(self, size_exp: int, idx: int, next=None):
-        self.size_exp = size_exp
-        self.size = 2 ** size_exp
-        self.idx = idx
-        self.next = next
+@dataclass
+class FrameNode:
+    arr_index: int  # index of this frame in array
+
+    # exponent, indicate the length of contiguous memory this node represents
+    # if exp >=0:
+    #   size_of_memory =  2**exp
+    # else:
+    #   this FrameNode has been allocated or not at the beginning frame of a contiguous memory
+    exp: int
+
+    # link to other node in freelist
+    prev: Optional["FrameNode"] = None
+    next: Optional["FrameNode"] = None
 
     def __repr__(self):
-        return f"(Node idx:{self.idx}, size:{self.size}, next->{self.next})"
+        return f"<Frame idx:{self.arr_index}, exp:{self.exp}>"
+
+    def buddy_idx(self):
+        """Return the frame index of its buddy"""
+        bit_to_invert = 1 << self.exp
+        return self.arr_index ^ bit_to_invert
+
+    def push_to_list(self, list: "FrameNode"):
+        """Push a node to the back of a list"""
+        self.prev = list.prev
+        self.next = list
+        list.prev.next = self
+        list.prev = self
+
+    def remove_from_list(self):
+        """Remove a node from list, no need to specify the list becuase it's a double link-list"""
+        prev = self.prev
+        next = self.next
+        prev.next = next
+        next.prev = prev
+
+    def list_pop(self) -> "FrameNode":
+        """Pop a node from list, assuming that the list is not empty"""
+        node = self.prev
+        node.remove_from_list()
+        return node
+
+    def dump_list(self) -> str:
+        """Print the list out
+        Caution: must called with the list head, otherwise would produce wrong result
+        """
+        root = self
+        iter = root.next
+        s = "<FreeList"
+        while iter is not root:
+            s += f" ->Node(idx={iter.arr_index}, exp={iter.exp})"
+            iter = iter.next
+        s += ">"
+        return s
+
+    def is_list_empty(self) -> bool:
+        """check if a list is empty
+        Caution: must called with the list head, otherwise would produce wrong result
+        """
+        return self.next == self
+
+    @classmethod
+    def get_new_list(cls) -> "FrameNode":
+        """Return a new node as a list header"""
+        node = cls(arr_index=NOT_AVAILABLE, exp=NOT_AVAILABLE)
+        node.next, node.prev = node, node
+        return node
 
 
-class FreeList:
-    def __init__(self):
-        self.root = None
-        self.count = 0
-
-    def __repr__(self):
-        return f"{self.root}"
-
-    def push(self, node: FreeNode):
-        node.next = self.root
-        self.root = node
-        self.count += 1
-
-    def pop(self) -> FreeNode:
-        if self.count > 0:
-            node = self.root
-            self.root = self.root.next
-            self.count -= 1
-            return node
-        raise RuntimeError("pop from empty list")
-
-    def try_remove(self, frame_idx: int) -> Optional[FreeNode]:
-        """pop a free node with frame_idx"""
-        iter, prev, found = self.root, None, None
-        while iter is not None:
-            if iter.idx == frame_idx:
-                if prev is not None:
-                    prev.next = iter.next
-                if iter is self.root:
-                    self.root = self.root.next
-                found = iter
-                self.count -= 1
-                break
-            prev, iter = iter, iter.next
-        return found
-
-
-class FreeLists:
-    def __init__(self, total: int):
-        self.children: List[FreeList] = [FreeList() for _ in range(total)]
-
-    def for_exp(self, exp: int) -> FreeList:
-        return self.children[exp]
-
-    def show(self):
-        console.print("FreeLists: [")
-        indent1 = " " * 10
-        indent2 = " " * 6
-        for idx, n in enumerate(self.children):
-            console.print(indent1 + f"{idx}: {n}")
-        console.print(indent2 + "]")
-
-
-class UserMem:
+class UserAllocated:
     """A book keeping structure to know the user holded memory"""
 
-    def __init__(self):
-        self.allocated: List[FreeNode] = []
+    nodes: List[FrameNode] = []
 
-    def add(self, node: FreeNode):
-        node.next = None
-        self.allocated.append(node)
+    @classmethod
+    def add(cls, node: FrameNode):
+        node.prev, node.next = None, None
+        cls.nodes.append(node)
 
-    def remove(self, frame_idx: int):
-        node = [n for n in self.allocated if n.idx == frame_idx][0]
-        self.allocated.remove(node)
-
-    def show(self):
-        console.print("allocated: ", self.allocated)
+    @classmethod
+    def remove(cls, frame_idx: int):
+        node = [n for n in cls.nodes if n.arr_index == frame_idx][0]
+        cls.nodes.remove(node)
 
 
-class DS:
-    def __init__(self):
-        self.arr = [-1 for _ in range(Info.arr_size)]
-        self.arr[0] = Info.num_tree_layers
+@dataclass
+class BuddyAllocater:
+    total_frames: int  # Must be an power of 2
+    frame_size_in_kb: int = 4
 
-        self.free_lists = FreeLists(total=Info.num_tree_layers + 1)
-        exp = Info.num_tree_layers
-        self.free_lists.for_exp(exp).push(FreeNode(size_exp=exp, idx=0))
+    # max exponent available for this allocator
+    max_exp: int = field(init=False)
 
-        self._user: UserMem = UserMem()
+    # Link-lists which contains of free nodes with same size
+    free_lists: List[FrameNode] = field(init=False)
+    frame_array: List[FrameNode] = field(init=False)
 
-    def show_arr(self):
-        console.print(f"arr: {self.arr}")
+    def list_for_exp(self, exp: int) -> FrameNode:
+        return self.free_lists[exp]
 
-    def show_status(self):
-        self.show_arr()
-        self.free_lists.show()
-        self._user.show()
+    def __post_init__(self):
+        def is_power_of_two(n: int):
+            return (n != 0) and (n & (n - 1) == 0)
 
-    def have_node_with_exp(self, exp: int) -> bool:
-        return self.free_lists.for_exp(exp).count > 0
+        if not is_power_of_two(self.total_frames):
+            raise RuntimeError(
+                f"Number of frames in a buddy system must be a power of 2, get:{self.total_frames}"
+            )
+        self.max_exp = int(math.log2(self.total_frames))
+        self.frame_array = [
+            FrameNode(arr_index=i, exp=-1) for i in range(self.total_frames)
+        ]
+        self.free_lists = [FrameNode.get_new_list() for _ in range(self.max_exp + 1)]
+        root_frame: FrameNode = self.frame_array[0]
+        root_frame.exp = self.max_exp
+        self.frame_array[0].push_to_list(self.list_for_exp(self.max_exp))
 
-    def request_provide(self, required_exp: int) -> bool:
-        """Return a idx to node with required_exp"""
+    def dump_status(self):
+        def make_col(_list: Iterable, title: str):
+            return Columns(
+                [str(n) for n in _list],
+                equal=True,
+                align="left",
+                title=title,
+            )
 
-        def do_split(exp: int):
-            node = self.free_lists.for_exp(exp).pop()
+        frame_arr = make_col(self.frame_array, title="The Frame Array")
+        alloc_arr = make_col(UserAllocated.nodes, title="Allocated Frames")
 
-            def create_node(idx: int, size_exp: int):
-                # add new node to list
-                node = FreeNode(size_exp=size_exp, idx=idx)
-                self.free_lists.for_exp(size_exp).push(node)
-                # update up array
-                self.arr[idx] = size_exp
+        def make_list_table():
+            table = Table("exp", "list", title="Free Lists")
+            for i, _list in enumerate(self.free_lists, start=0):
+                table.add_row(str(i), _list.dump_list())
+            return table
 
-            child_exp = node.size_exp - 1
-            create_node(idx=node.idx, size_exp=child_exp)
-            create_node(idx=node.idx + 2 ** child_exp, size_exp=child_exp)
-            return True
+        list_table = make_list_table()
+        status = RenderGroup(list_table, frame_arr, alloc_arr)
+        console.print(Panel(status, title="Buddy Status"))
 
-        def find_root_exp_to_split():
-            root_exp_to_split = required_exp
-            while root_exp_to_split < Info.num_tree_layers:
-                if self.have_node_with_exp(root_exp_to_split):
-                    break
-                root_exp_to_split += 1
+    def allocate(self, size_in_byte: int) -> int:
+        """Return the starting address of the contiguous memory requested"""
+        num_frame_requested = math.ceil(size_in_byte / self.frame_size_in_kb)
+        target_exp = min_exp_statisfy(num_frame_requested)
+        console.print(
+            f"[yellow]Allocate Request[reset] size:{size_in_byte}, exp:{target_exp}, frame_size:{2**target_exp}"
+        )
 
-            # no node for splitting, we've use all of our space
-            if self.free_lists.for_exp(root_exp_to_split).count == 0:
-                return None
-            return root_exp_to_split
+        if target_exp >= self.max_exp:
+            raise RuntimeError("Bad input")
 
-        if required_exp > Info.num_tree_layers:
-            return False
-        # if already have
-        if self.have_node_with_exp(required_exp):
-            return True
-        root_exp_to_split = find_root_exp_to_split()
-        if root_exp_to_split is None:
-            return False
-        print(f"root to split: {root_exp_to_split}")
-        for exp in range(root_exp_to_split, required_exp, -1):
-            print(f"split:{exp}")
-            do_split(exp=exp)
-        return True
-
-    def free(self, frame_idx: int):
-
-        # book keeping
-        self._user.remove(frame_idx=frame_idx)
-
-        def get_buddy_idx(idx: int, exp: int):
-            bit_to_invert = 1 << exp
-            return idx ^ bit_to_invert
-
-        cur_idx = frame_idx
-        while True:
-            cur_exp = self.arr[cur_idx]
-            bidx = get_buddy_idx(cur_idx, cur_exp)
-            node = self.free_lists.for_exp(cur_exp).try_remove(frame_idx=bidx)
-            if node is None:
-                # buddy is not available, push current node to list
-                node = FreeNode(size_exp=cur_exp, idx=cur_idx)
-                self.free_lists.for_exp(cur_exp).push(node)
-                print(f"push node to free-list: {node}")
-                break
-            # buddy is available, merge it
-            small_idx = min(cur_idx, bidx)
-            big_idx = max(cur_idx, bidx)
-            self.arr[big_idx] = -1
-            self.arr[small_idx] = cur_exp + 1
-            cur_idx = small_idx
-            print(f"try merge next layer, idx:{cur_idx}, exp:{self.arr[cur_idx]}")
-        print(f"idx of buddy:{bidx}")
-        print(f"freenode: {node}")
-
-    def allocate(self, size: int):
-        """Return the index of the node that contains available space to allocate"""
-        pow = min_exp_statisfy(size)
-        success = self.request_provide(pow)
+        success = self._provide_frame_with_exp(target_exp)
         if success:
-            node = self.free_lists.for_exp(pow).pop()
-
-            # book-keeping
-            self._user.add(node=node)
-            node.next = None
-
-            return node.idx
+            node = self.list_for_exp(target_exp).list_pop()
+            UserAllocated.add(node)
+            return node.arr_index * self.frame_size_in_kb
         else:
-            print("failed")
-            return None
+            console.print("[red] no space for allocation")
+            return -1
 
+    def free(self, addr: int):
+        frame_idx = addr // self.frame_size_in_kb
 
-def allocate(ds: DS, size: int) -> int:
-    """ Return the start address of the allocable memory"""
-    ds.show_status()
-    console.print(f"[bold red]request allocate size: {size}")
-    idx = ds.allocate(size)
-    ds.show_status()
-    if idx is None:
-        console.print("[red]" + "=" * 30)
-        return None
-    addr = idx * 4
-    console.print(f"address with least continuous size:{size} -> {addr}K")
-    console.print("[red]" + "=" * 30)
-    return addr
+        UserAllocated.remove(frame_idx=frame_idx)
+        console.print(
+            f"[bold green]Free Request[reset] addr:{addr}, frame_idx:{frame_idx}"
+        )
 
+        while True:
+            node = self.frame_array[frame_idx]
+            if node.buddy_idx() >= self.total_frames:
+                break
+            buddy = self.frame_array[node.buddy_idx()]
+            # Buddy is currently not in any list, therefore in used
+            msg = (
+                "Try to merge "
+                + f"buddy(idx:{buddy.arr_index},exp:{buddy.exp})-"
+                + f"node(idx:{node.arr_index},exp:{node.exp})"
+            )
+            if buddy.next is None:
+                node.push_to_list(self.list_for_exp(node.exp))
+                msg += f" [red]busy[reset], recycle node: {node}"
+                console.log(msg)
+                break
 
-def free(ds: DS, addr: int):
-    frame_idx = addr // 4
-    ds.show_status()
-    console.print(f"[bold red]free frame:{frame_idx}")
-    ds.free(frame_idx=frame_idx)
-    ds.show_status()
-    console.print("[red]" + "=" * 30)
+            def node_in_order(
+                a: FrameNode, b: FrameNode
+            ) -> Tuple[FrameNode, FrameNode]:
+                """Node with lower arr_index comes first"""
+                return (a, b) if a.arr_index < b.arr_index else (b, a)
+
+            # Buddy is available, merge both node
+            msg += f" [green]merged"
+            buddy.remove_from_list()
+
+            low, high = node_in_order(node, buddy)
+            high.exp = -1
+            low.exp += 1
+            frame_idx = low.arr_index
+            console.log(msg)
+            # console.log(f"try merge next layer, idx:{frame_idx}, exp:{low.exp}")
+
+    def _provide_frame_with_exp(self, required_exp: int) -> bool:
+        """Makesure there exists a frame which's exp == required_exp"""
+
+        # The request have already been fulfilled
+        if not self.list_for_exp(required_exp).is_list_empty():
+            return True
+
+        def find_upmost_exp_to_split() -> Optional[int]:
+            target = required_exp
+            found = False
+            while target <= self.max_exp:
+                if not self.list_for_exp(target).is_list_empty():
+                    found = True
+                    break
+                target += 1
+            return target if found else None
+
+        upmost_exp_to_split = find_upmost_exp_to_split()
+        if upmost_exp_to_split is None:
+            return False
+
+        # Splitting Nodes until we have a node with sutiable size
+        msg = "Split node from list(exp):"
+        for exp in range(upmost_exp_to_split, required_exp, -1):
+            msg += f" {exp}"
+            node = self.list_for_exp(exp).list_pop()
+
+            child_exp: int = exp - 1
+            child1 = self.frame_array[node.arr_index]
+            child2 = self.frame_array[node.arr_index + 2 ** child_exp]
+            child1.exp, child2.exp = child_exp, child_exp
+            child1.push_to_list(self.list_for_exp(child_exp))
+            child2.push_to_list(self.list_for_exp(child_exp))
+        console.log(msg)
+
+        return True
 
 
 def main():
-    Info.show()
-    ds = DS()
-
-    a = allocate(ds, 3)
-    b = allocate(ds, 2)
-    c = allocate(ds, 1)
-
-    free(ds, a)
-    free(ds, b)
-    free(ds, c)
+    buddy = BuddyAllocater(total_frames=8)
+    buddy.dump_status()
+    a = buddy.allocate(4)
+    b = buddy.allocate(9)
+    buddy.dump_status()
+    buddy.free(b)
+    buddy.free(a)
+    buddy.dump_status()
 
 
 if __name__ == "__main__":
