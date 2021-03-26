@@ -121,7 +121,11 @@ void list_file() {
 }
 
 void alloc() {
-    int frame_index = get_page_from_buckets(3);
+    init_buckets();
+    void *test1 = malloc(100 + (1 << (12+3)));
+    void *test2 = malloc(1 << (12+5));
+    void *test3 = malloc(1<<12);
+    free_page(test3, 1<<12);
 }
 
 void main() {

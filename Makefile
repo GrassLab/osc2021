@@ -34,7 +34,7 @@ debug:
 		-serial null\
 		-serial stdio\
 		-S -s\
-		-initrd initramfs.cpio\
+		-initrd archive/initramfs.cpio\
 
 debug_cpio:
 	qemu-system-aarch64 -M raspi3\
@@ -43,14 +43,14 @@ debug_cpio:
 		-serial null\
 		-serial stdio\
 		-S -s\
-		-initrd initramfs.cpio
+		-initrd archive/initramfs.cpio
 run:
 	qemu-system-aarch64 -M raspi3\
 		-kernel $(BUILD_DIR)/$(IMG)\
 		-display none\
 		-serial null\
 		-serial stdio\
-		-initrd initramfs.cpio\
+		-initrd archive/initramfs.cpio\
 		
 
 gdb:

@@ -123,3 +123,24 @@ void uart_read_line(char *input, int show) {
         }
     }
 }
+
+void uart_puts_int(int i) {
+    char s[20];
+    itoa(i, s);
+    for(int i = 0; i < 20; i++) {
+        if(s[i] == '\0') break;
+        uart_send(s[i]);
+    }
+}
+
+void uart_puts_hex(unsigned int i) {
+    unsigned int n;
+    int c;
+    int flag = 0;
+    for(c = 28; c >= 0; c -=4) {
+        n = (i >> c) & 0xf;
+        if(n) flag = 1;
+        n += n > 9 ? 0x37 : 0x30;
+        if(flag) uart_send(n);
+    }
+}
