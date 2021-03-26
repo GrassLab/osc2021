@@ -38,10 +38,13 @@ clean:
 export:
 	poetry export -f requirements.txt --output requirements.txt
 
+# LINTER_TARGET = scripts
+LINTER_TARGET = algo
 better:
-	poetry run isort scripts
-	poetry run black scripts
-	poetry run pylama scripts --ignore E501
+	poetry run autoflake --in-place --remove-unused-variables --recursive $(LINTER_TARGET)
+	poetry run isort $(LINTER_TARGET)
+	poetry run black $(LINTER_TARGET)
+	poetry run pylama $(LINTER_TARGET) --ignore E501
 
 .PHONY: bootloader-stdio
 bootloader-stdio: all
