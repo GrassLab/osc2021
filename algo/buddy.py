@@ -1,13 +1,12 @@
 import math
 import sys
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple, Iterable
+from typing import Iterable, List, Optional, Tuple
 
 from rich.columns import Columns
-from rich.console import Console
-from rich.table import Table
-from rich.console import RenderGroup
+from rich.console import Console, RenderGroup
 from rich.panel import Panel
+from rich.table import Table
 
 console = Console()
 
@@ -15,7 +14,7 @@ console = Console()
 NOT_AVAILABLE = sys.maxsize
 
 
-def min_exp_statisfy(request: int) -> int:
+def min_exp_satisfy(request: int) -> int:
     """Find the minimal exp of 2 that 2^exp >= requested size """
     pow = 0
     while 2 ** pow < request:
@@ -100,7 +99,6 @@ class UserAllocated:
 
     @classmethod
     def add(cls, node: FrameNode):
-        node.prev, node.next = None, None
         cls.nodes.append(node)
 
     @classmethod
@@ -112,7 +110,7 @@ class UserAllocated:
 @dataclass
 class BuddyAllocater:
     total_frames: int  # Must be an power of 2
-    frame_size_in_kb: int = 4
+    frame_size_in_kb: int = 1
 
     # max exponent available for this allocator
     max_exp: int = field(init=False)
@@ -166,7 +164,7 @@ class BuddyAllocater:
     def allocate(self, size_in_byte: int) -> int:
         """Return the starting address of the contiguous memory requested"""
         num_frame_requested = math.ceil(size_in_byte / self.frame_size_in_kb)
-        target_exp = min_exp_statisfy(num_frame_requested)
+        target_exp = min_exp_satisfy(num_frame_requested)
         console.print(
             f"[yellow]Allocate Request[reset] size:{size_in_byte}, exp:{target_exp}, frame_size:{2**target_exp}"
         )
@@ -177,6 +175,7 @@ class BuddyAllocater:
         success = self._provide_frame_with_exp(target_exp)
         if success:
             node = self.list_for_exp(target_exp).list_pop()
+            node.prev, node.next = None, None
             UserAllocated.add(node)
             return node.arr_index * self.frame_size_in_kb
         else:
@@ -194,6 +193,7 @@ class BuddyAllocater:
         while True:
             node = self.frame_array[frame_idx]
             if node.buddy_idx() >= self.total_frames:
+                node.push_to_list(self.list_for_exp(node.exp))
                 break
             buddy = self.frame_array[node.buddy_idx()]
             # Buddy is currently not in any list, therefore in used
@@ -215,8 +215,9 @@ class BuddyAllocater:
                 return (a, b) if a.arr_index < b.arr_index else (b, a)
 
             # Buddy is available, merge both node
-            msg += f" [green]merged"
+            msg += " [green]merged"
             buddy.remove_from_list()
+            buddy.next, buddy.prev = None, None
 
             low, high = node_in_order(node, buddy)
             high.exp = -1
@@ -266,11 +267,14 @@ class BuddyAllocater:
 def main():
     buddy = BuddyAllocater(total_frames=8)
     buddy.dump_status()
-    a = buddy.allocate(4)
-    b = buddy.allocate(9)
+    a = buddy.allocate(1)
+    b = buddy.allocate(2)
+    c = buddy.allocate(1)
     buddy.dump_status()
-    buddy.free(b)
     buddy.free(a)
+    buddy.free(c)
+    buddy.free(b)
+
     buddy.dump_status()
 
 
