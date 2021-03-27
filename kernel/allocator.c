@@ -3,7 +3,7 @@
 #include "allocator.h"
 
 /* buckets store linked-lists for blocks with different size */
-static Node buckets[BUCKETS_NUM] = {{0, 0}};
+static Node buckets[BUCKETS_NUM];
 extern long __stack_top;
 
 static void node_init(Node *node, int index) {
@@ -55,7 +55,7 @@ void print_free_list() {
 		uart_puts(": ");
 		Node *head = &buckets[i];
 		Node *p = head->next;
-		while(p) {
+		while(p != NULL) {
 			uart_puts_int(p->index);
 			uart_puts(" -> ");
 			p = p->next;
@@ -66,7 +66,12 @@ void print_free_list() {
 }
 
 void init_buckets() {
-    Node *p = BASE_MEM + 4096*0;
+	for(int i = 0; i > BUCKETS_NUM; i++) {
+		Node *list_head = &buckets[i];
+		list_head->next = NULL;
+		list_head->index = -1;
+	}
+	Node *p = BASE_MEM + 4096*0;
     node_init(p, 0);
     list_push(&buckets[BUCKETS_NUM-1], p);
 	uart_puts("=====Init frame freelist=====\n");
@@ -83,7 +88,7 @@ void split_block(Node *p, int order, int block_size) {
 
 		/* add the bottom half of the block to free_list */
 		Node *new_node = BASE_MEM + (1 << PAGE_SIZE_LOG2)*mid;
-		new_node->index = mid;
+		node_init(new_node, mid);
 		list_push(&buckets[block_size], new_node);
 		
 		/* recursive */
@@ -158,6 +163,8 @@ void* malloc(unsigned int size) {
 			uart_puts("=====Malloc success=====\n");
             uart_puts("allocate at 0x");
             uart_puts_hex(p);
+			uart_puts(", index ");
+			uart_puts_int(p->index);
             uart_puts("\n");
 			uart_puts("\n");
 			
@@ -183,6 +190,7 @@ int merge_block(int index, int bucket_index) {
 				go_to_next_bucket = 1;
 				merge = 1;
 				list_remove(curr_bucket, p);
+				/* from second times merge, we have to remove two node in the same buckets */
 				if(i>bucket_index) list_remove_index(curr_bucket, index);
 
 				/* merge the block index with block target, then add the new merged block into next level bucket */
@@ -228,6 +236,8 @@ void free_page(unsigned long addr, unsigned int size) {
 	uart_puts("=====Free block=====\n");
 	uart_puts("free the block start from index ");
 	uart_puts_int(index);
+	uart_puts(", order ");
+	uart_puts_int(bucket_index);
 	uart_puts("\n");
 	int merge = -1;
 	merge = merge_block(index, bucket_index);
@@ -244,7 +254,7 @@ void free_page(unsigned long addr, unsigned int size) {
 		uart_puts_int(index);
 		uart_puts(", address 0x");
 		uart_puts_hex(addr);
-		
+		uart_puts("\n");
 		uart_puts("\n");
 	}
 }

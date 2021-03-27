@@ -19,7 +19,7 @@ OBJ = start.o $(filter-out start.o, $(wildcard *.o))
 
 all:
 	mkdir -p $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $(SRC)
+	$(CXX) $(CXXFLAGS) -c -g $(SRC)
 	make kernel8
 
 kernel8:

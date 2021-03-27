@@ -125,12 +125,9 @@ void uart_read_line(char *input, int show) {
 }
 
 void uart_puts_int(int i) {
-    char s[20];
-    itoa(i, s);
-    for(int i = 0; i < 20; i++) {
-        if(s[i] == '\0') break;
-        uart_send(s[i]);
-    }
+    char *ch = ((void*)0);
+    itoa(i, ch);
+    uart_puts(ch);
 }
 
 void uart_puts_hex(unsigned int i) {
