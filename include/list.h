@@ -95,7 +95,7 @@ static inline void list_del(struct list_head *entry)
  */
 static inline int list_empty(const struct list_head *head)
 {
-	return READ_ONCE(head->next) == head;
+	return head->next == head;
 }
 
 
