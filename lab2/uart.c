@@ -1,4 +1,6 @@
 #include "utils.h"
+#include "include/dtp.h"
+#include "include/cutils.h"
 
 #define PBASE 0x3F000000
 
@@ -46,6 +48,16 @@ void uart_init ( void )
     put32(AUX_MU_BAUD_REG,270);             //Set baud rate to 115200
 
     put32(AUX_MU_CNTL_REG,3);               //Finally, enable transmitter and receiver
+}
+
+// return 0 for match, 1 for not.
+int uart_probe(struct dtn *node)
+{
+    if (strstr(node->compatible, "uart")) {
+        uart_init();
+        return 0;
+    }
+    return 1;
 }
 
 void uart_send ( char c )

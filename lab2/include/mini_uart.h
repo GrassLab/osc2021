@@ -1,4 +1,6 @@
+#include "dtp.h"
 void uart_init ( void );
+int uart_probe(struct dtn *node);
 char uart_recv ( void );
 void uart_send ( char c );
 void uart_send_string(char* str);

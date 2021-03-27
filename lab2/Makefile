@@ -2,8 +2,8 @@ CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
 # %.o: %.c
 # 	aarch64-linux-gnu-gcc $(CFLAGS) -c $< -o $@
 
-kernel8.img: boot.o utils.o uart.o mm.o cutils.o test.o main.o
-	aarch64-linux-gnu-ld -nostdlib -nostartfiles -Iinclude boot.o utils.o uart.o mm.o cutils.o test.o main.o -T linker.ld -o kernel8.elf
+kernel8.img: boot.o utils.o uart.o mm.o cutils.o dtp.o test.o main.o
+	aarch64-linux-gnu-ld -nostdlib -nostartfiles -Iinclude boot.o utils.o uart.o mm.o cutils.o dtp.o test.o main.o -T linker.ld -o kernel8.elf
 	aarch64-linux-gnu-objcopy -O binary kernel8.elf kernel8.img
 
 boot.o: boot.S
@@ -20,6 +20,9 @@ mm.o: mm.c
 
 cutils.o: cutils.c
 	aarch64-linux-gnu-gcc $(CFLAGS) -c cutils.c -o cutils.o
+
+dtp.o: dtp.c
+	aarch64-linux-gnu-gcc $(CFLAGS) -c dtp.c -o dtp.o
 
 test.o: test.c
 	aarch64-linux-gnu-gcc $(CFLAGS) -c test.c -o test.o

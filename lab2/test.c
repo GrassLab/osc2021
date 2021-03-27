@@ -84,3 +84,9 @@ uart_send_string("========== free DEFGHI ==============\r\n");
     show_mm();
     return 0;
 }
+
+int _test_startup_alloc_system(void)
+{
+    show_sm();
+    return 0;
+}
