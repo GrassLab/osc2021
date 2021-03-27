@@ -51,7 +51,13 @@ char uart_read(){
 		return r;
 	}
 }
-
+char uart_read_real(){
+	do {
+        asm volatile("nop");
+    	} while (!(*AUX_MU_LSR & 0x01));
+	char r = (char)(*AUX_MU_IO);
+	return r;
+}
 void uart_write(unsigned int c){
 	do {
         asm volatile("nop");
@@ -60,11 +66,11 @@ void uart_write(unsigned int c){
 	*AUX_MU_IO = c;
 }
 
-void uart_read_line(char *input, int show) {
+void uart_read_line_real(char *input, int show) {
     int index = 0;
     char c;
     while(c != '\n') {
-        c = uart_read();
+        c = uart_read_real();
         if(show) uart_write(c);
         if(c != '\n') {
             input[index] = c;

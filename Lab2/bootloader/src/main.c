@@ -35,17 +35,17 @@ int main() {
     uart_printf("lab2\n");
     uart_printf("start to load image\n");
     unsigned char input[20];
-    uart_read_line(input, 0);
+    uart_read_line_real(input, 0);
     uart_printf("%s", input);
     uart_write('\r');
     int size = atoi(input, 10);
 
-    size = 6328;
+    //size = 6328;
     uart_printf("kernel size = %d\n", size);
     uart_printf("%s", input);
     unsigned char *kernel = (unsigned char *)0x80000;
     for(int i = 0; i < size; i++){
-    	unsigned char c = uart_read();
+    	unsigned char c = uart_read_real();
         kernel[i] = c;
     }
 

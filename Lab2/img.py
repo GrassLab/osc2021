@@ -4,7 +4,7 @@ import time
 file = 'kernel8.img'
 
 #port = '/dev/ttyUSB0'
-port = '/dev/pts/51'
+port = '/dev/pts/1'
 
 kernel_size = os.path.getsize(file)
 index = 0
