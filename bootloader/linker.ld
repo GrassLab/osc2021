@@ -19,14 +19,17 @@ SECTIONS
     .bss :
     {
         __bss_start = .;
+        . = ALIGN(16);
         *(.bss  .bss.* .gnu.linkonce.b.*)
-        __bss_end = .;
+        . = ALIGN(16);
     }
+    __bss_end = .;
 
     _end = .;
 }
-__bss_size = (__bss_start - __bss_end) >> 3;
+__bss_size = (__bss_end - __bss_start);
 __stack_base = __text_start << 1;
 bootloader_start = __text_start;
 bootloader_end = _end;
+bootloader_size = _end - __text_start;
 bootloader_offset = 0x80000 - __text_start;

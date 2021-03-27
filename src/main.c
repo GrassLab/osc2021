@@ -1,10 +1,10 @@
+#include "loader.h"
 #include "uart.h"
 #include "string.h"
 #include "reboot.h"
 #include "time.h"
 #include "mailbox.h"
 #include "debug.h"
-#include "loader.h"
 #include "cpio.h"
 #include "flattened_devicetree.h"
 #include "data_type.h"
@@ -35,7 +35,7 @@ void parse_command (char *b) {
     }
     else if (!strcmp(b, "reboot")) {
         uart_send("reboot~~\n");
-        reset(10000);
+        reset(1000);
     }
     else if (!strcmp(b, "time")) {
         uart_sendf(get_time());
@@ -68,6 +68,9 @@ void parse_command (char *b) {
     }
     else if (!strcmp(b, "show_fdt")) {
         show_all_fdt();
+    }
+    else if (!strcmp(b, "boot_info")) {
+        show_boot_info();
     }
     else if (!strcmp(b, "test")) {
         show_all_fdt();
@@ -110,7 +113,7 @@ void parse_command (char *b) {
 
 int main () {
     uart_init();
-    fdt_head = (FDT_HEADER *) bootloader_info[0];
+    fdt_head = (FDT_HEADER *)boot_info.device_tree_addr;
 
     char buffer[BUFFER_SIZE];
 

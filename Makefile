@@ -12,16 +12,6 @@ INC_C_OBJ := $(patsubst %.c, $(INC_BUILD)/%.o, $(notdir $(INC_C_SRC)))
 INC_ASM_SRC := $(wildcard $(INC_DIR)/*.S)
 INC_ASM_OBJ := $(patsubst %.S, $(INC_BUILD)/%.o, $(notdir $(INC_ASM_SRC)))
 
-# bootloader
-BOOT_DIR := bootloader/src
-BOOT_BUILD := build/bootloader
-BOOT_C_SRC := $(wildcard $(BOOT_DIR)/*.c)
-BOOT_C_OBJ := $(patsubst %.c, $(BOOT_BUILD)/%.o, $(notdir $(BOOT_C_SRC)))
-BOOT_ASM_SRC := $(wildcard $(BOOT_DIR)/*.S)
-BOOT_ASM_OBJ := $(patsubst %.S, $(BOOT_BUILD)/%.o, $(notdir $(BOOT_ASM_SRC)))
-BOOT_LD := bootloader/linker.ld
-BOOTLOADER = bootloader
-
 # kernel
 DIR := src
 BUILD_DIR := build
@@ -30,13 +20,15 @@ C_OBJ := $(patsubst %.c, $(BUILD_DIR)/%.o, $(notdir $(C_SRC)))
 ASM_SRC := $(wildcard $(DIR)/*.S)
 ASM_OBJ := $(patsubst %.S, $(BUILD_DIR)/%.o, $(notdir $(ASM_SRC)))
 LD := linker.ld
-KERNEL := kernel8
+TARGET := kernel8
 
 GDB := gdb-multiarch
 MINI-UART := -serial null -serial stdio
 
 # flag
+BOOTLOADER := bootloader
 TEST_IMG := $(BOOTLOADER).img
+#TEST_IMG := $(TARGET).img
 UART := UART_MINI # UART_MINI or UART_PL011
 ifeq ($(tar), raspi3)
 TAR = M_RASPI3
@@ -56,7 +48,7 @@ QEMU_CPIO := -initrd $(CPIO)
 DTB := bcm2710-rpi-3-b-plus.dtb
 QEMU_DTB := -dtb $(DTB)
 
-all: $(BOOTLOADER).img $(KERNEL).img $(CPIO)
+all:  $(BOOTLOADER).img $(TARGET).img $(CPIO)
 
 # include files
 $(INC_BUILD)/%.o: $(INC_DIR)/%.c
@@ -67,23 +59,10 @@ $(INC_BUILD)/%.o: $(INC_DIR)/%.S
 	mkdir -p $(INC_BUILD)
 	$(COMPILER) $(CCFLAG) -c $< -o $@
 
-# bootloader
-$(BOOTLOADER).img: $(INC_C_OBJ) $(INC_ASM_OBJ) $(BOOT_C_OBJ) $(BOOT_ASM_OBJ)
-	$(LINKER) -T $(BOOT_LD) -o $(BOOTLOADER).elf $(INC_C_OBJ) $(INC_ASM_OBJ) $(BOOT_C_OBJ) $(BOOT_ASM_OBJ)
-	$(OBJCOPY) -O binary $(BOOTLOADER).elf $(BOOTLOADER).img
-
-$(BOOT_BUILD)/%.o: $(BOOT_DIR)/%.c
-	@mkdir -p $(BOOT_BUILD)
-	$(COMPILER) $(CCFLAG) -I$(BOOT_DIR) -c $< -o $@
-
-$(BOOT_BUILD)/%.o: $(BOOT_DIR)/%.S
-	@mkdir -p $(BOOT_BUILD)
-	$(COMPILER) $(CCFLAG) -I$(BOOT_DIR) -c $< -o $@
-
 # kernel
-$(KERNEL).img: $(INC_C_OBJ) $(INC_ASM_OBJ) $(C_OBJ) $(ASM_OBJ)
-	$(LINKER) -T $(LD) -o $(KERNEL).elf $(INC_C_OBJ) $(INC_ASM_OBJ) $(C_OBJ) $(ASM_OBJ)
-	$(OBJCOPY) -O binary $(KERNEL).elf $(KERNEL).img
+$(TARGET).img: $(INC_C_OBJ) $(INC_ASM_OBJ) $(C_OBJ) $(ASM_OBJ)
+	$(LINKER) -T $(LD) -o $(TARGET).elf $(INC_C_OBJ) $(INC_ASM_OBJ) $(C_OBJ) $(ASM_OBJ)
+	$(OBJCOPY) -O binary $(TARGET).elf $(TARGET).img
 
 $(BUILD_DIR)/%.o: $(DIR)/%.c
 	@mkdir -p $(BUILD_DIR)
@@ -92,6 +71,12 @@ $(BUILD_DIR)/%.o: $(DIR)/%.c
 $(BUILD_DIR)/%.o: $(DIR)/%.S
 	@mkdir -p $(BUILD_DIR)
 	$(COMPILER) $(CCFLAG) -I$(DIR) -c $< -o $@
+
+# bootloader
+$(BOOTLOADER).img:
+	@cd $(BOOTLOADER) && make tar=$(tar)
+	@cp $(BOOTLOADER)/$(BOOTLOADER).img ./
+	@cp $(BOOTLOADER)/$(BOOTLOADER).elf ./
 
 # cpio archive
 $(CPIO): $(CPIO_FILES)
@@ -111,8 +96,14 @@ gdb:
 	@echo "target remote :1234"
 	$(GDB) $(IMG)
 
+clear:
+	rm -rf $(BUILD_DIR)
+	rm -rf $(CPIO)
+	rm -f $(TARGET).elf $(TARGET).img
+	rm -f $(BOOTLOADER).elf $(BOOTLOADER).img
+	@cd $(BOOTLOADER) && make clean
+
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -rf $(CPIO)
-	rm -f $(KERNEL).elf $(KERNEL).img
-	rm -rf $(BOOTLOADER).elf $(BOOTLOADER).img
+	rm -f $(TARGET).elf $(TARGET).img

@@ -19,13 +19,18 @@ SECTIONS
     .bss :
     {
         __bss_start = .;
+        . = ALIGN(16);
         *(.bss  .bss.* .gnu.linkonce.b.*)
-        __bss_end = .;
+        . = ALIGN(16);
     }
+    __bss_end = .;
 
     _end = .;
 }
-__bss_size = (__bss_start - __bss_end) >> 3;
+__bss_size = __bss_end - __bss_start;
 __stack_base = __text_start << 1;
+__stack_size = 0x20000;
 bootloader_start = __text_start;
 bootloader_end = _end;
+kernel_start = __text_start;
+kernel_size = _end - kernel_start;
