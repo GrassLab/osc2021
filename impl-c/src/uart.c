@@ -117,7 +117,7 @@ void uart_puts(char *s) {
 
 // Print a formatted string to uart
 void uart_println(char *fmt, ...) {
-  unsigned int i;
+  int64_t i;
   char *s;
 
   va_list arg;
@@ -160,7 +160,7 @@ void uart_println(char *fmt, ...) {
 
 // same as println, but without a newline at the end
 void uart_printf(char *fmt, ...) {
-  unsigned int i;
+  int64_t i;
   char *s;
 
   va_list arg;
