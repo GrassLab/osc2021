@@ -23,6 +23,7 @@ void command_help ()
     uart_puts("\treboot:\t\treset rpi3.\n");
     uart_puts("\tls:\t\tPrint cpio file list.\n");
     uart_puts("\tcat {filename}:\tPrint content in {filename} \n");
+    uart_puts("\tma:\tSystem of memory allcator \n");
     uart_puts("\n");
 }
 

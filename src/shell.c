@@ -4,6 +4,8 @@
 #include "uart.h"
 #include "cpio.h"
 #include "printf.h"
+#include "mm.h"
+
 void shell_start () 
 {
     int buffer_counter = 0;
@@ -74,6 +76,7 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
             else if ( !strcmp(buffer, "reboot"      ) ) command_reboot();
             else if ( !strcmp(buffer, "ls"          ) ) command_cpio_ls((void *) INITRAMFS_ADDR);
             else if ( !strncmp(buffer, "cat ", 3    ) ) command_getCpioFile((void *) INITRAMFS_ADDR, buffer + 4);
+            else if ( !strcmp(buffer, "ma"          ) ) mm_init();
             else                                        command_not_found(buffer);
         }
             
