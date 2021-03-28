@@ -69,5 +69,15 @@ void show_boot_info () {
 
     uart_send("\r\nstack size: ");
     uart_sendh(boot_info.stack_size);
+
+    uart_send("\r\nstartup allocator address: ");
+    uart_sendh(boot_info.startup_allocator_addr);
+
+    uart_send("\r\ncpio address: ");
+    uart_sendh(boot_info.cpio_addr);
+
+    uart_send("\r\ncpio end: ");
+    uart_sendh(boot_info.cpio_end);
+
     uart_send("\r\n");
 }

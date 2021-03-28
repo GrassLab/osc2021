@@ -22,8 +22,8 @@ SECTIONS
         . = ALIGN(16);
         *(.bss  .bss.* .gnu.linkonce.b.*)
         . = ALIGN(16);
+        __bss_end = .;
     }
-    __bss_end = .;
 
     _end = .;
 }

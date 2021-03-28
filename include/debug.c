@@ -1,4 +1,5 @@
 #include "debug.h"
+#include "data_type.h"
 #include "string.h"
 #include "uart.h"
 
@@ -28,19 +29,30 @@ int mem_print (char *b) {
     int size = 0;
     for (; b[2 + size] >= '0' && b[2 + size] <= '9'; size++);
 
-    if (b[size + 2] != 'g' || b[size + 3] != 'x')
-        return 0;
+    if (b[size + 2] == 'l' && b[size + 3] == 'i') {
+        int address_start = size + 4;
+        for (; b[address_start] == ' '; address_start++);
 
-    int address_start = size + 4;
-    for (; b[address_start] == ' '; address_start++);
+        char tmp[128];
+        size = size + 1 < 128 ? size + 1 : 128;
+        strncopy(tmp, &b[2], size);
+        u64 c_addr = atoui(&b[address_start]);
+        uart_send((char *)c_addr);
+        return 1;
+    }
+    else if (b[size + 2] == 'g' || b[size + 3] == 'x') {
+        int address_start = size + 4;
+        for (; b[address_start] == ' '; address_start++);
 
-    char tmp[128];
-    size = size + 1 < 128 ? size + 1 : 128;
-    strncopy(tmp, &b[2], size);
+        char tmp[128];
+        size = size + 1 < 128 ? size + 1 : 128;
+        strncopy(tmp, &b[2], size);
 
-    if (size == 1)
-        mem_hex_print(atoui(&b[address_start]), 1);
-    else
-        mem_hex_print(atoui(&b[address_start]), atoui(tmp));
-    return 1;
+        if (size == 1)
+            mem_hex_print(atoui(&b[address_start]), 1);
+        else
+            mem_hex_print(atoui(&b[address_start]), atoui(tmp));
+        return 1;
+    }
+    return 0;
 }

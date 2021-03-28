@@ -2,11 +2,18 @@
 #include "data_type.h"
 #include "uart.h"
 #include "string.h"
+#include "loader.h"
+#include "mm.h"
 
 FDT_HEADER *fdt_head = 0;
 
 void fdt_init () {
-
+    if (!boot_info.device_tree_addr)
+        return;
+    fdt_head = (FDT_HEADER *)boot_info.device_tree_addr;
+    boot_info.device_tree_size = get_fdt_header_totalsize();
+    startup_lock_memory(boot_info.device_tree_addr,
+            boot_info.device_tree_addr + boot_info.device_tree_size);
 }
 
 u32 u32_b2l (u32 num) {

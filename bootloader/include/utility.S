@@ -18,4 +18,5 @@ get__start:
 jump_address:
     mov x20, x0
     ldr x0, =boot_info
+    mov x1, #0xcafe
     br x20

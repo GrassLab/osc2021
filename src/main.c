@@ -7,6 +7,7 @@
 #include "debug.h"
 #include "cpio.h"
 #include "flattened_devicetree.h"
+#include "mm.h"
 #include "data_type.h"
 #define BUFFER_SIZE 64
 
@@ -72,8 +73,12 @@ void parse_command (char *b) {
     else if (!strcmp(b, "boot_info")) {
         show_boot_info();
     }
+    /* TODO: delete */
     else if (!strcmp(b, "test")) {
-        show_all_fdt();
+        show_list();
+        startup_used_list_reorder();
+        uart_send("\r\n");
+        show_list();
     }
     else if (!strcmp(b, "test1")) {
         unsigned long tmp = (unsigned long) fdt_head;
@@ -81,7 +86,6 @@ void parse_command (char *b) {
         u32 *ptr = (u32 *)tmp;
         uart_sendh(tmp);
         uart_send("\r\n");
-        //uart_sendh((unsigned long) ptr);
         int flag = 0;
         for (int i = 0; i < 100; i++) {
             if (flag) {
@@ -113,7 +117,9 @@ void parse_command (char *b) {
 
 int main () {
     uart_init();
-    fdt_head = (FDT_HEADER *)boot_info.device_tree_addr;
+    startup_allocator_init();
+    cpio_init();
+    fdt_init();
 
     char buffer[BUFFER_SIZE];
 

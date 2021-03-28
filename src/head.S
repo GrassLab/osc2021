@@ -4,19 +4,31 @@
 _start:
 /* store flatten device tree */
 mov x20, x0
+mov x21, x1
 
 /* init bss section */
     ldr x0, =__bss_start
     ldr x1, =__bss_size
     lsr x1, x1, #3
 bss_init_loop:
-    cbz x1, _boot_info
+    cbz x1, boot_info_init
     str xzr, [x0], #8
     sub x1, x1, #1
     b bss_init_loop
 
-_boot_info:
+boot_info_init:
     ldr x0, =boot_info
+    mov x1, #0xcafe
+    cmp x21, x1
+    beq copy_boot_info_table
+    stp x20, x21, [x0]
+    stp x2, x3, [x0, #16]
+    mov x1, #0
+    stp x1, x1, [x0, #32]
+    add x0, x0, #0x30
+    b init_kernel_info
+
+copy_boot_info_table:
     mov x1, #3
 init_info_loop:
     cbz x1, init_kernel_info
@@ -45,7 +57,9 @@ init_stack:
     mov sp, x0
 
 /* append bootloader behind the tail of kernel */
-    mov x0, 11
+    mov x1, #0xcafe
+    cmp x21, x1
+    bne _main   // if there is no previous bootloader, skip relocation
     ldr x1, =boot_info
     ldp x2, x3, [x1, #48]
     add x2, x2, x3    // end of kernel

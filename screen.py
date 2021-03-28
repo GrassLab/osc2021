@@ -59,7 +59,11 @@ def get_until (token):
         buf += ser.read(1)
         if buf.find(str.encode(token)) >= 0:
             break
-    return buf.decode('utf-8')
+    try:
+        return buf.decode('utf-8')
+    except:
+        print(buf)
+        return "okay"
 
 
 def send (message):

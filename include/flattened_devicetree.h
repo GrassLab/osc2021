@@ -43,4 +43,5 @@ u32 get_fdt_header_size_dt_struct ();
 
 void show_fdt_info ();
 void show_all_fdt ();
+void fdt_init ();
 #endif
