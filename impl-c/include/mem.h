@@ -1,11 +1,13 @@
 #pragma once
 
+#include "list.h"
+
 typedef struct FrameNode {
+  // inherit a list type, so we could cast FrameNode into list_head
+  struct list_head list_base;
+
   int arr_index;
   int exp;
-
-  struct FrameNode *prev;
-  struct FrameNode *next;
 } FrameNode;
 
 // BUDDY_TOTAL_FRAMES = 2 ^ BUDDY_MAX_EXPONENT
@@ -17,7 +19,7 @@ typedef struct FrameNode {
 #define BUDDY_NUM_FREE_LISTS (BUDDY_MAX_EXPONENT + 1)
 
 typedef struct BuddyAllocater {
-  FrameNode free_lists[BUDDY_NUM_FREE_LISTS];
+  list_head_t free_lists[BUDDY_NUM_FREE_LISTS];
   FrameNode frame_array[BUDDY_NUM_FRAMES];
 } BuddyAllocater;
 
