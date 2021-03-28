@@ -27,6 +27,11 @@ all:
 	$(CXX) $(CFLAGS) -c -g $(SRC)
 	make kernel8
 
+kernel:
+	mkdir -p $(BUILD_DIR)
+	$(CXX) $(CFLAGS) -c $(SRC) -D BOOT_ENABLE
+	make kernel8
+
 kernel8:
 	$(LD) $(LDFLAGS) -o $(BUILD_DIR)/$(ELF) $(OBJ)
 	$(OBJCOPY) $(OBJCOPYFLAGS) $(BUILD_DIR)/$(ELF) $(BUILD_DIR)/$(IMG)

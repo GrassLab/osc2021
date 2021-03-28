@@ -34,7 +34,7 @@ void loadimg() {
     uart_puts(" bytes.\n");
     uart_puts("-----------------------------------------------------------");
     uart_puts("------------\n");
-    for(int i = 0; i < 10; i++) {
+    for(int i = 0; i < 0; i++) {
         asm volatile("nop");
     }
 

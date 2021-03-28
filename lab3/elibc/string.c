@@ -89,7 +89,7 @@ void *memset(void *d, int v, size_t n)
     return d;
 }
 
-long strlen(char *s)
+long strlen(unsigned char *s)
 {
     long n = 0;
 

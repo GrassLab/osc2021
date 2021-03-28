@@ -1,7 +1,7 @@
-#include <stdlib.h>
-#include <uart.h>
-#include <utils.h>
-#include <string.h>
+#include "stdlib.h"
+#include "uart.h"
+#include "utils.h"
+#include "string.h"
 typedef unsigned long ulong;
 
 extern ulong __heap_start; /* declared in the linker script */
@@ -36,7 +36,8 @@ void *malloc(size_t n)
             r = n % sizeof(ulong);
             temp = n + sizeof(ulong) + ((r)? 4-r : 0);
             curr_top = ptr + temp/sizeof(ulong);
-            *curr_top = *ptr;
+            if(curr_top != *ptr)
+                *curr_top = *ptr;                
             *ptr = (ulong) curr_top | 1;
             break;
         }
@@ -56,7 +57,8 @@ void *malloc(size_t n)
             r = n % sizeof(ulong);
             temp = n + sizeof(ulong) + ((r)? 4-r : 0);
             curr_top = ptr + temp/sizeof(ulong);
-            *curr_top = *ptr;
+            if(curr_top != *ptr)
+                *curr_top = *ptr; 
             *ptr = (ulong) curr_top | 1;
             break;
         }

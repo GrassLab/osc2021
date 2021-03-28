@@ -1,3 +1,4 @@
+#include "string.h"
 #define BITS 64
 
 /**
@@ -10,9 +11,9 @@
 */
 
 
-void strrev(char str[]){
+void strrev(unsigned char str[]){
 	int len = strlen(str);
-	char tmp, i, j;
+	unsigned char tmp, i, j;
 	int middle = len /2;
 	
 	for(i=0, j=len-1; i < j; i++,j--){
@@ -22,8 +23,7 @@ void strrev(char str[]){
 	}
 }
 
-void dec_hex(int number, char *hexadecimal){
-	
+void dec_hex(int number, unsigned char *hexadecimal){
 	char HEX_VALUES[] = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 	for(int i=0;i<20;i++)
 		hexadecimal[i] = 0;
@@ -48,6 +48,4 @@ void dec_hex(int number, char *hexadecimal){
 	hexadecimal[index] = '\0';
 	strrev(hexadecimal);
 	
-
-	return hexadecimal;
 } 

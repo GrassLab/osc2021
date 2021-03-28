@@ -1,8 +1,9 @@
-__heap_size  = 0x00040000;
+__heap_size     = 0x00120000;
+__stack_size    = 0x00120000;
 MEMORY
 {
     code_ram   (rwx) : ORIGIN = 0x00080000, LENGTH = 0x6000
-    data_ram   (rwx) : ORIGIN = 0x00086000, LENGTH = 0x200000
+    data_ram   (rwx) : ORIGIN = 0x00086000, LENGTH = __stack_top - 0x00086000 + 0x00080000
 }
 SECTIONS
 {       
@@ -22,7 +23,7 @@ SECTIONS
         *(.bss)
         bss_end = .;
         __heap_start = .;
-        __stack_top = . + 0x150000+__heap_size;
+        __stack_top = . + __stack_size + __heap_size;
     } > data_ram
 }
 

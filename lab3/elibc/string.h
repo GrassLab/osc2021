@@ -59,7 +59,7 @@ void *memcpy(void *dst, void *src, size_t n);
 void *memmove(void *dst, void *src, size_t n);
 void *memset(void *s, int v, size_t n);
 
-long strlen(char *s);
+long strlen(unsigned char *s);
 char *strcpy(char *dst, char *src);
 char *strncpy(char *d, char *s, size_t n);
 char *strcat(char *d, char *s);

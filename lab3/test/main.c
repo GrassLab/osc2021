@@ -37,25 +37,48 @@ void main() {
         else if(!strcmp(input, "ls")) {
             ls(input,0);
         }
-        else if(!strcmp(input, "alloc")) {
+        else if(!strcmp(input, "demo")) {
             alloc_page_init(0x10000000, 0x20000000);           
             alloc_page(4096);
             alloc_page(4096);
             alloc_page(4096);
             alloc_page(4096);
-            alloc_page(4096);
-            alloc_page(4096);
-            alloc_page(4096);
-            alloc_page(4096);
-            free_page(0x1FC00000+4096*6, 4096);
-            free_page(0x1FC00000+4096*5, 4096);
-            free_page(0x1FC00000+4096*4, 4096);
-            free_page(0x1FC00000+4096*7, 4096);
+            free_page(0x1FC00000+4096*2, 4096);
+            free_page(0x1FC00000+4096*1, 4096);
+            free_page(0x1FC00000+4096*3, 4096);
+            free_page(0x1FC00000+4096*0, 4096);
+            alloc_page(16);
+            alloc_page(16);
+            alloc_page(16);
+            alloc_page(16);
+            free_page(0x1FC00000+16*2, 16);
+            free_page(0x1FC00000+16*1, 16);
+            free_page(0x1FC00000+16*3, 16);
+            free_page(0x1FC00000+16*0, 16);
+        }
+        else if(!strcmp(input, "alloc_init")) {
+            uart_puts("input low  address(hex): ");
+            shell(input);
+            unsigned int addr_low = atoi(input, 16);
+            uart_puts("input high address(hex): ");
+            shell(input);
+            unsigned int addr_high = atoi(input, 16);
+            alloc_page_init(addr_low, addr_high);
         }
         else if(!strcmp(input, "alloc_page")) {
-            uart_puts("allocated page at: ");
-            dec_hex(alloc_page(4096*2*2*2),tmp_string);
-            uart_puts("\n");
+            uart_puts("input page size: ");
+            shell(input);
+            unsigned int page_size = atoi(input, 10);
+            alloc_page(page_size);
+        }
+        else if(!strcmp(input, "free_page")) {
+            uart_puts("input page address(hex): ");
+            shell(input);
+            unsigned int page_address = atoi(input, 16);
+            uart_puts("input page size: ");
+            shell(input);
+            unsigned int free_size = atoi(input, 10);
+            free_page(page_address, free_size);
         }
         else {
             if(!ls(input,1)){
