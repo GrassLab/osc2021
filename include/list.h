@@ -90,6 +90,14 @@ static inline void list_del(struct list_head *entry)
 }
 
 /**
+ * list_for_each	-	iterate over a list
+ * @pos:	the &struct list_head to use as a loop cursor.
+ * @head:	the head for your list.
+ */
+#define list_for_each(pos, head) \
+    for (pos = (head)->next; pos != (head); pos = pos->next)
+    
+/**
  * list_empty - tests whether a list is empty
  * @head: the list to test.
  */
