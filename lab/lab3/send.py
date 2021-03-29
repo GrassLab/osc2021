@@ -43,5 +43,7 @@ else:
             c = kernel.read(1)
             rpi3.write(c)
             print("%d / %d" % (i+1, kernel_size), end="\r")
-            sleep(0.125)
+            # sleep(0.125)
+            if i % 10 == 0:
+                sleep(0.001)
     rpi3.close()

@@ -177,4 +177,8 @@ int size2Index(int size) {
   while (size >>= 1) i++;
   return i;
 }
+int abs(int a) {
+  if (a < 0) return -a;
+  return a;
+}
 #endif /*_UTILS */

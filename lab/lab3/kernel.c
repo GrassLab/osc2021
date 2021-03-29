@@ -67,6 +67,11 @@ void shell() {
     else if (strcmp(buff, "reboot")) {
       do_reset(100);
       return;
+
+    } else if (strcmp(buff, "test")) {
+      // buddy_test1();
+      // buddy_test2();
+      dma_test1();
     } else
       do_except(buff);
   }
@@ -75,8 +80,6 @@ void shell() {
 void main() {
   uart_init();  // set up serial console
   buddy_init((char *)BUDDY_START);
-  buddy_test1();
-  buddy_test2();
-  return;
+  dma_init();
   shell();
 }

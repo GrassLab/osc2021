@@ -5,36 +5,6 @@ memory address
 0x1000
 |     |
 |     |
-0x80000     bootloader
-|     |
-|     |
-0x180000    new bootloader
-|     |
-|     |
-0x400000    kernel
-|     |
-|     |
-0x8000000   initramfs
-|     |
-|     |
-0x9000000   *deviceTree
-|     |
-|     |
-|     |
-.     .
-.     .
-.     .
-|     |
-
-DeviceTree???
-'''
-'''
-memory address
-0x0000
-|     |     spin table
-0x1000
-|     |
-|     |
 0x80000
 |     |     bootloader --> kernel
 |     |     4MB
