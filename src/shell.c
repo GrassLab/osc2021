@@ -217,8 +217,7 @@ void shell_ls(){
 
 void shell_memory(){
     char cur_char;
-    uint64_t need_size, free_addr, free_size;
-    uint32_t mem;
+    uint64_t need_size, free_addr, free_size, mem;
     struct FrameListNum *cursor;
     uart_puts("\r\nWelcome to memory manipulator!");
     while(1){
@@ -239,9 +238,11 @@ void shell_memory(){
             get_input();
             need_size = atoi(input_buffer, 10);
             mem = new_memory(frame_array, need_size);
-            uart_puts("New Memory Address: ");
-            uart_puts(itoa(mem, 16));
-            uart_puts("\r\n");
+            if(mem >= 0){
+                uart_puts("New Memory Address: ");
+                uart_puts(itoa(mem, 16));
+                uart_puts("\r\n");
+            }
         }
         else if(cur_char == 'd'){
             uart_puts("Enter the allocated memory address (hex)\r\n");

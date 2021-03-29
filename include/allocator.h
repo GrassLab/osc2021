@@ -16,12 +16,10 @@ typedef struct _RawFrameArray{
     uint64_t base_addr, end_addr;
     int16_t val[0x10000 + 100];
     struct FrameListNum *freeList[20];
-
-    uint32_t (*new_memory)(struct _RawFrameArray*, uint64_t);
 } FrameArray;
 
 FrameArray* NewFrameArray();
-uint32_t new_memory(struct _RawFrameArray*, uint64_t);
-void free_memory(struct _RawFrameArray*, uint64_t , uint64_t );
+uint64_t new_memory(struct _RawFrameArray*, uint64_t);
+void free_memory(struct _RawFrameArray*, uint64_t , uint64_t);
 
 #endif

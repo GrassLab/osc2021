@@ -40,9 +40,9 @@ void _insert_to_frameList(struct _RawFrameArray *frame_array, uint16_t power_idx
     }
 }
 
-uint32_t _allocate_slot(struct _RawFrameArray *frame_array, uint64_t need_size, int16_t need_size_power, int16_t find_size_power){
+uint64_t _allocate_slot(struct _RawFrameArray *frame_array, uint64_t need_size, int16_t need_size_power, int16_t find_size_power){
     uint32_t index = frame_array->freeList[find_size_power]->index;
-    uint32_t return_addr = frame_array->base_addr + (4096 * (uint32_t)index);
+    uint64_t return_addr = frame_array->base_addr + (4096 * (uint64_t)index);
     frame_array->freeList[find_size_power] = frame_array->freeList[find_size_power]->next;
     uint32_t cur_end_index;
     int16_t cur_size_power;
@@ -101,11 +101,6 @@ uint32_t _allocate_slot(struct _RawFrameArray *frame_array, uint64_t need_size, 
         idx -= 1;
     }
     uart_puts("- - - - - - - - - -\r\n");
-
-    // for(int i=0; i<20; i++){
-    //     uart_puts(itoa(frame_array->val[i], 10));
-    //     uart_putc('\t');
-    // }
 
     return return_addr;
 }
@@ -179,7 +174,6 @@ void free_memory(struct _RawFrameArray *self, uint64_t free_addr, uint64_t free_
     }
     else if(free_size < free_size_power_len){
         uint32_t smaller_free_size_power_len = 1<<(free_size_power-1);
-        // uint32_t fragment_len = free_size - smaller_free_size_power_len;
         _insert_to_frameList(self, free_size_power-1, index);
         // Process val array
         self->val[index] = free_size_power-1;
@@ -208,19 +202,19 @@ void free_memory(struct _RawFrameArray *self, uint64_t free_addr, uint64_t free_
         uart_puts("\r\n");
     }
     else{
-        uart_puts("ERROR! free_size should not greater than free_size_power_len");
+        uart_puts("ERROR! free_size should not greater than free_size_power_len\r\n");
         return;
     }
     _merge_free_list(self);
 }
 
-uint32_t new_memory(struct _RawFrameArray *self, uint64_t need_size){
+uint64_t new_memory(struct _RawFrameArray *self, uint64_t need_size){
     need_size /= 0x1000;
     int16_t need_size_power = _cal_log_2(need_size), find_size_power;
     find_size_power = need_size_power;
     while(1){
         if(find_size_power > 19){
-            uart_puts("ERROR: new_memory cannot find suitable free memory!");
+            uart_puts("ERROR: new_memory cannot find suitable free memory!\r\n");
             return -1;
         }
         if(self->freeList[find_size_power])
@@ -245,8 +239,6 @@ FrameArray* NewFrameArray(){
         frame_array.freeList[i] = 0;
 
     frame_array.freeList[idx] = _get_new_list_element(0, 0, 0);
-
-    frame_array.new_memory = new_memory;
 
     return &frame_array;
 }
