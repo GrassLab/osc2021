@@ -37,6 +37,9 @@ void show_boot_info () {
     uart_send("device tree address: ");
     uart_sendh(boot_info.device_tree_addr);
 
+    uart_send("\r\ndevice tree size: ");
+    uart_sendh(boot_info.device_tree_size);
+
     uart_send("\r\nbooting flag0: ");
     uart_sendh(boot_info.bootloader_flag[0]);
 

@@ -33,6 +33,8 @@ void parse_command (char *b) {
         uart_send("fdt_info: show flattened device tree information\r\n");
         uart_send("show_fdt: show all flattened device tree nodes\r\n");
         uart_send("fdt [node]: search [node] information\r\n");
+
+        uart_send("bs_table\r\n");
     }
     else if (!strcmp(b, "reboot")) {
         uart_send("reboot~~\n");
@@ -75,10 +77,14 @@ void parse_command (char *b) {
     }
     /* TODO: delete */
     else if (!strcmp(b, "test")) {
-        show_list();
-        startup_used_list_reorder();
-        uart_send("\r\n");
-        show_list();
+        //show_list();
+        buddy_system_show_buckets();
+        bs_malloc (0x1000);
+        buddy_system_show_buckets();
+    }
+    else if (!strcmp(b, "bs_table")) {
+        //show_list();
+        buddy_system_show_entry_table();
     }
     else if (!strcmp(b, "test1")) {
         unsigned long tmp = (unsigned long) fdt_head;
@@ -120,6 +126,9 @@ int main () {
     startup_allocator_init();
     cpio_init();
     fdt_init();
+    startup_lock_memory(0, 0x80000);
+
+    buddy_system_init();
 
     char buffer[BUFFER_SIZE];
 

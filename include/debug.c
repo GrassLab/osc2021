@@ -11,11 +11,11 @@ void mem_hex_print (unsigned long address, unsigned int num) {
         if (!(i % 2)) {
             if (i != 0)
                 uart_send("\r\n");
-            uart_sendh(address + 8 * i);
+            uart_sendhf(address + 8 * i);
             uart_send(":\t");
         }
         ptr = (unsigned long *) (address + 8 * i);
-        uart_sendh(*ptr);
+        uart_sendhf(*ptr);
         uart_send("\t");
     }
     uart_send("\r\n");
