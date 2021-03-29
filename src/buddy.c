@@ -8,7 +8,7 @@ memFrame *used_list[MEMORY_LIST_LENGTH];
 
 void buddy_init(){
     for(int i = 0; i < MEMORY_LIST_LENGTH; ++i) free_list[i] = used_list[i] = 0;
-    for(int i = 0; i < FRAME_ARRAY_LENGTH; ++i) frame_array[i] = (memFrame){.size = -1, .addr = (char*)MEMORY_START + PAGE_SIZE * i, .next=0};
+    for(int i = 0; i < FRAME_ARRAY_LENGTH; ++i) frame_array[i] = (memFrame){.size = -1, .addr = (char*)MEMORY_START + PAGE_SIZE * i, .next=nullptr};
     long int remain_mem_exp = FRAME_ARRAY_LENGTH, cur_idx = FRAME_ARRAY_LENGTH - 1;
     for(int i = MEMORY_LIST_LENGTH - 1; i >= 0 && cur_idx >= 0; --i){
         if(remain_mem_exp >> i & 1){
@@ -31,7 +31,7 @@ void buddy_new(int exp){
     split->next = free_list[exp];
     free_list[exp] = tmp;
 }
-memFrame* buddy_alloc(unsigned long int size){
+memFrame* buddy_alloc(uint32_t size){
     int exp = __fit_size_exp(size);
     if(free_list[exp] == 0) buddy_new(exp);
     memFrame* target = free_list[exp];
@@ -86,7 +86,7 @@ void buddy_free(char* addr){
     buddy_merge(idx);
 }
 
-int __fit_size_exp(unsigned long int size){
+int __fit_size_exp(uint32_t size){
     int res = 0;
     while((1 << res) * PAGE_SIZE < size) 
         ++res;

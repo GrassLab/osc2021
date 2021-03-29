@@ -26,7 +26,7 @@ void dtb_init(char* args){
 void parse_dtb(char* args, void* callback){
     struct fdt_header header;
     if(__check_dtb(&header) == 0) return;
-    char* addr = (char*)(header.address + header.off_dt_struct);
+    char* addr = (char*)((uint64_t)header.address + header.off_dt_struct);
     
     while(sys_get32bits(addr) != FDT_END ){
         //addr = unflatten_fdt(addr, &header, args, -1);
@@ -39,9 +39,9 @@ void parse_node_property(char** addr, struct fdt_header* header, int depth){
     uint32_t nameoff = sys_get32bits(*addr);  *addr += 4;
     if(depth >= 0){
         __print_alignchar(' ', depth + 2); // uart_puts("Property: ");
-        uart_puts((char*)(header->off_dt_strings + nameoff + header->address));
+        uart_puts((char*)((uint64_t)header->off_dt_strings + nameoff + header->address));
         uart_puts(" = ");
-        char* name = (char*)(header->off_dt_strings + nameoff + header->address);
+        char* name = (char*)((uint64_t)header->off_dt_strings + nameoff + header->address);
         if(strcmp("compatible", name) == 0 || strcmp("model", name) == 0
             || strcmp("status", name) == 0 || strcmp("name", name) == 0 || strcmp("device_type", name) == 0){
             int cnt = 0;
@@ -84,7 +84,7 @@ short __check_compatible(char** addr, struct fdt_header* header, char* args){
     uint32_t token = sys_get32bits(*addr);    *addr += 4;
     uint32_t len = sys_get32bits(*addr);      *addr += 4;
     uint32_t nameoff = sys_get32bits(*addr);  *addr += 4;
-    char* name = (char*)(header->off_dt_strings + nameoff + header->address);
+    char* name = (char*)((uint64_t)header->off_dt_strings + nameoff + header->address);
     short res = 0;
     if(strlen(args) == 0) res = 1;
     else if(strcmp("compatible", name) == 0){

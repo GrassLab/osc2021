@@ -2,10 +2,12 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
-#define uint32_t unsigned long int
+#define uint32_t unsigned int
 #define uint64_t unsigned long long int
+#define uint8_t unsigned char
 
-struct fdt_header {
+struct fdt_header
+{
     uint32_t address;
     uint32_t magic;
     uint32_t totalsize;
@@ -19,9 +21,10 @@ struct fdt_header {
     uint32_t size_dt_struct;
 };
 
-struct init_driver{
+struct init_driver
+{
     char name[30];
-    void(*callback)(char*, struct fdt_header*, int);
+    void (*callback)(char *, struct fdt_header *, int);
 };
 
 #endif
