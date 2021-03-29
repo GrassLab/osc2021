@@ -6,7 +6,7 @@ int main() {
   uart_init();
 
   BuddyAllocater buddy;
-  buddy_init(&buddy);
+  buddy_init(&buddy, Frames);
 
   int a = buddy_alloc(&buddy, 1);
   int b = buddy_alloc(&buddy, 2);
@@ -16,7 +16,7 @@ int main() {
   buddy_free(&buddy, a);
   buddy_free(&buddy, c);
   buddy_free(&buddy, b);
-  dump_buddy(&buddy);
+  buddy_dump(&buddy);
 
   uart_println("-------------------------------");
   uart_println(" Operating System Capstone 2021");
