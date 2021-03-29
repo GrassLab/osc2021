@@ -30,7 +30,8 @@ u32 hex2int (char *buf, unsigned int len) {
     return num;
 }
 
-#define is_cpio_header(header) ((*((u64 *)header) & 0x0000ffffffffffff) == 0x313037303730)
+#define is_cpio_header(header) (hex2int((header)->c_magic, 6) == CPIO_MAGIC)
+
 /* return next header */
 CPIO_HEADER *parse_cpio_struct (CPIO_HEADER *header, CPIO_index *index) {
     if (!is_cpio_header(header))
@@ -39,31 +40,6 @@ CPIO_HEADER *parse_cpio_struct (CPIO_HEADER *header, CPIO_index *index) {
     index->namesize = hex2int(header->c_namesize, 8);
     index->name = &((char *)header)[0x6e];
     index->header = header;
-
-    u64 tmp = (u64)header + 0x6e + index->namesize;
-    if (tmp % 4)
-        tmp += 4 - tmp % 4;
-    index->data = (char *)tmp;
-
-    tmp = (unsigned long)index->data + index->filesize;
-    if (tmp % 4)
-        tmp += 4 - tmp % 4;
-    return (CPIO_HEADER *)tmp;
-}
-
-CPIO_HEADER *parse_cpio_struct_tmp (CPIO_HEADER *header, CPIO_index *index) {
-    if (!is_cpio_header(header))
-        return NULL;
-
-    //uart_send("okay");
-    return NULL;
-    uart_sendh((u64)index);
-    index->filesize = hex2int(header->c_filesize, 8);
-    index->namesize = hex2int(header->c_namesize, 8);
-    index->name = &((char *)header)[0x6e];
-    index->header = header;
-    uart_send(index->name);
-    uart_send("\r\n++: ");
 
     u64 tmp = (u64)header + 0x6e + index->namesize;
     if (tmp % 4)
@@ -95,7 +71,6 @@ void cpio_init () {
     CPIO_HEADER *header = cpio_base_address;
     boot_info.cpio_addr = (u64)cpio_base_address;
     header = parse_cpio_struct(header, prev);
-
 
     while (1) {
         CPIO_index *curr = allocate_index_node();
