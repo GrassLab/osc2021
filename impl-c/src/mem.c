@@ -74,16 +74,20 @@ void buddy_free(BuddyAllocater *alloc, int addr) {
     node = &alloc->frame_array[frame_idx];
     if (buddy_idx(node) >= BUDDY_NUM_FRAMES) {
       list_push(&node->list_base, &alloc->free_lists[node->exp]);
+      uart_println(" push to freelist: node(idx:%d,exp:%d)", node->arr_index,
+                   node->exp);
       break;
     }
     buddy = &alloc->frame_array[buddy_idx(node)];
-    uart_printf("Try to merge  buddy(idx:%d,exp:%d) node(idx:%d,exp:%d)",
+    uart_printf("Try to merge buddy(idx:%d,exp:%d) node(idx:%d,exp:%d)",
                 buddy->arr_index, buddy->exp, node->arr_index, node->exp);
 
     // Buddy is currently not in any list, therefore in used
     if (buddy->list_base.next == NULL) {
       list_push(&node->list_base, &alloc->free_lists[node->exp]);
       uart_println(" busy");
+      uart_println(" push to freelist: node(idx:%d,exp:%d)", node->arr_index,
+                   node->exp);
       break;
     }
     list_del(&buddy->list_base);
@@ -104,36 +108,30 @@ bool provide_frame_with_exp(BuddyAllocater *alloc, int required_exp) {
     return true;
   }
 
-  // find upmost exp to split
-  int target = required_exp;
-  bool found = false;
-  for (; target <= BUDDY_MAX_EXPONENT; target++) {
-    if (!list_empty(&alloc->free_lists[target])) {
-      found = true;
-      break;
+  for (int target = required_exp; target <= BUDDY_MAX_EXPONENT; target++) {
+    // Find the first exp that alloc->free_lists[target] is not empty
+    if (list_empty(&alloc->free_lists[target])) {
+      continue;
     }
-  }
-  if (found == false) {
-    // no free list available
-    return false;
-  }
 
-  int upmost_exp = target;
-  uart_puts("Split node from list(exp)");
-  for (int exp = upmost_exp; exp > required_exp; exp--) {
-    uart_printf(" %d", exp);
-    Frame *node = (Frame *)list_pop(&alloc->free_lists[exp]);
+    // Split nodes from the top to bottom
+    uart_puts("Split node from list(exp)");
+    for (int exp = target; exp > required_exp; exp--) {
+      uart_printf(" %d", exp);
+      Frame *node = (Frame *)list_pop(&alloc->free_lists[exp]);
 
-    int child_exp = exp - 1;
-    Frame *child1 = &alloc->frame_array[node->arr_index];
-    Frame *child2 = &alloc->frame_array[node->arr_index + (1 << child_exp)];
-    child1->exp = child_exp;
-    child2->exp = child_exp;
-    list_push(&child1->list_base, &alloc->free_lists[child_exp]);
-    list_push(&child2->list_base, &alloc->free_lists[child_exp]);
+      int child_exp = exp - 1;
+      Frame *child1 = &alloc->frame_array[node->arr_index];
+      Frame *child2 = &alloc->frame_array[node->arr_index + (1 << child_exp)];
+      child1->exp = child_exp;
+      child2->exp = child_exp;
+      list_push(&child1->list_base, &alloc->free_lists[child_exp]);
+      list_push(&child2->list_base, &alloc->free_lists[child_exp]);
+    }
+    uart_println("");
+    return true;
   }
-  uart_println("");
-  return true;
+  return false;
 }
 
 void buddy_init(BuddyAllocater *alloc, Frame *frame_arr) {
