@@ -3,8 +3,8 @@
 #include "utils.h"
 
 #define BUDDY_START 0x10000000
-#define BUDDY_END (BUDDY_START + 1024 * PAGE_SIZE)
-// #define BUDDY_END 0x40000000
+// #define BUDDY_END (BUDDY_START + 1024 * PAGE_SIZE)
+#define BUDDY_END 0x40000000
 #define CPIO_ARRD 0x8000000
 
 #define PAGE_SIZE (4 * KB)
