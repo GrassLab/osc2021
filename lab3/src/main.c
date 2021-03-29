@@ -33,6 +33,12 @@ void invoke_cmd(char *cmd){
   else if (str_cmp(cmd, "buddy") == 1){
     buddy_table_show();
   }
+  else if (str_cmp(cmd, "alloc") == 1){
+    unsigned long long r = buddy_alloc(BUDDY_PAGE_SIZE+1, 1, 0);
+  }
+  else if (str_cmp(cmd, "table") == 1){
+    buddy_ll_show();
+  }
   else if (str_cmp(sub_cmd3, "cat") == 1){
     char *cat_file_name = cmd+3;
     while(cat_file_name[0] == ' ') cat_file_name++;

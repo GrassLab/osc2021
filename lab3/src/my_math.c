@@ -1,5 +1,9 @@
 # include "my_math.h"
 
+template <class T> T template_test(T a, T b){
+  return a+b;
+}
+
 //itoa
 void int_to_str(int n, char *s){
   char tmp[100];
