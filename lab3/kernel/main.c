@@ -107,9 +107,6 @@ void shell() {
 
 int main() {
   traverse_device_tree(_dtb_ptr, get_initrd);
-  void *ptr = kmalloc(0x100);
-  kmalloc(0x400000);
-  kfree(ptr);
   shell();
   return 0;
 }

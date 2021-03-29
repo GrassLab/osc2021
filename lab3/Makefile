@@ -14,12 +14,12 @@ KERNEL_CFLAGS = -mcpu=cortex-a53 \
 	-fno-common -ffreestanding -O0 \
 	-fdata-sections -ffunction-sections \
 	-Wall -Werror \
-	-Wl,-Tkernel/linker.ld,--gc-sections -nostartfiles -Wno-unused-function
+	-Wl,-Tkernel/linker.ld,--gc-sections -nostartfiles
 
 BOOTLOADER_CFLAGS = -mcpu=cortex-a53 \
 	-fno-common -ffreestanding -O0 \
 	-Wall -Werror \
-	-Wl,-Tbootloader/linker.ld -nostartfiles -Wno-unused-function
+	-Wl,-Tbootloader/linker.ld -nostartfiles
 
 .PHONY: gen_cpio clean
 

@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "include/uart.h"
+#include "include/list.h"
 
 #define FRAME_BASE ((uintptr_t) 0x10000000)
 #define FRAME_END ((uintptr_t) 0x20000000)
@@ -12,82 +13,54 @@
 #define FRAME_SIZE_MAX ORDER2SIZE(MAX_ORDER)
 #define ORDER2SIZE(ord) (PAGE_SIZE * (1 << (ord)))
 
-/* what's the meaning of tagging ? */
-#define FRAME_FREE 0x80000000
-#define FRAME_INUSE 0x40000000
-#define FRAME_FLAG_MASK 0x0fffffff
+/* we dont need free tag */
+#define FRAME_FREE 0x8
+#define FRAME_INUSE 0x4
+#define FRAME_MEM_CACHE 0x2
 
-#define IS_INUSE(flag) ((flag) & FRAME_INUSE)
-#define FRAME_ORDER(flag) ((flag) & FRAME_FLAG_MASK)
+#define IS_INUSE(flag) ((flag).flags & FRAME_INUSE)
+#define IS_MEM_CACHE(flag) ((flag).flags & FRAME_MEM_CACHE)
 
-struct list_head {
-    struct list_head *next, *prev;
+/* cache start from 32 bytes to 2048 bytes */
+#define CACHE_BINS 7
+#define CACHE_MIN_SIZE 32
+#define CACHE_MAX_ORDER (CACHE_BINS - 1)
+
+struct frame_flag {
+    unsigned char flags;
+    unsigned char order;
+    unsigned short refcnt;
+    unsigned char cache_order;
 };
 
-static uint32_t frame[FRAME_ARRAY_SIZE];
-static struct list_head bins[FRAME_BINS];
+static struct frame_flag frame[FRAME_ARRAY_SIZE];
+static struct list_head frame_bins[FRAME_BINS];
+static struct list *cache_bins[CACHE_BINS];
 static uint32_t init = 0;
 
 static uint32_t align_up(uint32_t size, int alignment) {
   return (size + alignment - 1) & -alignment;
 }
 
-
-static void insert_head(struct list_head *head, struct list_head *v) {
-#ifdef DEBUG
-    print_uart("insert frame at ");
-    write_hex_uart((unsigned long)v);
-    write_uart("\r\n", 2);
-#endif
-    v->next = head->next;
-    v->prev = head;
-    head->next->prev = v;
-    head->next = v;
+static int addr2idx(void *addr) {
+    return (((uintptr_t)addr & -PAGE_SIZE) - FRAME_BASE) / PAGE_SIZE;
 }
 
-static void insert_tail(struct list_head *head, struct list_head *v) {
-#ifdef DEBUG
-    print_uart("insert frame: ");
-    write_hex_uart((unsigned long)v);
-    write_uart("\r\n", 2);
-#endif
-    v->next = head;
-    v->prev = head->prev;
-    head->prev->next = v;
-    head->prev = v;
+static unsigned align_up_exp(unsigned n) {
+    n--;
+    n |= n >> 1;
+    n |= n >> 2;
+    n |= n >> 4;
+    n |= n >> 8;
+    n |= n >> 16;
+    n++;
+
+    return n;
 }
-
-static struct list_head *remove_head(struct list_head *head) {
-    struct list_head *ptr;
-    ptr = head->next;
-    head->next = head->next->next;
-    head->next->prev = head;
-
-    return ptr;
-}
-
-static struct list_head *remove_tail(struct list_head *head) {
-    struct list_head *ptr;
-    ptr = head->prev;
-    head->prev = head->prev->prev;
-    head->prev->next = head;
-
-    return ptr;
-}
-
-static void unlink(struct list_head *node) {
-    struct list_head *next, *prev;
-    next = node->next;
-    prev = node->prev;
-    
-    next->prev = prev;
-    prev->next = next;
-}
-
 
 static void *split_frames(int order, int target_order) {
     /* take the ready to split frame out */
-    struct list_head *ptr = remove_head(&bins[order]);
+    struct list_head *ptr = remove_head(&frame_bins[order]);
 
 #ifdef DEBUG
     print_uart("split frame: ");
@@ -97,10 +70,12 @@ static void *split_frames(int order, int target_order) {
     /* puts splitted frame into bin list */
     for (int i = order; i > target_order; i--) {
         struct list_head *s = (struct list_head *)((char *)ptr + ORDER2SIZE(i-1));
-        insert_head(&bins[i-1], s);
-        frame[((uintptr_t)s - FRAME_BASE) / PAGE_SIZE] = i - 1;
+        insert_head(&frame_bins[i-1], s);
+        frame[((uintptr_t)s - FRAME_BASE) / PAGE_SIZE].order = i - 1;
     }
-    frame[((uintptr_t)ptr - FRAME_BASE) / PAGE_SIZE] = target_order | FRAME_INUSE;
+    int idx = addr2idx(ptr);
+    frame[idx].order = target_order;
+    frame[idx].flags = FRAME_INUSE;
     return ptr;
 }
 
@@ -110,32 +85,26 @@ static void init_buddy() {
     struct list_head *victim;
 
     for (int i = 0; i < FRAME_BINS; i++) {
-        bins[i].next = &bins[i];
-        bins[i].prev = &bins[i];
+        frame_bins[i].next = &frame_bins[i];
+        frame_bins[i].prev = &frame_bins[i];
     }
     
     for (uint64_t i = 0; i < FRAME_ARRAY_SIZE; i += 1 << MAX_ORDER) {
-        frame[i] = MAX_ORDER;
+        frame[i].order = MAX_ORDER;
 
         victim = (struct list_head *)(FRAME_BASE + i * PAGE_SIZE);
-        insert_tail(&bins[MAX_ORDER], victim);
-
-        for (int j = 0; j < (1 << MAX_ORDER); j++) {
-            frame[i + j] |= FRAME_FREE;
-        }
+        insert_tail(&frame_bins[MAX_ORDER], victim);
     }
 }
 
-static unsigned pages_to_order(unsigned count) {
-    count--;
-    count |= count >> 1;
-    count |= count >> 2;
-    count |= count >> 4;
-    count |= count >> 8;
-    count |= count >> 16;
-    count++;
-
+static int pages_to_frame_order(unsigned count) {
+    count = align_up_exp(count);
     return __builtin_ctz(count);
+}
+static int size_to_cache_order(unsigned size) {
+    size = align_up_exp(size);
+    size /= CACHE_MIN_SIZE;
+    return __builtin_ctz(size);
 }
 
 static void *alloc_pages(unsigned count) {
@@ -144,21 +113,16 @@ static void *alloc_pages(unsigned count) {
         init_buddy();
     }
 
-    int target_order = pages_to_order(count);
+    int target_order = pages_to_frame_order(count);
 
     for (int i = target_order; i < FRAME_BINS; i++) {
-        if (bins[i].next != &bins[i]) {
+        if (frame_bins[i].next != &frame_bins[i]) {
             return split_frames(i, target_order);
         }
     }
 
     /* TODO: OOM handling */
     return NULL;
-}
-
-static void set_order(int idx, int order) {
-    frame[idx] &= ~FRAME_FLAG_MASK;
-    frame[idx] |= order & FRAME_FLAG_MASK;
 }
 
 static void free_pages(void *victim) {
@@ -168,14 +132,14 @@ static void free_pages(void *victim) {
         return;
     }
     
-    unsigned order = FRAME_ORDER(frame[page_idx]);
+    unsigned order = frame[page_idx].order;
     int buddy_page_idx = page_idx ^ (1 << order);
-    frame[page_idx] &= ~FRAME_INUSE;
+    frame[page_idx].flags &= ~FRAME_INUSE;
 
     /* merge frames */
     while (order <= MAX_ORDER &&
            !IS_INUSE(frame[buddy_page_idx]) &&
-           order == FRAME_ORDER(frame[buddy_page_idx]))
+           order == frame[buddy_page_idx].order)
     {
         void *buddy_victim = (void *)(FRAME_BASE + buddy_page_idx * PAGE_SIZE);
         unlink((struct list_head *)buddy_victim);
@@ -192,21 +156,83 @@ static void free_pages(void *victim) {
         buddy_page_idx = page_idx ^ (1 << order);
     }
 
-    insert_head(&bins[order], victim);
-    set_order(page_idx, order);
+    insert_head(&frame_bins[order], victim);
+    frame[page_idx].order = order;
 }
 
-void *kmalloc(unsigned int size) {
-    if (!size || size > FRAME_SIZE_MAX) {
-        return NULL;
-    }
+static void *get_cache(unsigned int size) {
+    int order = size_to_cache_order(size);
 
-    unsigned pages = align_up(size, PAGE_SIZE) / PAGE_SIZE;
-    void *ptr = alloc_pages(pages);
+    void *ptr = cache_bins[order];
+    if (ptr) {
+        cache_bins[order] = cache_bins[order]->next;
+        int idx = addr2idx(ptr);
+        frame[idx].refcnt += 1;
+    }
 
     return ptr;
 }
 
-void kfree(void *p) {
-    free_pages(p);
+static void alloc_cache(void *mem, int size) {
+    int count = PAGE_SIZE / size;
+    int idx = addr2idx(mem);
+    int order = size_to_cache_order(size);
+    frame[idx].flags |= FRAME_MEM_CACHE;
+    frame[idx].refcnt = 0;
+    frame[idx].cache_order = order;
+
+    for (int i = 0; i < count; i++) {
+        struct list *ptr = (struct list *)((uintptr_t)mem + i * size);
+        ptr->next = cache_bins[order];
+        cache_bins[order] = ptr;
+    }
+}
+
+/* request <  PAGE_SIZE: page memory pool
+ * request >= PAGE_SIZE: only use alloc_page
+ */
+void *kmalloc(unsigned int size) {
+    if (!size || align_up(size, PAGE_SIZE) > FRAME_SIZE_MAX) {
+        return NULL;
+    }
+
+    if (size < CACHE_MIN_SIZE) {
+        size = CACHE_MIN_SIZE;
+    }
+
+    void *cache;
+    if (align_up_exp(size) < PAGE_SIZE) {   
+        cache = get_cache(size);
+
+        if (!cache) {
+            void *mem = alloc_pages(1);
+            alloc_cache(mem, size);
+            cache = get_cache(size);
+        }
+    } else {
+        unsigned pages = align_up(size, PAGE_SIZE) / PAGE_SIZE;
+        cache = alloc_pages(pages);
+    }
+
+    return cache;
+}
+
+void kfree(void *ptr) {
+    int idx = addr2idx(ptr);
+    if (idx >= FRAME_ARRAY_SIZE) {
+        puts_uart("[Warn] Kernel: kfree wrong address");
+        return;
+    }
+
+    if (IS_MEM_CACHE(frame[idx])) {
+        int order = frame[idx].cache_order;
+        ((struct list *)ptr)->next = cache_bins[order];
+        cache_bins[order] = ptr;
+        frame[idx].refcnt -= 1;
+
+        /* find when to release unreferenced cache */
+
+    } else {
+        free_pages(ptr);
+    }
 }
