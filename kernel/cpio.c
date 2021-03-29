@@ -1,11 +1,8 @@
 #include "cpio.h"
 #include "string.h"
-
+#include "type.h"
 #include "uart.h"
 
-#ifndef NULL
-#define NULL ((void *)0)
-#endif
 
 static unsigned long align_up(unsigned long n, unsigned long align)
 {

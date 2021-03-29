@@ -1,8 +1,10 @@
 #include "shell.h"
 #include "string.h"
+#include "util.h"
 #include "uart.h"
 #include "cpio.h"
 #include "type.h"
+#include "buddy.h"
 
 void shell_welcome_message() {
     uart_puts(" _   _      _ _       \n");
@@ -40,6 +42,7 @@ void command_controller(char *cmd) {
 	else if (!strcmp("reboot"          , cmd))     { command_reboot(); }
     else if (!strcmp("cpio_info"       , cmd))     { command_cpio_info(); }
     else if (!strcmp("ls"              , cmd))     { command_ls(); }
+    else if (!strcmp("allocate"        , cmd))     { command_allocate(); }
     else    { command_not_found(); }
 }
 
@@ -51,6 +54,7 @@ void command_help() {
     uart_puts("  reboot\t:\treboot ths system.\n");
     uart_puts("  cpio_info\t:\tshow cpio info.\n");
     uart_puts("  ls\t\t:\tshow cpio list.\n");
+    uart_puts("  allocate\t:\tallocate memory.\n");
     uart_puts("========================================\n");
 }
 
@@ -112,7 +116,7 @@ void command_ls() {
     cpio_ls((uint64_t *)CPIO_ARCHIVE_LOCATION, ls_buffer, buf_len);
 
     for(int i = 0; i < info.file_count; i++) {
-        char output_buffer[10] = {0};
+        char output_buffer[10] = { 0 };
         itoa(i, output_buffer, 10);
         uart_puts(output_buffer);
         uart_puts(": ");
@@ -121,6 +125,49 @@ void command_ls() {
     }
 }
 
+void command_allocate() {
+    char input_buffer[32] = { 0 };
+
+    uart_puts("Enter size to allocate (in KB): ");
+
+    int i = 0;
+    while(1) {
+        char c = uart_getc();
+        uart_send(c);
+        if(c == '\n') {
+            input_buffer[i] = 0x00;
+            break;
+        } else {
+            input_buffer[i] = c;
+            i++;
+        }
+    }
+
+    int size_in_kbyte = atoi(input_buffer);
+    
+    uart_puts("Allocating memory: ");
+    uart_puts(input_buffer);
+    uart_puts(" KB\n");
+
+    struct buddy_frame *allocated = allocate_frame(size_in_kbyte);
+
+    char output_buffer[10] = { 0 };
+    
+    uart_puts("Allocated frame's index: ");
+    itoa(allocated->index, output_buffer, 10);
+    uart_puts(output_buffer);
+    uart_puts("\n");
+
+    for(int i = 0; i < 10; i++)
+        output_buffer[i] = 0;
+
+    uart_puts("Allocated in 0x");
+    itoa((uint64_t)allocated->start_address, output_buffer, 16);
+    uart_puts(output_buffer);
+    uart_puts("\n");
+    
+    
+}
 
 void command_not_found() {
     uart_puts("command not found\n");

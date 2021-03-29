@@ -13,6 +13,8 @@ void command_reboot();
 void command_cpio_info();
 void command_ls();
 
+void command_allocate();
+
 void command_not_found();
 
 #endif
