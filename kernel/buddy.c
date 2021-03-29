@@ -90,7 +90,6 @@ void *allocate_frame(int required_size_in_kbyte) {
 		freelist_insertion(a_tmp->order, a_tmp);
 		freelist_insertion(b_tmp->order, b_tmp);
 
-
 		allocatable_order -= 1;
 	}
 
@@ -138,9 +137,100 @@ void freelist_insertion(int order, struct buddy_frame *frame) {
 	frame->next = NULL;
 }
 
-void free_frame(void *adr) {
-    uart_puts("Hello");
+int free_frame_by_size(int freed_size_in_kbyte) {
+    char output_buffer[20] = { 0 };
+
+    if(freed_size_in_kbyte % 4 != 0) {
+        uart_puts("[debug] Size Error !\n");
+        return -1;
+    }
+
+    int freed_frames = freed_size_in_kbyte / 4;
+    int freed_order = log(2, freed_frames);
+    int contiguous = 0;
+    int i;
+    for(i = 0; i < FRAME_NUMBERS; i++) {
+        if(the_frame_array[i].order == USED_FRAME_UNALLOCATABLE)
+            contiguous++;
+        else
+            contiguous = 0;
+        
+        if(contiguous == freed_frames)
+            break;
+    }
+
+    if(i == FRAME_NUMBERS - 1 && contiguous == 0) 
+        return -1;
+    
+    int freeable_index = i - (freed_frames - 1);
+
+    itoa(freeable_index, output_buffer, 10);
+    uart_puts("[debug] freeable_index: ");
+    uart_puts(output_buffer);
+    uart_puts("\n");
+
+    /* updating the_frame_array */
+    for(i = 0; i < freed_frames; i++) 
+        the_frame_array[freeable_index + i].order = FREE_FRAME_ALLOCATABLE;
+    the_frame_array[freeable_index].order = freed_order;
+
+    /* updating frame_freelist */
+    freelist_insertion(freed_order, &the_frame_array[freeable_index]);
+
+    /* Find buddy and merge iteratively */
+    int merged_index = freeable_index ^ freed_frames;
+
+    /*     0    1    2    3    4    5    6    7    8    9   10
+     *  |----|----|----|----|----|----|----|----|----|----|----|----|
+     *  |  M |    |  F |    |    |    |    |    |    |    |    |    |    
+     *  |    |    |    |    |    |    |    |    |    |    |    |    |
+     *  |----|----|----|----|----|----|----|----|----|----|----|----|
+     */
+
+    while(the_frame_array[merged_index].order != USED_FRAME_UNALLOCATABLE) {
+        if(freeable_index == FRAME_NUMBERS)
+            break;
+
+        for(int i = 0; i < 20; i++)
+            output_buffer[i] = 0;
+        itoa(merged_index, output_buffer, 10);
+        uart_puts("[debug] Merge ");
+        uart_puts(output_buffer);
+        uart_puts(" with ");
+        for(int i = 0; i < 20; i++)
+            output_buffer[i] = 0;
+        itoa(freeable_index, output_buffer, 10);
+        uart_puts(output_buffer);
+        uart_puts("\n");
+
+        if(merged_index > freeable_index) {
+            int t = merged_index;
+            merged_index = freeable_index;
+            freeable_index = t;
+        }
+
+        /* updating frame_freelist */
+        freelist_deletion(the_frame_array[freeable_index].order, &the_frame_array[freeable_index]);
+        freelist_deletion(the_frame_array[merged_index].order, &the_frame_array[merged_index]);
+
+        freelist_insertion(the_frame_array[merged_index].order + 1, &the_frame_array[merged_index]);
+
+        /* updating the_frame_array */
+        the_frame_array[merged_index].order++;
+        the_frame_array[freeable_index].order = FREE_FRAME_ALLOCATABLE;
+
+        freeable_index = merged_index ^ pow(2, the_frame_array[merged_index].order);
+    }
+
+    return merged_index;
 }
+
+int free_frame_by_index(int freed_index) {
+    return 1;
+
+}
+
+
 
 void print_available_memory_with_uart() {
     for(int i = 0; i < FRAME_NUMBERS;) {

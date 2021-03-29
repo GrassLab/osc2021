@@ -25,7 +25,18 @@ void *allocate_frame(int required_size_in_kbyte);
 void freelist_deletion(int order, struct buddy_frame *frame);
 void freelist_insertion(int order, struct buddy_frame *frame);
 
-void free_frame(void *adr);
+/*
+ * This function release frame by required size in KB.
+ * If there is no such frame to release or input error, return -1.
+ * Otherwise, return freed frame's index.
+ */
+int free_frame_by_size(int freed_size_in_kbyte);
+
+/* 
+ * 
+ *
+ */
+int free_frame_by_index(int freed_index);
 
 void print_available_memory_with_uart();
 

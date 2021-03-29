@@ -43,7 +43,8 @@ void command_controller(char *cmd) {
     else if (!strcmp("cpio_info"       , cmd))     { command_cpio_info(); }
     else if (!strcmp("ls"              , cmd))     { command_ls(); }
     else if (!strcmp("allocate"        , cmd))     { command_allocate(); }
-    else if (!strcmp("free"            , cmd))     { command_free(); }
+    else if (!strcmp("freez"           , cmd))     { command_freez(); }
+    else if (!strcmp("freei"           , cmd))     { command_freei(); }
     else if (!strcmp("meminfo"         , cmd))     { command_meminfo(); }
     else    { command_not_found(); }
 }
@@ -57,7 +58,8 @@ void command_help() {
     uart_puts("  cpio_info\t:\tshow cpio info.\n");
     uart_puts("  ls\t\t:\tshow cpio list.\n");
     uart_puts("  allocate\t:\tallocate memory.\n");
-    uart_puts("  free\t\t:\tfree memory.\n");
+    uart_puts("  freez\t\t:\tfree memory by size.\n");
+    uart_puts("  freei\t\t:\tfree memory by index.\n");
     uart_puts("  meminfo\t:\tlist memory info.\n");
     uart_puts("========================================\n");
 }
@@ -177,7 +179,41 @@ void command_allocate() {
     
 }
 
-void command_free() {
+void command_freez() {
+    char input_buffer[32] = { 0 };
+
+    uart_puts("Enter size to free (in KB): ");
+
+    int i = 0;
+    while(1) {
+        char c = uart_getc();
+        uart_send(c);
+        if(c == '\n') {
+            input_buffer[i] = 0x00;
+            break;
+        } else {
+            input_buffer[i] = c;
+            i++;
+        }
+    }
+
+    int size_in_kbyte = atoi(input_buffer);
+
+    uart_puts("Free memory: ");
+    uart_puts(input_buffer);
+    uart_puts(" KB\n");
+
+    int success = free_frame_by_size(size_in_kbyte);
+
+    if(success == -1) {
+        uart_puts("Fail: No such frame to release !\n");
+        return ;
+    }
+
+
+}
+
+void command_freei() {
 
 }
 
