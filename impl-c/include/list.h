@@ -13,7 +13,7 @@
 //
 // An linked list could be seen as followed:
 //  list_head -> entry -> entry -> ...
-// The list_head is a place holder
+// ps: list_head is a place holder
 
 typedef struct list_head {
   struct list_head *prev, *next;

@@ -4,19 +4,21 @@
 
 int main() {
   uart_init();
+  KAllocManager_init();
+  KAllocManager_show_status();
+  void *a = kalloc(1);
 
-  BuddyAllocater buddy;
-  buddy_init(&buddy, Frames);
+  void *b = kalloc(2);
 
-  int a = buddy_alloc(&buddy, 1);
-  int b = buddy_alloc(&buddy, 2);
-  int c = buddy_alloc(&buddy, 1);
-
+  void *c = kalloc(1);
+  uart_println("c: %x", c);
+  // KAllocManager_show_status();
   // int d = buddy_alloc(&buddy, 10);
-  buddy_free(&buddy, a);
-  buddy_free(&buddy, c);
-  buddy_free(&buddy, b);
-  buddy_dump(&buddy);
+  kfree(a);
+  kfree(c);
+
+  kfree(b);
+  KAllocManager_show_status();
 
   uart_println("-------------------------------");
   uart_println(" Operating System Capstone 2021");
