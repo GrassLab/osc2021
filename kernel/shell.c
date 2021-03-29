@@ -43,18 +43,22 @@ void command_controller(char *cmd) {
     else if (!strcmp("cpio_info"       , cmd))     { command_cpio_info(); }
     else if (!strcmp("ls"              , cmd))     { command_ls(); }
     else if (!strcmp("allocate"        , cmd))     { command_allocate(); }
+    else if (!strcmp("free"            , cmd))     { command_free(); }
+    else if (!strcmp("meminfo"         , cmd))     { command_meminfo(); }
     else    { command_not_found(); }
 }
 
 void command_help() {
     uart_puts("========================================\n");
-    uart_puts("Usage\t\t:\t<command> \n");
+    uart_puts("Usage\n");
     uart_puts("  help\t\t:\tprint all available commands.\n");
     uart_puts("  hello\t\t:\tprint Hello World!\n");
     uart_puts("  reboot\t:\treboot ths system.\n");
     uart_puts("  cpio_info\t:\tshow cpio info.\n");
     uart_puts("  ls\t\t:\tshow cpio list.\n");
     uart_puts("  allocate\t:\tallocate memory.\n");
+    uart_puts("  free\t\t:\tfree memory.\n");
+    uart_puts("  meminfo\t:\tlist memory info.\n");
     uart_puts("========================================\n");
 }
 
@@ -151,6 +155,11 @@ void command_allocate() {
 
     struct buddy_frame *allocated = allocate_frame(size_in_kbyte);
 
+    if(allocated == NULL) {
+        uart_puts("Fail: Out of memory !\n");
+        return ;
+    }
+
     char output_buffer[10] = { 0 };
     
     uart_puts("Allocated frame's index: ");
@@ -167,6 +176,14 @@ void command_allocate() {
     uart_puts("\n");
     
     
+}
+
+void command_free() {
+
+}
+
+void command_meminfo() {
+
 }
 
 void command_not_found() {

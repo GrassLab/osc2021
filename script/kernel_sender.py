@@ -2,7 +2,7 @@
 from pwn import *
 from time import sleep
 
-kernel = open('./kernel8.img', 'rb').read()
+kernel = open('../kernel/kernel8.img', 'rb').read()
 
 print("Start transmitting ...")
 

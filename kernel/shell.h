@@ -14,6 +14,8 @@ void command_cpio_info();
 void command_ls();
 
 void command_allocate();
+void command_free();
+void command_meminfo();
 
 void command_not_found();
 

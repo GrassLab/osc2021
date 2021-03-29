@@ -49,8 +49,11 @@ void *allocate_frame(int required_size_in_kbyte) {
 	uart_puts("\n");
 
 	/* find allocatable order in frame_freelist */
-	while(frame_freelist[allocatable_order] == NULL)
-		allocatable_order++;
+	while(frame_freelist[allocatable_order] == NULL) {
+        allocatable_order++;
+        if(allocatable_order == FRAME_MAX_ORDER)
+            return NULL;
+    }
 
 	/* splitting higher order block for appropriate size */
 	while(allocatable_order != required_order) {

@@ -1,181 +1,86 @@
-# Lab 2 : Booting
+# Lab 3 : Allocator
 
-## Requirements
-1. UART Bootloader
-2. Initial Ramdisk
+kernel 需要提供分配記憶體的功能讓 user program 使用，若沒有 memory allocator，則使用者必須靜態地將記憶體切割成數個 memory pools 來存放不同大小的物件。通用的作業系統應該要能在 runtime 決定 physical memory 該如何分配，所以需要 dynamic memory allocation。
 
-## Elective
-1. Bootloader Self Relocation
-2. Devicetree
+### Requirements
+1. Buddy System
+2. Dynamic Memory Allocator
 
-## UART Bootloader
-### Background
-載入 kernel 的流程
-1. SoC 上的 GPU 載入位於 ROM 的 first-stage bootloader
-2. first-stage bootloader 可以辨識 FAT16/32 filesystem，並從 SD 卡上將 second-stage bootloader bootcode.bin 載入到 L2 Cache
-3. bootcode.bin 初始化 SDRAM 並載入 start.elf
-4. start.elf 藉由 config 將 kernel 與其他資料載入至 memory，並將 CPU 喚醒以開始執行
+### Elective
+1. Startup Allocator
 
-其他第四步將 kernel 載入的 bootloader 可以替換成其他的 bootloader，例如：ELF loading
+## Background
+### Reserved Memory
+在樹莓派 booting 後，有一些 physical memory 是已經被佔用的。例如：``0x0000`` ~ ``0x1000`` 放著 multicore boot 的 spin tables，此外，flatten device tree、initramfs、kernel image 都會佔用 physical memory。因此，我們實作的 memory allocator 需要避開這些已經被佔用的記憶體。
 
-### UART
-在 lab 1 中，我們若要進行 debug，則要不斷的將位於 host 的 kernel8.img 搬進 SD 卡，再將 SD 卡插到樹莓派上執行。
-我們可以藉由將 kernel8.img 替換另一個 bootloader，該 booloader 會透過 UART 載入 kernel8.img 至樹莓派執行，以此做法可以方便 debug。
+### Dynamic Memory Allocator
+給定需要分配的記憶體大小，Dynamic Memory Allocator 需要在記憶體中找到足夠大的連續空間並返回其位址，此外，在使用後也應該釋放掉該記憶體區塊。
 
-為了讓 UART 傳送 binary，我們需要一個傳送 raw data 的協定，之後就可以透過 Linux 中的 serial device file，將 kernel 從 host 傳送到樹莓派上。
+### Page Frame Allocator
+若想要讓 user program 在 virtual memory 上執行，則需要劃分一些以 4KB memory 對齊的 4KB 的 memory block，稱為 page frames。這是因為 4KB 為 virtual memory mapping 的單位，所以，需要將可用的記憶體表示為 page frame。Page Frame Allocator 會由 Page Frame Array 管理所有的 Page Frame，此外，Page Frame Allocator 在分配 Page Frame 時應該盡量分配連續的 Page Frame。
 
-```
-with open('/dev/ttyUSB0', "wb", buffering = 0) as tty:
-	tty.write(...)
-```
+**在 Requirement 中，需要規劃 physical address ``0x1000_0000 ~ 0x2000_0000`` 的記憶體空間。**
 
-#### Note
-在 Qemu 中，可以由 ``qemu-system-aarch64 -serial null -serial pty`` 來建立 pseudo TTY device 以測試我們寫的 bootloader。
+## Buddy System
+Buddy System 是一種簡易的分配連續記憶體的演算法，雖然它有 internal fragmentation 的問題，然而，它很適合用於 page frame allocation 因為 fragmentation 的問題可以透過 dynamic memory allocator 來減緩。
 
-### Config Kernel Loading Setting
-接下來，我們仍可將 kernel 載入至記憶體位址 0x80000，但是這樣會將 bootloader 蓋掉。因此，我們需要重寫 linker script 來指定其他的 start address。最後，我們將 ``config.txt`` 加入 SD 卡中並由 ``kernel_address=`` 來指定 kernel 載入的位址。
+### Data Structure
++ The Frame Array
+	+ 這個陣列表示目前 memory 的分配狀態，它是由 physical memory frame 與陣列 entries 1 對 1 所組成的，例如，假設可使用的記憶體大小為 200KB 且 frame 大小為 4KB，則該陣列會有 50 個 entries，其中第一個表示開始位置為 ``0x0`` 的 frame。
+	+ 陣列中的每一個 entry 都包含 ``idx`` 與 ``order``。
+		+ ``order >= 0``：表示第 ``idx`` 的 frame 是可以分配的，該連續記憶體的大小為 $2^{val}*4KB$。
+		+ ``order = <F> (user defined value)``：表示第 ``idx`` 的 frame 是可以分配的。
+		+ ``order = <X> (user defined value)``：表示第 ``idx`` 的 frame 已經分配過了。
+		+ ![](https://i.imgur.com/mBLT0tJ.png)
+	+ Below is the generalized view of The Frame Array
+		+ ![](https://i.imgur.com/2ljYM2F.png)
+	+ 可以由以下公式計算連續記憶體的大小
+		+ $block's\ physical\ address=block's\ index*4096+base\ address$
+		+ $block's\ size=4096*2^{block's\ exponent}$
+		```c=
+        #define FREE_FRAME_ALLOCATABLE -1
+        #define USED_FRAME_UNALLOCATABLE -2
 
-為了將 bootloader 與 kernel 區分清楚，我們也可以由 ``kernel=`` 與 ``arm_64bit=1`` 加入 loading image name。
-```
-kernel_address=0x60000
-kernel=bootloader.img
-arm_64bit=1
-```
+		#define BASE_ADDRESS 0x10000000
+        #define FRAME_SIZE 0x1000
+        #define FRAME_NUMBERS 0x10000
+        
+        struct buddy_frame {
+    		int idx;
+    		int order;
+    		struct buddy_frame *next;
+		};
+        
+        struct buddy_frame the_frame_array[FRAME_NUMBERS];
+		```
++ Linked-lists for blocks with different size
+	+ 可以設置連續記憶體的最大 size 並建立一個紀錄各種 size 的 linked list。
+	+ linked list 會紀錄各種 size 的可用記憶體空間，buddy allocator 會搜尋該 list 以找尋適當大小的記憶體空間，若對應大小的 list 為空，則會嘗試尋找更大的 block list。
+	+ ![](https://i.imgur.com/qZlA4Zm.png)
++ Release redundant memory block
+	+ 以上方法可能會分配一個比實際需求還要大的記憶體空間，因此，allocator 應該要可以切除不需要的部分並將不需要的部分放回 buddy system。
+    ```c=
+    #define FRAME_MAX_ORDER 16
+    
+	struct buddy_frame *frame_freelist[FRAME_MAX_ORDER];
+    ```
 
-### Implementation
+### Free and Coalesce Blocks
+為了讓 Buddy system 存放更大的連續記憶體，因此，當使用者釋放掉記憶體時，buddy allocator 不應該單純的將它放回 linked list，而是嘗試 Find the buddy 與 Merge iteratively。
 
-#### Rpi3
-```c=
-void command_load_image() {
-	int32_t is_receive_successful = 0;
-
-	uart_puts("Start Loading Kernel Image...\n");
-	uart_puts("Loading Kernel Image at address 0x80000...\n");
-	
-	char *load_address; = (char *)0x80000;
-	
-	uart_puts("Please send image from uart now:\n");
-
-	do {
-		/* waiting 3000 cycles */
-		unsigned int n = 3000;
-		while ( n-- ) {
-			asm volatile("nop");
-		}
-
-		/* send starting signal to receive img from host */
-		uart_send(3);
-		uart_send(3);
-		uart_send(3);
-		
-		/* read kernel's size */
-		int32_t size = 0;
-
-		size  = uart_getc();
-		size |= uart_getc() << 8;
-		size |= uart_getc() << 16;
-		size |= uart_getc() << 24;
-
-		if (size < 64 || size > 1024*1024) {
-			// size error
-			uart_send('S');
-			uart_send('E');            
-			
-			continue;
-		}
-		uart_send('O');
-		uart_send('K');
-
-		/* start receiving img */
-		char *address_counter = load_address;
-
-		while (size --) {
-			*address_counter++ = uart_getc();
-		}
-
-		/* finish */
-		is_receive_successful = 1;
-
-		char output_buffer[30];
-
-		uart_puts("Load kernel at: ");
-		itohexstr((uint64_t) load_address, sizeof(char *), output_buffer);
-		uart_puts(output_buffer);
-		uart_send('\n');
-	} while(!is_receive_successful);
-}
-
-void command_jump_to_kernel() {
-	asm volatile (
-		"mov x30, 0x80000;"
-		"ret"
-	);
-}
-```
-
-#### Host
-```python=
-with open('/dev/ttyUSB0', "wb", buffering = 0) as tty:
-    tty.write(p32(len(kernel)))
-    sleep(1)
-    tty.write(kernel)
-```
++ Find the buddy
+	+ 可以用 block's index 與 block's exponent 做 xor 運算以找到其 buddy，若 buddy 位於 page frame array 中，則可以將它們 merge 以形成更大的 block。
++ Merge iteratively
+	+ 有一種可能性為 merge 完的 block 還有可以 merge 的 buddy，因此要用同樣的方式來尋找 merge block 的 buddy。
+	+ 若無法找到 merge block 的 buddy 或是 merge block 的大小已經達到最大值，則 allocator 才會停止 merge 並將該 block 放回 linked list 中。
 
 
-## Initial Ramdisk
-在 kernel 初始化後，他會掛載 root filesystem 並執行 init user program。init user program 可以為 script 或是可執行檔，其目標為載入其他的 services 與 drivers。
+## Dynamic Memory Allocator
+Requirement 1 的 page frame allocator 可以進行連續記憶體的分配，而 Dynamic memory allocator 僅需將 page frame 轉換成 physical memory address。
 
-但是目前我們還沒有實作任何的 filesystem 與 storage driver，因此我們無法用我們的 kernel 從 SD 卡載入任何東西，所以我們只能透過 initial Ramdisk 來載入 user program。
+為了分配較小塊的記憶體，可以建立數個 memory pool 來存放一些常用的大小，如: 16、32、48、96...，接著，將 page frame 切分成數個 chunk。當需要分配記憶體時，則分配符合大小要求且未被分配的 slot；若沒有適合的 slot 可以分配，則從 page allocator 分配一個新的 page frame 並回傳一個 chunk 給 caller。
 
-initial Ramdisk 為 bootloader 載入或是 kernel 中嵌入的檔案，它通常為一個壓縮檔且可用來建構 root filesystem。
+相同 page frame 的物件在位址上都會有相同的 prefix，allocator 可以在釋放掉 chunk 時，由此來判斷該 chunk 是屬於哪一個 memory pool。
 
-### New ASCII Format Cpio Archive
-
-Cpio 是一種簡易的壓縮格式，它可用來將 directories 與 files 打包。每一個 directory 與 file 都以帶有 pathname 與 content 的 header 記錄下來。
-
-在 Lab 2，我們要使用 New ASCII Format Cpio format 來建立 cpio archive。可以先建立 ``rootfs`` directory 並將所有需要的檔案塞到裡面，接下來由以下指令壓縮。
-
-```
-cd rootfs
-find . | cpio -o -H newc > ../initramfs.cpio
-cd ..
-```
-
-可以由參考[4]，裡面定義了 New ASCII Format Cpio Archive 的結構，此外，我們還需要實作一個 parser 來讀取壓縮檔內的檔案。
-
-在 Lab 2 中，我們僅需在 archive 中放一些純文字檔來測試功能。
-
-### Loading Cpio Archive
-#### Qemu
-
-加入 argument ``-initrd <cpio archive>``，Qemu 會載入 cpio archive file 至 0x8000000。(default)
-
-#### Rpi3
-
-將 cpio archive 檔移至 SD 卡中，接者在 ``config.txt`` 中指定 name 與 loading address。
-
-```
-initramfs initramfs.cpio 0x8000000
-```
-
-
-
-
-
-
-
-## Bootloader Self Relocation
-
-
-
-## Devicetree
-
-
-
-## References
-+ [1] https://grasslab.github.io/NYCU_Operating_System_Capstone/labs/lab2.html#introduction
-+ [2] https://blog.nicolasmesa.co/posts/2019/08/booting-your-own-kernel-on-raspberry-pi-via-uart/
-+ [3] https://github.com/mrvn/raspbootin
-+ [4] https://www.freebsd.org/cgi/man.cgi?query=cpio&sektion=5
-+ [5] https://github.com/SEL4PROJ/libcpio
+## Startup Allocator
 
