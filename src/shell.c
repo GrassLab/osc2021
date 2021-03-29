@@ -217,13 +217,15 @@ void shell_ls(){
 
 void shell_memory(){
     char cur_char;
-    uint64_t need_size;
+    uint64_t need_size, free_addr, free_size;
+    uint32_t mem;
     struct FrameListNum *cursor;
     uart_puts("\r\nWelcome to memory manipulator!");
     while(1){
         uart_puts("\r\n\r\nEnter alphabet to do memory operation\r\n");
         uart_puts("= = = = = = = = = = = = = = = = = = = = = = = =\r\n");
         uart_puts("n: new a free memory\r\n");
+        uart_puts("d: free an allocated memory\r\n");
         uart_puts("l: list current memory list\r\n");
         uart_puts("x: exit memory manipulator\r\n");
 
@@ -236,7 +238,22 @@ void shell_memory(){
             buffer_clear();
             get_input();
             need_size = atoi(input_buffer, 10);
-            new_memory(frame_array, need_size);
+            mem = new_memory(frame_array, need_size);
+            uart_puts("New Memory Address: ");
+            uart_puts(itoa(mem, 16));
+            uart_puts("\r\n");
+        }
+        else if(cur_char == 'd'){
+            uart_puts("Enter the allocated memory address (hex)\r\n");
+            buffer_clear();
+            get_input();
+            free_addr = hex_to_int64(input_buffer);
+
+            uart_puts("Enter the length of memory (bytes)\r\n");
+            buffer_clear();
+            get_input();
+            free_size = atoi(input_buffer, 10);
+            free_memory(frame_array, free_addr, free_size);
         }
         else if(cur_char == 'l'){
             uint16_t i;

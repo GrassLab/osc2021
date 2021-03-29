@@ -9,6 +9,7 @@
 struct FrameListNum {
     uint32_t index;
     struct FrameListNum *next;
+    struct FrameListNum *prev;
 };
 
 typedef struct _RawFrameArray{
@@ -21,5 +22,6 @@ typedef struct _RawFrameArray{
 
 FrameArray* NewFrameArray();
 uint32_t new_memory(struct _RawFrameArray*, uint64_t);
+void free_memory(struct _RawFrameArray*, uint64_t , uint64_t );
 
 #endif
