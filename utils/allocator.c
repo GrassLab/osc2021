@@ -58,19 +58,63 @@ uint32_t _allocate_slot(struct _RawFrameArray *frame_array, uint64_t need_size, 
             cur_size_power -= 1;
         }
     }
-
-    cur_end_index = index + (1<<need_size_power);
-    uint32_t cur_index = index;
+    
+    uint32_t cur_index=index, assigned_block_num=1<<need_size_power;
+    cur_end_index = index + assigned_block_num;
+    
     for(;cur_index<cur_end_index; cur_index++)
         frame_array->val[cur_index] = UNFREE_SLOT;
 
+    // Print Log
     uart_puts("- - - - - - - - - -\r\n");
     uart_puts("New Memory: from idx ");
     uart_puts(itoa(index, 10));
     uart_puts(" to idx ");
     uart_puts(itoa(cur_end_index-1, 10));
     uart_puts("\r\n");
+
+    uint32_t redundant_block_num=assigned_block_num-need_size-1, base=assigned_block_num>>1, idx=need_size_power-1;
+    // uart_puts("Assigned Block Number: ");
+    // uart_puts(itoa(assigned_block_num, 10));
+    // uart_puts("\r\nNeed Block Number: ");
+    // uart_puts(itoa(need_size, 10));
+    while(base){
+        if(redundant_block_num&base){
+            cur_end_index -= base;
+            // Process freeList
+            if(!frame_array->freeList[idx]){
+                frame_array->freeList[idx] = _get_new_list_element();
+                frame_array->freeList[idx]->index = cur_end_index;
+            }
+            else{
+                cursor = _get_last_list_element(frame_array->freeList[idx]);
+                cursor->next = _get_new_list_element();
+                cursor->next->index = cur_end_index;
+            }
+
+            // Process val array
+            frame_array->val[cur_end_index] = idx;
+            for(cur_index=cur_end_index+1; cur_index<cur_end_index+base; cur_index++)
+                frame_array->val[cur_index] = FREE_SLOT;
+
+            // Print Log
+            uart_puts("- - - - - - - - - -\r\n");
+            uart_puts("Free Redundant Block: from idx ");
+            uart_puts(itoa(cur_end_index, 10));
+            uart_puts(" to idx ");
+            uart_puts(itoa(cur_end_index+base-1, 10));
+            uart_puts("\r\n");
+            redundant_block_num ^= base;
+        }
+        base >>= 1;
+        idx -= 1;
+    }
     uart_puts("- - - - - - - - - -\r\n");
+
+    for(int i=0; i<20; i++){
+        uart_puts(itoa(frame_array->val[i], 10));
+        uart_putc('\t');
+    }
 
     return return_addr;
 }

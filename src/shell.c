@@ -219,9 +219,9 @@ void shell_memory(){
     char cur_char;
     uint64_t need_size;
     struct FrameListNum *cursor;
+    uart_puts("\r\nWelcome to memory manipulator!");
     while(1){
-        uart_puts("\r\nWelcome to memory manipulator!\r\n");
-        uart_puts("Enter some alphabet to do memory operation\r\n");
+        uart_puts("\r\n\r\nEnter alphabet to do memory operation\r\n");
         uart_puts("= = = = = = = = = = = = = = = = = = = = = = = =\r\n");
         uart_puts("n: new a free memory\r\n");
         uart_puts("l: list current memory list\r\n");
