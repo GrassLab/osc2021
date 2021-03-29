@@ -4,6 +4,8 @@
 #include "str_tool.h"
 #include "stdint.h"
 #include "device_tree.h"
+#include "allocator.h"
+#include "str_tool.h"
 
 #define MAX_INPUT 100
 
@@ -22,8 +24,11 @@ struct CMD command[] = {
     {.name="reboot", .help="reboot the machine", .func=shell_reboot},
     {.name="ls", .help="list all the file", .func=shell_ls},
     {.name="pdtinfo", .help="print Device Tree Info", .func=print_dt_info},
-    {.name="parsedt", .help="parse Device Tree", .func=parse_dt}
+    {.name="parsedt", .help="parse Device Tree", .func=parse_dt},
+    {.name="memory", .help="do some memory operation", .func=shell_memory}
 };
+
+FrameArray *frame_array;
 
 char input_buffer[MAX_INPUT+1];
 int input_tail_idx = 0;
@@ -36,6 +41,7 @@ void buffer_clear(){
 void init_shell(){
     uart_puts("Welcome to my simple shell\r\n");
     uart_puts("ヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノ\r\n");
+    frame_array = NewFrameArray();
     buffer_clear();
 }
 
@@ -206,5 +212,53 @@ void shell_ls(){
 
         cur_addr = (uint64_t)((cur_addr + name_size + 3) & (~3));
         cur_addr = (uint64_t)((cur_addr + file_size + 3) & (~3));
+    }
+}
+
+void shell_memory(){
+    char cur_char;
+    uint64_t need_size;
+    struct FrameListNum *cursor;
+    while(1){
+        uart_puts("\r\nWelcome to memory manipulator!\r\n");
+        uart_puts("Enter some alphabet to do memory operation\r\n");
+        uart_puts("= = = = = = = = = = = = = = = = = = = = = = = =\r\n");
+        uart_puts("n: new a free memory\r\n");
+        uart_puts("l: list current memory list\r\n");
+        uart_puts("x: exit memory manipulator\r\n");
+
+        cur_char = uart_getc();
+        if(cur_char == '\r'){
+            uart_puts("\r\n");
+        }
+        else if(cur_char == 'n'){
+            uart_puts("Enter the memory size you want to new (bytes)\r\n");
+            buffer_clear();
+            get_input();
+            need_size = atoi(input_buffer, 10);
+            new_memory(frame_array, need_size);
+        }
+        else if(cur_char == 'l'){
+            uint16_t i;
+            for(i=0; i<20; i++){
+                if(frame_array->freeList[i]){
+                    uart_puts("Frame Power: ");
+                    uart_puts(itoa(i, 10));
+                    uart_puts("\r\n");
+
+                    cursor = frame_array->freeList[i];
+                    while(cursor){
+                        uart_puts(" -> ");
+                        uart_puts(itoa(cursor->index, 10));
+                        cursor = cursor->next;
+                    }
+                    uart_puts("\r\n");
+                }
+            }
+        }
+        else if(cur_char == 'x'){
+            uart_puts("Bye~\r\n");
+            break;
+        }
     }
 }

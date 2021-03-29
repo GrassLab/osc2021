@@ -3,3 +3,5 @@ res/*
 *.cpio
 .vscode
 *.dtb
+*.elf
+core

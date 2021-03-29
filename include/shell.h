@@ -22,5 +22,6 @@ void shell_reboot();
 void shell_boot_uart();
 
 void shell_ls();
+void shell_memory();
 
 #endif
