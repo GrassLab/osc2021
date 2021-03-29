@@ -27,4 +27,6 @@ void freelist_insertion(int order, struct buddy_frame *frame);
 
 void free_frame(void *adr);
 
+void print_available_memory_with_uart();
+
 #endif

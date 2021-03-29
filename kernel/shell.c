@@ -175,7 +175,6 @@ void command_allocate() {
     uart_puts(output_buffer);
     uart_puts("\n");
     
-    
 }
 
 void command_free() {
@@ -183,7 +182,7 @@ void command_free() {
 }
 
 void command_meminfo() {
-
+    print_available_memory_with_uart();
 }
 
 void command_not_found() {

@@ -141,3 +141,33 @@ void freelist_insertion(int order, struct buddy_frame *frame) {
 void free_frame(void *adr) {
     uart_puts("Hello");
 }
+
+void print_available_memory_with_uart() {
+    for(int i = 0; i < FRAME_NUMBERS;) {
+        if(the_frame_array[i].order >= 0) {
+            char output_buffer[10] = { 0 };
+            
+            uart_puts("Frame index: ");
+            itoa(i, output_buffer, 10);
+            uart_puts(output_buffer);
+            uart_puts(", start address: 0x");
+
+            for(int i = 0; i < 10; i++)
+                output_buffer[i] = 0;
+
+            itoa(the_frame_array[i].start_address, output_buffer, 16);
+            uart_puts(output_buffer);
+            uart_puts(", size: ");
+
+            for(int i = 0; i < 10; i++)
+                output_buffer[i] = 0;
+            itoa(pow(2, the_frame_array[i].order) * 4, output_buffer, 10);
+            uart_puts(output_buffer);
+            uart_puts(" KB\n");
+
+            i += pow(2, the_frame_array[i].order) - 1;
+        }
+        i++;
+    }
+
+}
