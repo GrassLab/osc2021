@@ -39,11 +39,9 @@ typedef struct Frame {
   struct list_head list_base;
 
   // only if this page is slab allocated if this field to be useful
-  // TODO: optimize this structure
-  uint8_t slab_usage[SLAB_MAX_SLOTS];
+  uint8_t slot_available[SLAB_MAX_SLOTS];
   struct SlabAllocator *slab_allocator;
-  int max_num_objects;
-  int num_object_allocated;
+  int free_slot_remains;
 
   int arr_index;
   void *addr;
@@ -58,8 +56,8 @@ typedef struct BuddyAllocater {
 } BuddyAllocater;
 
 typedef struct SlabAllocator {
-  int unit_size;     // size of the unit (in Bytes)
-  int unit_size_exp; // exponent of the size (in Bytes)
+  int unit_size; // size of the unit (in Bytes)
+  int max_slab_num_obj;
 
   BuddyAllocater *frame_allocator;
 

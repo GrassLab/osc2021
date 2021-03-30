@@ -154,13 +154,12 @@ void *slab_alloc(SlabAllocator *alloc) {
       frame->slab_allocator = alloc;
       alloc->cur_frame = frame;
       for (int i = 0; i < SLAB_MAX_SLOTS; i++) {
-        frame->slab_usage[i] = 0;
+        frame->slot_available[i] = 1;
       }
-      frame->max_num_objects = 4096 >> (alloc->unit_size_exp);
-      // frame->max_num_objects = 5;
-      frame->num_object_allocated = 0;
-      uart_println("  mx_obj: %d, allocated:%d", frame->max_num_objects,
-                   frame->num_object_allocated);
+      // frame->free_slot_remains = alloc->max_slab_num_obj;
+      frame->free_slot_remains = 5;
+      uart_println("  slot remains: %d, max:%d", frame->free_slot_remains,
+                   alloc->max_slab_num_obj);
     }
   }
   frame = alloc->cur_frame;
@@ -169,15 +168,15 @@ void *slab_alloc(SlabAllocator *alloc) {
 
   // find a space for allocation
   for (int i = 0; i < SLAB_MAX_SLOTS; i++) {
-    if (frame->slab_usage[i] == 0) {
+    if (frame->slot_available[i] == 1) {
       addr = frame->addr + i * alloc->unit_size;
-      frame->slab_usage[i] = 1;
-      frame->num_object_allocated += 1;
+      frame->slot_available[i] = 0;
+      frame->free_slot_remains -= 1;
       break;
     }
   }
 
-  if (frame->num_object_allocated >= frame->max_num_objects) {
+  if (frame->free_slot_remains <= 0) {
     // if the page is full, move it to the full-list
     list_push(&frame->list_base, &alloc->full_list);
     alloc->cur_frame = NULL;
@@ -196,15 +195,15 @@ void slab_free(void *obj) {
       (((long)(obj - MEMORY_START) & ((1 << BUDDY_FRAME_SHIFT) - 1)) /
        alloc->unit_size);
 
-  if (frame->slab_usage[obj_index] == 0) {
+  if (frame->slot_available[obj_index] == 1) {
     uart_println("!!Free after free");
   }
   uart_println("slab: Free object");
-  frame->slab_usage[obj_index] = 0;
-  frame->num_object_allocated -= 1;
+  frame->slot_available[obj_index] = 1;
+  frame->free_slot_remains += 1;
   if (frame != alloc->cur_frame) {
     list_del(&frame->list_base);
-    if (frame->num_object_allocated > 0) {
+    if (frame->slot_available > 0) {
       list_push(&frame->list_base, &alloc->partial_list);
     } else {
       uart_println("slab: release block");
@@ -221,7 +220,7 @@ void KAllocManager_init() {
   for (int i = SLAB_OBJ_MIN_SIZE_EXP; i <= SLAB_OBJ_MAX_SIZE_EXP; i++) {
     slab_alloc = &am->obj_allocator_list[i - SLAB_OBJ_MIN_SIZE_EXP];
     slab_alloc->unit_size = 1 << i;
-    slab_alloc->unit_size_exp = i;
+    slab_alloc->max_slab_num_obj = 4096 / slab_alloc->unit_size;
     slab_alloc->frame_allocator = am->frame_allocator;
     slab_alloc->cur_frame = NULL;
     list_init(&slab_alloc->partial_list);
