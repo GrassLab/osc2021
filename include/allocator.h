@@ -2,12 +2,13 @@
 /* max allocation size is 2 GB */
 #define MAX_ALLOC_LOG2 20
 #define MAX_ALLOC_SIZE (1 << MAX_ALLOC_LOG2)
-/* each page is 4KB */
-#define PAGE_SIZE_LOG2 12
+/* each page is 16 bytes */
+#define PAGE_SIZE_LOG2 4
 #define PAGE_SIZE (1 << PAGE_SIZE_LOG2)
 #define PAGE_NUM (1  << (MAX_ALLOC_LOG2 - PAGE_SIZE_LOG2))
 
-#define BUCKETS_NUM MAX_ALLOC_LOG2 - PAGE_SIZE_LOG2 + 1
+
+#define BUCKETS_NUM (MAX_ALLOC_LOG2 - PAGE_SIZE_LOG2 + 1)
 #define NULL ((void*)0)
 
 

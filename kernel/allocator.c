@@ -49,14 +49,30 @@ static void list_remove_index(Node *list, int index) {
 }
 
 void print_free_list() {
-	for(int i = 0; i < BUCKETS_NUM; i++) {
-		uart_puts("list ");
+	for(int i = 0; i < 8; i++) {
+		if(i==0) uart_puts("---16 bytes---\n");
+		uart_puts("pool ");
 		uart_puts_int(i);
 		uart_puts(": ");
 		Node *head = &buckets[i];
 		Node *p = head->next;
 		while(p != NULL) {
 			uart_puts_int(p->index);
+			uart_puts(" -> ");
+			p = p->next;
+		}
+		uart_puts("\n");
+	}
+	
+	for(int i = 8; i < BUCKETS_NUM; i++) {
+		if(i==8) uart_puts("---4KB---\n");
+		uart_puts("list ");
+		uart_puts_int(i-8);
+		uart_puts(": ");
+		Node *head = &buckets[i];
+		Node *p = head->next;
+		while(p != NULL) {
+			uart_puts_int((p->index) >> 8);
 			uart_puts(" -> ");
 			p = p->next;
 		}
@@ -95,13 +111,26 @@ void split_block(Node *p, int order, int block_size) {
 		hi = mid;
 
 		Node *list_head = &buckets[block_size];
-		uart_puts("[list ");
-		uart_puts_int(block_size);
-		uart_puts("] add block: index ");
-		uart_puts_int(list_head->next->index);
-		uart_puts(", address 0x");
-		uart_puts_hex(new_node);
-		uart_puts("\n");
+		
+		if(block_size >> 3) {
+			uart_puts("[list ");
+			uart_puts_int(block_size>>3);
+			uart_puts("] add block: index ");
+			uart_puts_int((list_head->next->index) >> 8);
+			uart_puts(", address 0x");
+			uart_puts_hex(new_node);
+			uart_puts("\n");
+		}
+		
+		else {
+			uart_puts("[pool ");
+			uart_puts_int(block_size);
+			uart_puts("] add block: index ");
+			uart_puts_int(list_head->next->index);
+			uart_puts(", address 0x");
+			uart_puts_hex(new_node);
+			uart_puts("\n");
+		}
 		print_free_list();
 	}
 	uart_puts("\n");
@@ -116,14 +145,28 @@ Node* get_page_from_buckets(Node *p, int bucket_pagen, int required_pagen) {
 		/* If bucket[i] is not empty */
 		if(p) {
       		int block_index = p->index;
-			uart_puts("[list ");
-			uart_puts_int(i);
-			uart_puts("] find block: index ");
-			uart_puts_int(block_index);
-			uart_puts(", address 0x");
-			uart_puts_hex(p);
-			uart_puts("\n");
-			uart_puts("\n");
+
+			if(i >> 3) {
+				uart_puts("[list ");
+				uart_puts_int(i-8);
+				uart_puts("] find block: index ");
+				uart_puts_int(block_index >> 8);
+				uart_puts(", address 0x");
+				uart_puts_hex(p);
+				uart_puts("\n");
+				uart_puts("\n");
+			}
+
+			else {
+				uart_puts("[pool ");
+				uart_puts_int(i);
+				uart_puts("] find block: index ");
+				uart_puts_int(block_index);
+				uart_puts(", address 0x");
+				uart_puts_hex(p);
+				uart_puts("\n");
+				uart_puts("\n");
+			}
 
 			list_remove(list_head, p);
 			if(i > required_pagen) split_block(p, required_pagen, i);
@@ -135,14 +178,18 @@ Node* get_page_from_buckets(Node *p, int bucket_pagen, int required_pagen) {
 
 
 void* malloc(unsigned int size) {
+	int page_n = (size >> PAGE_SIZE_LOG2);
+    page_n += size % (1 << PAGE_SIZE_LOG2) == 0 ? 0 : 1;
+	int kbpage_n = (size >> 12);
+    kbpage_n += size % (1 << 12) == 0 ? 0 : 1;
     uart_puts("=====Malloc=====\n");
     uart_puts("need ");
     uart_puts_int(size);
     uart_puts(" bytes, equal to ");
-    int page_n = (size >> PAGE_SIZE_LOG2);
-    page_n += size % (1 << PAGE_SIZE_LOG2) == 0 ? 0 : 1;
     uart_puts_int(page_n);
-    uart_puts(" pages\n");
+    uart_puts(" 16-bytes or ");
+	uart_puts_int(kbpage_n);
+	uart_puts(" 4KB pages\n");
 	uart_puts("\n");
 	print_free_list();
 
@@ -200,16 +247,30 @@ int merge_block(int index, int bucket_index) {
 				node_init(new_node, index);
 				list_push(next_buckets, new_node);
 
-				uart_puts("[list ");
-				uart_puts_int(i);
-				uart_puts("] find buddy: index ");
-				uart_puts_int(target);
-				uart_puts("\n");
-				uart_puts("[list ");
-				uart_puts_int(i+1);
-				uart_puts("] add block: index ");
-				uart_puts_int(index);
-				uart_puts("\n");
+				if(i >> 3) {
+					uart_puts("[list ");
+					uart_puts_int(i-8);
+					uart_puts("] find buddy: index ");
+					uart_puts_int(target >> 8);
+					uart_puts("\n");
+					uart_puts("[list ");
+					uart_puts_int(i+1-8);
+					uart_puts("] add block: index ");
+					uart_puts_int(index >> 8);
+					uart_puts("\n");
+				}
+				else {
+					uart_puts("[pool ");
+					uart_puts_int(i);
+					uart_puts("] find buddy: index ");
+					uart_puts_int(target);
+					uart_puts("\n");
+					uart_puts("[pool ");
+					uart_puts_int(i+1);
+					uart_puts("] add block: index ");
+					uart_puts_int(index);
+					uart_puts("\n");
+				}
 				print_free_list();
 			}
 			p = p->next;
@@ -223,7 +284,7 @@ int merge_block(int index, int bucket_index) {
 
 void free_page(unsigned long addr, unsigned int size) {
 	// 用addr反推index
-	int index = (addr-BASE_MEM) >> 12;
+	int index = (addr-BASE_MEM) >> PAGE_SIZE_LOG2;
 	int page_n = (size >> PAGE_SIZE_LOG2);
     page_n += size % (1 << PAGE_SIZE_LOG2) == 0 ? 0 : 1;
 	unsigned int bucket_index = 0;
@@ -233,11 +294,20 @@ void free_page(unsigned long addr, unsigned int size) {
 		temp = temp >> 1;
 	}
 	bucket_index += page_n & (page_n-1) ? 1 : 0;
-	uart_puts("=====Free block=====\n");
-	uart_puts("free the block start from index ");
-	uart_puts_int(index);
-	uart_puts(", order ");
-	uart_puts_int(bucket_index);
+	if(bucket_index >> 3) {
+		uart_puts("=====Free block=====\n");
+		uart_puts("free the block start from index ");
+		uart_puts_int(index >> 8);
+		uart_puts(", list ");
+		uart_puts_int(bucket_index-8);
+	}
+	else {
+		uart_puts("=====Free block=====\n");
+		uart_puts("free the block start from index ");
+		uart_puts_int(index);
+		uart_puts(", pool ");
+		uart_puts_int(bucket_index);
+	}
 	uart_puts("\n");
 	int merge = -1;
 	merge = merge_block(index, bucket_index);
@@ -248,12 +318,24 @@ void free_page(unsigned long addr, unsigned int size) {
 		node_init(new_node, index);
 		list_push(list_head, new_node);
 		uart_puts("buddy is not free\n");
-		uart_puts("[list ");
-		uart_puts_int(bucket_index);
-		uart_puts("] add block: index ");
-		uart_puts_int(index);
-		uart_puts(", address 0x");
-		uart_puts_hex(addr);
+
+		if(bucket_index >> 3) {
+			uart_puts("[list ");
+			uart_puts_int(bucket_index-8);
+			uart_puts("] add block: index ");
+			uart_puts_int(index >> 8);
+			uart_puts(", address 0x");
+			uart_puts_hex(addr);
+		}
+		
+		else {
+			uart_puts("[pool ");
+			uart_puts_int(bucket_index);
+			uart_puts("] add block: index ");
+			uart_puts_int(index);
+			uart_puts(", address 0x");
+			uart_puts_hex(addr);
+		}
 		uart_puts("\n");
 		uart_puts("\n");
 	}

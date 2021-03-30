@@ -122,15 +122,15 @@ void list_file() {
 
 void alloc() {
     init_buckets();
-    void *test1 = malloc(100 + (1 << (12+3)));
-    void *test2 = malloc(1 << (12+5));
+    void *test1 = malloc(16);
+    void *test2 = malloc(40);
     void *test3 = malloc(1<<12);
-    void *test4 = malloc(1<<12);
+    void *test4 = malloc(1<<10);
 
     free_page(test3, 1<<12);
-    free_page(test4, 1<<12);
-    free_page(test2, 1 << (12+5));
-    free_page(test1, 100 + (1 << (12+3)));
+    free_page(test4, 1<<10);
+    free_page(test2, 40);
+    free_page(test1, 16);
 }
 
 void main() {
