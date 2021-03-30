@@ -11,7 +11,8 @@ void main()
     //memory allocator init
     mem_init();
     int addr = my_alloc(1<<27);
-    uart_printf("start to free");
+    mem_status_dump();
+    uart_printf("start to free\n");
     my_free(addr);
     // say hello
     mem_status_dump();

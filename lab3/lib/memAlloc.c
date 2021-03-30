@@ -36,11 +36,12 @@ int check_list(int index){
 
 void list_node_pop(int exp){
 
-    list_node* temp = list_node_arr[exp].next;
-    list_node_arr[exp].next = list_node_arr[exp].next -> next;
-    list_node_arr[exp].prev -> prev = list_node_arr[exp].next -> prev;
-    temp -> next = NULL;
-    temp -> prev = NULL;
+    //list_node* temp = list_node_arr[exp].next;
+    //list_node_arr[exp].next = list_node_arr[exp].next -> next;
+    //list_node_arr[exp].prev -> prev = list_node_arr[exp].next -> prev;
+    //temp -> next = NULL;
+    //temp -> prev = NULL;
+    list_node_del(list_node_arr[exp].next);
 
 
 }
@@ -48,14 +49,17 @@ void list_node_pop(int exp){
 void list_node_push(list_node* entry, int exp){
 
     entry->next = list_node_arr[exp].next;
-    entry->prev = list_node_arr[exp].next->prev;
+    entry->prev = list_node_arr[exp].next -> prev;
     list_node_arr[exp].next -> prev  = entry;
     list_node_arr[exp].next = entry;
 
 }
 
 void list_node_del(list_node* entry){
-
+    //uart_printf("%x\n",entry->next -> start_addr);
+    //if(entry->prev == &list_node_arr[15]){
+    //    uart_puts("test\n");
+    //}
     entry -> prev -> next = entry ->next;
     entry -> next -> prev = entry -> prev;
     entry -> next = NULL;
@@ -166,6 +170,7 @@ void* my_alloc(int size){
         frame_size--;
     }
     list_node_pop(exp-12);
+    //if(list_node_arr[15].next -> prev == &list_node_arr[15]) uart_puts("111\n");
     return address;
 
 }
@@ -181,7 +186,6 @@ void my_free(void *addr){
     for(int i = 0; i < frame_size ; ++i){
         page_arr[page_no].inused = 0;
     }
-
     list_node_push(freed, exp );
     int free = 1;
     for(int i=0;i<frame_size;++i){
@@ -193,9 +197,12 @@ void my_free(void *addr){
 
     if(free == 1){
         uart_printf("merge 2 size 2^%d\n",page_arr[page_no].exp+12);
-        
     }
-
+ //   uart_printf("%x\n",page_arr[buddy].corespond_list_node -> start_addr);
+    //uart_printf("%x\n",page_arr[0].corespond_list_node-> start_addr);
+    list_node_del(freed);
+    list_node_del(page_arr[--buddy].corespond_list_node);
+    pool[used].fr_no = ;
 }
 
 int mem_init(){
