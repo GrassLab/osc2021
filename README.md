@@ -12,7 +12,10 @@
 
 ## How to run
 
-`make run`
+1. run `make run`
+2. you will get a device path, assume it's \$(device_path)
+3. open a new terminal, and run `python3 ./src/kernel_sender $(device_path)`
+4. after previous command is done, start monitoring by running `screen $(device_path)`
 
 ## How to burn it into pi3
 
