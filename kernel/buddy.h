@@ -15,11 +15,17 @@
 struct buddy_frame {
     int index;
     int order;
+    int used_order;
     uint64_t start_address;
     struct buddy_frame *next;
 };
 
 void buddy_init();
+
+/*
+ *
+ *
+ */
 void *allocate_frame(int required_size_in_kbyte);
 
 void freelist_deletion(int order, struct buddy_frame *frame);
