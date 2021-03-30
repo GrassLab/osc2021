@@ -173,7 +173,9 @@ void *malloc(int size) {
     }
   }
   if (result == 0) {
-    int buddy_size = 2 * dmaSize + size + align(2 * dmaSize + size, PAGE_SIZE);
+    int buddy_size = (2 * dmaSize + size) / PAGE_SIZE;
+    buddy_size =
+        PAGE_SIZE << ((buddy_size == 0) ? 0 : (size2Index(buddy_size) + 1));
     buddy_list *page = buddy_alloc(buddy_size);
     result = (dma *)page->addr;
     result->size = buddy_size - dmaSize;
@@ -245,16 +247,17 @@ void dma_test1() {
   uart_puts("used:\r\n");
   printDmaPool(used_pool);
   uart_puts("\r\n********* alloced *********\r\n");
+  void *p2 = malloc(1 * PAGE_SIZE);
   void *p0 = malloc(3);
   void *p1 = malloc(4);
-  void *p2 = malloc(4);
   uart_puts("free:\r\n");
   printDmaPool(free_pool);
   uart_puts("used:\r\n");
   printDmaPool(used_pool);
   uart_puts("\r\n********* freed *********\r\n");
-  free(p2);
   free(p1);
+  free(p2);
+  // free(p1);
   uart_puts("free:\r\n");
   printDmaPool(free_pool);
   uart_puts("used:\r\n");

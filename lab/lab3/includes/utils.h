@@ -174,7 +174,7 @@ void swap(void **a, void **b) {
 // for buddy system
 int size2Index(int size) {
   int i = 0;
-  while (size >>= 1) i++;
+  while (size >>= 1) ++i;
   return i;
 }
 int abs(int a) {
