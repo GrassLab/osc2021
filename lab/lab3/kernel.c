@@ -70,7 +70,7 @@ void shell() {
 
     } else if (strcmp(buff, "test")) {
       // buddy_test1();
-      buddy_test2();
+      // buddy_test2();
       dma_test1();
     } else
       do_except(buff);

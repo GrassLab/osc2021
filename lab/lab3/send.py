@@ -27,7 +27,7 @@ if platform == "linux" or platform == "linux2":
             rpi3.write(c)
             print("%d / %d" % (i+1, kernel_size), end="\r")
             # if i % 10 == 0:
-            sleep(0.001)
+            sleep(0.0012)
     rpi3.close()
 else:
     device = join("COM%d" % device)

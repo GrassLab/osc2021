@@ -137,13 +137,15 @@ void buddy_free(buddy_list *list) {
 
 void print_buddyList(buddy_list **lists) {
   for (int i = 0; i < BUDDY_INDEX; i++) {
-    uart_puts("index: ");
-    print_h((unsigned long int)i);
-    for (buddy_list *now = lists[i]; now != 0; now = now->next) {
-      uart_puts("    memory addr: ");
-      print_h((unsigned long int)now->addr);
-      // uart_puts("        allocate memory addr end: ");
-      // print_h((unsigned long int)now->addr + now->size * 4 * KB);
+    if (lists[i] != 0) {
+      uart_puts("index: ");
+      print_h((unsigned long int)i);
+      for (buddy_list *now = lists[i]; now != 0; now = now->next) {
+        uart_puts("    memory addr: ");
+        print_h((unsigned long int)now->addr);
+        // uart_puts("        allocate memory addr end: ");
+        // print_h((unsigned long int)now->addr + now->size * 4 * KB);
+      }
     }
   }
 }
@@ -180,7 +182,7 @@ void *malloc(int size) {
     result = (dma *)page->addr;
     result->size = buddy_size - dmaSize;
     result->page = page;
-    result->next = 0;
+    result->next = free_pool;
   };
   dma *list = (dma *)((void *)result + dmaSize + size);
   list->next = result->next;
@@ -242,31 +244,67 @@ void printDmaPool(dma *list) {
 void dma_test1() {
   uart_puts("\r\n+++++++++ dma_test1 +++++++++\r\n");
   uart_puts("\r\n********* init *********\r\n");
-  uart_puts("free:\r\n");
+  uart_puts("buddy free:\r\n");
+  print_buddyList(free_list);
+  uart_puts("\r\n");
+  uart_puts("buddy used:\r\n");
+  print_buddyList(used_list);
+  uart_puts("\r\n");
+  uart_puts("DMA free:\r\n");
   printDmaPool(free_pool);
-  uart_puts("used:\r\n");
+  uart_puts("DMA used:\r\n");
   printDmaPool(used_pool);
-  uart_puts("\r\n********* alloced *********\r\n");
-  void *p2 = malloc(1 * PAGE_SIZE);
+  uart_puts("\r\n********* alloced 1 *********\r\n");
+  void *p2 = malloc(5 * PAGE_SIZE);
   void *p0 = malloc(3);
-  void *p1 = malloc(4);
-  uart_puts("free:\r\n");
+  uart_puts("buddy free:\r\n");
+  print_buddyList(free_list);
+  uart_puts("\r\n");
+  uart_puts("buddy used:\r\n");
+  print_buddyList(used_list);
+  uart_puts("\r\n");
+  uart_puts("DMA free:\r\n");
   printDmaPool(free_pool);
-  uart_puts("used:\r\n");
+  uart_puts("DMA used:\r\n");
   printDmaPool(used_pool);
-  uart_puts("\r\n********* freed *********\r\n");
+  uart_puts("\r\n********* alloced 2 *********\r\n");
+  void *p3 = malloc(3 * PAGE_SIZE);
+  void *p1 = malloc(4);
+  uart_puts("buddy free:\r\n");
+  print_buddyList(free_list);
+  uart_puts("\r\n");
+  uart_puts("buddy used:\r\n");
+  print_buddyList(used_list);
+  uart_puts("\r\n");
+  uart_puts("DMA free:\r\n");
+  printDmaPool(free_pool);
+  uart_puts("DMA used:\r\n");
+  printDmaPool(used_pool);
+  uart_puts("\r\n********* freed 1 *********\r\n");
   free(p1);
   free(p2);
-  // free(p1);
-  uart_puts("free:\r\n");
+  uart_puts("buddy free:\r\n");
+  print_buddyList(free_list);
+  uart_puts("\r\n");
+  uart_puts("buddy used:\r\n");
+  print_buddyList(used_list);
+  uart_puts("\r\n");
+  uart_puts("DMA free:\r\n");
   printDmaPool(free_pool);
-  uart_puts("used:\r\n");
+  uart_puts("DMA used:\r\n");
   printDmaPool(used_pool);
-  uart_puts("\r\n********* freed *********\r\n");
+  uart_puts("\r\n********* freed 2 *********\r\n");
   free(p0);
-  uart_puts("free:\r\n");
+  free(p3);
+  uart_puts("buddy free:\r\n");
+  print_buddyList(free_list);
+  uart_puts("\r\n");
+  uart_puts("buddy used:\r\n");
+  print_buddyList(used_list);
+  uart_puts("\r\n");
+  uart_puts("DMA free:\r\n");
   printDmaPool(free_pool);
-  uart_puts("used:\r\n");
+  uart_puts("DMA used:\r\n");
   printDmaPool(used_pool);
   uart_puts("\r\nending\r\n");
 }
