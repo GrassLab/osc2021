@@ -6,11 +6,11 @@
 #include "dynamic_allocator.h"
 
 void main(void){
+    DEBUG = 0;
     uart_init();
     buddy_init();
-    // buddy_test1();
     dynamic_allocator_init();
-    DMA_test();
+    
     // while(uart_get() == '\0');
     shell();    
 }

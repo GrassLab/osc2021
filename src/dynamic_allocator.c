@@ -32,11 +32,25 @@ void __mark_memory_unused(DMA_header* ptr){
 uint8_t __check_memory_releasable(DMA_header* ptr){
     return (__decode_block_size(ptr->info) == ptr->size + DMA_HEADER_SIZE ) ? 1 : 0;
 }
+void __log_block_release(DMA_header* ptr){
+    if(DEBUG & 0x02){
+        uart_puts("[Block release] address: ");
+        uart_printhex((uint64_t)ptr);
+        uart_puts(", size: ");
+        uart_printhex(ptr->size + DMA_HEADER_SIZE);
+        uart_puts("\r\n");
+    }
+}
+void __log_chunk_merge(uint64_t addr1, uint64_t addr2){
+    if(DEBUG & 0x02){
+        uart_puts("[Merge two chunk] address: ");
+        uart_printhex(addr1); uart_puts(", "); uart_printhex(addr2);
+        uart_puts("\r\n");
+    }
+}
+
 void dynamic_allocator_init(){
     DMA_HEADER_SIZE = sizeof(DMA_header);
-    uart_puts("DMA_header size: ");
-    uart_printhex(DMA_HEADER_SIZE);
-    uart_puts("\r\n");
     mem_pool = nullptr;
 }
 void __split_chunk(DMA_header* ptr, uint32_t request_size){
@@ -53,20 +67,19 @@ void __split_chunk(DMA_header* ptr, uint32_t request_size){
         next_chunk->info = ptr->info & 0xffffff00; // same entry and block exp, marked as unused
         next_chunk->next = ptr->next;
         next_chunk->prev = (char*)ptr;
+        if(ptr->next != nullptr) ((DMA_header*)ptr->next)->prev = (char*)next_chunk;
         ptr->next = (char*)next_chunk;
     }
 }
 void* dynamic_alloc(uint32_t request_size){
     if(request_size == 0) return nullptr;
     request_size = __align_8byte(request_size);
-    uart_printhex(request_size); uart_puts("\r\n");
+    
     DMA_header *res = nullptr;
     uint32_t proper_size = MEMORY_END - MEMORY_START;
     for(DMA_header *cur = mem_pool; cur != nullptr; cur = (DMA_header*)cur->next){
         if(__memory_unused(cur->info) && 
             cur->size >= request_size && cur->size < proper_size){
-            uart_puts("find\r\n");
-
             res = cur;
             proper_size = cur->size;
         }
@@ -90,11 +103,8 @@ void* dynamic_alloc(uint32_t request_size){
 uint8_t __dma_merge(DMA_header* m1, DMA_header* m2){
     if(__memory_unused(m1->info) && __memory_unused(m2->info) &&
         __same_block(m1->info, m2->info)){
-        uart_puts("Merge size: ");
-        uart_printhex(m1->size);
-        uart_puts(", ");
-        uart_printhex(m2->size);
-        uart_puts("\r\n");
+        
+        __log_chunk_merge((uint64_t)m1, (uint64_t)m2);
         m1->size += m2->size + DMA_HEADER_SIZE;
         m1->next = m2->next;
         if(m2->next != nullptr) ((DMA_header*)(m2->next))->prev = (char*)m1;
@@ -107,24 +117,30 @@ void dynamic_free(void* addr){
     __mark_memory_unused(ptr);
     __dma_merge(ptr, (DMA_header*)ptr->next);
     if(__dma_merge((DMA_header*)ptr->prev, ptr)){
-        uart_puts("merge prev\r\n");
         ptr = (DMA_header*)ptr->prev;
-        uart_printhex(ptr->size);
-        uart_puts("\r\n");
     }
     
     if(__check_memory_releasable(ptr)){
-        uart_puts("release\r\n");
+        __log_block_release(ptr);
+        if(ptr->prev != nullptr){
+            ((DMA_header*)ptr->prev)->next = ptr->next;
+            ((DMA_header*)ptr->next)->prev = (char*)((DMA_header*)ptr->prev);
+        }
+        else{
+            mem_pool = (DMA_header*)ptr->next;
+            ((DMA_header*)ptr->next)->prev = nullptr;
+        }
         buddy_free((char*)ptr);
-        mem_pool = (DMA_header*)ptr->next;
     }
 }
 void show_memory_pool(){
     for(DMA_header* ptr = mem_pool; ptr != nullptr; ptr = (DMA_header*)ptr->next){
         uart_puts("info[-, entry, exp, used]: ");
         uart_printhex(ptr->info);
-        uart_puts(", mem block size = ");
+        uart_puts(", chunk size = ");
         uart_printhex(ptr->size);
+        uart_puts(", address: ");
+        uart_printhex((uint64_t)ptr);
         uart_puts("\r\n");
     }
     uart_puts("=====================================================\r\n");
@@ -134,26 +150,29 @@ void DMA_test(){
     show_memory_pool();
     uint32_t size[6] = {
         sizeof(int) * 1, 
-        sizeof(int) * 60,
+        sizeof(int) * 2201,
         sizeof(int) * 100,
-        sizeof(int) * 79,
+        sizeof(int) * 3068,
         sizeof(int) * 9,
-        sizeof(int) * 1, // over single page;
+        sizeof(int) * 8, // over single page;
     };
     int index[6] = {0, 5, 1, 4, 3, 2};
     void *addr[6];
     for(int i = 0; i < 6; ++i){
-        uart_puts("Allocate memory: ");
+        uart_puts("[Allocate memory] size: ");
         uart_printhex(size[i]);
         uart_puts("\r\n");
         addr[i] = dynamic_alloc(size[i]);
         show_memory_pool();
     }
     for(int i = 0; i < 6; ++i){
-        uart_puts("Deallocate memory: ");
+        uart_puts("[Deallocate memory] address: ");
+        uart_printhex((uint64_t)addr[index[i]] - DMA_HEADER_SIZE);
+        uart_puts(", size: ");
         uart_printhex(size[index[i]]);
         uart_puts("\r\n");
         dynamic_free(addr[index[i]]);
         show_memory_pool();
     }
+    uart_puts("================  DMA_test done  =====================\r\n");
 }

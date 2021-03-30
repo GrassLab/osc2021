@@ -28,6 +28,8 @@ uint8_t __dma_merge(DMA_header*, DMA_header*);
 uint8_t __check_memory_releasable(DMA_header*);
 uint32_t __decode_block_size(uint32_t );
 uint8_t __same_block(uint32_t, uint32_t);
+void __log_chunk_merge(uint64_t, uint64_t);
+void __log_block_release(DMA_header*);
 void dynamic_free(void*);
 char* find_proper_page(int);
 uint32_t __align_8byte(uint32_t);

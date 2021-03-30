@@ -10,6 +10,7 @@ struct cmd{
     void(*callback)(char*);
     
 };
+int DEBUG = 0;
 struct cmd cmd_list[SYS_CMD_NUM] = {
     {.input = "help", .description="list commands", .callback = sys_help},
     {.input = "hello", .description="print hello world",.callback = sys_hello},
@@ -17,10 +18,18 @@ struct cmd cmd_list[SYS_CMD_NUM] = {
     {.input = "loadimg", .description="load new kernel",.callback = bootloader_loadimg},
     {.input = "ls", .description="list rootfs",.callback = sys_list},
     {.input = "cat", .description="show content of file", .callback = sys_cat},
-    {.input = "dtb_init", .description="init device by calling driver", .callback = dtb_init}
+    {.input = "dtb_init", .description="init device by calling driver", .callback = dtb_init},
+    {.input = "lab3", .description="lab3", .callback=__lab3}
 };
 
 
+void __lab3(char* args){
+    DEBUG = 1;
+    buddy_test1();
+    DEBUG = 2;
+    DMA_test();
+    DEBUG = 0;
+}
 uint32_t sys_get32bits(char* ptr){
     uint32_t res = 0;
     for(int i = 0; i < 4; ++i){

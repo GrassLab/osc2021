@@ -2,18 +2,20 @@
 #define __SYSTEM_H__
 #include "utils.h"
 #include "buddy.h"
+#include "dynamic_allocator.h"
 #include "uart.h"
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC ((volatile unsigned int *)(0x3F10001c))
 #define PM_RSTS ((volatile unsigned int *)(0x3F100020))
 #define PM_WDOG ((volatile unsigned int *)(0x3F100024))
 
-#define SYS_CMD_NUM 7
+#define SYS_CMD_NUM 8
 #define CPIO_ADDR ((char *)0x20000000) //QEMU(0x8000000)
 #define KB 0x400
 #define MB 0x100000
 
 #define nullptr ((void *)0)
+extern int DEBUG;
 
 struct cpio_size_info
 {
@@ -53,4 +55,5 @@ uint64_t sys_get64bits(char *);
 unsigned long long int need_padding(unsigned long long int size, unsigned long long int multiplier);
 void swap(int *, int *);
 void *malloc(int);
+void __lab3(char *);
 #endif
