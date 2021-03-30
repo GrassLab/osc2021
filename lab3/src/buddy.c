@@ -3,6 +3,7 @@
 # include "my_math.h"
 # include "linklist.h"
 # include "linklist.c"
+# include "mem.h"
 
 char buddy_table[BUDDY_TABLE_ROWS][BUDDY_TABLE_COLS*BUDDY_TABLE_OFFSET+BUDDY_TABLE_OFFSET+2];
 struct buddy_node buddy_ll[BUDDY_LL_MAX_NUM];
@@ -58,31 +59,36 @@ void buddy_init(){
   }
 }
 
-void buddy_push_loc(struct buddy_node **head, struct buddy_node *node, int itrn){
+void buddy_push_free_page(struct buddy_node **head, struct buddy_node *node, int itrn){
   char ct[20];
-  buddy_uart_puts("Push loc, addr <", itrn);
+  buddy_uart_puts("Push free page, addr <", itrn);
   int_to_hex(node->addr, ct);
   uart_puts(ct);
-  uart_puts("> into order");
+  uart_puts("> into order ");
   int_to_str(node->order, ct);
   uart_puts(ct);
-  uart_puts("\n");
+  uart_puts(".\n");
   struct buddy_node *head_t = *head;
+  //empty. just insert
   if (!head_t){
+    buddy_uart_puts("Check a\n", itrn+1);
     *head = node;
     node->next = 0;
     node->pre = 0;
     buddy_uart_puts("return\n", itrn);
     return ;
   }
+  //find insert position head_t = 0 -> insert at head
   while(head_t->next && head_t->next->addr < node->addr){
     head_t = head_t->next;
   }
   if (node->addr < head_t->addr){
     head_t = 0;
   }
+
   int order = node->order;
   if(order < BUDDY_MAX_ORDER){
+    buddy_uart_puts("Check b\n", itrn+1);
     //node page idx shift
     int npis = buddy_addr_to_pn(node->addr) >> (order+1);
     //head page idx shift
@@ -92,6 +98,7 @@ void buddy_push_loc(struct buddy_node **head, struct buddy_node *node, int itrn)
     struct buddy_node *del_node = 0;
     //check if coalesce
     if (head_t){
+      buddy_uart_puts("Check c1\n", itrn+1);
       hpis = buddy_addr_to_pn(head_t->addr) >> (order+1);
       hnpis = (head_t->next) ? buddy_addr_to_pn(head_t->next->addr) >> (order+1) : -1;
       if(npis == hpis){
@@ -105,63 +112,35 @@ void buddy_push_loc(struct buddy_node **head, struct buddy_node *node, int itrn)
       }
     }
     else{
+      buddy_uart_puts("Check c2\n", itrn+1);
       hpis = 0;
       hnpis = buddy_addr_to_pn((*head)->addr) >> (order+1);
       if (npis == hnpis){
-        del_node = head_t;
+        del_node = *head;
         node->order ++;
       }
     }
-    //del this order linklist
+    //del this order's linklist and add to upper order
     if(del_node){
+      buddy_uart_puts("Check d1\n", itrn+1);
       buddy_uart_puts("Find addr<", itrn+1);
       int_to_hex(del_node->addr, ct);
       uart_puts(ct);
-      uart_puts("> can coalesce.\n");
+      uart_puts(", <");
+      int_to_hex(node->addr, ct);
+      uart_puts(ct);
+      uart_puts("> can be coalesced.\n");
       ll_rm_elm<struct buddy_node>(&buddy_head[order], del_node);
       ll_push_front<struct buddy_node>(&buddy_unuse_head, del_node);
-      buddy_push_loc(&buddy_head[order+1], node, itrn+1);
-    }
+      buddy_push_free_page(&buddy_head[order+1], node, itrn+1);
+    } //or insert node
     else{
+      buddy_uart_puts("Check d2\n", itrn+1);
       ll_push_elm<struct buddy_node>(&buddy_head[order], node, head_t);
     }
-    /*
-    int coalesce_flag = 0;
-    if(npis == hpis){
-      coalesce_flag = 1;
-      node->addr = head_t->addr;
-    }
-    else if(npis == hnpis){
-      coalesce_flag = 1;
-      head_t = head_t->next;
-    }
-    if (coalesce_flag == 1){
-      struct buddy_node *del_node = head_t;
-      if(!head_t->pre){
-        *head = head_t->next;
-        head_t->next->pre = 0;
-      }
-      else if(!head_t->next){
-        head_t->pre->next = 0;
-      }
-      ll_push_front(&buddy_unuse_head, del_node);
-      node->order++;
-      buddy_push_loc(&buddy_head[order+1], node, itrn+1);
-    }
-    
-    else{
-      ll_push_elm<strucy buddy_node>(&buddy_head[order], node, head_t);
-      //head_t->pre->next = head_t->next;
-      //head_t->next->pre = head_t->pre;
-    }
-    */
-  }
+  } //max order, just insert
   else{
     ll_push_elm<struct buddy_node>(&buddy_head[order], node, head_t);
-    //node->next = head_t->next;
-    //node->pre = head_t;
-    //node->next->pre = node;
-    //node->pre->next = node;
   }
   buddy_uart_puts("return\n", itrn);
 }
@@ -181,19 +160,26 @@ unsigned long long buddy_alloc(int mbytes, int order, int itrn){
     buddy_uart_puts("return\n", itrn);
     return r;
   }
-  buddy_uart_puts("Found free page.\n", itrn+1);
+  buddy_uart_puts("Find free page <", itrn+1);
   struct buddy_node *alloc_node= ll_pop_front<struct buddy_node>(&buddy_head[order]);
   unsigned long long r = alloc_node->addr;
+  int_to_hex(r, ct);
+  uart_puts(ct);
+  uart_puts(">\n");
+
   int page_need = mbytes/BUDDY_PAGE_SIZE;
   page_need = (mbytes%BUDDY_PAGE_SIZE == 0) ? page_need : page_need+1;
+
   buddy_uart_puts("Page need = ", itrn+1);
   int_to_str(page_need, ct);
   uart_puts(ct);
   int page_redundant = (1 << order) - page_need;
-  uart_puts(", Pageredundant = ");
+  uart_puts(", Redundant page = ");
   int_to_str(page_redundant, ct);
   uart_puts(ct);
   uart_puts("\n");
+
+  //handle redundant page
   int prnp = buddy_addr_to_pn(r)+page_need; //page redundant, next page
   int prl_order = 0; //page redundant last order
   while(page_redundant){
@@ -201,7 +187,7 @@ unsigned long long buddy_alloc(int mbytes, int order, int itrn){
       struct buddy_node *new_node = ll_pop_front<struct buddy_node>(&buddy_unuse_head);
       new_node->order = prl_order;
       new_node->addr = buddy_pn_to_addr(prnp);
-      buddy_push_loc(&buddy_head[prl_order], new_node, itrn+1);
+      buddy_push_free_page(&buddy_head[prl_order], new_node, itrn+1);
       prnp += (1 << prl_order);
     }
     page_redundant /= 2;
@@ -214,11 +200,31 @@ unsigned long long buddy_alloc(int mbytes, int order, int itrn){
   return r;
 }
 
-char* buddy_table_get_char(int pn){
-  int row = pn/BUDDY_TABLE_COLS;
-  int col = pn%BUDDY_TABLE_COLS;
-  char *r = &buddy_table[row][col*BUDDY_TABLE_TIMES+BUDDY_TABLE_OFFSET+1];
-  return r;
+void buddy_free(unsigned long long base_addr, int mbytes, int itrn){
+  char ct[20];
+  int page_need = mbytes/BUDDY_PAGE_SIZE;
+  page_need =  (mbytes%BUDDY_PAGE_SIZE) ? page_need+1 : page_need;
+  buddy_uart_puts("Free memery, ", itrn);
+  int_to_str(page_need, ct);
+  uart_puts(ct);
+  uart_puts(" page from addr <");
+  int_to_hex(base_addr, ct);
+  uart_puts(ct);
+  uart_puts(">\n");
+  int base_page = buddy_addr_to_pn(base_addr);
+  int page_left = page_need;
+  int order = 0;
+  while(page_left){
+    if ((page_left >> order)%2){
+      struct buddy_node *new_node = ll_pop_front<struct buddy_node>(&buddy_unuse_head);
+      new_node->order = order;
+      page_left -= (1 << order);
+      new_node->addr = buddy_pn_to_addr(base_page+page_left);
+      buddy_push_free_page(&buddy_head[order], new_node, itrn+1);
+    }
+    order++;
+  }
+  buddy_uart_puts("return\n", itrn);
 }
 
 void buddy_ll_show(){
@@ -249,15 +255,37 @@ void buddy_ll_show(){
   }
 }
 
+char* buddy_table_get_char_by_pn(int pn){
+  int row = pn/BUDDY_TABLE_COLS;
+  int col = pn%BUDDY_TABLE_COLS;
+  char *r = &buddy_table[row][col*BUDDY_TABLE_TIMES+BUDDY_TABLE_OFFSET+1];
+  return r;
+}
+
+void buddy_table_put_mem_page(){
+  struct mem_node *mem_head = get_mem_inuse();
+  while(mem_head){
+    int page_num = mem_head->page_need;
+    int page_no = buddy_addr_to_pn(mem_head->addr);
+    for (int i=0; i<page_num; i++){
+      char *tt = buddy_table_get_char_by_pn(page_no++);
+      if (i == 0) tt[0] = '<';
+      if (i == page_num-1) tt[2] = '>';
+      tt[1] = '*';
+    }
+    mem_head = mem_head->next;
+  }
+}
+
 void buddy_table_put_free_page(){
   for (int i=0; i<BUDDY_MAX_ORDER+1; i++){
     if (buddy_head[i]){
       struct buddy_node *t = buddy_head[i];
       while(t){
         int page_num = (1 << t->order);
-        int page_addr = (int)( (t->addr-BUDDY_BASE_ADDR)/BUDDY_PAGE_SIZE );
+        int page_no = buddy_addr_to_pn(t->addr);
         for (int j=0; j<page_num; j++){
-          char *tt = buddy_table_get_char(page_addr++);
+          char *tt = buddy_table_get_char_by_pn(page_no++);
           if (j == 0) tt[0] = '[';
           if (j == page_num-1) tt[2] = ']';
           if (i < 10) tt[1] = (char)(i+48);
@@ -287,6 +315,7 @@ void buddy_table_show_init(){
     buddy_table[i][BUDDY_TABLE_COLS*BUDDY_TABLE_OFFSET+1] = '\0';
   }
   buddy_table_put_free_page();
+  buddy_table_put_mem_page();
 }
 
 void buddy_table_show(){

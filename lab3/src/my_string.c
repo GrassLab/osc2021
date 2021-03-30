@@ -11,3 +11,11 @@ int str_cmp(char *s1, char *s2){
   if (s2[i] == '\0') return 1;
   return 0;
 }
+
+int str_len(char *s){
+  int r = 0;
+  while(*s++){
+    r++;
+  }
+  return r;
+}

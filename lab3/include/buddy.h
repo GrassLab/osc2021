@@ -16,9 +16,6 @@ struct buddy_node{
   unsigned long long addr;
   struct buddy_node *pre;
   struct buddy_node *next;
-  int get_key(int i){
-    return (i==0) ? idx : addr;
-  }
 };
 
 //inline int buddy_addr_to_pn(unsigned long long addr);
@@ -26,6 +23,7 @@ struct buddy_node{
 void buddy_init();
 char* buddy_table_get_char(int pn);
 unsigned long long buddy_alloc(int mbytes, int order, int itrn);
+void buddy_free(unsigned long long base_addr, int mbytes, int itrn);
 void buddy_ll_show();
 //void buddy_table_draw();
 void buddy_table_show();

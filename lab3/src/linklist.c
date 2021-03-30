@@ -40,6 +40,13 @@ template <typename T> void ll_push_elm(T **head, T *elm, T *target){
     *head = elm;
     return ;
   }
+  if(!target){
+    elm->next = *head;
+    elm->pre = 0;
+    elm->next->pre = elm;
+    *head = elm;
+    return ;
+  }
   elm->next = target->next;
   elm->pre = target;
   if(target->next) target->next->pre = elm;
