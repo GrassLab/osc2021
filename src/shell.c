@@ -217,7 +217,7 @@ void shell_ls(){
 
 void shell_memory(){
     char cur_char;
-    uint64_t need_size, free_addr, free_size, mem;
+    uint64_t need_size, free_addr, mem;
     struct FrameListNum *cursor;
     uart_puts("\r\nWelcome to memory manipulator!");
     while(1){
@@ -250,11 +250,11 @@ void shell_memory(){
             get_input();
             free_addr = hex_to_int64(input_buffer);
 
-            uart_puts("Enter the length of memory (bytes)\r\n");
-            buffer_clear();
-            get_input();
-            free_size = atoi(input_buffer, 10);
-            free_memory(frame_array, free_addr, free_size);
+            // uart_puts("Enter the length of memory (bytes)\r\n");
+            // buffer_clear();
+            // get_input();
+            // free_size = atoi(input_buffer, 10);
+            free_memory(frame_array, free_addr);
         }
         else if(cur_char == 'l'){
             uint16_t i;

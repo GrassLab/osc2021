@@ -6,8 +6,8 @@
 struct FrameListNum freeListElement[MAX_ELEMENT_NUM];
 uint32_t cur_element_idx = 0;
 
-int16_t _cal_log_2(uint64_t num){
-    int16_t res = 0;
+int32_t _cal_log_2(uint64_t num){
+    int32_t res = 0;
     while(num){
         num >>= 1;
         res += 1;
@@ -29,7 +29,7 @@ struct FrameListNum* _get_new_list_element(uint32_t index, struct FrameListNum *
     return &freeListElement[cur_element_idx-1];
 }
 
-void _insert_to_frameList(struct _RawFrameArray *frame_array, uint16_t power_idx, uint32_t element_idx){
+void _insert_to_frameList(struct _RawFrameArray *frame_array, int32_t power_idx, uint32_t element_idx){
     struct FrameListNum *cursor;
     if(!frame_array->freeList[power_idx]){
         frame_array->freeList[power_idx] = _get_new_list_element(element_idx, 0, 0);
@@ -40,12 +40,12 @@ void _insert_to_frameList(struct _RawFrameArray *frame_array, uint16_t power_idx
     }
 }
 
-uint64_t _allocate_slot(struct _RawFrameArray *frame_array, uint64_t need_size, int16_t need_size_power, int16_t find_size_power){
+uint64_t _allocate_slot(struct _RawFrameArray *frame_array, uint64_t need_size, int32_t need_size_power, int32_t find_size_power){
     uint32_t index = frame_array->freeList[find_size_power]->index;
     uint64_t return_addr = frame_array->base_addr + (4096 * (uint64_t)index);
     frame_array->freeList[find_size_power] = frame_array->freeList[find_size_power]->next;
     uint32_t cur_end_index;
-    int16_t cur_size_power;
+    int32_t cur_size_power;
 
     if(find_size_power != need_size_power){
         // Process freeList
@@ -65,6 +65,8 @@ uint64_t _allocate_slot(struct _RawFrameArray *frame_array, uint64_t need_size, 
     uint32_t cur_index=index, assigned_block_num=1<<need_size_power;
     cur_end_index = index + assigned_block_num;
     
+    frame_array->val[cur_index] = ALLOCATED_SLOT_SHIFT + need_size;
+    cur_index += 1;
     for(;cur_index<cur_end_index; cur_index++)
         frame_array->val[cur_index] = UNFREE_SLOT;
 
@@ -150,10 +152,15 @@ void _merge_free_list(struct _RawFrameArray *self){
     }
 }
 
-void free_memory(struct _RawFrameArray *self, uint64_t free_addr, uint64_t free_size){
-    free_size /= 0x1000;
-    int16_t free_size_power = _cal_log_2(free_size);
+void free_memory(struct _RawFrameArray *self, uint64_t free_addr){
     uint32_t index = (free_addr - self->base_addr) >> 12;   // divide by 4096
+    uint64_t free_size = self->val[index] - ALLOCATED_SLOT_SHIFT;
+    if(free_size<0){
+        uart_puts("ERROR: The address is free now\r\n");
+        return;
+    }
+    int32_t free_size_power = _cal_log_2(free_size);
+    
     uint32_t cur_index;
     uint32_t free_size_power_len = 1<<free_size_power;
 
@@ -203,6 +210,10 @@ void free_memory(struct _RawFrameArray *self, uint64_t free_addr, uint64_t free_
     }
     else{
         uart_puts("ERROR! free_size should not greater than free_size_power_len\r\n");
+        uart_puts(itoa(free_size, 10));
+        uart_puts("\r\n");
+        uart_puts(itoa(free_size_power_len, 10));
+        uart_puts("\r\n");
         return;
     }
     _merge_free_list(self);
@@ -210,7 +221,7 @@ void free_memory(struct _RawFrameArray *self, uint64_t free_addr, uint64_t free_
 
 uint64_t new_memory(struct _RawFrameArray *self, uint64_t need_size){
     need_size /= 0x1000;
-    int16_t need_size_power = _cal_log_2(need_size), find_size_power;
+    int32_t need_size_power = _cal_log_2(need_size), find_size_power;
     find_size_power = need_size_power;
     while(1){
         if(find_size_power > 19){
@@ -224,11 +235,13 @@ uint64_t new_memory(struct _RawFrameArray *self, uint64_t need_size){
     return _allocate_slot(self, need_size, need_size_power, find_size_power);
 }
 
+// 4, 16, 32, 52, 96, 160
+
 FrameArray* NewFrameArray(){
     static FrameArray frame_array;
-    frame_array.base_addr = 0x10000000;
-    frame_array.end_addr = 0x20000000;
-    int16_t idx = _cal_log_2(0x10000);
+    frame_array.base_addr = 0x12000000; // 0x10000000 ~ 0x12000000 => small chunk
+    frame_array.end_addr = 0x20000000;  // 0x12000000 ~ 0x20000000 => large page
+    int32_t idx = _cal_log_2(0x10000);
 
     frame_array.val[0] = idx;
     int i;
