@@ -16,7 +16,7 @@ void command_ls();
 void command_allocate();
 void command_freez();
 void command_freei();
-void command_meminfo();
+void command_meminfo(int mode);
 
 void command_not_found();
 

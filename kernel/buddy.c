@@ -223,7 +223,7 @@ int free_frame_by_index(int freed_index) {
 
 
 void print_available_memory_with_uart() {
-    for(int i = 0; i < FRAME_NUMBERS;) {
+    for(int i = 0; i < FRAME_NUMBERS; i++) {
         if(the_frame_array[i].order >= 0) {            
             uart_puts("Frame index: ");
             uart_puti(i, 10);
@@ -235,6 +235,21 @@ void print_available_memory_with_uart() {
 
             i += pow(2, the_frame_array[i].order) - 1;
         }
-        i++;
+    }
+}
+
+void print_used_memory_with_uart() {
+    for(int i = 0; i < FRAME_NUMBERS; i++) {
+        if(the_frame_array[i].used_order != -1) {
+            uart_puts("Frame index: ");
+            uart_puti(i, 10);
+            uart_puts(", start address: 0x");
+            uart_puti(the_frame_array[i].start_address, 16);
+            uart_puts(", size: ");
+            uart_puti(pow(2, the_frame_array[i].used_order) * 4, 10);
+            uart_puts(" KB\n");
+            
+            i += pow(2, the_frame_array[i].used_order) - 1;
+        }
     }
 }

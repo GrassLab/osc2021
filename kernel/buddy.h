@@ -3,14 +3,14 @@
 
 #include "type.h"
 
-#define FREE_FRAME_ALLOCATABLE -1
-#define USED_FRAME_UNALLOCATABLE -2
+#define FREE_FRAME_ALLOCATABLE     -1
+#define USED_FRAME_UNALLOCATABLE   -2
 
-#define BASE_ADDRESS 0x10000000
-#define FRAME_SIZE 0x1000
-#define FRAME_NUMBERS 0x10000
+#define BASE_ADDRESS               0x10000000
+#define FRAME_SIZE                 0x1000
+#define FRAME_NUMBERS              0x10000
 
-#define FRAME_MAX_ORDER 17
+#define FRAME_MAX_ORDER            17
 
 struct buddy_frame {
     int index;
@@ -47,5 +47,6 @@ int free_frame_by_size(int freed_size_in_kbyte);
 int free_frame_by_index(int freed_index);
 
 void print_available_memory_with_uart();
+void print_used_memory_with_uart();
 
 #endif

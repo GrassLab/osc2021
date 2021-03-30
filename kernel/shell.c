@@ -45,7 +45,9 @@ void command_controller(char *cmd) {
     else if (!strcmp("allocate"        , cmd))     { command_allocate(); }
     else if (!strcmp("freez"           , cmd))     { command_freez(); }
     else if (!strcmp("freei"           , cmd))     { command_freei(); }
-    else if (!strcmp("meminfo"         , cmd))     { command_meminfo(); }
+    else if (!strcmp("meminfo"         , cmd))     { command_meminfo(1); }
+    else if (!strcmp("meminfo -a"      , cmd))     { command_meminfo(1); }
+    else if (!strcmp("meminfo -u"      , cmd))     { command_meminfo(2); }
     else    { command_not_found(); }
 }
 
@@ -204,8 +206,11 @@ void command_freei() {
 
 }
 
-void command_meminfo() {
-    print_available_memory_with_uart();
+void command_meminfo(int mode) {
+    if(mode == 2)
+        print_used_memory_with_uart();
+    else
+        print_available_memory_with_uart();
 }
 
 void command_not_found() {
