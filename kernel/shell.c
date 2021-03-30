@@ -80,11 +80,9 @@ void command_reboot() {
 
 void command_cpio_info() {
     struct cpio_info info;
-
-    char output_buffer[50] = { 0 };
+    
     uart_puts("CPIO_ARCHIVE_LOCATION: ");
-    itoa((uint64_t)CPIO_ARCHIVE_LOCATION, output_buffer, 10);
-    uart_puts(output_buffer);
+    uart_puti((uint64_t)CPIO_ARCHIVE_LOCATION, 10);
     uart_puts("\n");
 
 
@@ -94,13 +92,11 @@ void command_cpio_info() {
     }
 
     uart_puts("file count: ");
-    itoa(info.file_count, output_buffer, 10);
-    uart_puts(output_buffer);
+    uart_puti(info.file_count, 10);
     uart_puts("\n");
 
     uart_puts("maximum size of a file name: ");
-    itoa(info.max_path_sz, output_buffer, 10);
-    uart_puts(output_buffer);
+    uart_puti(info.max_path_sz, 10);
     uart_puts("\n");
 }
 
@@ -122,9 +118,7 @@ void command_ls() {
     cpio_ls((uint64_t *)CPIO_ARCHIVE_LOCATION, ls_buffer, buf_len);
 
     for(int i = 0; i < info.file_count; i++) {
-        char output_buffer[10] = { 0 };
-        itoa(i, output_buffer, 10);
-        uart_puts(output_buffer);
+        uart_puti(i, 10);
         uart_puts(": ");
         uart_puts(ls_buffer[i]);
         uart_puts("\n");
@@ -161,20 +155,13 @@ void command_allocate() {
         uart_puts("Fail: Out of memory !\n");
         return ;
     }
-
-    char output_buffer[10] = { 0 };
     
     uart_puts("Allocated frame's index: ");
-    itoa(allocated->index, output_buffer, 10);
-    uart_puts(output_buffer);
+    uart_puti(allocated->index, 10);
     uart_puts("\n");
 
-    for(int i = 0; i < 10; i++)
-        output_buffer[i] = 0;
-
     uart_puts("Allocated in 0x");
-    itoa((uint64_t)allocated->start_address, output_buffer, 16);
-    uart_puts(output_buffer);
+    uart_puti((uint64_t)allocated->start_address, 16);
     uart_puts("\n");
     
 }

@@ -25,6 +25,7 @@
 
 #include "gpio.h"
 #include "uart.h"
+#include "util.h"
 
 #define AUX_ENABLE      ((volatile unsigned int*)(MMIO_BASE+0x00215004))
 #define AUX_MU_IO       ((volatile unsigned int*)(MMIO_BASE+0x00215040))
@@ -115,4 +116,10 @@ void uart_puts(char *s) {
     while(*s) {
         uart_send(*s++);
     }
+}
+
+void uart_puti(int val, int base) {
+    char output_buffer[30] = { 0 };
+    itoa(val, output_buffer, base);
+    uart_puts(output_buffer);
 }

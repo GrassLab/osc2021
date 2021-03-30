@@ -43,10 +43,8 @@ void *allocate_frame(int required_size_in_kbyte) {
 	int required_order = ceil(log(2, (float)required_size_in_kbyte / 4));
 	int allocatable_order = required_order;
 
-	char output_buffer[30] = { 0 };
 	uart_puts("[debug] required order: ");
-	itoa(required_order, output_buffer, 10);
-	uart_puts(output_buffer);
+    uart_puti(required_order, 10);
 	uart_puts("\n");
 
 	/* find allocatable order in frame_freelist */
@@ -59,20 +57,14 @@ void *allocate_frame(int required_size_in_kbyte) {
 	/* splitting higher order block for appropriate size */
 	while(allocatable_order != required_order) {
 
-        for(int i = 0; i < 30; i++)
-            output_buffer[i] = 0;
-        itoa(allocatable_order, output_buffer, 10);
         uart_puts("[debug] allocatable order: ");
-        uart_puts(output_buffer);
+        uart_puti(allocatable_order, 10);
         uart_puts("\n");
 		
 		int allocatable_index = frame_freelist[allocatable_order]->index;
 
-        for(int i = 0; i < 30; i++)
-            output_buffer[i] = 0;
-        itoa(allocatable_index, output_buffer, 10);
         uart_puts("[debug] allocatable index: ");
-        uart_puts(output_buffer);
+        uart_puti(allocatable_index, 10);
         uart_puts("\n");
 
 		/* updating the_frame_array */
@@ -141,8 +133,6 @@ void freelist_insertion(int order, struct buddy_frame *frame) {
 }
 
 int free_frame_by_size(int freed_size_in_kbyte) {
-    char output_buffer[20] = { 0 };
-
     if(freed_size_in_kbyte % 4 != 0) {
         uart_puts("[debug] Size Error !\n");
         return -1;
@@ -161,9 +151,8 @@ int free_frame_by_size(int freed_size_in_kbyte) {
     
     int freeable_index = i;
 
-    itoa(freeable_index, output_buffer, 10);
     uart_puts("[debug] freeable_index: ");
-    uart_puts(output_buffer);
+    uart_puti(freeable_index, 10);
     uart_puts("\n");
 
     /* updating the_frame_array */
@@ -195,16 +184,10 @@ int free_frame_by_size(int freed_size_in_kbyte) {
     }
 
     while (the_frame_array[first].order >= 0 && the_frame_array[second].order >= 0) {        
-        for(int i = 0; i < 20; i++)
-            output_buffer[i] = 0;
-        itoa(first, output_buffer, 10);
         uart_puts("[debug] Merge ");
-        uart_puts(output_buffer);
+        uart_puti(first, 10);
         uart_puts(" with ");
-        for(int i = 0; i < 20; i++)
-            output_buffer[i] = 0;
-        itoa(second, output_buffer, 10);
-        uart_puts(output_buffer);
+        uart_puti(second, 10);
         uart_puts("\n");
 
 
@@ -241,30 +224,17 @@ int free_frame_by_index(int freed_index) {
 
 void print_available_memory_with_uart() {
     for(int i = 0; i < FRAME_NUMBERS;) {
-        if(the_frame_array[i].order >= 0) {
-            char output_buffer[10] = { 0 };
-            
+        if(the_frame_array[i].order >= 0) {            
             uart_puts("Frame index: ");
-            itoa(i, output_buffer, 10);
-            uart_puts(output_buffer);
+            uart_puti(i, 10);
             uart_puts(", start address: 0x");
-
-            for(int i = 0; i < 10; i++)
-                output_buffer[i] = 0;
-
-            itoa(the_frame_array[i].start_address, output_buffer, 16);
-            uart_puts(output_buffer);
+            uart_puti(the_frame_array[i].start_address, 16);
             uart_puts(", size: ");
-
-            for(int i = 0; i < 10; i++)
-                output_buffer[i] = 0;
-            itoa(pow(2, the_frame_array[i].order) * 4, output_buffer, 10);
-            uart_puts(output_buffer);
+            uart_puti(pow(2, the_frame_array[i].order) * 4, 10);
             uart_puts(" KB\n");
 
             i += pow(2, the_frame_array[i].order) - 1;
         }
         i++;
     }
-
 }
