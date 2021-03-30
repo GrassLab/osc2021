@@ -22,9 +22,10 @@ struct buddy_frame {
 
 void buddy_init();
 
-/*
- *
- *
+/* 
+ * This function allocates frame with buddy memory allocation.
+ * If there is enough memory to allocate, return an allocated address.
+ * Otherwise, return NULL.
  */
 void *allocate_frame(int required_size_in_kbyte);
 
@@ -32,15 +33,16 @@ void freelist_deletion(int order, struct buddy_frame *frame);
 void freelist_insertion(int order, struct buddy_frame *frame);
 
 /*
- * This function release frame by required size in KB.
+ * This function releases frame by required size in KB.
  * If there is no such frame to release or input error, return -1.
  * Otherwise, return freed frame's index.
  */
 int free_frame_by_size(int freed_size_in_kbyte);
 
 /* 
- * 
- *
+ * This function releases frame by specific index.
+ * If the index is freeable, return 0.
+ * Otherwise, return -1;
  */
 int free_frame_by_index(int freed_index);
 

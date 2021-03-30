@@ -133,12 +133,13 @@ void freelist_insertion(int order, struct buddy_frame *frame) {
 }
 
 int free_frame_by_size(int freed_size_in_kbyte) {
-    if(freed_size_in_kbyte % 4 != 0) {
-        uart_puts("[debug] Size Error !\n");
+    /* size need to be 2^ord * 4 */
+    if(freed_size_in_kbyte % 4 != 0) 
         return -1;
-    }
-
+    
     int freed_frames = freed_size_in_kbyte / 4;
+
+    // int freed_order = ceil(log(2, freed_frame));
     int freed_order = log(2, freed_frames);
 
     int i;
@@ -217,7 +218,6 @@ int free_frame_by_size(int freed_size_in_kbyte) {
 
 int free_frame_by_index(int freed_index) {
     return 1;
-
 }
 
 
