@@ -60,7 +60,10 @@ void buddy_init(){
 
 void buddy_push_loc(struct buddy_node **head, struct buddy_node *node, int itrn){
   char ct[20];
-  buddy_uart_puts("Push loc, Order : ", itrn);
+  buddy_uart_puts("Push loc, addr <", itrn);
+  int_to_hex(node->addr, ct);
+  uart_puts(ct);
+  uart_puts("> into order");
   int_to_str(node->order, ct);
   uart_puts(ct);
   uart_puts("\n");
@@ -69,20 +72,60 @@ void buddy_push_loc(struct buddy_node **head, struct buddy_node *node, int itrn)
     *head = node;
     node->next = 0;
     node->pre = 0;
-    buddy_uart_puts("Push loc return\n", itrn);
+    buddy_uart_puts("return\n", itrn);
     return ;
   }
   while(head_t->next && head_t->next->addr < node->addr){
     head_t = head_t->next;
+  }
+  if (node->addr < head_t->addr){
+    head_t = 0;
   }
   int order = node->order;
   if(order < BUDDY_MAX_ORDER){
     //node page idx shift
     int npis = buddy_addr_to_pn(node->addr) >> (order+1);
     //head page idx shift
-    int hpis = buddy_addr_to_pn(head_t->addr) >> (order+1);
+    int hpis;
     //head next page idx shift
-    int hnpis = (head_t->next) ? buddy_addr_to_pn(head_t->next->addr) >> (order+1) : -1;
+    int hnpis;
+    struct buddy_node *del_node = 0;
+    //check if coalesce
+    if (head_t){
+      hpis = buddy_addr_to_pn(head_t->addr) >> (order+1);
+      hnpis = (head_t->next) ? buddy_addr_to_pn(head_t->next->addr) >> (order+1) : -1;
+      if(npis == hpis){
+        del_node = head_t;
+        node->addr = head_t->addr;
+        node->order ++;
+      }
+      else if (npis == hnpis){
+        del_node = head_t->next;
+        node->order ++;
+      }
+    }
+    else{
+      hpis = 0;
+      hnpis = buddy_addr_to_pn((*head)->addr) >> (order+1);
+      if (npis == hnpis){
+        del_node = head_t;
+        node->order ++;
+      }
+    }
+    //del this order linklist
+    if(del_node){
+      buddy_uart_puts("Find addr<", itrn+1);
+      int_to_hex(del_node->addr, ct);
+      uart_puts(ct);
+      uart_puts("> can coalesce.\n");
+      ll_rm_elm<struct buddy_node>(&buddy_head[order], del_node);
+      ll_push_front<struct buddy_node>(&buddy_unuse_head, del_node);
+      buddy_push_loc(&buddy_head[order+1], node, itrn+1);
+    }
+    else{
+      ll_push_elm<struct buddy_node>(&buddy_head[order], node, head_t);
+    }
+    /*
     int coalesce_flag = 0;
     if(npis == hpis){
       coalesce_flag = 1;
@@ -92,30 +135,35 @@ void buddy_push_loc(struct buddy_node **head, struct buddy_node *node, int itrn)
       coalesce_flag = 1;
       head_t = head_t->next;
     }
-    struct buddy_node *del_node = head_t;
-    if(!head_t->pre){
-      *head = head_t->next;
-      head_t->next->pre = 0;
+    if (coalesce_flag == 1){
+      struct buddy_node *del_node = head_t;
+      if(!head_t->pre){
+        *head = head_t->next;
+        head_t->next->pre = 0;
+      }
+      else if(!head_t->next){
+        head_t->pre->next = 0;
+      }
+      ll_push_front(&buddy_unuse_head, del_node);
+      node->order++;
+      buddy_push_loc(&buddy_head[order+1], node, itrn+1);
     }
-    else if(!head_t->next){
-      head_t->pre->next = 0;
-    }
+    
     else{
-      head_t->pre->next = head_t->next;
-      head_t->next->pre = head_t->pre;
+      ll_push_elm<strucy buddy_node>(&buddy_head[order], node, head_t);
+      //head_t->pre->next = head_t->next;
+      //head_t->next->pre = head_t->pre;
     }
-    ll_push_front(&buddy_unuse_head, del_node);
-    node->order++;
-    buddy_push_loc(&buddy_head[order+1], node, itrn+1);
-    return ;
+    */
   }
   else{
-    node->next = head_t->next;
-    node->pre = head_t;
-    node->next->pre = node;
-    node->pre->next = node;
+    ll_push_elm<struct buddy_node>(&buddy_head[order], node, head_t);
+    //node->next = head_t->next;
+    //node->pre = head_t;
+    //node->next->pre = node;
+    //node->pre->next = node;
   }
-  buddy_uart_puts("Push loc return\n", itrn);
+  buddy_uart_puts("return\n", itrn);
 }
 
 unsigned long long buddy_alloc(int mbytes, int order, int itrn){
@@ -127,8 +175,11 @@ unsigned long long buddy_alloc(int mbytes, int order, int itrn){
   uart_puts("\n");
   if(!buddy_head[order]){
     buddy_uart_puts("This order is null\n", itrn+1);
-    if (order >= BUDDY_MAX_ORDER) return 0;
-    else return buddy_alloc(mbytes, order+1, itrn+1);
+    unsigned long long r;
+    if (order >= BUDDY_MAX_ORDER) r = 0;
+    else r = buddy_alloc(mbytes, order+1, itrn+1);
+    buddy_uart_puts("return\n", itrn);
+    return r;
   }
   buddy_uart_puts("Found free page.\n", itrn+1);
   struct buddy_node *alloc_node= ll_pop_front<struct buddy_node>(&buddy_head[order]);
@@ -145,7 +196,6 @@ unsigned long long buddy_alloc(int mbytes, int order, int itrn){
   uart_puts("\n");
   int prnp = buddy_addr_to_pn(r)+page_need; //page redundant, next page
   int prl_order = 0; //page redundant last order
-  buddy_uart_puts("Check a.\n", itrn+1);
   while(page_redundant){
     if(page_redundant%2){
       struct buddy_node *new_node = ll_pop_front<struct buddy_node>(&buddy_unuse_head);
@@ -194,7 +244,7 @@ void buddy_ll_show(){
       uart_puts("\n");
     }
     else{
-      uart_puts("  is null\n");
+      uart_puts("  null\n");
     }
   }
 }

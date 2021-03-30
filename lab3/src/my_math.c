@@ -81,3 +81,12 @@ unsigned long hex_to_uint(char *s, int l){
   }
   return r;
 }
+
+int str_to_int(char *c){
+  int r = 0;
+  while(*c){
+    r = r*10+(*c)-'0';
+    c++;
+  }
+  return r;
+}

@@ -32,6 +32,20 @@ template <typename T> void ll_push_back(T **head, T *elm){
   elm->pre = head_t;
 }
 
+template <typename T> void ll_push_elm(T **head, T *elm, T *target){
+  T *head_t = *head;
+  if(!head_t && !target){
+    elm->next = 0;
+    elm->pre = 0;
+    *head = elm;
+    return ;
+  }
+  elm->next = target->next;
+  elm->pre = target;
+  if(target->next) target->next->pre = elm;
+  target->next = elm;
+}
+
 template <typename T> T* ll_pop_front(T **head){
   T *head_t = *head;
   if(!head_t){
@@ -57,4 +71,26 @@ template <typename T> T* ll_pop_back(T **head){
   r->next = 0;
   r->pre = 0;
   return r;
+}
+
+template <typename T> void ll_rm_elm(T **head, T *target){
+  T *head_t = *head;
+  if(!head_t){
+    return ;
+  }
+  if(!target->pre && !target->next){
+    *head = 0;
+    return ;
+  }
+  if(!target->pre){
+    *head = target->next;
+    target->next->pre = 0;
+    return ;
+  }
+  if(!target->next){
+    target->pre->next = 0;
+    return ;
+  }
+  target->pre->next = target->next;
+  target->next->pre = target->pre;
 }
