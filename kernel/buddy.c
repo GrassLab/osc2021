@@ -40,7 +40,7 @@ void buddy_init() {
 }
 
 void *allocate_frame(int required_size_in_kbyte) {
-	int required_order = ceil(log(2, (float)required_size_in_kbyte / 4));
+	int required_order = ceil(log(2.0, (float)required_size_in_kbyte / 4.0));
 	int allocatable_order = required_order;
 
 	uart_puts("[debug] required order: ");
@@ -170,7 +170,7 @@ int free_frame_by_size(int freed_size_in_kbyte) {
 
     /*     0    1    2    3    4    5    6    7    8    9   10   
      *  |----|----|----|----|----|----|----|----|----|----|----|----|
-     *  |  F |    |  s |    |    |    |    |    |    |    |    | ...|    
+     *  |  F |    |  S |    |    |    |    |    |    |    |    | ...|    
      *  |----|----|----|----|----|----|----|----|----|----|----|----|
      */
 
@@ -184,7 +184,8 @@ int free_frame_by_size(int freed_size_in_kbyte) {
     	second = buddy_index;
     }
 
-    while (the_frame_array[first].order >= 0 && the_frame_array[second].order >= 0) {        
+    while (the_frame_array[first].order >= 0 && the_frame_array[second].order >= 0 &&
+           the_frame_array[first].order == the_frame_array[second].order) {        
         uart_puts("[debug] Merge ");
         uart_puti(first, 10);
         uart_puts(" with ");
@@ -258,7 +259,8 @@ int free_frame_by_index(int freed_index) {
     	second = buddy_index;
     }
 
-    while (the_frame_array[first].order >= 0 && the_frame_array[second].order >= 0) {        
+    while (the_frame_array[first].order >= 0 && the_frame_array[second].order >= 0 &&
+           the_frame_array[first].order == the_frame_array[second].order) { 
         uart_puts("[debug] Merge ");
         uart_puti(first, 10);
         uart_puts(" with ");

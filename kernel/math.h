@@ -6,7 +6,7 @@
 
 double log10(double x);
 double ln(double x);
-double log(double base, double x);
+float log(double base, double x);
 
 int pow(int base, int exponent);
 

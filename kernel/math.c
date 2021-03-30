@@ -23,7 +23,7 @@ double ln(double x)
     return 2.0 * sum;
 }
 
-double log(double base, double x) {
+float log(double base, double x) {
     return log10(x) / log10(base);
 }
 
@@ -37,7 +37,7 @@ int pow(int base, int exponent) {
 
 
 int ceil(double x) {
-    if(x == (int)x)
+    if(x == (int)x) 
         return (int)x;
     else 
         return ((int)x) + 1;
