@@ -217,7 +217,78 @@ int free_frame_by_size(int freed_size_in_kbyte) {
 }
 
 int free_frame_by_index(int freed_index) {
-    return 1;
+    if(the_frame_array[freed_index].order != USED_FRAME_UNALLOCATABLE)
+        return -1;
+
+    if(the_frame_array[freed_index].used_order == -1)
+        return -1;
+
+    uart_puts("[debug] freed_index: ");
+    uart_puti(freed_index, 10);
+    uart_puts("\n");
+
+    int freed_frames = pow(2, the_frame_array[freed_index].used_order);
+    int freed_order = the_frame_array[freed_index].used_order;
+
+    /* updating the_frame_array */
+    for(int i = 0; i < freed_frames; i++) 
+        the_frame_array[freed_index + i].order = FREE_FRAME_ALLOCATABLE;
+    the_frame_array[freed_index].order = freed_order;
+    the_frame_array[freed_index].used_order = -1;
+
+    /* updating frame_freelist */
+    freelist_insertion(freed_order, &the_frame_array[freed_index]);
+
+    /* Find buddy and merge iteratively */
+    int buddy_index = freed_index ^ freed_frames;
+
+    /*     0    1    2    3    4    5    6    7    8    9   10   
+     *  |----|----|----|----|----|----|----|----|----|----|----|----|
+     *  |  F |    |  s |    |    |    |    |    |    |    |    | ...|    
+     *  |----|----|----|----|----|----|----|----|----|----|----|----|
+     */
+
+    int first, second;
+    
+    if(freed_index > buddy_index) {
+    	first = buddy_index;
+    	second = freed_index;
+    } else {
+    	first = freed_index;
+    	second = buddy_index;
+    }
+
+    while (the_frame_array[first].order >= 0 && the_frame_array[second].order >= 0) {        
+        uart_puts("[debug] Merge ");
+        uart_puti(first, 10);
+        uart_puts(" with ");
+        uart_puti(second, 10);
+        uart_puts("\n");
+
+
+        /* updating frame_freelist */
+        freelist_deletion(the_frame_array[first].order, &the_frame_array[first]);
+		freelist_deletion(the_frame_array[second].order, &the_frame_array[second]);
+
+		freelist_insertion(the_frame_array[first].order + 1, &the_frame_array[first]);
+        /* updating the_frame_array */
+        the_frame_array[first].order += 1;
+		the_frame_array[second].order = FREE_FRAME_ALLOCATABLE;
+
+        int next_index = first ^ pow(2, the_frame_array[first].order);
+    	if(next_index > second)
+		    second = next_index;
+	    else {
+            second = first;
+            first = next_index;
+        }
+
+        if(second == FRAME_NUMBERS)
+            break;
+    }
+
+    
+    return 0;
 }
 
 

@@ -203,7 +203,28 @@ void command_freez() {
 }
 
 void command_freei() {
+    char input_buffer[32] = { 0 };
 
+    uart_puts("Enter index to free: ");
+
+    int i = 0;
+    while(1) {
+        char c = uart_getc();
+        uart_send(c);
+        if(c == '\n') {
+            input_buffer[i] = 0x00;
+            break;
+        } else {
+            input_buffer[i] = c;
+            i++;
+        }
+    }
+
+    int index_to_free = atoi(input_buffer);
+    int success = free_frame_by_index(index_to_free);
+
+    if(success != 0)
+        uart_puts("Fail: No such frame to release !\n");
 }
 
 void command_meminfo(int mode) {
