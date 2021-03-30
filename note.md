@@ -60,7 +60,7 @@ Buddy System 是一種簡易的分配連續記憶體的演算法，雖然它有 
 + Release redundant memory block
 	+ 以上方法可能會分配一個比實際需求還要大的記憶體空間，因此，allocator 應該要可以切除不需要的部分並將不需要的部分放回 buddy system。
     ```c=
-    #define FRAME_MAX_ORDER 16
+    #define FRAME_MAX_ORDER 17
     
 	struct buddy_frame *frame_freelist[FRAME_MAX_ORDER];
     ```

@@ -7,34 +7,18 @@
 | `A091514`  | `kishow01`  | `林昌德` | kishow01@gmail.com         |
 
 ## How to build
-### bootloader
-```
-cd bootloader
-make
-```
 
-### kernel_sender
+### kernel
 ```
-cd kernel_sender
-make
-```
-
-### cpio kernel
-```
-cd cpio_kernel
+cd kernel
 make
 ```
 
 ## How to run
-### bootloader
-```
-cd bootloader
-make run
-```
 
-### cpio kernel
+### kernel
 ```
-cd cpio_kernel
+cd kernel
 make run
 ```
 
@@ -43,12 +27,7 @@ Move bootloader.img, initramfs.cpio and config.txt into sd card
 
 ## Architecture
 
-+ bootloader
-    + the uart bootloader in sd card
-+ kernel_sender
-    + send kernel through uart from host to rpi3
-+ kernel
-    + kernel that support cpio
+**WIP**
 
 ## Directory structure
 
