@@ -3,17 +3,8 @@
 #include "list.h"
 #include <stdint.h>
 
-// Configuration of the Buddy system
-// Key conf:
-// + How many phisycal frames does the Buddy system manage?
-//    + @BUDDY_NUM_FRAMES
-//    + @BUDDY_NUM_FRAMES = 2 ^ BUDDY_MAX_EXPONENT
-// + What is the size of each frame?
-//    + @BUDDY_FRAME_SHIFT
-//     (Size of the frame in bytes = 2**BUDDY_FRAME_SHIFT)
-#define BUDDY_NUM_FRAMES 262144
-#define BUDDY_MAX_EXPONENT 18
-#define BUDDY_FRAME_SHIFT 14
+#define BUDDY_MAX_EXPONENT 17 // 512Mb
+#define FRAME_SHIFT 14        // 4Kb
 
 #define BUDDY_NUM_FREE_LISTS (BUDDY_MAX_EXPONENT + 1)
 
@@ -83,7 +74,7 @@ void KAllocManager_show_status();
 
 // Statically linked to the heap space
 // because their lifetimes is equal to the system itself
-struct Frame Frames[BUDDY_NUM_FRAMES];
+struct Frame Frames[BUDDY_MAX_EXPONENT << 1];
 struct AllocationManager KAllocManager;
 
 // Call slab allocator for allocate an object
