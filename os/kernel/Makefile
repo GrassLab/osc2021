@@ -1,6 +1,6 @@
 # OSC 2021, check https://github.com/GrassLab/osc2021
 KERNEL_ROOT := $(dir $(lastword $(MAKEFILE_LIST)))
-include $(KERNEL_ROOT)../Makefile.inc
+include $(KERNEL_ROOT)../../Makefile.inc
 
 SRC_PATH    = $(KERNEL_ROOT)src
 LIB_PATH    = $(KERNEL_ROOT)lib

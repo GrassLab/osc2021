@@ -3,14 +3,18 @@
 #include "mmio.h"
 
 #define GETS_BUFF_LEN 0xff
-#define KERNEL_ADDR 0x80000
 
 
 int help() {
-  puts("Commands:\n\r");
-  puts("    help\tGet informations.\n\r");
-  puts("    load:\tLoad kernel file from uart.\n\r");
-  puts("    reboot:\tReboot os from SD Card.\n\r");
+  putln("Commands:");
+  putln("\thelp:\tGet informations.");
+  putln("\thello:\tSay hello to OS.");
+  putln("\treboot:\tReboot OS from SD Card.");
+  return 0;
+}
+
+int hello() {
+  putln("Hello World!");
   return 0;
 }
 
@@ -20,22 +24,11 @@ int reboot() {
 }
 
 int load_kernel() {
-  void *kernel_base = (void*)KERNEL_ADDR;
-  void *kernel_curr = kernel_base;
-  char c;
-  do {
-    c = uart_getc();
-    *(char*)kernel_curr = c;
-    kernel_curr++;
-  } while(c != 'c');
-
-  // Jump to 0x80000
-  ((void (*)(void))kernel_base)();
   return 0;
 }
 
 int _clear() {
-  puts("\n\r");
+  putln("");
   return 0;
 }
 
@@ -48,23 +41,26 @@ int _test() {
 int cmd(const char *buff) {
   if (!strcmp(buff, "help")) {
     return help();
+  } else if (!strcmp(buff, "hello")) {
+    return hello();
   } else if (!strcmp(buff, "reboot")) {
     return reboot();
   } else if (!strcmp(buff, "load")) {
     return load_kernel();
+  } else if (!strcmp(buff, "test")) {
+    return _test();
   } else if (!strcmp(buff, "")) {
     return 1;
   } else {
     puts(buff);
-    puts(" : command not found!\n\r");
+    putln(" : command not found!");
     return 1;
   }
   return 0;
 }
 
 void _welcome() {
-  puts("bootloader...\n\r");
-  puts("\n\r");
+  putln("OSC 2021...");
   return;
 }
 
@@ -73,7 +69,7 @@ void shell() {
   _welcome();
   while (1) {
     int rtn = 0;
-    puts("(help to get info.): ");
+    puts("$ ");
     char buff[GETS_BUFF_LEN];
     gets(buff);
     rtn = cmd(buff);

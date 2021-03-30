@@ -2,59 +2,36 @@
 include Makefile.inc
 
 # set build parameters
-LANG     ?= c # defualt set to C, use `LANG=rust make` to change implementation language
-SD_MEDIA ?= /run/media/calee/4DFF-0A36
+SD_MEDIA    ?= /run/media/calee/4DFF-0A36
+BOOTLOADER  = bootloader
+OS          = os
+BOOT_IMG    = bootloader.img
+OS_IMG      = kernel8.img
 
-#ifeq ($(LANG), rust)
-#	SRC_ROOT=rust-impl
-#else
-#	SRC_ROOT=c-impl
-#endif
-KERNEL_ROOT=kernel
+.PHONY: all clean install
 
-LDFLAGS+= -L $(KERNEL_ROOT)/lib
-
-IMAGE=kernel8.img
-ELF_FILE=kernel8.elf
-OBJ_FILES=boot/boot.o $(KERNEL_OBJ) #$(addprefix $(KERNEL_ROOT)/, $(KERNEL_OBJ))
-
-LINKER_SCRIPT=linker.lds
-
-.PHONY: all clean img elf obj install bootloader
-
-all: $(IMAGE)
-	@echo ""
+all:
+	@echo "Start building bootloader image..."
+	make -C $(BOOTLOADER)
+	cp $(BOOTLOADER)/$(BOOT_IMG) ./$(BOOT_IMG)
+	@echo "$(BOOTLOADER) image build completed!"
 	@echo "==============================="
-	@echo "$(IMAGE) image build completed!"
+	@echo "Start building OS image..."
+	make -C $(OS)
+	cp $(OS)/$(OS_IMG) ./$(OS_IMG)
+	@echo "$(OS) image build completed!"
+	@echo "==============================="
+	@echo "Build complate!"
 
-include kernel/Makefile
-
-bootloader:
-	make -C bootloader
-
-img: $(IMAGE)
-$(IMAGE): %.img: %.elf
-# Build kernel image from elf file
-	$(OBJCPY) $(OBJCPYFLAGS) $< $@
-
-elf: $(ELF_FILE)
-$(ELF_FILE): $(OBJ_FILES) $(LINKER_SCRIPT)
-# Linke elf file from object file
-	$(LD) $(LDFLAGS) -T $(LINKER_SCRIPT) -o $@ $(filter-out $(LINKER_SCRIPT), $^)
-
-obj: $(OBJ_FILES)
-%.o: %.S
-# Compile from asm to obj file
-	$(CC) $(CFLAGS) -c $< -o $@
-%.o: %.c
-# Compile from C to obj file
-	$(CC) $(CFLAGS) -c $< -o $@
-
-clean: kercln
-	make -C bootloader clean
-	rm -f $(IMAGE) $(ELF_FILE) $(OBJ_FILES)
+clean:
+	make -C $(BOOTLOADER) clean
+	make -C $(OS) clean
 
 install:
 #cp ./setup/* $(SD_MEDIA)
-	cp bootloader/config.txt $(SD_MEDIA)
-	cp bootloader/bootloader.img $(SD_MEDIA)
+	cp $(BOOTLOADER)/config.txt $(SD_MEDIA)
+	cp $(BOOT_IMG) $(SD_MEDIA)
+
+uninstall:
+	rm $(SD_MEDIA)/config.txt
+	cp ./setup/kernel8.img $(SD_MEDIA)

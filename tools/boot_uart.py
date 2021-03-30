@@ -18,5 +18,5 @@ with open(tty_dev, "wb", buffering = 0) as tty:
   tty.close()
 
 with open(tty_dev, "w") as tty:
-  tty.write("c")
+  tty.write("c\n")
   tty.close()

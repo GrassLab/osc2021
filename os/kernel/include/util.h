@@ -4,6 +4,7 @@
 
 char *gets(char *);
 int puts(const char *);
+int putln(const char *);
 int strcmp(const char *, const char *);
 
 #endif // __UTIL_H_

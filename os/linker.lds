@@ -2,13 +2,13 @@ ENTRY(_start)
 
 MEMORY
 {
-    ROM (rx)  : ORIGIN = 0x80000, LENGTH = 0x2000
-    RAM (rwx) : ORIGIN = 0x82000, LENGTH = 0x2000
+    ROM (rx)  : ORIGIN = 0x90000, LENGTH = 0x2000
+    RAM (rwx) : ORIGIN = 0x92000, LENGTH = 0x2000
 }
 
 SECTIONS
 {
-    . = 0x80000;
+    . = 0x90000;
     .text :
     {
         KEEP(*(.text.boot)) *(.text)

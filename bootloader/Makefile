@@ -1,18 +1,24 @@
 include ../Makefile.inc
 
-CFLAGS      += -I include
+SRC_PATH    = src
+INC_PATH    = include
+LIB_PATH    = lib
 
-LDFLAGS     += -L lib
+SRC_C       = $(wildcard $(SRC_PATH)/*.c)
+
+CFLAGS      += -I $(INC_PATH)
+
+LDFLAGS     += -L $(LIB_PATH)
 
 IMAGE       = bootloader.img
 ELF_FILE    = bootloader.elf
-OBJ_FILES   = boot.o bootloader.o lib/util.o lib/shell.o lib/mmio.o
+OBJ_FILES   = $(LIB_PATH)/boot.o \
+              $(LIB_PATH)/bootloader.o \
+              $(patsubst $(SRC_PATH)/%, $(LIB_PATH)/%, ${SRC_C:.c=.o})
 
 LINKER_SCRIPT=linker.lds
 
-
 .PHONY: all clean img elf obj install
-
 
 img: $(IMAGE)
 $(IMAGE): %.img: %.elf
@@ -25,12 +31,15 @@ $(ELF_FILE): $(OBJ_FILES) $(LINKER_SCRIPT)
 	$(LD) $(LDFLAGS) -T $(LINKER_SCRIPT) -o $@ $(filter-out $(LINKER_SCRIPT), $^)
 
 obj: $(OBJ_FILES)
-%.o: %.S
+$(LIB_PATH)/%.o: $(SRC_PATH)/%.S
 # Compile from asm to obj file
+	mkdir -p $(LIB_PATH)
 	$(CC) $(CFLAGS) -c $< -o $@
-%.o: %.c
+$(LIB_PATH)/%.o: $(SRC_PATH)/%.c
 # Compile from C to obj file
+	mkdir -p $(LIB_PATH)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(IMAGE) $(ELF_FILE) $(OBJ_FILES)
+	rm -rf $(LIB_PATH)
+	rm -f $(IMAGE) $(ELF_FILE)

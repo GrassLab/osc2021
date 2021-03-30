@@ -8,8 +8,8 @@ char *gets(char *str) {
   int buff_end = 0;
   do {
     c = uart_getc();
-    //uart_setc(c+' ');
-    if (c == 8) { // backspace, ^H works on screen, BS not working
+    if (c == 0x08 || c == 0x7f) { // backspace, ^H works on screen, BS will send DEL signal
+      if (buff_end == 0) continue; // boundary check
       puts("\b \b");
       buff_end--;
       continue;
@@ -28,6 +28,16 @@ int puts(const char *str) {
     uart_setc(str[str_end++]);
   }
   return str_end;
+}
+
+int putln(const char *str) {
+  if (!puts(str)) {
+    return 1;
+  }
+  if (!puts("\n\r")) {
+    return 1;
+  }
+  return 0;
 }
 
 // 0 as same, 1 as different, -1 as error
