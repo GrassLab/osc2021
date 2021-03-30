@@ -11,29 +11,13 @@
 // + What is the size of each frame?
 //    + @BUDDY_FRAME_SHIFT
 //     (Size of the frame in bytes = 2**BUDDY_FRAME_SHIFT)
-#define BUDDY_NUM_FRAMES 8
-#define BUDDY_MAX_EXPONENT 3
+#define BUDDY_NUM_FRAMES 262144
+#define BUDDY_MAX_EXPONENT 18
 #define BUDDY_FRAME_SHIFT 14
 
 #define BUDDY_NUM_FREE_LISTS (BUDDY_MAX_EXPONENT + 1)
 
 #define MEMORY_START 0x90000
-
-typedef struct Frame {
-  // inherit a list type, so we could cast FrameNode into list_head
-  struct list_head list_base;
-
-  int arr_index;
-  void *addr;
-  int exp;
-} Frame;
-
-// BuddyAllocater
-//    allocate contiguous frames
-typedef struct BuddyAllocater {
-  list_head_t free_lists[BUDDY_NUM_FREE_LISTS];
-  Frame *frame_array;
-} BuddyAllocater;
 
 // SlabAllocator
 //    manage slabs with the same allocation size,
@@ -50,15 +34,40 @@ typedef struct BuddyAllocater {
 #define SLAB_OBJ_MAX_SIZE_EXP 9
 #define SLAB_NUM_SLAB_SIZES 6
 
+typedef struct Frame {
+  // inherit a list type, so we could cast FrameNode into list_head
+  struct list_head list_base;
+
+  // only if this page is slab allocated if this field to be useful
+  // TODO: optimize this structure
+  uint8_t slab_usage[SLAB_MAX_SLOTS];
+  struct SlabAllocator *slab_allocator;
+  int max_num_objects;
+  int num_object_allocated;
+
+  int arr_index;
+  void *addr;
+  int exp;
+} Frame;
+
+// BuddyAllocater
+//    allocate contiguous frames
+typedef struct BuddyAllocater {
+  list_head_t free_lists[BUDDY_NUM_FREE_LISTS];
+  Frame *frame_array;
+} BuddyAllocater;
+
 typedef struct SlabAllocator {
-  int unit_size; // size of the unit (in Bytes)
-  uint8_t usage[SLAB_MAX_SLOTS];
+  int unit_size;     // size of the unit (in Bytes)
+  int unit_size_exp; // exponent of the size (in Bytes)
+
+  BuddyAllocater *frame_allocator;
 
   struct Frame *cur_frame;  // The current frame be used for obejct allocation
-  list_head_t partial_list; // Frames in fulled_list would be move to
+  list_head_t partial_list; // Frames in full_list would be move to
                             //  partial_list once an object is freed
-  list_head_t fulled_list;  // Once cur_frame is full, it would be dispatch to
-                            //  fulled_list for storage.
+  list_head_t full_list;    // Once cur_frame is full, it would be dispatch to
+                            //  full_list for storage.
 } SlabAllocator;
 
 typedef struct AllocationManager {
@@ -66,7 +75,7 @@ typedef struct AllocationManager {
   BuddyAllocater *frame_allocator;
 } AllocationManager;
 
-void *kalloc(int blocks);
+void *kalloc(int size);
 void kfree(void *addr);
 
 // Initialize dynamic memory allocator
@@ -78,6 +87,12 @@ void KAllocManager_show_status();
 // because their lifetimes is equal to the system itself
 struct Frame Frames[BUDDY_NUM_FRAMES];
 struct AllocationManager KAllocManager;
+
+// Call slab allocator for allocate an object
+void *slab_alloc(SlabAllocator *alloc);
+
+// Free an object
+void slab_free(void *obj);
 
 void buddy_init(BuddyAllocater *alloc, Frame *frame_arr);
 struct Frame *buddy_alloc(BuddyAllocater *alloc, int size_in_byte);

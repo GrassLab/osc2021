@@ -5,20 +5,31 @@
 int main() {
   uart_init();
   KAllocManager_init();
-  KAllocManager_show_status();
-  void *a = kalloc(1);
+  // KAllocManager_show_status();
 
-  void *b = kalloc(2);
+  void *a[30];
+  for (int i = 0; i < 5; i++) {
+    a[i] = kalloc(14);
+    uart_println("i:%d, a: %x", i, a);
+  }
+  kfree(a[2]);
+  kfree(a[3]);
+  a[2] = kalloc(14);
+  a[3] = kalloc(14);
 
-  void *c = kalloc(1);
-  uart_println("c: %x", c);
+  for (int i = 5; i < 10; i++) {
+    a[i] = kalloc(14);
+  }
+  for (int i = 5; i < 10; i++) {
+    kfree(a[i]);
+  }
   // KAllocManager_show_status();
   // int d = buddy_alloc(&buddy, 10);
-  kfree(a);
-  kfree(c);
+  // kfree(a);
+  // kfree(c);
 
-  kfree(b);
-  KAllocManager_show_status();
+  // kfree(b);
+  // KAllocManager_show_status();
 
   uart_println("-------------------------------");
   uart_println(" Operating System Capstone 2021");

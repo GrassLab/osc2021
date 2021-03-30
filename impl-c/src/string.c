@@ -31,7 +31,7 @@ int strlen(const char *str) {
 //  2. Only pass in positive values
 char *itoa(int64_t val, int base) {
   static char buf[64] = {0};
-  int i = 31;
+  int i = 63;
   if (val == 0) {
     buf[i] = '0';
     return &buf[i];
