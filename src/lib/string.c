@@ -64,3 +64,19 @@ int hextoi(char *hexStr)
 
     return value;
 }
+
+char *itoa(int value, char *str, int base)
+{   
+    int i = 0;
+    while(value != 0)
+    {
+        str[i] = value % base + '0';
+        value = value / base;
+
+        i++;
+    }
+
+    // reverse str
+
+    return str;
+}
