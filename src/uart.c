@@ -1,7 +1,7 @@
 #include "uart.h"
 
-#include "gpio.h"
 #include "bl_util.h"
+#include "gpio.h"
 
 void uart_init() {
   register unsigned int r;
@@ -38,4 +38,9 @@ void uart_put_raw(unsigned int data) {
   while ((*AUX_MU_LSR & 0x20) == 0)
     ;
   *AUX_MU_IO = data;
+}
+
+void flush() {
+  while ((*AUX_MU_STAT & (1 << 9)) == 0)
+    ;
 }

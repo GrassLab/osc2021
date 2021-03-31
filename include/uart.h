@@ -17,5 +17,6 @@
 void uart_init();
 unsigned int uart_get_raw();
 void uart_put_raw(unsigned int data);
+void flush();
 
 #endif
