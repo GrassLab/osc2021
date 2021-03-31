@@ -25,7 +25,7 @@ struct cmd cmd_list[SYS_CMD_NUM] = {
 
 void __lab3(char* args){
     DEBUG = 1;
-    buddy_test1();
+    buddy_test2();
     DEBUG = 2;
     DMA_test();
     DEBUG = 0;

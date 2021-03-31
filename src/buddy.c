@@ -150,7 +150,7 @@ void buddy_test1(){
         PAGE_SIZE * 10,
         PAGE_SIZE * 2,
         PAGE_SIZE * 4,
-        PAGE_SIZE * 8, // over single page;
+        PAGE_SIZE * 8
     };
     int index[6] = {0, 5, 1, 4, 3, 2};
     void *addr[6];
@@ -169,6 +169,41 @@ void buddy_test1(){
         uart_printhex((uint64_t)addr[index[i]]);
         uart_puts("\r\n");
         buddy_free((char*)addr[index[i]]);
+        __show_buddy_system();
+    }
+    uart_puts("==============  Buddy_system_test done  ===================\r\n");
+}
+void buddy_test2(){
+    uart_puts("==================  Buddy_system_test  =======================\r\n");
+    __show_buddy_system();
+    uint32_t size[6] = {
+        PAGE_SIZE * 1, 
+        PAGE_SIZE * 13,
+        PAGE_SIZE * 10,
+        PAGE_SIZE * 2,
+        PAGE_SIZE * 4,
+        PAGE_SIZE * 8
+    };
+    int index[12] = {0, 1, 2, -6, 3, -3, -5, -4, 4, 5, -2, -1};
+    void *addr[6];
+    
+    for(int i = 0; i < 12; ++i){
+        if(index[i] >= 0){
+            uart_puts("[Allocate memory] Size: ");
+            uart_printhex(size[i]);
+            uart_puts("\r\n");
+            addr[index[i]] = (void*)(buddy_alloc(size[i])->addr);
+            
+        }
+        else{
+            int ti = index[i] + 6;
+            uart_puts("[Deallocate memory] Size: ");
+            uart_printhex(size[ti]);
+            uart_puts(", Address: ");
+            uart_printhex((uint64_t)addr[ti]);
+            uart_puts("\r\n");
+            buddy_free((char*)addr[ti]);
+        }
         __show_buddy_system();
     }
     uart_puts("==============  Buddy_system_test done  ===================\r\n");

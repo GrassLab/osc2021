@@ -34,5 +34,7 @@ void dynamic_free(void*);
 char* find_proper_page(int);
 uint32_t __align_8byte(uint32_t);
 void show_memory_pool();
+
 void DMA_test();
+void DMA_test2();
 #endif

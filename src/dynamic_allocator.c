@@ -176,3 +176,37 @@ void DMA_test(){
     }
     uart_puts("================  DMA_test done  =====================\r\n");
 }
+void DMA_test2(){
+    uart_puts("==================  DMA_test  =======================\r\n");
+    show_memory_pool();
+    uint32_t size[6] = {
+        sizeof(int) * 1, 
+        sizeof(int) * 2201,
+        sizeof(int) * 100,
+        sizeof(int) * 3068,
+        sizeof(int) * 9,
+        sizeof(int) * 8, // over single page;
+    };
+    int index[12] = {0, 1, 2, -6, 3, -3, -5, -4, 4, 5, -2, -1};
+    void *addr[6];
+    for(int i = 0; i < 12; ++i){
+        if(index[i] >= 0){
+            uart_puts("[Allocate memory] size: ");
+            uart_printhex(size[i]);
+            uart_puts("\r\n");
+            addr[i] = dynamic_alloc(size[i]);
+        }
+        else{
+            int ti = index[i] + 6;
+            uart_puts("[Deallocate memory] address: ");
+            uart_printhex((uint64_t)addr[ti] - DMA_HEADER_SIZE);
+            uart_puts(", size: ");
+            uart_printhex(size[ti]);
+            uart_puts("\r\n");
+            dynamic_free(addr[ti]);
+        }
+        show_memory_pool();
+    }
+    
+    uart_puts("================  DMA_test done  =====================\r\n");
+}
