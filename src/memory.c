@@ -258,6 +258,7 @@ void object_free(void *object)
         *(int *)object = page->first_free - page->start_address;
         page->first_free = object;
     }
+    
     page->object_count--;
 
     list_crop(&page->list, &page->list);
