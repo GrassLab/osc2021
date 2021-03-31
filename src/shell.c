@@ -28,8 +28,6 @@ struct CMD command[] = {
     {.name="memory", .help="do some memory operation", .func=shell_memory}
 };
 
-FrameArray *frame_array;
-
 char input_buffer[MAX_INPUT+1];
 int input_tail_idx = 0;
 
@@ -41,7 +39,6 @@ void buffer_clear(){
 void init_shell(){
     uart_puts("Welcome to my simple shell\r\n");
     uart_puts("ヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノ\r\n");
-    frame_array = NewFrameArray();
     buffer_clear();
 }
 
@@ -215,6 +212,8 @@ void shell_ls(){
     }
 }
 
+extern FrameArray *frame_array;
+
 void shell_memory(){
     char cur_char;
     uint64_t need_size, free_addr, mem;
@@ -237,7 +236,7 @@ void shell_memory(){
             buffer_clear();
             get_input();
             need_size = atoi(input_buffer, 10);
-            mem = new_memory(frame_array, need_size);
+            mem = kmalloc(need_size);
             if(mem >= 0){
                 uart_puts("New Memory Address: ");
                 uart_puts(itoa(mem, 16));
@@ -250,11 +249,7 @@ void shell_memory(){
             get_input();
             free_addr = hex_to_int64(input_buffer);
 
-            // uart_puts("Enter the length of memory (bytes)\r\n");
-            // buffer_clear();
-            // get_input();
-            // free_size = atoi(input_buffer, 10);
-            free_memory(frame_array, free_addr);
+            free(free_addr);
         }
         else if(cur_char == 'l'){
             uint16_t i;

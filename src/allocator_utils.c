@@ -4,6 +4,7 @@
 #include "str_tool.h"
 #include "allocator_utils.h"
 
+extern FrameArray *frame_array;
 struct FrameListNum freeListElement[MAX_ELEMENT_NUM];
 struct FrameChunk freeChunkElement[MAX_CHUNK_NUM];
 uint32_t cur_element_idx = 0;
@@ -25,7 +26,7 @@ uint32_t _get_index_from_mem(uint64_t base_addr, uint64_t addr){
 }
 
 // FreeList Functions
-int32_t _find_capable_slot_size(struct _RawFrameArray *frame_array, int32_t need_size_power){
+int32_t _find_capable_slot_size(int32_t need_size_power){
     int32_t find_size_power = need_size_power;
     while(1){
         if(find_size_power > 19){
@@ -53,7 +54,7 @@ struct FrameListNum* _new_list_element(uint32_t index, struct FrameListNum *next
     return &freeListElement[cur_element_idx-1];
 }
 
-void _new_frameList_element(struct _RawFrameArray *frame_array, int32_t power_idx, uint32_t element_idx){
+void _new_frameList_element(int32_t power_idx, uint32_t element_idx){
     struct FrameListNum *cursor;
     if(!frame_array->freeList[power_idx]){
         frame_array->freeList[power_idx] = _new_list_element(element_idx, 0, 0);
@@ -64,7 +65,7 @@ void _new_frameList_element(struct _RawFrameArray *frame_array, int32_t power_id
     }
 }
 
-void _rm_frameList_element(struct _RawFrameArray *frame_array, struct FrameListNum *cursor, int cur_idx){
+void _rm_frameList_element(struct FrameListNum *cursor, int cur_idx){
     if(!cursor->prev){
         frame_array->freeList[cur_idx] = cursor->next;
         cursor->next->prev = 0;
@@ -76,7 +77,7 @@ void _rm_frameList_element(struct _RawFrameArray *frame_array, struct FrameListN
     }
 }
 
-void _merge_frameList_element(struct _RawFrameArray *frame_array){
+void _merge_frameList_element(){
     uint8_t i;
     uint32_t min_val;
     uint64_t cur_base;
@@ -89,9 +90,9 @@ void _merge_frameList_element(struct _RawFrameArray *frame_array){
             while(right){
                 if((left->index^right->index) < cur_base){
                     min_val = left->index<right->index?left->index:right->index;
-                    _new_frameList_element(frame_array, i+1, min_val);
-                    _rm_frameList_element(frame_array, left, i);
-                    _rm_frameList_element(frame_array, right, i);
+                    _new_frameList_element(i+1, min_val);
+                    _rm_frameList_element(left, i);
+                    _rm_frameList_element(right, i);
                     if(PRINT_ALLOCATE_LOG){
                         uart_puts("- - - - - - - - - -\r\n");
                         uart_puts("Merge Memory Block: from idx ");
@@ -133,8 +134,8 @@ struct FrameChunk* _new_chunk_from_idx(uint32_t index, struct FrameChunk *next, 
     return &freeChunkElement[cur_chunk_idx-1];
 }
 
-struct FrameChunk* _new_chunk_from_zero(struct _RawFrameArray *frame_array, struct FrameChunk *prev){
-    uint64_t base_addr = _new_frame(frame_array, 0, 0, _find_capable_slot_size(frame_array, 0), 1);
+struct FrameChunk* _new_chunk_from_zero(struct FrameChunk *prev){
+    uint64_t base_addr = _new_frame(0, 0, _find_capable_slot_size(0), 1);
     uint32_t index = _get_index_from_mem(frame_array->base_addr, base_addr);
     return _new_chunk_from_idx(index, 0, prev);
 }

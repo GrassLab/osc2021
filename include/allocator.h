@@ -34,8 +34,8 @@ typedef struct _RawFrameArray{
 } FrameArray;
 
 FrameArray* NewFrameArray();
-uint64_t new_memory(struct _RawFrameArray*, uint64_t);
-void free_memory(struct _RawFrameArray*, uint64_t);
-uint64_t _new_frame(struct _RawFrameArray*, uint64_t, int32_t, int32_t, uint8_t);
+uint64_t kmalloc(uint64_t);
+void free(uint64_t);
+uint64_t _new_frame(uint64_t, int32_t, int32_t, uint8_t);
 
 #endif

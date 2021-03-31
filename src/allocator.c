@@ -4,13 +4,14 @@
 #include "str_tool.h"
 #include "allocator_utils.h"
 
+extern FrameArray *frame_array;
 extern struct FrameListNum freeListElement[];
 extern struct FrameChunk freeChunkElement[];
 extern uint32_t cur_element_idx;
 extern uint32_t cur_chunk_idx;
 extern struct FrameChunk *chunk_list;
 
-uint64_t _new_frame(struct _RawFrameArray *frame_array, uint64_t need_size, int32_t need_size_power, int32_t find_size_power, uint8_t is_chunk){
+uint64_t _new_frame(uint64_t need_size, int32_t need_size_power, int32_t find_size_power, uint8_t is_chunk){
     uint32_t index = frame_array->freeList[find_size_power]->index;
     uint64_t return_addr = frame_array->base_addr + (4096 * (uint64_t)index);
 
@@ -29,7 +30,7 @@ uint64_t _new_frame(struct _RawFrameArray *frame_array, uint64_t need_size, int3
 
         while(cur_size_power >= need_size_power){
             cur_end_index = (cur_end_index + index)/2;
-            _new_frameList_element(frame_array, cur_size_power, cur_end_index);
+            _new_frameList_element(cur_size_power, cur_end_index);
 
             // Process val array
             frame_array->val[cur_end_index] = cur_size_power;
@@ -64,7 +65,7 @@ uint64_t _new_frame(struct _RawFrameArray *frame_array, uint64_t need_size, int3
         if(redundant_block_num&base){
             cur_end_index -= base;
             // Process freeList
-            _new_frameList_element(frame_array, idx, cur_end_index);
+            _new_frameList_element(idx, cur_end_index);
 
             // Process val array
             frame_array->val[cur_end_index] = idx;
@@ -91,81 +92,109 @@ uint64_t _new_frame(struct _RawFrameArray *frame_array, uint64_t need_size, int3
     return return_addr;
 }
 
-void _free_chunk(struct _RawFrameArray *frame_array, uint64_t free_addr, uint32_t index){
+void _free_chunk(uint64_t free_addr, uint32_t index){
     struct FrameChunk *cursor = chunk_list;
     while(cursor->index != index)
         cursor = cursor->next;
     uint64_t shift_addr = free_addr - frame_array->base_addr - (4096 * (uint64_t)index);
+    uint8_t freed=0;
     if(shift_addr<512){
         // chunk16
-        if(cursor->chunk16[shift_addr/16] != 1)
+        if(cursor->chunk16[shift_addr/16] != 1){
             uart_puts("ERROR! Value of Chunk is not 1\r\n");
-        else{
-            cursor->chunk16[shift_addr/16] = 0;
-            uart_puts("Free chunk16\r\n");
+            return;
         }
-        goto CHECK_EMPTY_CHUNK;
+        else if(!freed){
+            cursor->chunk16[shift_addr/16] = 0;
+            uart_puts("Free chunk16 of page ");
+            uart_puts(itoa(index, 10));
+            uart_puts("\r\n");
+            freed = 1;
+        }
+        goto FREE_CHUNK;
     }
 
     shift_addr -= 512;
     if(shift_addr<1024){
         // chunk32
-        if(cursor->chunk32[shift_addr/32] != 1)
+        if(cursor->chunk32[shift_addr/32] != 1){
             uart_puts("ERROR! Value of Chunk is not 1\r\n");
-        else{
-            cursor->chunk32[shift_addr/32] = 0;
-            uart_puts("Free chunk32\r\n");
+            return;
         }
-        goto CHECK_EMPTY_CHUNK;
+        else if(!freed){
+            cursor->chunk32[shift_addr/32] = 0;
+            uart_puts("Free chunk32 of page ");
+            uart_puts(itoa(index, 10));
+            uart_puts("\r\n");
+            freed = 1;
+        }
+        goto FREE_CHUNK;
     }
 
     shift_addr -= 1024;
     if(shift_addr<1024){
         // chunk64
-        if(cursor->chunk64[shift_addr/64] != 1)
+        if(cursor->chunk64[shift_addr/64] != 1){
             uart_puts("ERROR! Value of Chunk is not 1\r\n");
-        else{
-            cursor->chunk64[shift_addr/64] = 0;
-            uart_puts("Free chunk64\r\n");
+            return;
         }
-        goto CHECK_EMPTY_CHUNK;
+        else if(!freed){
+            cursor->chunk64[shift_addr/64] = 0;
+            uart_puts("Free chunk64 of page ");
+            uart_puts(itoa(index, 10));
+            uart_puts("\r\n");
+            freed = 1;
+        }
+        goto FREE_CHUNK;
     }
 
     shift_addr -= 1024;
     if(shift_addr<768){
         // chunk128
-        if(cursor->chunk128[shift_addr/128] != 1)
+        if(cursor->chunk128[shift_addr/128] != 1){
             uart_puts("ERROR! Value of Chunk is not 1\r\n");
-        else{
-            cursor->chunk128[shift_addr/128] = 0;
-            uart_puts("Free chunk128\r\n");
+            return;
         }
-        goto CHECK_EMPTY_CHUNK;
+        else if(!freed){
+            cursor->chunk128[shift_addr/128] = 0;
+            uart_puts("Free chunk128 of page ");
+            uart_puts(itoa(index, 10));
+            uart_puts("\r\n");
+            freed = 1;
+        }
+        goto FREE_CHUNK;
     }
 
     shift_addr -= 768;
     // chunk256
-    if(cursor->chunk256[shift_addr/256] != 1)
+    if(cursor->chunk256[shift_addr/256] != 1){
         uart_puts("ERROR! Value of Chunk is not 1\r\n");
-    else{
+        return;
+    }
+    else if(!freed){
         cursor->chunk256[shift_addr/256] = 0;
-        uart_puts("Free chunk256\r\n");
+        uart_puts("Free chunk256 of page ");
+        uart_puts(itoa(index, 10));
+        uart_puts("\r\n");
+        freed = 1;
     }
 
-CHECK_EMPTY_CHUNK:
-    cursor->free_chunk_num += 1;
-    if(cursor->free_chunk_num == 89){
-        _rm_chunk(cursor);
-        frame_array->val[index] = ALLOCATED_SLOT_SHIFT;
-        free_memory(frame_array, free_addr);
+FREE_CHUNK:
+    if(freed){
+        cursor->free_chunk_num += 1;
+        if(cursor->free_chunk_num == 89){
+            _rm_chunk(cursor);
+            frame_array->val[index] = ALLOCATED_SLOT_SHIFT;
+            free(free_addr);
+        }
     }
 }
 
-void free_memory(struct _RawFrameArray *frame_array, uint64_t free_addr){
+void free(uint64_t free_addr){
     uint32_t index = _get_index_from_mem(frame_array->base_addr, free_addr);
 
     if(frame_array->val[index] == CHUNK_SLOT){
-        _free_chunk(frame_array, free_addr, index);
+        _free_chunk(free_addr, index);
         return;
     }
 
@@ -180,7 +209,7 @@ void free_memory(struct _RawFrameArray *frame_array, uint64_t free_addr){
     uint32_t free_size_power_len = 1<<free_size_power;
 
     if(free_size+1 == free_size_power_len){
-        _new_frameList_element(frame_array, free_size_power, index);
+        _new_frameList_element(free_size_power, index);
         // Process val array
         frame_array->val[index] = free_size_power;
         for(cur_index=index+1; cur_index<index+free_size_power_len; cur_index++)
@@ -198,7 +227,7 @@ void free_memory(struct _RawFrameArray *frame_array, uint64_t free_addr){
     }
     else if(free_size < free_size_power_len){
         uint32_t smaller_free_size_power_len = 1<<(free_size_power-1);
-        _new_frameList_element(frame_array, free_size_power-1, index);
+        _new_frameList_element(free_size_power-1, index);
         // Process val array
         frame_array->val[index] = free_size_power-1;
         for(cur_index=index+1; cur_index<index+smaller_free_size_power_len; cur_index++)
@@ -221,7 +250,7 @@ void free_memory(struct _RawFrameArray *frame_array, uint64_t free_addr){
             uart_puts(itoa(cur_index, 10));
         }
         while(cur_index < index){
-            _new_frameList_element(frame_array, 0, cur_index);
+            _new_frameList_element(0, cur_index);
             frame_array->val[cur_index] = 0;
             cur_index += 1;
         }
@@ -235,11 +264,10 @@ void free_memory(struct _RawFrameArray *frame_array, uint64_t free_addr){
         uart_puts("ERROR! free_size should not greater than free_size_power_len\r\n");
         return;
     }
-    _merge_frameList_element(frame_array);
+    _merge_frameList_element();
 }
 
-uint64_t _allocate_chunk(struct _RawFrameArray *frame_array, struct FrameChunk *cursor, uint16_t chunk_size, \
-                    uint8_t chunk_len, uint16_t base){
+uint64_t _allocate_chunk(struct FrameChunk *cursor, uint16_t chunk_size, uint8_t chunk_len, uint16_t base){
     uint8_t *chunk_cursor, free_idx;
     while(1){
         if(!cursor->free_chunk_num){
@@ -248,7 +276,7 @@ uint64_t _allocate_chunk(struct _RawFrameArray *frame_array, struct FrameChunk *
                 continue;
             }
             else{
-                cursor->next = _new_chunk_from_zero(frame_array, cursor);
+                cursor->next = _new_chunk_from_zero(cursor);
                 cursor = cursor->next;
             }
         }
@@ -285,42 +313,42 @@ uint64_t _allocate_chunk(struct _RawFrameArray *frame_array, struct FrameChunk *
         else if(cursor->next)
             cursor = cursor->next;
         else{
-            cursor->next = _new_chunk_from_zero(frame_array, cursor);
+            cursor->next = _new_chunk_from_zero(cursor);
             cursor = cursor->next;
         }
     }
 }
 
-uint64_t _new_chunk(struct _RawFrameArray *frame_array, uint64_t need_size){
+uint64_t _new_chunk(uint64_t need_size){
     if(!chunk_list)
-        chunk_list = _new_chunk_from_zero(frame_array, 0);
+        chunk_list = _new_chunk_from_zero(0);
 
     struct FrameChunk *cursor = chunk_list;
     uint8_t need_size_pow = _cal_bit_len(need_size);
     if(need_size_pow<5){
         // chunk16
         uart_puts("Allocate chunk 16\r\n");
-        return _allocate_chunk(frame_array, cursor, 16, 32, 0);
+        return _allocate_chunk(cursor, 16, 32, 0);
     }
     else if(need_size_pow==5){
         // chunk32
         uart_puts("Allocate chunk 32\r\n");
-        return _allocate_chunk(frame_array, cursor, 32, 32, 512);
+        return _allocate_chunk(cursor, 32, 32, 512);
     }
     else if(need_size_pow==6){
         // chunk64
         uart_puts("Allocate chunk 64\r\n");
-        return _allocate_chunk(frame_array, cursor, 64, 16, 1536);
+        return _allocate_chunk(cursor, 64, 16, 1536);
     }
     else if(need_size_pow==7){
         // chunk128
         uart_puts("Allocate chunk 128\r\n");
-        return _allocate_chunk(frame_array, cursor, 128, 6, 2560);
+        return _allocate_chunk(cursor, 128, 6, 2560);
     }
     else if(need_size_pow==8){
         // chunk256
         uart_puts("Allocate chunk 256\r\n");
-        return _allocate_chunk(frame_array, cursor, 256, 3, 3328);
+        return _allocate_chunk(cursor, 256, 3, 3328);
     }
     else{
         uart_puts("ERROR! size should not use new_chunk function\r\n");
@@ -328,14 +356,14 @@ uint64_t _new_chunk(struct _RawFrameArray *frame_array, uint64_t need_size){
     }
 }
 
-uint64_t new_memory(struct _RawFrameArray *frame_array, uint64_t need_size){
+uint64_t kmalloc(uint64_t need_size){
     if(need_size < 256)
-        return _new_chunk(frame_array, need_size);
+        return _new_chunk(need_size);
 
     need_size /= 0x1000;
     int32_t need_size_power = _cal_bit_len(need_size);
-    int32_t find_size_power = _find_capable_slot_size(frame_array, need_size_power);
-    return _new_frame(frame_array, need_size, need_size_power, find_size_power, 0);
+    int32_t find_size_power = _find_capable_slot_size(need_size_power);
+    return _new_frame(need_size, need_size_power, find_size_power, 0);
 }
 
 FrameArray* NewFrameArray(){
