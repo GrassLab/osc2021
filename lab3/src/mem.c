@@ -84,13 +84,14 @@ void mem_add_new_node(int mbytes, int page_need, unsigned long long r){
 
 void* malloc(int mbytes){
   void *r = 0;
+  int page_need;
   if (mbytes == 0){
     return r;
   }
   if (mbytes > BUDDY_PAGE_SIZE/2){
     char ct[20];
     //cal page need
-    int page_need = mbytes/BUDDY_PAGE_SIZE;
+    page_need = mbytes/BUDDY_PAGE_SIZE;
     page_need = (mbytes%BUDDY_PAGE_SIZE) ? page_need+1 : page_need ;
     int_to_str(mbytes, ct);
     uart_puts("Alloc memery size ");
@@ -111,10 +112,14 @@ void* malloc(int mbytes){
     uart_puts("\n");
     //call buddy
     r = (void *)buddy_alloc(mbytes, order, 0);
-    //add r in mem table
-    if(r) mem_add_new_node(mbytes, page_need, (unsigned long long)r);
-    return r;
   }
+  else{
+    r = (void *)buddy_dma_alloc(mbytes, 0);
+    page_need = -1;
+  }
+  //add r in mem table
+  if(r) mem_add_new_node(mbytes, page_need, (unsigned long long)r);
+  return r;
 }
 
 void free(void* addr){
@@ -123,7 +128,10 @@ void free(void* addr){
     target = target->next;
   }
   if(target){
-    buddy_free(target->addr, target->bytes, 0);
+    if (target->bytes > BUDDY_PAGE_SIZE/2)
+      buddy_free(target->addr, target->bytes, 0);
+    else
+      buddy_dma_free(target->addr, target->bytes, 0);
     ll_rm_elm<struct mem_node>(&mem_inuse, target);
     target->addr = 0;
     target->bytes = 0;

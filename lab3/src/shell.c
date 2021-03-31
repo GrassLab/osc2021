@@ -48,11 +48,22 @@ void invoke_cmd(char *cmd){
     uart_puts("Hello World!\n");
   }
   else if (str_cmp(argv[0], "help") == 1){
+    if (str_cmp(argv[1], "buddy") == 1){
+      show_file("help/buddy");
+    }
+    if (str_cmp(argv[1], "dma") == 1){
+      show_file("help/dma");
+    }
+    else{
+      show_file("help/default");
+    }
+    /*
     uart_puts("Command | Description\n");
     uart_puts("--------| ----------------------------\n");
     uart_puts("hello   | print Hello World!\n");
     uart_puts("help    | print all available commands\n");
     uart_puts("reboot  | reboot pi\n");
+    */
   }
   else if (str_cmp(argv[0], "reboot") == 1){
     uart_puts("Rebooting ...\n");
@@ -70,25 +81,6 @@ void invoke_cmd(char *cmd){
     if (!argv[1]) return ;
     int alloc_size = str_to_int(argv[1]);
     char ct[20];
-    /*
-    int_to_str(alloc_size, ct);
-    uart_puts("Alloc memery size ");
-    uart_puts(ct);
-    uart_puts(" bytes\n");
-    int page_need = alloc_size/BUDDY_PAGE_SIZE;
-    page_need = (alloc_size%BUDDY_PAGE_SIZE == 0) ? page_need-1 : page_need;
-    int_to_str(page_need+1, ct);
-    uart_puts(ct);
-    uart_puts(".\n");
-    int order = 0;
-    while(page_need){
-      page_need >>= 1;
-      order++;
-    }
-    int_to_str(order, ct);
-    uart_puts(ct);
-    uart_puts("\n");
-    */
     unsigned long long r = (unsigned long long)malloc(alloc_size);
     if (r){
       uart_puts("\nGet memery <");
@@ -110,8 +102,13 @@ void invoke_cmd(char *cmd){
       free((void *)addr);
     }
   }
-  else if (str_cmp(cmd, "table") == 1){
-    mem_ll_show();
+  else if (str_cmp(cmd, "mem") == 1){
+    if (str_cmp(argv[1], "status")) mem_ll_show();
+    else uart_puts("Use \"mem status\"");
+  }
+  else if (str_cmp(cmd, "dma") == 1){
+    if (str_cmp(argv[1], "status")) buddy_dma_ll_show();
+    else uart_puts("Use \"dma status\"");
   }
   else if (str_cmp(argv[0], "cat") == 1){
     show_file(argv[1]);

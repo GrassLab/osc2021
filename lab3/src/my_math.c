@@ -90,3 +90,13 @@ int str_to_int(char *c){
   }
   return r;
 }
+
+int round_up(int n, int a){
+  int r = n/a;
+  return (n%a) ? r+1 : r;
+}
+
+int align_up(int n, int a){
+  if (n%a == 0) return n;
+  return (n/a+1)*a;
+}
