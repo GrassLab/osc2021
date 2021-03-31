@@ -85,8 +85,7 @@ static void init_buddy() {
     struct list_head *victim;
 
     for (int i = 0; i < FRAME_BINS; i++) {
-        frame_bins[i].next = &frame_bins[i];
-        frame_bins[i].prev = &frame_bins[i];
+        list_init(&frame_bins[i]);
     }
     
     for (uint64_t i = 0; i < FRAME_ARRAY_SIZE; i += 1 << MAX_ORDER) {
@@ -192,7 +191,7 @@ static void alloc_cache(void *mem, int size) {
  * request >= PAGE_SIZE: only use alloc_page
  */
 void *kmalloc(unsigned int size) {
-    if (!size || align_up(size, PAGE_SIZE) > FRAME_SIZE_MAX) {
+    if (align_up(size, PAGE_SIZE) > FRAME_SIZE_MAX) {
         return NULL;
     }
 
@@ -202,6 +201,7 @@ void *kmalloc(unsigned int size) {
 
     void *cache;
     if (align_up_exp(size) < PAGE_SIZE) {   
+        size = align_up_exp(size);
         cache = get_cache(size);
 
         if (!cache) {
