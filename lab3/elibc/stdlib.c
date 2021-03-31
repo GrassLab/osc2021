@@ -25,7 +25,7 @@ void *malloc(size_t n)
 
     // Search for a large-enough free memory block (FMB).
     return_ptr = NULL;
-    for (ptr = curr_top; ptr < heap_end; ptr = (ulong *) *ptr)
+    for (ptr = curr_top; ptr < heap_end; ptr = (ulong *) (*ptr & 0xFFFFFFFE))
     {   
         if ((*ptr & 1) == 0 && (*ptr - (ulong) ptr > n))
         {
@@ -46,7 +46,7 @@ void *malloc(size_t n)
     if (return_ptr != NULL) return return_ptr;
 
     // Search again for a FMB from heap_top to curr_top
-    for (ptr = (ulong *) heap_top; ptr < curr_top; ptr = (ulong *) *ptr)
+    for (ptr = (ulong *) heap_top; ptr < curr_top; ptr = (ulong *) (*ptr & 0xFFFFFFFE))
     {
         if ((*ptr & 1) == 0 && (*ptr - (ulong) ptr > n))
         {

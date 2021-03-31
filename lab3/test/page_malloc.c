@@ -31,6 +31,15 @@ int pow_2(int order){
     return n;
 }
 
+int order_2(unsigned long address){
+    int n = 0;
+    while(!(address & 1) && n < (frame_list_amount + minimum_base)){
+        address = address >> 1;
+        n++;
+    }
+    return n;
+}
+
 Page* createNewPage(int addr) {
     Page* temp = (Page*) malloc(sizeof(Page));
     temp->addr = addr;
@@ -68,25 +77,34 @@ void insert_framelist(int order, unsigned int addr){
 }
 
 void alloc_page_init(unsigned long addr_low, unsigned long addr_high){
+    addr_low = addr_low >> minimum_base << minimum_base;
     unsigned long mem_size = addr_high - addr_low;
+    unsigned long addr_low_pre = addr_low;
     addr_base = addr_low;
-    int order = frame_list_amount;
+    int order;
     uart_puts("-----------------------------------------------------------");
     uart_puts("------------\n");
+
+
+    order = order_2(addr_low) - minimum_base;
     while(order>=0){
-        if(mem_size >= (1UL << order)*minimum_order){
+        if(mem_size >= (1UL << order << minimum_base)){
             insert_framelist(order, addr_low);
-            addr_low += (1UL << order)*minimum_order;
+            addr_low_pre = addr_low;
+            addr_low += (1UL << order << minimum_base);
             mem_size = addr_high - addr_low;
             uart_puts("initialized mempry spece left: ");
             dec_hex(mem_size,tmp_string);
             uart_puts(tmp_string);
             uart_puts("\n");
+            order = (order_2(addr_low_pre) != order_2(addr_low))? order_2(addr_low) - minimum_base : order;
         }
         else{
             order--;
         }
     }
+ 
+    
     uart_puts("page init finish\n");   
     uart_puts("-----------------------------------------------------------");
     uart_puts("------------\n");
@@ -181,9 +199,10 @@ void free_page(int addr, int size){
         buddy_index = index^pow_2(i);
         buddy_addr = buddy_index * minimum_order + addr_base;
         temp = find_page(current, buddy_addr);
-        if(find_page(current, buddy_addr)){
+        if(temp != NULL){
             remove_Page(temp, i);
             index = index / pow_2(i+1) * pow_2(i+1);
+            asm volatile("nop");
             uart_puts("merge page from:");
             dec_hex(index*minimum_order + addr_base,tmp_string);
             uart_puts(tmp_string);

@@ -3,7 +3,7 @@
 #include "reboot.h"
 #include "page_malloc.h"
 #include "string.h"
-
+void test();
 void main() {
     uart_init();    
     print_welcome(1);
@@ -39,22 +39,23 @@ void main() {
         }
         else if(!strcmp(input, "demo")) {
             alloc_page_init(0x10000000, 0x20000000);           
-            alloc_page(4096);
-            alloc_page(4096);
-            alloc_page(4096);
-            alloc_page(4096);
-            free_page(0x1FC00000+4096*2, 4096);
-            free_page(0x1FC00000+4096*1, 4096);
-            free_page(0x1FC00000+4096*3, 4096);
-            free_page(0x1FC00000+4096*0, 4096);
-            alloc_page(16);
-            alloc_page(16);
-            alloc_page(16);
-            alloc_page(16);
-            free_page(0x1FC00000+16*2, 16);
-            free_page(0x1FC00000+16*1, 16);
-            free_page(0x1FC00000+16*3, 16);
-            free_page(0x1FC00000+16*0, 16);
+            unsigned long p0 = alloc_page(4096);
+            unsigned long p1 = alloc_page(4096);
+            unsigned long p2 = alloc_page(4096);
+            unsigned long p3 = alloc_page(4096);
+            free_page(p2, 4096);
+            free_page(p1, 4096);
+            free_page(p3, 4096);
+            free_page(p0, 4096);
+            p0 = alloc_page(16);
+            p1 = alloc_page(16);
+            p2 = alloc_page(16);
+            p3 = alloc_page(16);
+            //unsigned long p4 = alloc_page(16);
+            free_page(p2, 16);
+            free_page(p1, 16);
+            free_page(p0, 16);
+            free_page(p3, 16);
         }
         else if(!strcmp(input, "alloc_init")) {
             uart_puts("input low  address(hex): ");
@@ -79,6 +80,9 @@ void main() {
             shell(input);
             unsigned int free_size = atoi(input, 10);
             free_page(page_address, free_size);
+        }
+        else if(!strcmp(input, "test")) {
+            test();
         }
         else {
             if(!ls(input,1)){

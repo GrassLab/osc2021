@@ -106,3 +106,9 @@ void uart_puts(char *s) {
         uart_send(*s++);
     }
 }
+
+void uart_int(unsigned long s){
+    char tmp_string[20];
+    dec_hex(s,tmp_string);
+    uart_puts(tmp_string);
+}
