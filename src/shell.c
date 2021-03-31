@@ -28,8 +28,6 @@ struct CMD command[] = {
     {.name="memory", .help="do some memory operation", .func=shell_memory}
 };
 
-FrameArray *frame_array;
-
 char input_buffer[MAX_INPUT+1];
 int input_tail_idx = 0;
 
@@ -41,7 +39,6 @@ void buffer_clear(){
 void init_shell(){
     uart_puts("Welcome to my simple shell\r\n");
     uart_puts("ヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノ\r\n");
-    frame_array = NewFrameArray();
     buffer_clear();
 }
 
@@ -215,10 +212,11 @@ void shell_ls(){
     }
 }
 
+extern FrameArray *frame_array;
+
 void shell_memory(){
     char cur_char;
-    uint64_t need_size, free_addr, free_size;
-    uint32_t mem;
+    uint64_t need_size, free_addr, mem;
     struct FrameListNum *cursor;
     uart_puts("\r\nWelcome to memory manipulator!");
     while(1){
@@ -233,29 +231,27 @@ void shell_memory(){
         if(cur_char == '\r'){
             uart_puts("\r\n");
         }
-        else if(cur_char == 'n'){   //new
+        else if(cur_char == 'n'){   //new memory
             uart_puts("Enter the memory size you want to new (bytes)\r\n");
             buffer_clear();
             get_input();
             need_size = atoi(input_buffer, 10);
-            mem = new_memory(frame_array, need_size);
-            uart_puts("New Memory Address: ");
-            uart_puts(itoa(mem, 16));
-            uart_puts("\r\n");
+            mem = kmalloc(need_size);
+            if(mem >= 0){
+                uart_puts("New Memory Address: ");
+                uart_puts(itoa(mem, 16));
+                uart_puts("\r\n");
+            }
         }
-        else if(cur_char == 'd'){   //free
+        else if(cur_char == 'd'){   //delete memory
             uart_puts("Enter the allocated memory address (hex)\r\n");
             buffer_clear();
             get_input();
             free_addr = hex_to_int64(input_buffer);
 
-            uart_puts("Enter the length of memory (bytes)\r\n");
-            buffer_clear();
-            get_input();
-            free_size = atoi(input_buffer, 10);
-            free_memory(frame_array, free_addr, free_size);
+            free(free_addr);
         }
-        else if(cur_char == 'l'){
+        else if(cur_char == 'l'){   //list
             uint16_t i;
             for(i=0; i<20; i++){
                 if(frame_array->freeList[i]){
@@ -273,7 +269,7 @@ void shell_memory(){
                 }
             }
         }
-        else if(cur_char == 'x'){
+        else if(cur_char == 'x'){   //exit
             uart_puts("Bye~\r\n");
             break;
         }
