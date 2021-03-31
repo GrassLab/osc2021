@@ -237,7 +237,8 @@ void object_free(void *object)
     // partial to empty
     else
     {
-        allocator->current_page = NULL;
+        if (page == allocator->current_page)
+            allocator->current_page = NULL;
         block_free(page);
     }
 
