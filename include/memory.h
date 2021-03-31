@@ -39,7 +39,7 @@ struct page
 struct object_allocator
 {
     struct page *current_page;
-    struct page *preserved_empty;
+    // struct page *preserved_empty;
     struct list_head partial;
     struct list_head full;
     int object_size;

@@ -14,6 +14,7 @@ void init_buddy()
         bookkeep[i].page_number = i;
         bookkeep[i].used = 0;
         bookkeep[i].address = (void *)MEMORY_START + i * PAGE_SIZE;
+        bookkeep[i].allocator = NULL;
 
         // list_init_head(&(bookkeep[i].list));
     }
@@ -43,7 +44,7 @@ void init_object_allocator()
         allocator->object_size = (1 << i);
         list_init_head(&allocator->full);
         list_init_head(&allocator->partial);
-        allocator->preserved_empty = NULL;
+        // allocator->preserved_empty = NULL;
     }
 }
 
@@ -115,7 +116,7 @@ void block_free(struct page *block)
     buddy = &bookkeep[buddy_page_number];
 
     // iterate if buddy can be merged
-    while(buddy->order == block->order && !buddy->used)
+    while(buddy->order == block->order && buddy->order < MAX_BUDDY_ORDER && !buddy->used)
     {
         list_crop(&buddy->list, &buddy->list);
 
@@ -161,12 +162,12 @@ void *object_allocation(int token)
             temp_page = (struct page *)allocator->partial.next;
             list_crop(&temp_page->list, &temp_page->list);
         }
-        // use the preserved empty page if there is one
-        else if (&allocator->preserved_empty != NULL)
-        {
-            temp_page = (struct page *)allocator->preserved_empty;
-            list_crop(&temp_page->list, &temp_page->list);
-        }
+        // // use the preserved empty page if there is one
+        // else if (allocator->preserved_empty != NULL)
+        // {
+        //     temp_page = allocator->preserved_empty;
+        //     allocator->preserved_empty = NULL;
+        // }
         // demand a new page
         else
         {
@@ -176,8 +177,9 @@ void *object_allocation(int token)
             for (int i = 0; i < MAX_OBJECT_IN_A_PAGE; i++)
                 temp_page->hole_used[i] = 0;
             temp_page->object_count = 0;
-            temp_page->max_object_count = PAGE_SIZE / (2 << (token + MIN_OBJECT_ORDER));
+            temp_page->max_object_count = PAGE_SIZE / (1 << (token + MIN_OBJECT_ORDER));
         }
+
         allocator->current_page = temp_page;
     }
 
@@ -204,8 +206,7 @@ void *object_allocation(int token)
 
     void *object = current_page->address + index * allocator->object_size;
 
-    printf("[object_allocation] object(page: %d, size: %d, index: %d)\n"
-            , current_page->page_number, allocator->object_size, index);
+    printf("[object_allocation] object(page: %d, size: %d, index: %d)\n", current_page->page_number, allocator->object_size, index);
     printf("[object_allocation] done\n\n");
 
     return object;
@@ -225,26 +226,38 @@ void object_free(void *object)
         return;
     }
 
+    printf("[object_free] object(page: %d, size: %d, index: %d) to be freed\n\n", page->page_number, allocator->object_size, index);
+
     page->hole_used[index] = 0;
     page->object_count--;
 
-    if (page != allocator->current_page)
+    list_crop(&page->list, &page->list);
+    // full/partial to partial
+    if (page->object_count > 0)
+        list_add_tail(&page->list, &allocator->partial);
+    // partial to empty
+    else
     {
-        list_crop(&page->list, &page->list);
-        // full to partial
-        if (page->object_count > 0)
-            list_add_tail(&page->list, &allocator->partial);
-        // partial to empty
-        else
-        {
-            if (allocator->preserved_empty == NULL)
-                allocator->preserved_empty = page;
-            else
-                block_free(page);
-        }
+        allocator->current_page = NULL;
+        block_free(page);
     }
 
-    printf("[object_free] object(page: %d, size: %d, index: %d)\n", page->page_number, allocator->object_size, index);
+    // if (page != allocator->current_page)
+    // {
+    //     list_crop(&page->list, &page->list);
+    //     // full to partial
+    //     if (page->object_count > 0)
+    //         list_add_tail(&page->list, &allocator->partial);
+    //     // partial to empty
+    //     else
+    //     {
+    //         if (allocator->preserved_empty == NULL)
+    //             allocator->preserved_empty = page;
+    //         else
+    //             block_free(page);
+    //     }
+    // }
+
     printf("[object_free] done\n\n");
 }
 
@@ -259,6 +272,7 @@ void *memory_allocation(int size)
             if (size <= (1 << i))
             {
                 address = object_allocation(i - MIN_OBJECT_ORDER);
+                printf("--------------------\n\n");
                 return address;
             }
         }
@@ -270,6 +284,7 @@ void *memory_allocation(int size)
             if (size <= (1 << (i + PAGE_SHIFT)))
             {
                 address = block_allocation(i)->address;
+                printf("--------------------\n\n");
                 return address;
             }
         }
@@ -288,6 +303,8 @@ void memory_free(void *address)
         object_free(address);
     else
         block_free(page);
+
+    printf("--------------------\n\n");
 }
 
 int find_buddy(int page_number, int order)
