@@ -33,11 +33,12 @@ dir: $(DST_DIR)
 $(DST_DIR):
 	mkdir -p $(DST_DIR)
 
+
 asm: $(DST_DIR)/kernel8.img
-	qemu-system-aarch64 -M raspi3 -kernel $(DST_DIR)/kernel8.img -display none -d in_asm
+	qemu-system-aarch64 -M raspi3 -kernel $(DST_DIR)/kernel8.img -display none -d in_asm -initrd img/initramfs.cpio
 
 run: $(DST_DIR)/kernel8.img
-	qemu-system-aarch64 -M raspi3 -kernel $(DST_DIR)/kernel8.img -display none -serial null -serial stdio
+	qemu-system-aarch64 -M raspi3 -kernel $(DST_DIR)/kernel8.img -display none -serial null -serial stdio -initrd img/initramfs.cpio
 
 run_pty_gdb: $(DST_DIR)/kernel8.img
 	qemu-system-aarch64 -M raspi3 -kernel $(DST_DIR)/kernel8.img -display none -serial null -serial pty -S -s
@@ -45,8 +46,11 @@ run_pty_gdb: $(DST_DIR)/kernel8.img
 run_pty: $(DST_DIR)/kernel8.img
 	qemu-system-aarch64 -M raspi3 -kernel $(DST_DIR)/kernel8.img -display none -serial null -serial pty
 
-gdb: $(DST_DIR)/
-	qemu-system-aarch64 -M raspi3 -kernel $(DST_DIR)/kernel8.img -display none -S -s
+run_gdb: $(DST_DIR)/
+	qemu-system-aarch64 -M raspi3 -kernel $(DST_DIR)/kernel8.img -display none -serial null -serial stdio -S -s -initrd img/initramfs.cpio
+
+cpio:
+	cd rootfs && find . | cpio -H newc -o > ../img/initramfs.cpio	
 
 clean:
 	rm -rf $(SRC_DIR)/*.o $(DST_DIR)/kernel8.*
