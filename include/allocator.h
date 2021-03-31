@@ -9,9 +9,6 @@
 #define ALLOCATED_SLOT_SHIFT 100
 #define CHUNK_SLOT -3
 
-#define MAX_ELEMENT_NUM 10000
-#define MAX_CHUNK_NUM 1000
-
 struct FrameListNum {
     uint32_t index;
     struct FrameListNum *next;
@@ -39,5 +36,6 @@ typedef struct _RawFrameArray{
 FrameArray* NewFrameArray();
 uint64_t new_memory(struct _RawFrameArray*, uint64_t);
 void free_memory(struct _RawFrameArray*, uint64_t);
+uint64_t _new_frame(struct _RawFrameArray*, uint64_t, int32_t, int32_t, uint8_t);
 
 #endif
