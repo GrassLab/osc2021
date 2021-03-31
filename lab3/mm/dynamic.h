@@ -12,6 +12,7 @@
 
 struct dynamic_struct
 {
+  //top chunk
   struct dynamic_chunk *top_chunk;
   //free bin linked list
   struct dynamic_chunk *bins[DYNAMIC_BIN_MAX]; 
@@ -19,7 +20,8 @@ struct dynamic_struct
 
 struct dynamic_chunk 
 {
-  size_t size;
+  size_t prev_size;
+  size_t size; //low 1 bit for inuse bit
   struct dynamic_chunk *next;
 };
 
@@ -30,4 +32,5 @@ void dynamic_free(void* address);
 void* dynamic_top_chunk_malloc(int idx);
 void dynamic_status();
 void dynamic_top_chunk_free();
+int dynamic_remove_chunk(void* address, size_t size);
 #endif

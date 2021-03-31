@@ -102,10 +102,12 @@ void buddy_merge(void* address) {
     buddy_block = (void *)BUDDY_START + PAGE_SIZE * buddy_block_idx;
     //can be merged
     if(buddy_is_free(buddy_block_idx, merged_order) == 0) {
-      uart_puts("buddy_is_free.\n");
+      uart_puts("buddy is free.\n");
       //remove buddy block in free list
-      if(buddy_remove_block(buddy_block, merged_order) == -1) 
+      if(buddy_remove_block(buddy_block, merged_order) == -1) {
         uart_puts("error: not found buddy block in free list.\n");
+        return;
+      }
       //check the block num and buddy block num which is lower
       if(merged_idx > buddy_block_idx) {
         merged_idx = buddy_block_idx;
@@ -172,9 +174,11 @@ void buddy_puts_free_list() {
   struct buddy_block* block;
   for(int i = 0; i <= BUDDY_ORDER_MAX; i++) {
     block = buddy_system.bins[i];
-    uart_puts("order ");
+    if(block == null)
+      continue;
+    uart_puts("order [");
     uart_hex(i);
-    uart_puts(": ");
+    uart_puts("]: ");
     while(block != null) {
       uart_hex((size_t)block);
       uart_puts(" --> ");
