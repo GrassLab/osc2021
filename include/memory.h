@@ -27,7 +27,6 @@ struct page
 
     void *first_free;
     struct object_allocator *allocator;
-    int max_object_count;                           // how many objects this page can store
     int object_count;                               // how many objects this page stores currently
 
     int page_number;
@@ -41,6 +40,7 @@ struct object_allocator
     // struct page *preserved_empty;
     struct list_head partial;
     struct list_head full;
+    int max_object_count;                           // how many objects pages controlled by this allocator can store
     int object_size;
 };
 

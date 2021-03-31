@@ -42,6 +42,8 @@ void init_object_allocator()
 
         allocator->current_page = NULL;
         allocator->object_size = (1 << i);
+        allocator->max_object_count = PAGE_SIZE / (1 << i);
+
         list_init_head(&allocator->full);
         list_init_head(&allocator->partial);
         // allocator->preserved_empty = NULL;
@@ -175,10 +177,9 @@ void *object_allocation(int token)
 
             temp_page->allocator = allocator;
             temp_page->object_count = 0;
-            temp_page->max_object_count = PAGE_SIZE / (1 << (token + MIN_OBJECT_ORDER));
 
             temp_page->first_free = temp_page->start_address;
-            for (int i = 0; i < temp_page->max_object_count; i++)
+            for (int i = 0; i < allocator->max_object_count; i++)
                 *(int *)(temp_page->start_address + i * allocator->object_size) =
                         (i + 1) * allocator->object_size;
         }
@@ -187,14 +188,14 @@ void *object_allocation(int token)
     }
 
     struct page *current_page = allocator->current_page;
-
     void *object = current_page->first_free;
+
     current_page->first_free = current_page->start_address + 
                                *(int *)(current_page->first_free);
     current_page->object_count++;
 
     // the page is full now
-    if (current_page->object_count == current_page->max_object_count)
+    if (current_page->object_count == allocator->max_object_count)
     {
         list_add_tail(&current_page->list, &allocator->full);
         allocator->current_page = NULL;
@@ -202,7 +203,7 @@ void *object_allocation(int token)
 
     int index = (object - current_page->start_address) / allocator->object_size;
 
-    printf("[object_allocation] object(page: %d, size: %d, index: %d)\n", current_page->page_number, allocator->object_size, index);
+    printf("[object_allocation] object(page: %d, size: %d, index: %d allocated)\n", current_page->page_number, allocator->object_size, index);
     printf("[object_allocation] done\n\n");
 
     return object;
@@ -216,16 +217,45 @@ void object_free(void *object)
     // for example, if we have 16384 + 4096 * 14 + 32 * 5 as our address, then we get 5 with the following operation
     int index = (((long)(object - MEMORY_START) & ((1 << PAGE_SHIFT) - 1)) / allocator->object_size);
 
-    printf("[object_free] object(page: %d, size: %d, index: %d) to be freed\n\n", page->page_number, allocator->object_size, index);
+    printf("[object_free] object(page: %d, size: %d, index: %d) to be freed\n", page->page_number, allocator->object_size, index);
 
+    // we are freeing the []
     if (object > page->first_free)
     {
-        *(int *)object = *(int *)page->first_free;
-        *(int *)page->first_free = (object - page->start_address) / allocator->object_size;
+        // XXOXX[]...
+        // the object is between the first hole and the second hole
+        if (object < (page->start_address + *(int *)page->first_free))
+        {
+            printf("[object_free] status 1\n\n");
+
+            *(int *)object = *(int *)page->first_free;
+            *(int *)page->first_free = object - page->start_address;
+        }
+        // XXOOO[]...
+        // the object is after the second hole
+        // so we need to iterate over the list to find the last hole before the object
+        else
+        {
+            printf("[object_free] status 2\n\n");
+
+            void *traversal = page->first_free;
+            while (1)
+            {
+                if ((page->start_address + (*(int *)traversal)) > object)
+                    break;
+                traversal = page->start_address + (*(int *)traversal);
+            }
+
+            *(int *)object = *(int *)traversal;
+            *(int *)traversal = object - page->start_address;
+        }
     }
+    // XX[]XXO...
+    // the object is before the first hole
     else
     {
-        *(int *)object = (page->first_free - page->start_address) / allocator->object_size;
+        printf("[object_free] status 3\n\n");
+        *(int *)object = page->first_free - page->start_address;
         page->first_free = object;
     }
     page->object_count--;
