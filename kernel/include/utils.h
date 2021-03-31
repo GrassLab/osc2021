@@ -15,9 +15,9 @@ typedef unsigned long long uint64_t;
 #define gb ((uint64_t)0x40000000)
 
 int is_digit(char ch);
-unsigned long long int hex2int(char *hex, int len);
-unsigned long long align_up(unsigned long long addr,
-                            unsigned long long alignment);
+uint64_t hex2int(char *hex, int len);
+uint64_t align_up(uint64_t addr, uint64_t alignment);
+uint64_t align_up_exp(uint64_t n);
 uint32_t get_value32(uint64_t addr, char endian);
 uint32_t be2le(uint32_t x);
 

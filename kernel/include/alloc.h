@@ -15,15 +15,29 @@ typedef struct PageFrame {
   int order;
   int is_allocated;
   uint64_t addr;
-  struct PageFrame *prev, *next;
+  struct PageFrame *next;
 } page_frame;
+
+typedef struct DMAHeader {
+  uint64_t total_size;
+  uint64_t used_size;
+  int is_allocated;
+  page_frame *frame_ptr;
+  struct DMAHeader *prev, *next;
+} dma_header;
 
 page_frame frames[MAX_PAGE_NUM];
 page_frame *free_frame_lists[FRAME_LIST_NUM], *used_frame_lists[FRAME_LIST_NUM];
 
+dma_header *free_dma_list;
+
 void buddy_init();
 void buddy_test();
-uint64_t buddy_allocate(uint64_t size);
-void buddy_free(uint64_t addr);
-void unlink(int index, int type);
+page_frame *buddy_allocate(uint64_t size);
+void buddy_free(page_frame *frame);
+void buddy_unlink(int index, int type);
 void print_frame_lists();
+void dma_test();
+void *malloc(uint64_t size);
+void free(void *ptr);
+void print_dma_list();

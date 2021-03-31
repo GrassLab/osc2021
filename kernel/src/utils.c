@@ -23,6 +23,18 @@ uint64_t align_up(uint64_t addr, uint64_t alignment) {
   return (addr + alignment - 1) & (~(alignment - 1));
 }
 
+uint64_t align_up_exp(uint64_t n) {
+  n--;
+  n |= n >> 1;
+  n |= n >> 2;
+  n |= n >> 4;
+  n |= n >> 8;
+  n |= n >> 16;
+  n |= n >> 32;
+  n++;
+  return n;
+}
+
 uint32_t get_value32(uint64_t addr, char endian) {
   char *base = (char *)addr;
   uint32_t value = 0;
