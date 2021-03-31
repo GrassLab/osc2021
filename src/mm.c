@@ -6,6 +6,8 @@
 page_t bookkeep[PAGE_FRMAME_NUM];
 free_area_t free_area[MAX_ORDER + 1];
 
+obj_allocator_t obj_alloc_pool[MAX_OBJ_ALLOCTOR_NUM];
+
 void page_init() 
 {
     for (int i = 0;i < PAGE_FRMAME_NUM;i++) {
@@ -44,7 +46,7 @@ void pop_block_from_free_area(page_t *poped_block, free_area_t *fa) {
 struct page *buddy_block_alloc(int order) 
 {
     #ifdef __DEBUG
-    uart_puts("\n[buddy_block_alloc]Before allocated memory:");
+    printf("\n[buddy_block_alloc]Before allocate buddy memory:");
     dump_buddy();
     #endif //__DEBUG
 
@@ -76,11 +78,11 @@ struct page *buddy_block_alloc(int order)
         }
 
         #ifdef __DEBUG   
-        printf("\n[buddy_block_alloc]After allocated memory:");
+        printf("\n[buddy_block_alloc]After allocate buddy memory:");
         dump_buddy();
         #endif //__DEBUG
         
-        printf("[buddy_block_alloc] Result - Allocated block{ pfn(%d), order(%d), phy_addr_16(%x)}\n",
+        printf("[buddy_block_alloc] Result - Allocated block{ pfn(%d), order(%d), phy_addr_16(0x%x) }\n",
                 target_block->pfn, target_block->order, target_block->phy_addr);
         printf("[buddy_block_alloc] **done**\n\n");
         return target_block;
@@ -127,7 +129,7 @@ void buddy_block_free(struct page* block)
     push_block_to_free_area(block, &free_area[block->order], block->order);
 
     #ifdef __DEBUG
-    uart_puts("\n[buddy_block_free]After free memory:");
+    printf("\n[buddy_block_free]After free memory:");
     dump_buddy();
     #endif //__DEBUG
 
@@ -155,27 +157,267 @@ void dump_buddy()
 }
 #endif
 
+void __init_obj_alloc(obj_allocator_t *obj_allocator_p, int objsize)
+{
+    INIT_LIST_HEAD(&obj_allocator_p->full);   
+    INIT_LIST_HEAD(&obj_allocator_p->partial); 
+    INIT_LIST_HEAD(&obj_allocator_p->empty);   
+    obj_allocator_p->curr_page = NULL;
+    
+    obj_allocator_p->objsize = objsize;
+    obj_allocator_p->obj_per_page = PAGE_SIZE / objsize;
+    obj_allocator_p->obj_used = 0;
+    obj_allocator_p->page_used = 0;
+    
+}
+
+void __init_obj_page(page_t *page_p) 
+{
+    page_p->obj_used = 0;
+    page_p->free = NULL;
+}
+
+int register_obj_allocator(int objsize) 
+{
+    if (objsize < MIN_ALLOCATAED_OBJ_SIZE) {
+        objsize = MIN_ALLOCATAED_OBJ_SIZE;
+        printf("[register_obj_allocator] Min object size is 8, automatically set it to 8 ");
+    }
+
+    if (objsize > MAX_ALLOCATAED_OBJ_SIZE) {
+        objsize = MAX_ALLOCATAED_OBJ_SIZE;
+        printf("[register_obj_allocator] Max object size is 2048, automatically set it to 2048 ");
+    }
+
+    for (int token = 0;token < MAX_OBJ_ALLOCTOR_NUM;token++) {
+        if (obj_alloc_pool[token].objsize != 0) 
+            continue;
+
+        __init_obj_alloc(&obj_alloc_pool[token], objsize);
+
+        #ifdef __DEBUG
+        printf("[register_obj_allocator] Successfully Register object allocator! {objsize(%d), token(%d)}\n"
+                ,objsize, token);
+        #endif //__DEBUG 
+
+        return token;
+    }
+
+    printf("[register_obj_allocator] Allocator pool has been fully registered.");
+    return -1;
+}
+
+void *obj_allocate(int token) {
+    if (token < 0 || token >= MAX_OBJ_ALLOCTOR_NUM) {
+        printf("[obj allocator] Invalid token\n");
+        return 0;
+    }    
+    
+    obj_allocator_t *obj_allocator_p = &obj_alloc_pool[token];
+    void *allocated_addr = NULL; // address of allocated object 
+
+    #ifdef __DEBUG
+    printf("[obj_allocate] Requested token: %d, size: %d\n",token, obj_allocator_p->objsize);
+    printf("[obj_allocate] Before allocation:");
+    dump_obj_alloc(obj_allocator_p);
+    #endif //__DEBUG
+    
+    if (obj_allocator_p->curr_page == NULL) {
+        page_t *page_p;
+        if (!list_empty(&obj_allocator_p->partial)) { 
+            // Use partial allocated page
+            page_p = (page_t *) obj_allocator_p->partial.next;
+            list_del(&page_p->list);
+        } else if (!list_empty(&obj_allocator_p->empty)) {
+            // Use empty(no alloacted object) page
+            page_p = (page_t *) obj_allocator_p->empty.next;
+            list_del(&page_p->list);
+        } else {
+            // Demand a new page from buddy memory allocator
+            page_p = buddy_block_alloc(0);
+            __init_obj_page(page_p);
+            page_p->obj_alloc = obj_allocator_p;
+
+            obj_allocator_p->page_used += 1;
+        }
+        obj_allocator_p->curr_page = page_p;
+    }
+
+    struct list_head *obj_freelist = obj_allocator_p->curr_page->free;
+    if (obj_freelist != NULL) {
+        // Allocate memory by free list in current page
+        allocated_addr = obj_freelist;
+        obj_freelist = obj_freelist->next; // Point to next address of free object;
+    }
+    else {
+        // Allocate memory to requested object
+        allocated_addr = (void *) obj_allocator_p->curr_page->phy_addr + 
+                         obj_allocator_p->curr_page->obj_used * obj_allocator_p->objsize;
+    }
+
+    obj_allocator_p->obj_used += 1;
+    obj_allocator_p->curr_page->obj_used += 1;
+
+    // Check if page full
+    if (obj_allocator_p->obj_per_page == obj_allocator_p->curr_page->obj_used) {
+        list_add_tail(&obj_allocator_p->curr_page->list, &obj_allocator_p->full);
+        obj_allocator_p->curr_page = NULL;
+    }
+
+    #ifdef __DEBUG
+    printf("[obj_allocate] After allocation:");
+    dump_obj_alloc(obj_allocator_p);
+    printf("[obj_allocate] **done**\n");
+    #endif //__DEBUG
+
+    printf("\n\n[obj_allocate] Allocated address: {phy_addr_16(%x)}\n", allocated_addr);
+    return allocated_addr;
+    
+
+}
+
+void obj_free(void *obj_addr) {
+    // Find out corressponding page frame number and object allocator it belongs to.
+    int obj_pfn = PHY_ADDR_TO_PFN(obj_addr);
+    page_t *page_p = &bookkeep[obj_pfn];
+    obj_allocator_t *obj_allocator_p = page_p->obj_alloc;
+    
+    #ifdef __DEBUG
+    printf("\n[obj_free] Free object procedure!\n");
+    printf("[obj_free] Page info: 0x%x {pfn=(%d), obj_used(%d))\n", obj_addr, obj_pfn, page_p->obj_used);
+    printf("[obj_free] object free list point to {0x%x}\n", page_p->free);
+    printf("[obj_free] Before free:");
+    dump_obj_alloc(obj_allocator_p);
+    #endif // __DEBUG
+
+    // Make page's object freelist point to address of new frist free object
+    struct list_head *temp = page_p->free;
+    page_p->free = (struct list_head *) obj_addr;
+    page_p->free->next = temp;
+
+    obj_allocator_p->obj_used -= 1;
+    page_p->obj_used -= 1;
+
+    // From full to partial 
+    if (obj_allocator_p->obj_per_page-1 == page_p->obj_used) {
+        list_del(&page_p->list); // pop out from full list
+        list_add_tail(&page_p->list, &obj_allocator_p->partial); // add to partial list 
+    }
+
+    // From partial to empty
+    // and make sure this page not currently used by object allocator
+    if (page_p->obj_used == 0 && obj_allocator_p->curr_page != page_p) {
+        list_del(&page_p->list); // pop out from partial list
+        list_add_tail(&page_p->list, &obj_allocator_p->empty);
+    }
+
+    #ifdef __DEBUG
+    printf("[obj_free] object free list point to {0x%x}\n", page_p->free);
+    printf("[obj_free] After free:");
+    dump_obj_alloc(obj_allocator_p);
+    #endif // __DEBUG
+}
+
+#ifdef __DEBUG
+void dump_obj_alloc(obj_allocator_t *obj_allocator_p)
+{
+    printf("\n---------Object Allocator Debug---------\n");
+    printf("objsize = %d\n", obj_allocator_p->objsize);
+    printf("obj_per_page = %d\n", obj_allocator_p->obj_per_page);
+    printf("obj_used = %d\n", obj_allocator_p->obj_used);
+    printf("page_used = %d\n", obj_allocator_p->page_used);
+
+    
+    printf("\nobject_allocator->curr_page current page info:\n");
+    if (obj_allocator_p->curr_page != NULL) {
+        printf("obj_allocator_p->curr_page = {0x%x}\n", obj_allocator_p->curr_page->phy_addr);
+        printf("obj free list point to {0x%x}\n", obj_allocator_p->curr_page->free);
+        printf("obj_used = %d\n", obj_allocator_p->curr_page->obj_used);
+        printf("pfn = %d\n", obj_allocator_p->curr_page->pfn);
+        
+    }
+    else {
+        printf("object_allocator->curr_page is NULL currently\n");
+    }
+    printf("\n");
+
+    struct list_head *pos;
+    printf("object_allocator->full list:\n");
+    list_for_each(pos, (struct list_head *) &obj_allocator_p->full) {
+        printf("--> {pfn(%d)}", ((struct page*) pos)->pfn);
+    }
+    printf("\n");
+
+    printf("object_allocator->partial list:\n");
+    list_for_each(pos, (struct list_head *) &obj_allocator_p->partial) {
+        printf("--> {pfn(%d)}", ((struct page*) pos)->pfn);
+    }
+    printf("\n");
+
+    printf("object_allocator->empty list:\n");
+    list_for_each(pos, (struct list_head *) &obj_allocator_p->empty) {
+        printf("--> {pfn(%d)}", ((struct page*) pos)->pfn);
+    }
+
+    printf("\n---------End Object Allocator Debug---------\n\n");
+
+}
+#endif
+
 
 void mm_init()
 {
     page_init();
     free_area_init();
-
+    
+    
     /**
      *  Test Buddy memory Allocator
      */
-    int allocate_test1[] = {5, 0, 6, 3, 0};
-    int test1_size = sizeof(allocate_test1) / sizeof(int);
-    page_t *(one_pages[test1_size]);
-    for (int i = 0;i < test1_size;i++) {
-        page_t *one_page = buddy_block_alloc(allocate_test1[i]); // Allocate one page frame
-        //printf("\n Allocated Block{ pfn(%d), order(%d), phy_addr_16(0x%x) }: %u\n", one_page->pfn, one_page->order, one_page->phy_addr);
-        one_pages[i] = one_page;
-    }
-    buddy_block_free(one_pages[2]);
-    buddy_block_free(one_pages[1]);
-    buddy_block_free(one_pages[4]);
-    buddy_block_free(one_pages[3]);
-    buddy_block_free(one_pages[0]);
+    // int allocate_test1[] = {5, 0, 6, 3, 0};
+    // int test1_size = sizeof(allocate_test1) / sizeof(int);
+    // page_t *(one_pages[test1_size]);
+    // for (int i = 0;i < test1_size;i++) {
+    //     page_t *one_page = buddy_block_alloc(allocate_test1[i]); // Allocate one page frame
+    //     //printf("\n Allocated Block{ pfn(%d), order(%d), phy_addr_16(0x%x) }: %u\n", one_page->pfn, one_page->order, one_page->phy_addr);
+    //     one_pages[i] = one_page;
+    // }
+    // buddy_block_free(one_pages[2]);
+    // buddy_block_free(one_pages[1]);
+    // buddy_block_free(one_pages[4]);
+    // buddy_block_free(one_pages[3]);
+    // buddy_block_free(one_pages[0]);
+
+    /**
+     *  Test object allcator
+     */
+    int token = register_obj_allocator(2000);
+    void *addr1 = obj_allocate(token); // 0
+    void *addr2  = obj_allocate(token);
     
+    void *addr3 = obj_allocate(token); // 1
+    void *addr4 = obj_allocate(token);
+
+    void *addr5 = obj_allocate(token); // 2
+    void *addr6 = obj_allocate(token);
+
+    void *addr7 = obj_allocate(token); // 3
+    void *addr11 = obj_allocate(token);
+
+    void *addr12 = obj_allocate(token); // 4
+    void *addr13 = obj_allocate(token);
+    obj_free(addr1);
+    obj_free(addr2);
+    void *addr14 = obj_allocate(token); // 0
+    void *addr15 = obj_allocate(token);
+
+    void *addr16 = obj_allocate(token); // 5
+    
+    obj_free(addr11);
+    obj_free(addr5);
+    obj_free(addr15);
+    obj_free(addr3);
+
+    void *addr17 = obj_allocate(token); // 5
+    void *addr18 = obj_allocate(token); // 3
 }
