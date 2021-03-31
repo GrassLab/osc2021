@@ -74,7 +74,7 @@ char *itoa(int value, char *str, int base)
     } else {
         while(value != 0)
         {
-            str[i] = value % base + '0';
+            str[i] = (value % base) + '0';
             value = value / base;
 
             i++;

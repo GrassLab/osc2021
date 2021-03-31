@@ -24,6 +24,6 @@ void mark_as_allocated(struct frame *f);
 void mem_stat();
 void free_page(void *start, short exp);
 void try_merge(short exp);
-void add_to_list(struct frame *f, short exp);
+void append_to_list(struct frame *f, short exp);
 
 #endif

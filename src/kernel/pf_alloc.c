@@ -2,16 +2,19 @@
 #include "string.h"
 #include "def.h"
 #include "io.h"
+#include "math.h"
 
 struct frame frame_arr[PF_ENTRY_LENGTH];
-struct frame* head_arr[17]; // store the head of free list group by exp
+struct frame* head_arr[18]; // store the head of free list group by exp
 
 void init_page_frame()
 {
+    printf("size: %d, %d\r\n", sizeof(long), sizeof(int));
     memset(head_arr, 0, sizeof(head_arr));
 
     frame_arr[0].idx = 0;
     frame_arr[0].exp = 17; // 2^17 = 131,072 entries
+    frame_arr[0].next = NULL;
 
     for (int i = 1; i < PF_ENTRY_LENGTH; i++)
     {
@@ -20,44 +23,41 @@ void init_page_frame()
         frame_arr[i].next = NULL;
     }
 
-    head_arr[16] = &frame_arr[0];
+    head_arr[17] = &frame_arr[0];
 }
 
 // allocate (2 ^ exp) * 4KB
 void *alloc_page(void *addr, short exp)
 {
     short exp_tmp = exp;
-    while (head_arr[exp_tmp] == NULL && exp_tmp < 17)
+    while (head_arr[exp_tmp] == NULL && exp_tmp <= 17)
     {
         exp_tmp++;
     }
 
-    // // No fit size
-    if (exp_tmp >= 17) {
+    // No fit size
+    if (exp_tmp > 17) {
         return NULL;
     }
-
-
     while (exp_tmp > exp) {
+        // cut the size into half and appoint one part to lower size list
         struct frame *f_part1, *f_part2;
-        
         f_part1 = head_arr[exp_tmp];
+        f_part1->exp--;
         head_arr[exp_tmp] = f_part1->next;
         
-        // cut and build the second part
-        f_part2 = &frame_arr[f_part1->idx + (2 ^ (f_part1->exp - 1))];
-        f_part2->exp = --f_part1->exp;
+        f_part2 = &frame_arr[f_part1->idx + int_pow(2, f_part1->exp)];
+        f_part2->exp = f_part1->exp;
         f_part1->next = f_part2;
         
-        head_arr[exp_tmp - 1] = f_part1;
-
+        append_to_list(f_part1, f_part1->exp);
         exp_tmp--;
     }
     
-    // // sizeof int is not equal to sizeof void *, so hack here, using long before cast to void *
+    //  sizeof int is not equal to sizeof void *, so hack here, using long before cast to void *
     addr = (void *)(long)(PHY_MEM_ALLOCABLE_START + head_arr[exp_tmp]->idx * PHY_PF_SIZE);
     
-    // // mark as allocated
+    // mark as allocated
     struct frame *next = head_arr[exp_tmp]->next;
     mark_as_allocated(head_arr[exp_tmp]);
     head_arr[exp_tmp] = next;
@@ -69,7 +69,7 @@ void *alloc_page(void *addr, short exp)
 
 void mark_as_allocated(struct frame *f)
 {   
-    for (int i = 0; i < (2 ^ f->exp); i++) {
+    for (int i = 0; i < int_pow(2, f->exp); i++) {
         frame_arr[f->idx + i].exp = ALLOCATED_STATE;
         frame_arr[f->idx + i].next = NULL;
     }
@@ -78,7 +78,7 @@ void mark_as_allocated(struct frame *f)
 void mem_stat()
 {
     printf("----- memory status -----\r\n");
-    for (int i = 0; i < 17; i++) {
+    for (int i = 0; i <= 17; i++) {
         int count = 0;
         struct frame *f = head_arr[i];
         while(f != NULL) {
@@ -94,20 +94,22 @@ void mem_stat()
 void free_page(void *start, short exp)
 {
     // calculate the index
-    int idx = ((long)start - PHY_MEM_ALLOCABLE_START) / PHY_PF_SIZE;
-    printf("index is %d\r\n", 10);
+    long idx = ((long)start - PHY_MEM_ALLOCABLE_START) / PHY_PF_SIZE;
+    printf("%l\r\n", idx);
     
     // first block set size
     frame_arr[idx].exp = exp;
 
     // other blocks set reserved
-    for (int i = 1; i < (2 ^ exp); i++) {
+    for (int i = 1; i < int_pow(2, exp); i++) {
         frame_arr[idx + i].exp = RESERVED_STATE;
     }
 
-    add_to_list(&frame_arr[idx], exp);
+    append_to_list(&frame_arr[idx], exp);
 
     try_merge(exp);
+
+    mem_stat();
 }
 
 // merge start from 2 ^ exp
@@ -123,7 +125,7 @@ void try_merge(short exp)
     }
     
     struct frame *prev, *cur = head_arr[exp];
-    int distance = 2 ^ exp;
+    int distance = int_pow(2, exp);
 
     while(cur && cur->idx % (2 * distance) == 0) {
         printf("exist!\n");
@@ -143,7 +145,7 @@ void try_merge(short exp)
                 prev->next = tmp->next;
 
                 // add to higher size list
-                add_to_list(cur, cur->exp);
+                append_to_list(cur, cur->exp);
             }
 
             tmp = tmp->next;
@@ -156,7 +158,7 @@ void try_merge(short exp)
     try_merge(exp + 1);
 }
 
-void add_to_list(struct frame *f, short exp)
+void append_to_list(struct frame *f, short exp)
 {
     if (head_arr[exp]) {
         struct frame *cur = head_arr[exp];
