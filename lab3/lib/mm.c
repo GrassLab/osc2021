@@ -33,9 +33,13 @@ struct frame_flag {
     unsigned char cache_order;
 };
 
+struct cache {
+    struct cache *next;
+};
+
 static struct frame_flag frame[FRAME_ARRAY_SIZE];
 static struct list_head frame_bins[FRAME_BINS];
-static struct list *cache_bins[CACHE_BINS];
+static struct cache *cache_bins[CACHE_BINS];
 static uint32_t init = 0;
 
 static uint32_t align_up(uint32_t size, int alignment) {
@@ -62,16 +66,24 @@ static void *split_frames(int order, int target_order) {
     /* take the ready to split frame out */
     struct list_head *ptr = remove_head(&frame_bins[order]);
 
-#ifdef DEBUG
-    print_uart("split frame: ");
-    write_hex_uart((unsigned long)ptr);
-    write_uart("\r\n", 2);
-#endif
+    #ifdef DEBUG
+        print_uart("split frame: ");
+        write_hex_uart((unsigned long)ptr);
+        write_uart("\r\n", 2);
+    #endif
+
     /* puts splitted frame into bin list */
     for (int i = order; i > target_order; i--) {
         struct list_head *s = (struct list_head *)((char *)ptr + ORDER2SIZE(i-1));
+        
         insert_head(&frame_bins[i-1], s);
         frame[((uintptr_t)s - FRAME_BASE) / PAGE_SIZE].order = i - 1;
+        
+        #ifdef DEBUG
+            print_uart("insert frame: ");
+            write_hex_uart((unsigned long)s);
+            write_uart("\r\n", 2);
+        #endif
     }
     int idx = addr2idx(ptr);
     frame[idx].order = target_order;
@@ -93,6 +105,12 @@ static void init_buddy() {
 
         victim = (struct list_head *)(FRAME_BASE + i * PAGE_SIZE);
         insert_tail(&frame_bins[MAX_ORDER], victim);
+
+        #ifdef DEBUG
+            print_uart("insert frame: ");
+            write_hex_uart((unsigned long)victim);
+            write_uart("\r\n", 2);
+        #endif
     }
 }
 
@@ -157,6 +175,12 @@ static void free_pages(void *victim) {
 
     insert_head(&frame_bins[order], victim);
     frame[page_idx].order = order;
+
+    #ifdef DEBUG
+            print_uart("attach frame: ");
+            write_hex_uart((unsigned long)victim);
+            write_uart("\r\n", 2);
+    #endif
 }
 
 static void *get_cache(unsigned int size) {
@@ -167,11 +191,18 @@ static void *get_cache(unsigned int size) {
         cache_bins[order] = cache_bins[order]->next;
         int idx = addr2idx(ptr);
         frame[idx].refcnt += 1;
+
+        #ifdef DEBUG
+            print_uart("detach cache: ");
+            write_hex_uart((unsigned long)ptr);
+            write_uart("\r\n", 2);
+        #endif
     }
 
     return ptr;
 }
 
+/* size should aligned to next exp size */
 static void alloc_cache(void *mem, int size) {
     int count = PAGE_SIZE / size;
     int idx = addr2idx(mem);
@@ -181,9 +212,15 @@ static void alloc_cache(void *mem, int size) {
     frame[idx].cache_order = order;
 
     for (int i = 0; i < count; i++) {
-        struct list *ptr = (struct list *)((uintptr_t)mem + i * size);
+        struct cache *ptr = (struct cache *)((uintptr_t)mem + i * size);
         ptr->next = cache_bins[order];
         cache_bins[order] = ptr;
+        
+        #ifdef DEBUG
+            print_uart("insert cache: ");
+            write_hex_uart((unsigned long)ptr);
+            write_uart("\r\n", 2);
+        #endif
     }
 }
 
@@ -226,9 +263,15 @@ void kfree(void *ptr) {
 
     if (IS_MEM_CACHE(frame[idx])) {
         int order = frame[idx].cache_order;
-        ((struct list *)ptr)->next = cache_bins[order];
+        ((struct cache *)ptr)->next = cache_bins[order];
         cache_bins[order] = ptr;
         frame[idx].refcnt -= 1;
+
+        #ifdef DEBUG
+            print_uart("attach cache: ");
+            write_hex_uart((unsigned long)ptr);
+            write_uart("\r\n", 2);
+        #endif
 
         /* find when to release unreferenced cache */
 

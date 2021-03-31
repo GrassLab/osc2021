@@ -1,12 +1,12 @@
 #include "include/uart.h"
 #include "include/list.h"
 
+void list_init(struct list_head *node) {
+    node->next = node;
+    node->prev = node;
+}
+
 void insert_head(struct list_head *head, struct list_head *v) {
-#ifdef DEBUG
-    print_uart("insert frame: ");
-    write_hex_uart((unsigned long)v);
-    write_uart("\r\n", 2);
-#endif
     v->next = head->next;
     v->prev = head;
     head->next->prev = v;
@@ -14,11 +14,6 @@ void insert_head(struct list_head *head, struct list_head *v) {
 }
 
 void insert_tail(struct list_head *head, struct list_head *v) {
-#ifdef DEBUG
-    print_uart("insert frame: ");
-    write_hex_uart((unsigned long)v);
-    write_uart("\r\n", 2);
-#endif
     v->next = head;
     v->prev = head->prev;
     head->prev->next = v;

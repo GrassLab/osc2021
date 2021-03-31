@@ -7,5 +7,6 @@ int strncmp(const char *a, const char *b, size_t n);
 int strcmp(const char *a, const char *b);
 size_t strlen(const char *s);
 void memcpy(char *dst, const char *src, size_t n);
+char *strdup(const char *s);
 
 #endif

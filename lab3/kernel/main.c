@@ -7,6 +7,7 @@
 
 extern void *_dtb_ptr;
 char *initrd_ptr;
+dtb_node *dtb;
 int indent = 0;
 char buffer[0x100];
 
@@ -14,59 +15,17 @@ const char hello[] = "Hello world!";
 const char * const commands[] = {
   "hello",
   "cpio",
-  "parse-dtb",
+  "print-dtb",
   "reboot",
   "help"
 };
 
-
 static uint32_t get_be_int(const void *ptr) {
-    const unsigned char *bytes = ptr;
-    uint32_t ret = bytes[3];
-    ret |= bytes[2] << 8;
-    ret |= bytes[1] << 16;
-    ret |= bytes[0] << 24;
-
-    return ret;
+    return __builtin_bswap32(*(uint32_t *)ptr);
 }
 
-void write_indent(int n) {
-  while (n--) write_uart(" ", 1);
-}
-
-void callback(int type, const char *name, const void *data, uint32_t size) {
-  switch(type) {
-    case FDT_BEGIN_NODE:
-      write_indent(indent);
-      print_uart(name);
-      puts_uart("{");
-      indent++;
-      break;
-      
-    case FDT_END_NODE:
-      indent--;
-      if (indent>0)
-        write_indent(indent);
-      puts_uart("}");
-      break;
-
-    case FDT_NOP:
-      break;
-
-    case FDT_PROP:
-      write_indent(indent);
-      puts_uart(name);
-      break;
-
-    case FDT_END:
-      break;
-  }
-}
-
-void get_initrd(int type, const char *name, const void *data, uint32_t size) {
-  if (type == FDT_PROP && !strcmp(name, "linux,initrd-start")) {
-    initrd_ptr = (char *)(uintptr_t)get_be_int(data);
-  }
+uint64_t get_be_long(const void *ptr) {
+    return __builtin_bswap64(*(uint64_t *)ptr);
 }
 
 void shell() {
@@ -82,7 +41,7 @@ void shell() {
     } else if (!strcmp("hello", buffer)) {
       puts_uart(hello);
 
-    } else if (!strncmp("cpio", buffer, 4)) {
+    } else if (!strncmp("cpio", buffer, 4) && initrd_ptr) {
       if (strlen(buffer) < 6) {
         cpio_list_file(initrd_ptr);
       } else {
@@ -94,9 +53,10 @@ void shell() {
         }
       }
 
-    } else if (!strcmp("parse-dtb", buffer)) {
-      if (_dtb_ptr)
-        traverse_device_tree(_dtb_ptr, callback);
+    } else if (!strcmp("print-dtb", buffer) && _dtb_ptr) {
+      if (_dtb_ptr) {
+        print_device_tree(dtb);
+      }
 
     } else if (!strcmp("reboot", buffer)) {
       puts_uart("reboot machine");
@@ -106,7 +66,14 @@ void shell() {
 }
 
 int main() {
-  traverse_device_tree(_dtb_ptr, get_initrd);
+  if (_dtb_ptr) {
+    dtb = build_device_tree(_dtb_ptr);
+    dtb_prop *prop = find_device_tree(dtb, "/chosen/linux,initrd-start");
+    if (prop) {
+      initrd_ptr = (char *)(uintptr_t)get_be_int(prop->data);
+    }
+  }
+  
   shell();
   return 0;
 }
