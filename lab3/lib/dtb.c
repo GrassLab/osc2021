@@ -150,7 +150,7 @@ void print_device_tree(dtb_node *node) {
   print_node(node, 0);
 }
 
-static dtb_prop *find_node(dtb_node *node, const char *args[], int len) {
+static dtb_prop *find_prop(dtb_node *node, const char *args[], int len) {
   struct list_head *pos;
   int i = 0;
 
@@ -158,14 +158,12 @@ static dtb_prop *find_node(dtb_node *node, const char *args[], int len) {
     return NULL;
   }
 
-  while (i < len - 1) {
-    list_for_each(pos, &node->child) {
-      dtb_node *now = list_entry(pos, dtb_node, sibling);
-      if (!strcmp(now->name, args[i])) {
-        node = now;
-        pos = &node->child;
-        i++;
-      }
+  list_for_each(pos, &node->child) {
+    dtb_node *now = list_entry(pos, dtb_node, sibling);
+    if (!strcmp(now->name, args[i])) {
+      node = now;
+      pos = &node->child;
+      i++;
     }
   }
 
@@ -196,7 +194,7 @@ dtb_prop *find_device_tree(dtb_node *node, const char *path) {
       _path[i] = '\0';
     }
   }
-  dtb_prop *prop = find_node(node, args, size);
+  dtb_prop *prop = find_prop(node, args, size);
   kfree(_path);
 
   return prop;

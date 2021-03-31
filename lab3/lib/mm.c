@@ -177,9 +177,9 @@ static void free_pages(void *victim) {
     frame[page_idx].order = order;
 
     #ifdef DEBUG
-            print_uart("attach frame: ");
-            write_hex_uart((unsigned long)victim);
-            write_uart("\r\n", 2);
+        print_uart("attach frame: ");
+        write_hex_uart((unsigned long)victim);
+        write_uart("\r\n", 2);
     #endif
 }
 
