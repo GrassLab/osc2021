@@ -4,6 +4,8 @@
 #include "peripheral.h"
 #include "base_ops.h"
 #include "cpio.h"
+#include "pf_alloc.h"
+#include "def.h"
 
 void exec_command(char *input)
 {
@@ -23,6 +25,13 @@ void exec_command(char *input)
         get(filename, MAX_COMMAND_SIZE);
         cpio_read(filename);
         
+    } else if (strcmp(input, "test") == 0) {
+        void *addr = NULL;
+        alloc_page(addr, 3);
+        // void *addr2 = alloc_page(3);
+        free_page(addr, 3);
+        // free_page(addr2, 3);
+        // mem_stat();
     } else {
         puts("Try another command\r\n");
     }

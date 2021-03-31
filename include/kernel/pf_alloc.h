@@ -18,8 +18,12 @@ struct frame {
 };
 
 void init_page_frame();
-void *alloc_page(short exp);
+void *alloc_page(void *addr, short exp);
 
-void mark_allocated(struct frame *f);
+void mark_as_allocated(struct frame *f);
+void mem_stat();
+void free_page(void *start, short exp);
+void try_merge(short exp);
+void add_to_list(struct frame *f, short exp);
 
 #endif
