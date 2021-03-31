@@ -44,3 +44,10 @@ uint32_t be2le(uint32_t x) {
   return (((x >> 24) & 0xFF) << 0) | (((x >> 16) & 0xFF) << 8) |
          (((x >> 8) & 0xFF) << 16) | (((x >> 0) & 0xFF) << 24);
 }
+
+uint64_t log2(uint64_t num) {
+  for (uint64_t i = 0; i < 64; i++) {
+    if (num == (1 << i)) return i;
+  }
+  return 0;
+}

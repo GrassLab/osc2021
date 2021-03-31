@@ -14,6 +14,7 @@ void cmd_reboot();
 void cmd_ls();
 void cmd_cat(char *pathname);
 void cmd_dtb_print(int all);
+void cmd_buddy_test();
 void clear_buffer();
 void receive_cmd();
 void run_shell();

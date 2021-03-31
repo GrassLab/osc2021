@@ -1,5 +1,6 @@
 #include "shell.h"
 
+#include "alloc.h"
 #include "cpio.h"
 #include "dtb.h"
 #include "io.h"
@@ -29,6 +30,8 @@ void cmd_ls() { cpio_ls(); }
 void cmd_cat(char *pathname) { cpio_cat(pathname); }
 
 void cmd_dtb_print(int all) { dtb_print(all); }
+
+void cmd_buddy_test() { buddy_test(); }
 
 void clear_buffer() {
   buffer_pos = 0;
@@ -74,6 +77,8 @@ void run_shell() {
       cmd_dtb_print(0);
     } else if (strcmp(buffer, "dtb all") == 0) {
       cmd_dtb_print(1);
+    } else if (strcmp(buffer, "bd test") == 0) {
+      cmd_buddy_test();
     }
   }
 }
