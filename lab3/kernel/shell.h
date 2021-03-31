@@ -1,12 +1,8 @@
 #ifndef SHELL_H
 #define SHELL_H
-#include <string.h>
-#include "reset.h"
-#include <uart.h>
+
 #include <types.h>
-#include <cpio.h>
-#include <devicetree.h>
-#include <buddy.h>
+
 #define BOOTLOADER_OFFSET 0x10000
 void shell();
 void do_command(char* command);

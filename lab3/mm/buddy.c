@@ -6,7 +6,7 @@ void buddy_init() {
   buddy_system.size = PAGE_SIZE * BUDDY_BLOCK_NUM;
   buddy_system.end = buddy_system.start + buddy_system.size;
   //buddy header init 
-  struct buddy_block* block = (struct buddy_block*)buddy_system.start;
+  struct buddy_block* block = buddy_system.start;
   block->next = null;
   block->order = BUDDY_ORDER_MAX;
   //free list init
@@ -71,7 +71,7 @@ void* buddy_find_free_block(int order) {
     uart_hex(order);
     uart_puts(".\n");
     //put order i+1 half of block into order i free list 
-    struct buddy_block* remain = (struct buddy_block* )(find_block + PAGE_SIZE * (1 << order));
+    struct buddy_block* remain = (void *)find_block + PAGE_SIZE * (1 << order);
     remain->next = buddy_system.bins[order];
     buddy_system.bins[order] = remain;
     //update inuse map
@@ -93,13 +93,13 @@ void buddy_merge(void* address) {
   struct buddy_block *buddy_block, *merged_block;
   size_t buddy_block_idx, merged_idx, merged_order;
   //initialize
-  merged_block = (struct buddy_block* ) address;
+  merged_block = address;
   merged_idx = buddy_get_blocknum_from_address(merged_block);
   merged_order = merged_block->order;
   // merged can only be done when order <= BUDDY_ORDER_MAX - 1
   while(merged_order < BUDDY_ORDER_MAX) {
     buddy_block_idx = merged_idx ^ (1 << merged_order);
-    buddy_block = (struct buddy_block* )(BUDDY_START + PAGE_SIZE * buddy_block_idx);
+    buddy_block = (void *)BUDDY_START + PAGE_SIZE * buddy_block_idx;
     //can be merged
     if(buddy_is_free(buddy_block_idx, merged_order) == 0) {
       uart_puts("buddy_is_free.\n");
@@ -169,8 +169,9 @@ void buddy_status() {
 }
 void buddy_puts_free_list() {
   uart_puts("free list info: \n");
+  struct buddy_block* block;
   for(int i = 0; i <= BUDDY_ORDER_MAX; i++) {
-    struct buddy_block* block = buddy_system.bins[i];
+    block = buddy_system.bins[i];
     uart_puts("order ");
     uart_hex(i);
     uart_puts(": ");

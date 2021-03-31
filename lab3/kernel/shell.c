@@ -1,4 +1,11 @@
 #include "shell.h"
+#include <uart.h>
+#include <reset.h>
+#include <string.h>
+#include <cpio.h>
+#include <devicetree.h>
+#include <buddy.h>
+#include <dynamic.h>
 
 void shell() {
   uart_puts("*****************************Hello World*****************************\r\n");
@@ -41,8 +48,10 @@ void do_command(char* command) {
     uart_puts("lsdtb: list dtb node name.\n");
     uart_puts("lsdtbprop [node name]: list [node name] property.\n");
     uart_puts("cat [file]: cat cpio file.\n");
-    uart_puts("malloc [size]: buddy_malloc.\n");
-    uart_puts("free [address]: buddy_free.\n");
+    uart_puts("bmalloc [size]: buddy malloc.\n");
+    uart_puts("bfree [address]: buddy free.\n");
+    uart_puts("dmalloc [size]: dynamic malloc.\n");
+    uart_puts("dfree [address]: dynamic free.\n");
   }
   else if(strncmp(command, "hello", 6) == 0) {
     uart_puts("Hello World!\n");
@@ -73,11 +82,17 @@ void do_command(char* command) {
   else if(strncmp(command, "lsdtbprop", 9) == 0) {
     devicetree_parse(get_dtb_address(), DISPLAY_DEVICE_PROPERTY, command + 10);
   }
-  else if(strncmp(command, "malloc", 6) == 0) {
-    buddy_malloc(strtol(command + 6, 0, 16));
+  else if(strncmp(command, "bmalloc", 7) == 0) {
+    buddy_malloc(strtol(command + 7, 0, 16));
   }
-  else if(strncmp(command, "free", 4) == 0) {
-    buddy_free((void *)strtol(command + 4, 0, 16));
+  else if(strncmp(command, "bfree", 5) == 0) {
+    buddy_free((void *)strtol(command + 5, 0, 16));
+  }
+  else if(strncmp(command, "dmalloc", 7) == 0) {
+    dynamic_malloc(strtol(command + 7, 0, 16));
+  }
+  else if(strncmp(command, "dfree", 5) == 0) {
+    dynamic_free((void *)strtol(command + 5, 0, 16));
   }
   else {
     uart_puts("unknown command\n");
