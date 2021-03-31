@@ -10,13 +10,11 @@ void main()
     uart_init();
     //memory allocator init
     mem_init();
-    int addr = my_alloc(1<<27);
     mem_status_dump();
-    uart_printf("start to free\n");
+    int addr = my_alloc(32);
+    dy_mem_status_dump();
     my_free(addr);
-    // say hello
-    mem_status_dump();
-    //mem_status_dump();
+    dy_mem_status_dump();
     uart_puts("Hello World!\n");
     // echo everything back
     while(1) {
