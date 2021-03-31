@@ -2,8 +2,12 @@
 #include "utils.h"
 #include "shell.h"
 #include "str_tool.h"
+#include "stdint.h"
+#include "device_tree.h"
+#include "allocator.h"
+#include "str_tool.h"
 
-#define MAX_INPUT 10
+#define MAX_INPUT 100
 
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC 0x3F10001c
@@ -18,7 +22,13 @@ struct CMD command[] = {
     {.name="hello", .help="print Hello World!", .func=shell_hello},
     {.name="help", .help="print all available commands", .func=shell_help},
     {.name="reboot", .help="reboot the machine", .func=shell_reboot},
+    {.name="ls", .help="list all the file", .func=shell_ls},
+    {.name="pdtinfo", .help="print Device Tree Info", .func=print_dt_info},
+    {.name="parsedt", .help="parse Device Tree", .func=parse_dt},
+    {.name="memory", .help="do some memory operation", .func=shell_memory}
 };
+
+FrameArray *frame_array;
 
 char input_buffer[MAX_INPUT+1];
 int input_tail_idx = 0;
@@ -30,7 +40,8 @@ void buffer_clear(){
 
 void init_shell(){
     uart_puts("Welcome to my simple shell\r\n");
-    uart_puts("~~~~~~~~~~~~~~~~~~~~~~~\r\n");
+    uart_puts("ヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノ\r\n");
+    frame_array = NewFrameArray();
     buffer_clear();
 }
 
@@ -56,7 +67,7 @@ void get_input(){
     char cur_char;
     while(1){
         cur_char = uart_getc();
-        if(cur_char == '\n'){
+        if(cur_char == '\r'){
             uart_puts("\r\n");
             break;
         }
@@ -88,7 +99,7 @@ void get_input(){
         }
         else{
             if(input_tail_idx == MAX_INPUT){
-                uart_puts("\r\nInput string exceeds command max limit!\r\n");
+                uart_puts("\r\nInput string meet command max limit!\r\n");
                 break;
             }
             uart_putc(cur_char);
@@ -137,7 +148,11 @@ void shell_hello(){
 
 void shell_help(){
     uart_puts("===============================================");
-    uart_puts("\r\nCommand Name\tDescriptionr\n");
+    uart_puts("\r\n");
+    uart_puts("Command Name");
+    uart_puts("\t");
+    uart_puts("Description");
+    uart_puts("\r\n");
     uart_puts("===============================================");
     uart_puts("\r\n");
 
@@ -154,8 +169,113 @@ void shell_help(){
 
 void shell_reboot(){
     uart_puts("Reboot after 10 watchdog tick!\r\n");
-    delay(1);
+    delay(100000);
     put32(PM_RSTC, PM_PASSWORD | 0x20);
     put32(PM_WDOG, PM_PASSWORD | 10);
-    while(1);
+}
+
+void shell_ls(){
+    uint64_t cur_addr = 0x8000000;
+    cpio_newc_header* cpio_ptr;
+    uint64_t name_size, file_size;
+    char *file_name;
+    char *file_content;
+
+    while(1){
+        cpio_ptr = (cpio_newc_header*)cur_addr;
+        name_size = hex_to_int64(cpio_ptr->c_namesize);
+        file_size = hex_to_int64(cpio_ptr->c_filesize);
+
+        cur_addr += sizeof(cpio_newc_header);
+        file_name = (char*)cur_addr;
+        if(!strcmp(file_name, "TRAILER!!!"))
+            break;            
+
+        file_content = file_name + name_size;
+
+        uart_puts("File Name: ");
+        uart_puts(file_name);
+        uart_puts("\r\n");
+
+        for(uint64_t i=0; i<file_size; i++){
+            if(file_content[i] == '\n')
+                uart_putc('\r');
+            uart_putc(file_content[i]);
+        }
+
+        uart_puts("\r\n");
+        uart_puts("File Size: ");
+        uart_puts(itoa(file_size, 10));
+        uart_puts(" bytes");    
+        uart_puts("\r\n");
+        uart_puts("==========\r\n");
+
+        cur_addr = (uint64_t)((cur_addr + name_size + 3) & (~3));
+        cur_addr = (uint64_t)((cur_addr + file_size + 3) & (~3));
+    }
+}
+
+void shell_memory(){
+    char cur_char;
+    uint64_t need_size, free_addr, free_size;
+    uint32_t mem;
+    struct FrameListNum *cursor;
+    uart_puts("\r\nWelcome to memory manipulator!");
+    while(1){
+        uart_puts("\r\n\r\nEnter alphabet to do memory operation\r\n");
+        uart_puts("= = = = = = = = = = = = = = = = = = = = = = = =\r\n");
+        uart_puts("n: new a free memory\r\n");
+        uart_puts("d: free an allocated memory\r\n");
+        uart_puts("l: list current memory list\r\n");
+        uart_puts("x: exit memory manipulator\r\n");
+
+        cur_char = uart_getc();
+        if(cur_char == '\r'){
+            uart_puts("\r\n");
+        }
+        else if(cur_char == 'n'){   //new
+            uart_puts("Enter the memory size you want to new (bytes)\r\n");
+            buffer_clear();
+            get_input();
+            need_size = atoi(input_buffer, 10);
+            mem = new_memory(frame_array, need_size);
+            uart_puts("New Memory Address: ");
+            uart_puts(itoa(mem, 16));
+            uart_puts("\r\n");
+        }
+        else if(cur_char == 'd'){   //free
+            uart_puts("Enter the allocated memory address (hex)\r\n");
+            buffer_clear();
+            get_input();
+            free_addr = hex_to_int64(input_buffer);
+
+            uart_puts("Enter the length of memory (bytes)\r\n");
+            buffer_clear();
+            get_input();
+            free_size = atoi(input_buffer, 10);
+            free_memory(frame_array, free_addr, free_size);
+        }
+        else if(cur_char == 'l'){
+            uint16_t i;
+            for(i=0; i<20; i++){
+                if(frame_array->freeList[i]){
+                    uart_puts("Frame Power: ");
+                    uart_puts(itoa(i, 10));
+                    uart_puts("\r\n");
+
+                    cursor = frame_array->freeList[i];
+                    while(cursor){
+                        uart_puts(" -> ");
+                        uart_puts(itoa(cursor->index, 10));
+                        cursor = cursor->next;
+                    }
+                    uart_puts("\r\n");
+                }
+            }
+        }
+        else if(cur_char == 'x'){
+            uart_puts("Bye~\r\n");
+            break;
+        }
+    }
 }
