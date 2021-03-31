@@ -27,7 +27,7 @@ void init_page_frame()
 }
 
 // allocate (2 ^ exp) * 4KB
-void *alloc_page(void *addr, short exp)
+void *alloc_page(void **addr, short exp)
 {
     short exp_tmp = exp;
     while (head_arr[exp_tmp] == NULL && exp_tmp <= 17)
@@ -55,14 +55,15 @@ void *alloc_page(void *addr, short exp)
     }
     
     //  sizeof int is not equal to sizeof void *, so hack here, using long before cast to void *
-    addr = (void *)(long)(PHY_MEM_ALLOCABLE_START + head_arr[exp_tmp]->idx * PHY_PF_SIZE);
+    *addr = (void *)(long)(PHY_MEM_ALLOCABLE_START + head_arr[exp_tmp]->idx * PHY_PF_SIZE);
+    printf("alloc address: %d\r\n", (int)(long)*addr);
     
     // mark as allocated
     struct frame *next = head_arr[exp_tmp]->next;
     mark_as_allocated(head_arr[exp_tmp]);
     head_arr[exp_tmp] = next;
 
-    mem_stat();
+    // mem_stat();
 
     return addr;
 }
@@ -94,28 +95,23 @@ void mem_stat()
 void free_page(void *start, short exp)
 {
     // calculate the index
-    long idx = ((long)start - PHY_MEM_ALLOCABLE_START) / PHY_PF_SIZE;
-    printf("%l\r\n", idx);
-    
+    int idx = ((int)(long)start - PHY_MEM_ALLOCABLE_START) / PHY_PF_SIZE;
     // first block set size
     frame_arr[idx].exp = exp;
-
     // other blocks set reserved
     for (int i = 1; i < int_pow(2, exp); i++) {
         frame_arr[idx + i].exp = RESERVED_STATE;
     }
 
     append_to_list(&frame_arr[idx], exp);
-
     try_merge(exp);
-
-    mem_stat();
+    
+    // mem_stat();
 }
 
 // merge start from 2 ^ exp
 void try_merge(short exp)
 {
-    printf("merging\n");
     if (exp >= 17) {
         return;
     }
@@ -124,31 +120,39 @@ void try_merge(short exp)
         return;
     }
     
-    struct frame *prev, *cur = head_arr[exp];
+    struct frame *prev = NULL, *cur = head_arr[exp];
     int distance = int_pow(2, exp);
+    
+    while(cur) {
+        
+        struct frame *next = cur->next;
 
-    while(cur && cur->idx % (2 * distance) == 0) {
-        printf("exist!\n");
-        struct frame *tmp = cur->next, *next = cur->next;
+        if (cur->idx % (2 * distance) == 0) {    
+            
+            struct frame *tmp = cur->next;
+            while (tmp) {
+                // check next index is in list
+                if (tmp->idx == (cur->idx + distance)) {
+                    // can merge, clear state
+                    cur->exp++;
+                    cur->next = NULL;
 
+                    tmp->exp = RESERVED_STATE;
+                    tmp->next = NULL;
 
-        while (tmp) {
-            // check next index is in list
-            if (tmp->idx == (cur->idx + distance)) {
-                // can merge, clear state
-                cur->exp *= 2;
-                cur->next = NULL;
+                    if (!prev) {
+                        head_arr[exp] = tmp->next;
+                    } else {
+                        prev->next = tmp->next;
+                    }
 
-                tmp->exp = RESERVED_STATE;
-                tmp->next = NULL;
+                    // add to higher size list
+                    append_to_list(cur, cur->exp);
+                    printf("index %d and %d are merged! size: 2^%d -> 2^%d\r\n", cur->idx, tmp->idx, exp, cur->exp);
+                }
 
-                prev->next = tmp->next;
-
-                // add to higher size list
-                append_to_list(cur, cur->exp);
+                tmp = tmp->next;
             }
-
-            tmp = tmp->next;
         }
 
         prev = cur;
@@ -162,10 +166,23 @@ void append_to_list(struct frame *f, short exp)
 {
     if (head_arr[exp]) {
         struct frame *cur = head_arr[exp];
+        
+        if (f->idx < cur->idx) {
+            f->next = cur;
+            head_arr[exp] = f;
+            return;   
+        } 
+
         while(cur->next) {
+            if (f->idx < cur->next->idx) {
+                f->next = cur->next;
+                break;
+            }
+
             cur = cur->next;
         }
         cur->next = f;
+    
     } else {
         head_arr[exp] = f;
     }

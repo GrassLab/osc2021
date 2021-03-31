@@ -9,14 +9,15 @@ int printf(const char *format, ...) {
     char buffer[20];
     memset(buffer, 0, sizeof(char) * 20);
     const char *ptr = format;
-    while(*ptr != '\0') {
+    while(*ptr) {
         if (*ptr == '%') {
             switch (*(++ptr)) {
                 case 's':
                     puts(va_arg(arg, char*));
                     break;
                 case 'd':
-                    puts(itoa(va_arg(arg, int), buffer, 10));
+                    itoa(va_arg(arg, int), buffer, 10);
+                    puts(buffer);
                     memset(buffer, 0, sizeof(char) * 20);
                     break;
                 default:

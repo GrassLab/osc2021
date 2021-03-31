@@ -23,16 +23,11 @@ if len(sys.argv) > 1:
     stop_threads = False
     t.start()
 
-    while 1:
-        cmd = input()
-        if cmd == "send":
-            with open('./build/kernel8.img', 'rb') as f:   
-                s.write('start'.encode())
-                s.write(f.read())
-                s.write('end'.encode())
-        elif cmd == "exit":
-            stop_threads = True
-            break
+    with open('./build/kernel8.img', 'rb') as f:   
+        s.write('start'.encode())
+        s.write(f.read())
+        s.write('end'.encode())
+
     t.join()
 else:
     print("Failed, please specify a device path")

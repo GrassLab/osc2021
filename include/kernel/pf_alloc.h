@@ -18,7 +18,7 @@ struct frame {
 };
 
 void init_page_frame();
-void *alloc_page(void *addr, short exp);
+void *alloc_page(void **addr, short exp);
 
 void mark_as_allocated(struct frame *f);
 void mem_stat();

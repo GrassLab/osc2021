@@ -7,6 +7,9 @@
 #include "pf_alloc.h"
 #include "def.h"
 
+
+#include "io.h"
+
 void exec_command(char *input)
 {
     if (strcmp(input, "help") == 0) {
@@ -27,11 +30,10 @@ void exec_command(char *input)
         
     } else if (strcmp(input, "test") == 0) {
         void *addr = NULL;
-        alloc_page(addr, 3);
-        // void *addr2 = alloc_page(3);
+        alloc_page(&addr, 3);
         free_page(addr, 3);
-        // free_page(addr2, 3);
-        // mem_stat();
+
+        mem_stat();
     } else {
         puts("Try another command\r\n");
     }
