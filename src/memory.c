@@ -222,7 +222,7 @@ void object_free(void *object)
     // we are freeing the []
     if (object > page->first_free)
     {
-        // XXOXX[]...
+        // XXOX[]O...
         // the object is between the first hole and the second hole
         if (object < (page->start_address + *(int *)page->first_free))
         {
@@ -232,29 +232,26 @@ void object_free(void *object)
             *(int *)page->first_free = object - page->start_address;
         }
         // XXOOO[]...
-        // the object is after the second hole
-        // so we need to iterate over the list to find the last hole before the object
+        // the object is behind the second hole
+        // so we need to iterate over the list to find the last hole in front of the object
         else
         {
             printf("[object_free] status 2\n\n");
 
             void *traversal = page->first_free;
-            while (1)
-            {
-                if ((page->start_address + (*(int *)traversal)) > object)
-                    break;
+            while ((page->start_address + (*(int *)traversal)) < object)
                 traversal = page->start_address + (*(int *)traversal);
-            }
 
             *(int *)object = *(int *)traversal;
             *(int *)traversal = object - page->start_address;
         }
     }
     // XX[]XXO...
-    // the object is before the first hole
+    // the object is in front of the first hole
     else
     {
         printf("[object_free] status 3\n\n");
+        
         *(int *)object = page->first_free - page->start_address;
         page->first_free = object;
     }
