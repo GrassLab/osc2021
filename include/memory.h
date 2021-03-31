@@ -14,7 +14,6 @@
 #define MIN_OBJECT_SIZE         (1 << MIN_OBJECT_ORDER)
 #define MAX_OBJECT_SIZE         (1 << MAX_OBJECT_ORDER)
 #define MAX_ALLOCATOR_NUMBER    MAX_OBJECT_ORDER - MIN_OBJECT_ORDER + 1
-#define MAX_OBJECT_IN_A_PAGE    PAGE_SIZE / (1 << MIN_OBJECT_ORDER) 
 
 static void* NULL = 0;
 
@@ -26,14 +25,14 @@ struct page
 
     int order;
 
-    unsigned char hole_used[MAX_OBJECT_IN_A_PAGE];  // keep which hole is available
+    void *first_free;
     struct object_allocator *allocator;
     int max_object_count;                           // how many objects this page can store
     int object_count;                               // how many objects this page stores currently
 
     int page_number;
     int used;
-    void *address;
+    void *start_address;
 };
 
 struct object_allocator

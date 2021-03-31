@@ -13,7 +13,7 @@ void init_buddy()
         bookkeep[i].order = -1;
         bookkeep[i].page_number = i;
         bookkeep[i].used = 0;
-        bookkeep[i].address = (void *)MEMORY_START + i * PAGE_SIZE;
+        bookkeep[i].start_address = (void *)MEMORY_START + i * PAGE_SIZE;
         bookkeep[i].allocator = NULL;
 
         // list_init_head(&(bookkeep[i].list));
@@ -54,7 +54,7 @@ void init_memory()
     init_object_allocator();
 }
 
-struct page* block_allocation(int order)
+struct page *block_allocation(int order)
 {
     if ((order > MAX_BUDDY_ORDER) || (order < 0))
     {
@@ -74,22 +74,22 @@ struct page* block_allocation(int order)
         temp_block->used = 1;
         temp_block->order = order;
 
-        while(current_order > order)
+        while (current_order > order)
         {
             current_order--;
 
             int bottom_page_number = find_buddy(temp_block->page_number, current_order);
             struct page *bottom = &bookkeep[bottom_page_number];
             bottom->order = current_order;
-            
+
             list_add_tail(&bottom->list, &free_buddy_list[current_order]);
-            
-            printf("[block_allocation] redundant block(page: %d, order: %d) freed\n", 
-                    bottom->page_number, bottom->order);
+
+            printf("[block_allocation] redundant block(page: %d, order: %d) freed\n",
+                   bottom->page_number, bottom->order);
         }
 
-        printf("[block_allocation] block(page: %d, order: %d) allocated\n", 
-                temp_block->page_number, temp_block->order);
+        printf("[block_allocation] block(page: %d, order: %d) allocated\n",
+               temp_block->page_number, temp_block->order);
         printf("[block_allocation] done\n\n");
         return temp_block;
     }
@@ -109,14 +109,14 @@ void block_free(struct page *block)
     }
 
     printf("[block_free] block(page: %d, order: %d) to be freed\n",
-            block->page_number, block->order);
+           block->page_number, block->order);
 
     block->used = 0;
     buddy_page_number = find_buddy(block->page_number, block->order);
     buddy = &bookkeep[buddy_page_number];
 
     // iterate if buddy can be merged
-    while(buddy->order == block->order && buddy->order < MAX_BUDDY_ORDER && !buddy->used)
+    while (buddy->order == block->order && buddy->order < MAX_BUDDY_ORDER && !buddy->used)
     {
         list_crop(&buddy->list, &buddy->list);
 
@@ -152,7 +152,7 @@ void *object_allocation(int token)
 {
     struct object_allocator *allocator = &allocator_pool[token];
 
-    if(allocator->current_page == NULL)
+    if (allocator->current_page == NULL)
     {
         struct page *temp_page;
 
@@ -174,28 +174,24 @@ void *object_allocation(int token)
             temp_page = block_allocation(0);
 
             temp_page->allocator = allocator;
-            for (int i = 0; i < MAX_OBJECT_IN_A_PAGE; i++)
-                temp_page->hole_used[i] = 0;
             temp_page->object_count = 0;
             temp_page->max_object_count = PAGE_SIZE / (1 << (token + MIN_OBJECT_ORDER));
+
+            temp_page->first_free = temp_page->start_address;
+            for (int i = 0; i < temp_page->max_object_count; i++)
+                *(int *)(temp_page->start_address + i * allocator->object_size) =
+                        (i + 1) * allocator->object_size;
         }
 
         allocator->current_page = temp_page;
     }
 
-    int index = 0;
     struct page *current_page = allocator->current_page;
-    // look for a hole to fit in
-    for (int i = 0; i < current_page->max_object_count; i++)
-    {
-        if (current_page->hole_used[i] == 0)
-        {
-            index = i;
-            current_page->hole_used[i] = 1;
-            current_page->object_count++;
-            break;
-        }
-    }
+
+    void *object = current_page->first_free;
+    current_page->first_free = current_page->start_address + 
+                               *(int *)(current_page->first_free);
+    current_page->object_count++;
 
     // the page is full now
     if (current_page->object_count == current_page->max_object_count)
@@ -204,7 +200,7 @@ void *object_allocation(int token)
         allocator->current_page = NULL;
     }
 
-    void *object = current_page->address + index * allocator->object_size;
+    int index = (object - current_page->start_address) / allocator->object_size;
 
     printf("[object_allocation] object(page: %d, size: %d, index: %d)\n", current_page->page_number, allocator->object_size, index);
     printf("[object_allocation] done\n\n");
@@ -220,15 +216,18 @@ void object_free(void *object)
     // for example, if we have 16384 + 4096 * 14 + 32 * 5 as our address, then we get 5 with the following operation
     int index = (((long)(object - MEMORY_START) & ((1 << PAGE_SHIFT) - 1)) / allocator->object_size);
 
-    if (page->hole_used[index] == 0)
-    {
-        printf("[object_free] this object is already freed!\n");
-        return;
-    }
-
     printf("[object_free] object(page: %d, size: %d, index: %d) to be freed\n\n", page->page_number, allocator->object_size, index);
 
-    page->hole_used[index] = 0;
+    if (object > page->first_free)
+    {
+        *(int *)object = *(int *)page->first_free;
+        *(int *)page->first_free = (object - page->start_address) / allocator->object_size;
+    }
+    else
+    {
+        *(int *)object = (page->first_free - page->start_address) / allocator->object_size;
+        page->first_free = object;
+    }
     page->object_count--;
 
     list_crop(&page->list, &page->list);
@@ -283,7 +282,7 @@ void *memory_allocation(int size)
         {
             if (size <= (1 << (i + PAGE_SHIFT)))
             {
-                address = block_allocation(i)->address;
+                address = block_allocation(i)->start_address;
                 printf("--------------------\n\n");
                 return address;
             }
