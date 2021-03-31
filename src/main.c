@@ -34,7 +34,10 @@ void parse_command (char *b) {
         uart_send("show_fdt: show all flattened device tree nodes\r\n");
         uart_send("fdt [node]: search [node] information\r\n");
 
-        uart_send("bs_table\r\n");
+        uart_send("bs_bucket\r\n");
+        uart_send("malloc_bins\r\n");
+        uart_send("bs_free\r\n");
+        uart_send("bs_malloc\r\n");
     }
     else if (!strcmp(b, "reboot")) {
         uart_send("reboot~~\n");
@@ -77,15 +80,22 @@ void parse_command (char *b) {
     }
     /* TODO: delete */
     else if (!strcmp(b, "test")) {
-        //show_list();
-        buddy_system_show_buckets();
-        bs_malloc (0x1000);
-        buddy_system_show_buckets();
+        show_list();
+        //bs_malloc (0x1000);
+        //buddy_system_show_buckets();
+        //void *tmp = startup_malloc(0x200);
+        //startup_free(tmp);
+        //void *tmp2 = startup_malloc(0x300);
+        //startup_free(tmp2);
+        //startup_malloc(0x20);
     }
-    else if (!strcmp(b, "bs_table")) {
+    else if (!strcmp(b, "malloc_bins")) {
+        show_malloc_bins();
         //show_list();
-        buddy_system_show_entry_table();
+        //buddy_system_show_entry_table();
     }
+    else if (!strcmp(b, "bs_bucket"))
+        buddy_system_show_buckets();
     else if (!strcmp(b, "test1")) {
         unsigned long tmp = (unsigned long) fdt_head;
         tmp += get_fdt_header_off_dt_struct();
@@ -116,6 +126,12 @@ void parse_command (char *b) {
     }
     else if (mem_print(b)) {
     }
+    else if (!strcmp(token, "bs_malloc")) {
+        bs_malloc_interface(b);
+    }
+    else if (!strcmp(token, "bs_free")) {
+        bs_free_interface(b);
+    }
     else {
         uart_send("No such command.\n");
     }
@@ -129,6 +145,7 @@ int main () {
     startup_lock_memory(0, 0x80000);
 
     buddy_system_init();
+    dynamic_allocator_init();
 
     char buffer[BUFFER_SIZE];
 

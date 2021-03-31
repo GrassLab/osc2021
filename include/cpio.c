@@ -84,8 +84,6 @@ void cpio_init () {
         prev = curr;
     }
     prev->next = NULL;
-
-    startup_aligned(page_size);
 }
 
 void print_chars (char *addr, unsigned int len) {

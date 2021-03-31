@@ -82,5 +82,11 @@ void show_boot_info () {
     uart_send("\r\ncpio end: ");
     uart_sendh(boot_info.cpio_end);
 
+    uart_send("\r\nbuddy system address: ");
+    uart_sendh(boot_info.buddy_system_addr);
+
+    uart_send("\r\nbuddy system size: ");
+    uart_sendh(boot_info.buddy_system_size);
+
     uart_send("\r\n");
 }

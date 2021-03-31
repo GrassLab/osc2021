@@ -17,6 +17,8 @@ typedef struct boot_information {
     u64 cpio_addr;
     u64 cpio_end;
     u64 device_tree_size;
+    u64 buddy_system_addr;
+    u64 buddy_system_size;
 } BOOT_INFO;
 extern BOOT_INFO boot_info;
 
