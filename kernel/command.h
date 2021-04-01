@@ -8,6 +8,11 @@ void CommandHello();
 void CommandCpiols();
 void CommandCpiocat(char *);
 void CommandTimestamp();
+void CommandBuddyInit();
+void CommandBuddyLogList();
+void CommandBuddyLogTable();
+void CommandBuddyFree(int section);
+void CommandBuddyAlloc(int size);
 void CommandNotFound(char *);
 void CommandReboot();
 

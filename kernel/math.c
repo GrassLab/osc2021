@@ -10,3 +10,15 @@ int pow(int base, int exponent)
     
     return result;
 }
+
+int log(int base, int val)
+{
+    int result = 0;
+    while(val > 1)
+    {
+        result++;
+        val /= base;
+    }
+
+    return result;
+}

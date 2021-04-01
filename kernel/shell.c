@@ -10,6 +10,8 @@ void ShellStart()
     char buffer[MAX_BUFFER_LEN];
     enum SPECIAL_CHARACTER input_parse;
 
+	CommandBuddyInit();
+
     strset(buffer, 0, MAX_BUFFER_LEN);
 
     uart_puts("# ");
@@ -71,12 +73,16 @@ void CommandController(enum SPECIAL_CHARACTER input_parse, char c, char buffer[]
 		}
 	    }
 
-            if      (!strcmp(buffer,  "help"     )) CommandHelp();
+        if      (!strcmp(buffer,  "help"     )) CommandHelp();
 	    else if (!strcmp(buffer,  "hello"    )) CommandHello();
 	    else if (!strcmp(buffer,  "ls"       )) CommandCpiols();
 	    else if (!strcmp(buffer,  "timestamp")) CommandTimestamp();
 	    else if (!strcmp(buffer,  "reboot"   )) CommandReboot();
-	    else if (!strcmp(command, "cat"      )) CommandCpiocat(arg); 
+		else if (!strcmp(buffer,  "loglist"  )) CommandBuddyLogList();
+		else if (!strcmp(buffer,  "logtable" )) CommandBuddyLogTable();
+		else if (!strcmp(command, "alloc"    )) CommandBuddyAlloc(atoi(arg));
+		else if (!strcmp(command, "free"     )) CommandBuddyFree(atoi(arg));
+	    else if (!strcmp(command, "cat"      )) CommandCpiocat(arg);
 	    else                                    CommandNotFound(buffer);
 	}
 

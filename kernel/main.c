@@ -24,7 +24,6 @@
  */
 
 #include "uart.h"
-#include "reader.h"
 #include "shell.h"
 
 void main()
