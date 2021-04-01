@@ -178,9 +178,9 @@ void buddy_test2(){
     __show_buddy_system();
     uint32_t size[6] = {
         PAGE_SIZE * 1, 
-        PAGE_SIZE * 13,
+        PAGE_SIZE * 1,
         PAGE_SIZE * 10,
-        PAGE_SIZE * 2,
+        PAGE_SIZE * 100,
         PAGE_SIZE * 4,
         PAGE_SIZE * 8
     };
