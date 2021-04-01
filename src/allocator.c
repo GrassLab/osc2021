@@ -328,7 +328,7 @@ uint64_t _new_chunk(uint64_t need_size){
     if(need_size_pow<5){
         // chunk16
         uart_puts("Allocate chunk 16\r\n");
-        return _allocate_chunk(cursor, 16, 32, 0);
+        return _allocate_chunk(cursor, 16, 32, 0);  //cursor, unit size, unit length, base address
     }
     else if(need_size_pow==5){
         // chunk32
