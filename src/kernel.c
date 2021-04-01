@@ -76,5 +76,24 @@ void kernel() {
   // parse_initramfs(&root);
   // closedir(&root);
 
+  log("float\n");
+  double a = 3.0;
+  double b = 1.3333333333333333;
+
+  double c = a * b;
+  log_hex((unsigned long long)c);
+
+  double d[50];
+  for (int i = 0; i < 50; i++) {
+    d[i] = i;
+  }
+  for(int i = 0; i < 50; i++) {
+    d[i] *= d[i];
+  }
+
+  for(int i = 0; i < 50; i++) {
+    log_hex((unsigned long long)d[i]);
+  }
+  
   shell();
 }

@@ -12,7 +12,7 @@ MOUNT_DIR = sd_mount
 SDB = /dev/sdb1
 INITRAMFS = initramfs.cpio
 
-CFLAGS = -Wall -I $(IDIR) -g -ffreestanding
+CFLAGS = -Wall -I $(IDIR) -g -ffreestanding -march=armv8-a -O2
 
 S_SRCS = $(wildcard $(SDIR)/*.S)
 C_SRCS = $(wildcard $(SDIR)/*.c)
