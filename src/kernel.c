@@ -52,28 +52,45 @@ void kernel() {
   init_buddy((char *)(&kn_end));
   init_slab();
 
-  log("20\n");
-  for(int i = 0; i < 126; i++) {
-    kmalloc(0x20);
-  }
-  log("30\n");
-  void *m[83];
-  for(int i = 0; i < 83; i++) {
-    m[i] = kmalloc(0x30);
-  }
-  for(int i = 0; i < 83; i++) {
-    kfree(m[i]);
-  }
-  for(int i = 0; i < 83; i++) {
-    m[i] = kmalloc(0x30);
-  }
-  log("40\n");
-  for(int i = 0; i < 64; i++) {
-    kmalloc(0x40);
-  }
-  kmalloc(0x40);
 
-  check_slab();
+log_buddy();
+  void *addr = alloc_page(PAGE_SIZE * 2);
+  addr = alloc_page(PAGE_SIZE * 2);
+  addr = alloc_page(PAGE_SIZE * 4);
+  addr = alloc_page(PAGE_SIZE * 8);
+  addr = alloc_page(PAGE_SIZE * 8);
+  addr = alloc_page(PAGE_SIZE * 16);
+  addr = alloc_page(PAGE_SIZE * 16);
+  addr = alloc_page(PAGE_SIZE * 32);
+  addr = alloc_page(PAGE_SIZE * 32);
+  addr = alloc_page(PAGE_SIZE * 32);
+
+addr = alloc_page(PAGE_SIZE);
+
+  free_page(addr);
+
+  // log("20\n");
+  // for(int i = 0; i < 126; i++) {
+  //   kmalloc(0x20);
+  // }
+  // log("30\n");
+  // void *m[83];
+  // for(int i = 0; i < 83; i++) {
+  //   m[i] = kmalloc(0x30);
+  // }
+  // for(int i = 0; i < 83; i++) {
+  //   kfree(m[i]);
+  // }
+  // for(int i = 0; i < 83; i++) {
+  //   m[i] = kmalloc(0x30);
+  // }
+  // log("40\n");
+  // for(int i = 0; i < 64; i++) {
+  //   kmalloc(0x40);
+  // }
+  // kmalloc(0x40);
+
+  // check_slab();
 
   // init_rootfs(new_ramfs());
   // dentry root;
