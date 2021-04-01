@@ -54,7 +54,8 @@ void* dynamic_malloc(size_t size) {
   uart_puts("allocated size ");
   uart_hex(((struct dynamic_chunk* )chunk)->size);
   uart_puts("\n");
-  return chunk + DYNAMIC_CHUNK_HEADER_OFFSET;
+  //return chunk + DYNAMIC_CHUNK_HEADER_OFFSET;
+  return chunk;
 }
 
 void* dynamic_find_free_chunk(int idx) {
@@ -110,7 +111,7 @@ void dynamic_free(void* address) {
   int merged_idx;
   struct dynamic_chunk *chunk, *prev_chunk, *next_chunk, *next_next_chunk;
   
-  address -= DYNAMIC_CHUNK_HEADER_OFFSET;
+  //address -= DYNAMIC_CHUNK_HEADER_OFFSET;
   if(address < buddy_system.start || address > buddy_system.end) 
     return;
   
