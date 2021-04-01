@@ -29,6 +29,8 @@ void init_page_frame()
 void *alloc_page(void **addr, short exp)
 {
     short exp_tmp = exp;
+
+    // search start from the size we want, if theres no pages, then find larger one
     while (head_arr[exp_tmp] == NULL && exp_tmp <= 17)
     {
         exp_tmp++;
@@ -38,8 +40,9 @@ void *alloc_page(void **addr, short exp)
     if (exp_tmp > 17) {
         return NULL;
     }
+
     while (exp_tmp > exp) {
-        // cut the size into half and appoint one part to lower size list
+        // cut the size into half
         struct frame *f_part1, *f_part2;
         f_part1 = head_arr[exp_tmp];
         f_part1->exp--;
@@ -49,6 +52,7 @@ void *alloc_page(void **addr, short exp)
         f_part2->exp = f_part1->exp;
         f_part1->next = f_part2;
         
+        // append the two page into lower level list
         append_to_list(f_part1, f_part1->exp);
         exp_tmp--;
     }
@@ -103,8 +107,6 @@ void free_page(void *start, short exp)
 
     append_to_list(&frame_arr[idx], exp);
     try_merge(exp);
-    
-    // mem_stat();
 }
 
 // merge start from 2 ^ exp
@@ -125,7 +127,8 @@ void try_merge(short exp)
         
         struct frame *next = cur->next;
 
-        if (cur->idx % (2 * distance) == 0) {    
+        // index should be multiple of 2^(exp+1)
+        if (cur->idx % (2 * distance) == 0) {
             
             struct frame *tmp = cur->next;
             while (tmp) {
