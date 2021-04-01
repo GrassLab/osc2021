@@ -1,8 +1,8 @@
 # My OSC 2021
 ## Author
-|Student ID| Github ID | Name | Email|
-|----------|-----------|------|---------------------|
-|`A091513`|`naihsin`|`張乃心`|s109164507@m109.nthu.edu.tw|
+| 學號        | GitHub 帳號  | 姓名    | Email                      |
+| ---------- | ----------- | ------- | -------------------------- |
+| `A091513`  | `naihsin` | `張乃心` | s109164507@m109.nthu.edu.tw  |
 
 ## How to build loader
 ```bash
