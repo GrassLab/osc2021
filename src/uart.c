@@ -16,9 +16,8 @@ void uart_putc(char c) {
 
 void print(const char *s) {
     while (*s) {
-        if (*s == '\n') {
+        if (*s == '\n')
             uart_putc('\r');
-        }
         uart_putc(*s++);
     }
 }

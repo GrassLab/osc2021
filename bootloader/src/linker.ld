@@ -1,16 +1,13 @@
 SECTIONS
 {
 	. = 0x80000;
+	_relocate_start = .;
 	.text :
 	{
 		KEEP(*(.text.boot))
 		*(.text)
-	}
-	_relocate_start = .;
-	.text.relocate :
-	{
+	  _bootloader_addr = .;
 		KEEP(*(.text.bootloader))
-		KEEP(*(.text.io))
 	}
 	.rodata :
 	{
@@ -30,3 +27,4 @@ SECTIONS
 }
 
 _bss_size = (_bss_end - _bss_start) >> 3;
+_bootloader_offset = (_bootloader_addr - _relocate_start);

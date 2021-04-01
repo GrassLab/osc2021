@@ -19,6 +19,7 @@
 
 extern char _relocate_start;
 extern char _relocate_end;
+extern char _bootloader_offset;
 
 static void reset(int tick) {
     *PM_RSTC = PM_PASSWORD | 0x20;
@@ -39,6 +40,7 @@ __attribute__((section(".text.bootloader"))) void bootloader(unsigned int kernel
         checksum -= (int)c;
     }
     if (!checksum) {
+        print("Start OS\n\n");
         void (*start_os)(void) = (void*)kernel_addr;
         start_os();
     }
@@ -46,6 +48,7 @@ __attribute__((section(".text.bootloader"))) void bootloader(unsigned int kernel
 
 static void load_img() {
     print("Please send kernel image from UART now\n");
+
     unsigned int kernel_size = (int)uart_getc();
     for (int i = 1; i < 4; i++) {
         char c = uart_getc();
@@ -61,23 +64,22 @@ static void load_img() {
 
     print("Kernel size: ");
     print_int(kernel_size);
-    unsigned int bootloader_size = (unsigned int)(&_relocate_end - &_relocate_start);
+    unsigned int code_size = (unsigned int)(&_relocate_end - &_relocate_start);
     char *new_addr = (char*)((kernel_size / 0x10000 + 1) * 0x10000 + KERNEL_ADDR);
     char *old_addr = (char*)&_relocate_start;
-    print("\nRelocating bootloader.....\n");
-    for (int i = 0; i < bootloader_size; i++) {
+    print("\nRelocating.....\n");
+    for (int i = 0; i < code_size; i++)
         *(new_addr + i) = *(old_addr + i);
-    }
-    print("Loading kernel.....\n\n");
-    void (*start_bootloader)(unsigned int, unsigned long long) = (void*)new_addr;
+
+    print("Loading kernel.....\n");
+    void (*start_bootloader)(unsigned int, unsigned long long) = (void*)(new_addr + (unsigned int)&_bootloader_offset);
     start_bootloader(kernel_size, checksum);
 }
 
 static void cmd_controler(const char *cmd) {
     /* Eliminate space at the front */
-    while (*cmd == (char)32) {
+    while (*cmd == (char)32)
         cmd++;
-    }
 
     if (!strcmp(cmd, "help")) {
         print("help:\n");
@@ -86,16 +88,13 @@ static void cmd_controler(const char *cmd) {
         print("    Load kernel image via UART.\n");
         print("reboot:\n");
         print("    Reboot raspberry pi.\n");
-    }
-    else if (!strcmp(cmd, "loadimg")) {
+    } else if (!strcmp(cmd, "loadimg")) {
         load_img();
-    }
-    else if (!strcmp(cmd, "reboot")) {
+    } else if (!strcmp(cmd, "reboot")) {
         print("Rebooting.....\n\n");
         reset(100);
         while (1) {}
-    }
-    else {
+    } else {
         if (cmd[0]) {
             print(cmd);
             print(": Command not found\n");
@@ -119,15 +118,12 @@ static void get_cmd(char *s) {
             if (esc_state) {
                 esc_state = 0;
             }
-        }
-        else if (c == ESC) { /* Key - Esc */
+        } else if (c == ESC) { /* Key - Esc */
             esc_state = 1;
-        }
-        else if (c == LEFT_BRACKET && esc_state) { /* Key - Left Bracket */
+        } else if (c == LEFT_BRACKET && esc_state) { /* Key - Left Bracket */
             esc_state = 0;
             uart_getc();
-        }
-        else if (c != TAB) {
+        } else if (c != TAB) {
             uart_putc(c);
             if (cursor < CMD_LEN - 1) {
                 *(s + cursor++) = c;

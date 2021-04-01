@@ -37,6 +37,9 @@ run: all
 debug: all
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -S -s
 
+tty: all
+	sudo python send_img.py /dev/ttyUSB0 kernel8.img
+
 directories: $(OUT_DIR)
 
 $(OUT_DIR):
