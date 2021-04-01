@@ -48,6 +48,7 @@ struct page *buddy_block_alloc(int order)
     #ifdef __DEBUG
     // printf("\n[buddy_block_alloc]Before allocate buddy memory:");
     // dump_buddy();
+    printf("[buddy_block_alloc] Requested Order: %d, Size: %d\n\n", order, 1 << order);
     #endif //__DEBUG
 
     if ( (order<0) | (order>MAX_ORDER) ) {
@@ -55,7 +56,7 @@ struct page *buddy_block_alloc(int order)
         return 0;
     }
 
-    printf("[buddy_block_alloc] Requested Order: %d, Size: %d\n\n", order, 1 << order);
+   
 
     for (int i = order;i <= MAX_ORDER;i++) {
         if (list_empty(&free_area[i].freelist)) continue;
@@ -73,18 +74,22 @@ struct page *buddy_block_alloc(int order)
             int buddy_pfn = FIND_BUDDY_PFN(target_block->pfn, downward_order);
             struct page *bottom_half_block = &bookkeep[buddy_pfn];
             push_block_to_free_area(bottom_half_block, &free_area[downward_order], downward_order);
+
+            #ifdef __DEBUG   
             printf("Push back -> Redundant block(bottom half)  { pfn(%d), order(%d) }\n", 
                     bottom_half_block->pfn, bottom_half_block->order);
+            #endif //__DEBUG
         }
 
         #ifdef __DEBUG   
         printf("\n[buddy_block_alloc]After allocate buddy memory:");
         dump_buddy();
-        #endif //__DEBUG
         
         printf("[buddy_block_alloc] Result - Allocated block{ pfn(%d), order(%d), phy_addr_16(0x%x) }\n",
                 target_block->pfn, target_block->order, target_block->phy_addr);
         printf("[buddy_block_alloc] **Done**\n\n");
+        #endif //__DEBUG
+
         return target_block;
         
     }
@@ -130,9 +135,10 @@ void buddy_block_free(struct page* block)
     #ifdef __DEBUG
     printf("\n[buddy_block_free]After free memory:");
     dump_buddy();
+    printf("[buddy_block_free] **Done**\n\n");
     #endif //__DEBUG
 
-    printf("[buddy_block_free] **Done**\n\n");
+    
 }
 
 
@@ -242,7 +248,7 @@ void *obj_allocate(int token) {
         obj_allocator_p->curr_page = page_p;
     }
 
-    /* TODO: Explan how obj_freelist work*/
+    /* TODO: Explain how obj_freelist work*/
     struct list_head *obj_freelist = obj_allocator_p->curr_page->free;
     if (obj_freelist != NULL) {
         // Allocate memory by free list in current page
@@ -264,9 +270,9 @@ void *obj_allocate(int token) {
         obj_allocator_p->curr_page = NULL;
     }
 
-    printf("[obj_allocate] Allocated address: {phy_addr_16(%x)}\n", allocated_addr);
+    
     #ifdef __DEBUG
-
+    printf("[obj_allocate] Allocated address: {phy_addr_16(%x)}\n", allocated_addr);
     printf("[obj_allocate] After allocation:");
     dump_obj_alloc(obj_allocator_p);
     printf("[obj_allocate] **Done**\n\n");
@@ -294,7 +300,7 @@ void obj_free(void *obj_addr) {
 
     // Make page's object freelist point to address of new first free object.
     // And the contect of released object should record the orginal address 
-    // of first free object that object freelist point to.
+    // of first free object that object freelist previously point to.
     // As the result, if we want to access second free object, just 
     // using free->next(first 8 bytes) to get expected address. 
     // So we can link and access all free object by this strategy without extra
@@ -493,44 +499,46 @@ void mm_init()
     // void *addr17 = obj_allocate(token); // 5
     // void *addr18 = obj_allocate(token); // 3
     
+    
     /* Test Dynamic Memory Allocator */
     __init_kmalloc();
     // Test case 1
-    // void *k_addr1 = kmalloc(16);
-    // void *k_addr2 = kmalloc(48);
+    void *k_addr1 = kmalloc(16);
+    void *k_addr2 = kmalloc(48);
+    kfree(k_addr1);
+    void *k_addr3 = kmalloc(4100);
+    void *k_addr4 = kmalloc(8787);
+    kfree(k_addr3);
 
-    // void *k_addr3 = kmalloc(2000);
-    // void *k_addr4 = kmalloc(8787);
-    // kfree(k_addr2);
     // Test case 2
-    void *address_1 = kmalloc(16);
-    void *address_2 = kmalloc(64);
-    kfree(address_1);
-    void *address_3 = kmalloc(1024);
-    kfree(address_2);
-    kfree(address_3);
-    void *address_4 = kmalloc(16);
-    void *address_9 = kmalloc(16384);
-    void *address_10 = kmalloc(16384);
-    kfree(address_4);
-    void *address_5 = kmalloc(32);
-    void *address_6 = kmalloc(32);
-    kfree(address_5);
-    kfree(address_6);
-    void *address_7 = kmalloc(512);
-    void *address_8 = kmalloc(512);
-    kfree(address_8);
-    kfree(address_7);
-    kfree(address_9);
-    kfree(address_10);
-    void *address_11 = kmalloc(8192);
-    void *address_12 = kmalloc(65536);
-    void *address_13 = kmalloc(128);
-    kfree(address_11);
-    void *address_14 = kmalloc(65536);
-    kfree(address_13);
-    kfree(address_12);
-    kfree(address_14);
-    void *address_15 = kmalloc(256);
-    kfree(address_15);
+    // void *address_1 = kmalloc(16);
+    // void *address_2 = kmalloc(64);
+    // kfree(address_1);
+    // void *address_3 = kmalloc(1024);
+    // kfree(address_2);
+    // kfree(address_3);
+    // void *address_4 = kmalloc(16);
+    // void *address_9 = kmalloc(16384);
+    // void *address_10 = kmalloc(16384);
+    // kfree(address_4);
+    // void *address_5 = kmalloc(32);
+    // void *address_6 = kmalloc(32);
+    // kfree(address_5);
+    // kfree(address_6);
+    // void *address_7 = kmalloc(512);
+    // void *address_8 = kmalloc(512);
+    // kfree(address_8);
+    // kfree(address_7);
+    // kfree(address_9);
+    // kfree(address_10);
+    // void *address_11 = kmalloc(8192);
+    // void *address_12 = kmalloc(65536);
+    // void *address_13 = kmalloc(128);
+    // kfree(address_11);
+    // void *address_14 = kmalloc(65536);
+    // kfree(address_13);
+    // kfree(address_12);
+    // kfree(address_14);
+    // void *address_15 = kmalloc(256);
+    // kfree(address_15);
 }

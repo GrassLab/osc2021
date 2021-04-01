@@ -1,4 +1,4 @@
-// The subset of Linux Kernel list
+// The implementation of file is subset of list.h in Linux Kernel
 #ifndef _LIST_H
 #define _LIST_H
 

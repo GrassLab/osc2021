@@ -28,7 +28,7 @@
 
 
 /**
- *  "used" property of struct of page status 
+ * "used" property of struct of page 
  */
 enum booking_status {
     Free, 
@@ -69,32 +69,38 @@ void free_area_init();
 void dump_buddy();
 
 /**
- *  buddy_block_alloc - Allocate page frames in specify page order
- *  @order: The Requested size of 2^order of page frames. 
+ * buddy_block_alloc - Allocate page frames in specify page order
+ * @order: The Requested size of 2^order of page frames. 
  */
 struct page *buddy_block_alloc(int order);
 
 /**
- *  buddy_block_free - Free page frames 
- *  @order: Start address of page frames
+ * buddy_block_free - Free page frames 
+ * @order: Start address of page frames
  */
 void buddy_block_free(struct page* block);
-
+/**
+ * push and pop block from free area and set some page configs.
+ */
 void push_block_to_free_area(page_t *, free_area_t *, int order);
 void pop_block_from_free_area(page_t *, free_area_t *);
 
-
 /**
- *  Object Allocator - Allocate memory space to object.
- *  Object allocator is based on Buudy system that are used for 
- *  small object
- *  
- *  @curr_page: Point to page that used to allocate memory currently
- *  @objsize: Memory size allocated by the allocator once 
- *  @obj_per_page: The maximum number of obj in one page depends on objsize
- *  @obj_used: The number of objects are using in all page
- *  @page_used: The number of page are used in this allocator
+ * Object Allocator - Allocate memory space to object.
+ * Object allocator is based on Buudy system that are used for 
+ * small object
+ * @full: All objects in use
+ * @partial: Has free objects in it and so is a prime candidate for allocation of objects.
+ * @empty: Has no allocated objects and so is a prime candidate for slab destruction.
+ * @curr_page: Point to page that used to allocate memory currently
+ * To speed allocation and freeing of objects they are arranged 
+ * into three lists; full, partial and empty. 
  *
+ * @objsize: Memory size allocated by the allocator once 
+ * @obj_per_page: The maximum number of obj in one page depends on objsize
+ * @obj_used: The number of objects are using in all page
+ * @page_used: The number of page are used in this allocator
+ * 
  */
 typedef struct object_allocator {
     struct list_head full;
@@ -109,23 +115,21 @@ typedef struct object_allocator {
 } obj_allocator_t;
 
 /**
- *  Initalize all members for Object allocator
+ * Initalize all members for Object allocator
  */
 void __init_obj_alloc(obj_allocator_t *, int);
 void __init_obj_page(page_t *);
 
 /**
- *  Register a new obj allocator
+ * Register a new obj allocator
  */
 int register_obj_allocator(int);
-
 void *obj_allocate(int token);
 void obj_free(void *obj_addr);
-
 void dump_obj_alloc(obj_allocator_t *);
 
 /**
- *  Dynamic  Memory Allocator
+ * Dynamic Memory Allocator - it's based on Buddy System and Object Allocator
  */
 void __init_kmalloc();
 void *kmalloc(int size);
