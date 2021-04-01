@@ -427,7 +427,9 @@ void *register_slab(size_t size) {
   sc->page_slice_pos = sc->head_pd->page;
   sc->size = size;
   sc->free_count = 0;
+  log("cp 1\n");
   sc->page_remain = PAGE_SIZE;
+  log("cp 2\n");
   sc->next_slab = slab_st;
   slab_st = sc;
   log("new slab\n");
