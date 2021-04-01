@@ -3,6 +3,7 @@
 #include "../include/shell.h"
 #include "../include/utils.h"
 #include "../include/initrd.h"
+#include "../include/memAlloc.h"
 #define MAX_BUF_SIZE 128
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC (volatile unsigned int*)0x3F10001c
@@ -10,7 +11,7 @@
 
 
 
-static char* commanlist[] = {"help" , "hello", "reboot", "loadimg", "find" };
+static char* commanlist[] = {"help" , "hello", "reboot", "loadimg", "find","my_alloc","my_free", "mem_status_dump","dy_mem_status_dump" };
 
 void read_input(char *buffer){
     int size = 0;
@@ -42,7 +43,7 @@ static void hello(){
 
 static void help(){
     uart_puts("Available Commands:\n");
-    for(int i =0 ; i < 5 ; ++i){
+    for(int i =0 ; i < 9 ; ++i){
         uart_puts(commanlist[i]);
         uart_puts("\t");
     }
@@ -92,6 +93,24 @@ static void parse_input(char *buffer){
         loadimg();
     }else if(compString("find",buffer) == 0){
         cpio();
+    }else if(compString("my_alloc",buffer) == 0){
+        uart_puts("Please enter size (Hex):");
+        char size[MAX_BUF_SIZE];
+        read_input(size);
+        int int_size = getHexFromString(size);
+        uart_puts("\n");
+        my_alloc(int_size);
+    }else if(compString("my_free",buffer) == 0){
+        uart_puts("Please enter address:");
+        char addr[MAX_BUF_SIZE];
+        read_input(addr);
+        int int_addr = getHexFromString(addr);
+        uart_puts("\n");
+        my_free(int_addr);
+    }else if(compString("mem_status_dump",buffer) == 0){
+        mem_status_dump();
+    }else if(compString("dy_mem_status_dump",buffer) == 0){
+        dy_mem_status_dump();
     }else{
         uart_puts("No Such Command\n");
     }

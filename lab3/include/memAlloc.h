@@ -37,6 +37,8 @@ int mem_init();
 void* my_alloc(int size);
 void my_free(void *addr);
 void* dy_alloc(int size);
+void mem_status_dump();
+void dy_mem_status_dump();
 
 
 #endif

@@ -11,10 +11,6 @@ void main()
     //memory allocator init
     mem_init();
     mem_status_dump();
-    int addr = my_alloc(32);
-    dy_mem_status_dump();
-    my_free(addr);
-    dy_mem_status_dump();
     uart_puts("Hello World!\n");
     // echo everything back
     while(1) {

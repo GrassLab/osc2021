@@ -166,6 +166,7 @@ int find_space(int exp) {
   } else {
     uart_printf("found contiguous space of 2^%d at address:0x%x\n", exp,
                 address);
+    uart_printf("[0x%x] has been allocated\n",address);
     return address;
   }
 }
@@ -203,7 +204,9 @@ void *my_alloc(int size) {
         }
       }
     }
-    address = find_space(exp);
+    if(address == 0){
+        address    = find_space(exp);
+    }
     int page_no = (address - MEM_START) >> 12;
     int frame_size = (1 << (exp - 12));
     while (frame_size > 0) {
@@ -220,12 +223,14 @@ void my_free(void *addr) {
 
   if ((int)addr >= addr16 && (int)addr < (addr16 + PAGE_SIZE)) {
     chunk16[((int)addr - addr16) >> 4].onused = 0;
+    uart_printf("Size 2^%d at address 0x%x has been freed\n",4, addr);
     return;
   } else if ((int)addr >= addr32 && (int)addr < (addr32 + PAGE_SIZE)) {
     chunk32[((int)addr - addr32) >> 5].onused = 0;
-    uart_printf("%d\n", ((int)addr - addr32) >> 5);
+    uart_printf("Size 2^%d at address 0x%x has been freed\n",5, addr);
     return;
   } else if ((int)addr >= addr64 && (int)addr < (addr64 + PAGE_SIZE)) {
+    uart_printf("Size 2^%d at address 0x%x has been freed\n",6, addr);
     chunk64[((int)addr - addr64) >> 6].onused = 0;
     return;
   }
@@ -236,7 +241,7 @@ void my_free(void *addr) {
   int buddy = page_no ^ (1 << (exp)); // page_arr[page_no].buddy;
   int buddy_head = buddy;
   list_node *freed = page_arr[page_no].corespond_list_node;
-
+    uart_printf("Size 2^%d at address 0x%x has been freed\n",exp+12, addr);
   list_node_push(freed, exp);
   int free;
   for (int i = 0; i < frame_size; ++i) {
