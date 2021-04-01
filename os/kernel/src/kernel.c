@@ -1,7 +1,6 @@
 #include "mmio.h"
-#include "util.h"
 #include "shell.h"
-
+#include "util.h"
 
 void kernel() {
   uart_init();

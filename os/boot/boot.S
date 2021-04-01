@@ -2,6 +2,12 @@
 
 .globl _start
 _start:
+  // clear old register
+  //eor   x0, x0, x0
+  //eor   x1, x1, x1
+  //eor   x2, x2, x2
+  //eor   x3, x3, x3
+  //eor   x4, x4, x4
   // disable multi core
   mrs   x0, mpidr_el1
   and   x0, x0, #3

@@ -1,5 +1,6 @@
 #include "shell.h"
 
 void bootloader() {
-    shell();
+  uart_init();
+  shell();
 }

@@ -8,8 +8,10 @@ char *gets(char *str) {
   int buff_end = 0;
   do {
     c = uart_getc();
-    if (c == 0x08 || c == 0x7f) { // backspace, ^H works on screen, BS will send DEL signal
-      if (buff_end == 0) continue; // boundary check
+    if (c == 0x08 ||
+        c == 0x7f) { // backspace, ^H works on screen, BS will send DEL signal
+      if (buff_end == 0)
+        continue; // boundary check
       puts("\b \b");
       buff_end--;
       continue;

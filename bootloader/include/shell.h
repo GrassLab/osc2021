@@ -1,7 +1,6 @@
 #ifndef __SHELL_H_
 #define __SHELL_H_
 
-
 int help();
 int hello();
 int reboot();

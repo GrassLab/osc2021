@@ -3,7 +3,7 @@
 #include "util.h"
 
 #define GETS_BUFF_LEN 0xff
-#define KERNEL_ADDR 0x90000
+#define KERNEL_ADDR 0x80000
 
 int help() {
   puts("Commands:\n\r");
@@ -22,13 +22,21 @@ int load_kernel() {
   void *kernel_base = (void *)KERNEL_ADDR;
   void *kernel_curr = kernel_base;
   char c;
-  do {
+  // get file size (kernel image size)
+  unsigned int file_size = 0;
+  file_size += (unsigned int)uart_getc() << (8 * 3);
+  file_size += (unsigned int)uart_getc() << (8 * 2);
+  file_size += (unsigned int)uart_getc() << (8 * 1);
+  file_size += (unsigned int)uart_getc() << (8 * 0);
+
+  // read kernel image
+  while (kernel_curr < kernel_base + file_size) {
     c = uart_getc();
     *(char *)kernel_curr = c;
     kernel_curr++;
-  } while (c != 'c');
+  }
 
-  // Jump to 0x80000
+  // Jump to KERNEL_ADDR
   ((void (*)(void))kernel_base)();
   return 0;
 }

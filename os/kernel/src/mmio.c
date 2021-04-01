@@ -1,6 +1,5 @@
 #include "mmio.h"
 
-
 void reset(int tick) { // reboot after watchdog timer expire
   *((unsigned int *)PM_RSTC) = PM_PASSWORD | 0x20; // full reset
   *((unsigned int *)PM_WDOG) = PM_PASSWORD | tick; // number of watchdog tick

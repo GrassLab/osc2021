@@ -1,9 +1,8 @@
 #include "shell.h"
-#include "util.h"
 #include "mmio.h"
+#include "util.h"
 
 #define GETS_BUFF_LEN 0xff
-
 
 int help() {
   putln("Commands:");
@@ -23,9 +22,7 @@ int reboot() {
   return 0;
 }
 
-int load_kernel() {
-  return 0;
-}
+int load_kernel() { return 0; }
 
 int _clear() {
   putln("");

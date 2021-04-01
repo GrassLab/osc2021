@@ -29,7 +29,7 @@ clean:
 
 install:
 #cp ./setup/* $(SD_MEDIA)
-	cp $(BOOTLOADER)/config.txt $(SD_MEDIA)
+	cp ./setup/config.txt $(SD_MEDIA)
 	cp $(BOOT_IMG) $(SD_MEDIA)
 
 uninstall:
