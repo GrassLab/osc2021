@@ -16,6 +16,8 @@ void cmd_help() {
   print_s("ls\t\tlist files in Cpio archive\n");
   print_s("cat\t\tprint file content given pathname in Cpio archive\n");
   print_s("dtb\t\tparse and print the flattened devicetree\n");
+  print_s("buddy\t\ttest buddy system\n");
+  print_s("dma\t\ttest dynamic memory allocator\n");
 }
 
 void cmd_hello() { print_s("Hello World!\n"); }
