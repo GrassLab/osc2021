@@ -33,7 +33,7 @@ _start:
 	
 init:
     ldr x0, = 0x00080000
-    ldr x1, = __bss_size
+    ldr x1, = __load_size
     ldr x2, = main 
     subs x2, x2, #0x00080000
     add x2, x2, #0x00060000
