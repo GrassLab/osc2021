@@ -38,7 +38,7 @@ screen /dev/<dev_name>
 
 ## How to burn and run it into pi3
 - Copy bootloader.img to your SD card
-- Copt initramfs.cpio to your SD card
+- Cop initramfs.cpio to your SD card
 - Restart raspi3
 - Waiting bootloader shell
 - Type loadimg command
