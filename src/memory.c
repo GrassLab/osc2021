@@ -117,6 +117,9 @@ void block_free(struct page *block)
            block->page_number, block->order);
 
     block->used = 0;
+    // remember to clean the point to the allocator !!!
+    block->allocator = NULL;
+
     buddy_page_number = find_buddy(block->page_number, block->order);
     buddy = &bookkeep[buddy_page_number];
 
@@ -211,7 +214,7 @@ void *object_allocation(int token)
 
     int index = (object - current_page->start_address) / allocator->object_size;
 
-    printf("[object_allocation] object(page: %d, size: %d, index: %d allocated)\n", current_page->page_number, allocator->object_size, index);
+    printf("[object_allocation] object(page: %d, size: %d, index: %d) allocated\n", current_page->page_number, allocator->object_size, index);
     printf("[object_allocation] done\n\n");
 
     return object;
