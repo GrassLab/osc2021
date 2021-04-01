@@ -14,17 +14,19 @@ ser = None
 
 #kernel = open('./kernel8.img', 'rb')
 if args.fd.find('ttyUSB') > 0:
-    try:
-        ser = serial.Serial(args.fd, args.rate, timeout=0.1)
-    except:
-        print(f'Error: {args.fd} not found.')
-        sys.exit(1)
+    ser = serial.Serial(args.fd, args.rate, timeout=0.1)
+#    try:
+#        ser = serial.Serial(args.fd, args.rate, timeout=0.1)
+#    except:
+#        print(f'Error: {args.fd} not found.')
+#        sys.exit(1)
 else:
-    try:
-        ser = serial.Serial(args.fd, timeout=0.1)
-    except:
-        print(f'Error: {args.fd} not found.')
-        sys.exit(1)
+#    try:
+#        ser = serial.Serial(args.fd, timeout=0.1)
+#    except:
+#        print(f'Error: {args.fd} not found.')
+#        sys.exit(1)
+    ser = serial.Serial(args.fd, timeout=0.1)
 
 def nonblock_read ():
     while True:

@@ -38,6 +38,8 @@ void parse_command (char *b) {
         uart_send("malloc_bins\r\n");
         uart_send("bs_free\r\n");
         uart_send("bs_malloc\r\n");
+        uart_send("m_free\r\n");
+        uart_send("m_malloc\r\n");
     }
     else if (!strcmp(b, "reboot")) {
         uart_send("reboot~~\n");
@@ -81,18 +83,9 @@ void parse_command (char *b) {
     /* TODO: delete */
     else if (!strcmp(b, "test")) {
         show_list();
-        //bs_malloc (0x1000);
-        //buddy_system_show_buckets();
-        //void *tmp = startup_malloc(0x200);
-        //startup_free(tmp);
-        //void *tmp2 = startup_malloc(0x300);
-        //startup_free(tmp2);
-        //startup_malloc(0x20);
     }
     else if (!strcmp(b, "malloc_bins")) {
         show_malloc_bins();
-        //show_list();
-        //buddy_system_show_entry_table();
     }
     else if (!strcmp(b, "bs_bucket"))
         buddy_system_show_buckets();
@@ -131,6 +124,12 @@ void parse_command (char *b) {
     }
     else if (!strcmp(token, "bs_free")) {
         bs_free_interface(b);
+    }
+    else if (!strcmp(token, "m_malloc")) {
+        m_malloc_interface(b);
+    }
+    else if (!strcmp(token, "m_free")) {
+        m_free_interface(b);
     }
     else {
         uart_send("No such command.\n");

@@ -30,4 +30,6 @@ void buddy_system_show_entry_table ();
 void bs_free_interface (char *buffer);
 void bs_malloc_interface (char *buffer);
 
+void m_free_interface (char *buffer);
+void m_malloc_interface (char *buffer);
 #endif

@@ -13,6 +13,7 @@
 #define m_last_chunk_bit 0x0000000000000002
 #define page_start(addr) ((addr) & page_mask)
 #define page_end(addr) ((mask - page_size + 1) & (addr + page_size - 1))
+#define malloc_struct_size (sizeof(malloc_struct))
 
 /* 4 GB */
 #define memory_size 0x100000000
@@ -86,10 +87,7 @@ void show_malloc_bins () {
     uart_send("\r\n");
 }
 
-void *startup_malloc (u64 size) {
-    size = 16 + aligned16(size);
-    malloc_struct *mm = NULL;
-
+malloc_struct *search_freed_bins (u64 size) {
     /* search freed bins */
     if (size <= small_bin_size * 0x10 + 0x10 && size >= 0x20) {
         u64 index = (size - 0x20) / 0x10;
@@ -97,42 +95,49 @@ void *startup_malloc (u64 size) {
             small_bin_list *tmp = small_bin[index].next;
             small_bin[index].next = small_bin[index].next->next;
 
-            malloc_struct *chunk = (malloc_struct *)((u64)tmp - 0x10);
+            malloc_struct *chunk = (malloc_struct *)((u64)tmp - malloc_struct_size);
             chunk->info |= m_used_bit;
 
-            /* demo information */
-            log("startup allocator", "allocate", (u64)chunk, (u64)chunk + size);
-            return (void *)tmp;
+            return chunk;
         }
     }
     else {
         for (large_bin_list *ptr = large_bin.next; ptr; ptr = ptr->next) {
-            malloc_struct *chunk = (malloc_struct *)((u64)ptr - 0x10);
+            malloc_struct *chunk = (malloc_struct *)((u64)ptr - malloc_struct_size);
             /* split chunk and push remain chunk into freed bins */
             if ((chunk->info & m_size_mask) >= size + 0x20) {
                 malloc_struct *r_chunk = (malloc_struct *)((u64)chunk + size);
                 u64 r_size = (chunk->info & m_size_mask) - size;
-                r_chunk->info = r_size;
+                r_chunk->info = r_size | (chunk->info & m_last_chunk_bit);
                 startup_free(&r_chunk->data);
 
                 ptr->next->prev = ptr->prev;
                 ptr->prev->next = ptr->next;
                 chunk->info |= m_used_bit;
 
-                /* demo information */
-                log("startup allocator", "allocate", (u64)chunk, (u64)chunk + size);
-                return ptr;
+                return chunk;
             }
             else if ((chunk->info & m_size_mask) >= size) {
                 ptr->next->prev = ptr->prev;
                 ptr->prev->next = ptr->next;
                 chunk->info |= m_used_bit;
 
-                /* demo information */
-                log("startup allocator", "allocate", (u64)chunk, (u64)chunk + size);
-                return ptr;
+                return chunk;
             }
         }
+    }
+
+    return NULL;
+}
+
+void *startup_malloc (u64 size) {
+    size = 16 + aligned16(size);
+    malloc_struct *mm = search_freed_bins(size);
+
+    if (mm) {
+        log("startup allocator", "allocate", (u64)mm,
+                (u64)mm + (mm->info & m_size_mask));
+        return (void *)&mm->data;
     }
 
     /* allocate a new area */
@@ -591,22 +596,88 @@ void bs_free (void *addr) {
     return ;
 }
 
-void bs_malloc_interface (char *buffer) {
-    bs_malloc(atoi(&buffer[10]));
-}
-
-void bs_free_interface (char *buffer) {
-    bs_free((void *)atoui(&buffer[8]));
-}
 
 /* dynamic allocator */
 #define da_init_size 0x10000
 malloc_struct *dynamic_allocator_ptr = NULL;
 void *dynamic_malloc (u64 size) {
-    return NULL;
+    size = 16 + aligned16(size);
+
+    malloc_struct *mm = search_freed_bins(size);
+    if (mm) {
+        log("dynamic allocator", "allocate", (u64)mm,
+                (u64)mm + (mm->info & m_size_mask));
+        return (void *)&mm->data;
+    }
+
+    if ((dynamic_allocator_ptr->info & m_size_mask) > size) {
+    }
+    else {
+        void *tmp = NULL;
+        if (size < da_init_size)
+            tmp = bs_malloc(da_init_size);
+        else {
+            u64 counter;
+            u64 s = size;
+            for (counter = 0; s; s /= 2) counter++;
+            s = 1 << (counter + 2);
+            tmp = bs_malloc(s);
+        }
+
+        if (!tmp)
+            return NULL;
+        /* append new memory behind old memory */
+        else if ((dynamic_allocator_ptr->info & m_size_mask) + (u64)dynamic_allocator_ptr
+                == (u64)tmp) {
+            dynamic_allocator_ptr->info += da_init_size;
+        }
+        else {
+            dynamic_allocator_ptr->info |= (m_used_bit | m_last_chunk_bit);
+            m_free((void *)dynamic_allocator_ptr->data);
+
+            dynamic_allocator_ptr = (malloc_struct *)tmp;
+            dynamic_allocator_ptr->info = da_init_size | m_last_chunk_bit;
+        }
+    }
+
+    mm = dynamic_allocator_ptr;
+    dynamic_allocator_ptr = (malloc_struct *)((u64)mm + size);
+    dynamic_allocator_ptr->prev = 0;
+    dynamic_allocator_ptr->info = (mm->info - size) | m_last_chunk_bit;
+    mm->info = size | m_used_bit;
+    log("dynamic allocator", "allocate", (u64)mm,
+            (u64)mm + (mm->info & m_size_mask));
+    return (void *)mm->data;
 }
 
 void dynamic_free(void *addr) {
+    malloc_struct *whole_chunk = (malloc_struct *)((u64)addr - 0x10);
+    u64 size = whole_chunk->info & 0xfffffffffffffff0;
+    whole_chunk->info &= (~m_used_bit);    /* clear used bit */
+    /* small bins */
+    if (size <= small_bin_size * 0x10 + 0x10 && size >= 0x20) {
+        small_bin_list *ptr = (small_bin_list *)&whole_chunk->data;
+        u64 index = (size - 0x20) / 0x10;
+        ptr->next = small_bin[index].next;
+        small_bin[index].next = ptr;
+    }
+    /* large bins */
+    else {
+        large_bin_list *ptr = (large_bin_list *)&whole_chunk->data;
+        ptr->next = large_bin.next;
+        ptr->prev = &large_bin;
+        large_bin.next->prev = ptr;
+        large_bin.next = ptr;
+    }
+
+    /* insert information into the next block */
+    if (!(whole_chunk->info & m_last_chunk_bit)) {
+        malloc_struct *nextb = (malloc_struct *)((u64)whole_chunk + size);
+        nextb->prev = (u64)whole_chunk;
+    }
+
+    /* demo information */
+    log("dynamid allocator", "free", (u64)whole_chunk, (u64)whole_chunk + size);
 }
 
 void dynamic_allocator_init () {
@@ -619,4 +690,21 @@ void dynamic_allocator_init () {
     m_free = dynamic_free;
     dynamic_allocator_ptr->prev = 0;
     dynamic_allocator_ptr->info = da_init_size;
+}
+
+
+void bs_malloc_interface (char *buffer) {
+    bs_malloc(atoi(&buffer[10]));
+}
+
+void bs_free_interface (char *buffer) {
+    bs_free((void *)atoui(&buffer[8]));
+}
+
+void m_malloc_interface (char *buffer) {
+    m_malloc(atoi(&buffer[9]));
+}
+
+void m_free_interface (char *buffer) {
+    m_free((void *)atoui(&buffer[7]));
 }
