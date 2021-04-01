@@ -9,7 +9,6 @@ struct frame* head_arr[18]; // store the head of free list group by exp
 
 void init_page_frame()
 {
-    printf("size: %d, %d\r\n", sizeof(long), sizeof(int));
     memset(head_arr, 0, sizeof(head_arr));
 
     frame_arr[0].idx = 0;
@@ -56,7 +55,6 @@ void *alloc_page(void **addr, short exp)
     
     //  sizeof int is not equal to sizeof void *, so hack here, using long before cast to void *
     *addr = (void *)(long)(PHY_MEM_ALLOCABLE_START + head_arr[exp_tmp]->idx * PHY_PF_SIZE);
-    printf("alloc address: %d\r\n", (int)(long)*addr);
     
     // mark as allocated
     struct frame *next = head_arr[exp_tmp]->next;
