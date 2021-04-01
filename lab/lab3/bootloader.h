@@ -49,6 +49,7 @@ void dtb_printNode(char *name, char *value, int len, char *type, int FDT_NODE,
                strcmp("#size-cells", type) || strcmp("virtual-reg", type) ||
                strcmp("interrupt-parent", type)) {
       print_h(big2little(get_int32((unsigned int **)&value)));
+      uart_puts("\r\n");
     } else {
       if (len == 0) uart_puts("N/A");
       for (int i = 0; i < len; i++) {

@@ -141,7 +141,7 @@ void print_h(unsigned long int x) {
     n += n > 9 ? 'A' - 10 : '0';
     uart_send(n);
   }
-  uart_puts("\r\n");
+  // uart_puts("\r\n");
 };
 int get_int32(unsigned int **addr) {
   int result = **addr;

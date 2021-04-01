@@ -151,6 +151,7 @@ void print_buddyList(buddy_list **lists) {
         // uart_puts("        allocate memory addr end: ");
         // print_h((unsigned long int)now->addr + now->size * 4 * KB);
       }
+      uart_puts("\r\n");
     }
   }
 }
@@ -238,8 +239,9 @@ void printDmaPool(dma *list) {
   for (dma *now = list; now != 0; now = now->next) {
     uart_puts("addr: ");
     print_h((unsigned long int)((void *)now) + sizeof(dma));
-    uart_puts("         size: ");
+    uart_puts("\tsize: ");
     print_h((unsigned long int)now->size);
+    uart_puts("\r\n");
     // uart_puts("        allocate memory addr end: ");
     // print_h((unsigned long int)now->addr + now->size * 4 * KB);
   }
@@ -248,7 +250,13 @@ void printDmaPool(dma *list) {
 /* test block */
 void dma_test1() {
   uart_puts("\r\n+++++++++ dma_test1 +++++++++\r\n");
-  int alloc_size[] = {3 * PAGE_SIZE, 5 * PAGE_SIZE, 2, 13 * PAGE_SIZE, 4},
+  int alloc_size[] = {0.5 * PAGE_SIZE,
+                      0.5 * PAGE_SIZE,
+                      3 * PAGE_SIZE,
+                      5 * PAGE_SIZE,
+                      2,
+                      13 * PAGE_SIZE,
+                      4},
       alloc_num = sizeof(alloc_size) / sizeof(int);
   void *p[buff_size];
   for (int i = 0; i < 2 * alloc_num + 1; ++i) {
