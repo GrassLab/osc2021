@@ -74,9 +74,19 @@ void CommandBuddyLogTable()
     buddy_log_allocated_table();
 }
 
+void CommandBuddyLogPool()
+{
+    buddy_log_pool();
+}
+
 void CommandBuddyFree(const int section)
 {
     buddy_free(section);
+}
+
+void CommandBuddyFreePool(int pool, int index)
+{
+    buddy_free_pool(pool, index);
 }
 
 void CommandBuddyAlloc(const int size)

@@ -17,6 +17,10 @@
 struct freelist_node buddy_list[BUDDY_LIST_SIZE];
 struct buddy_block frame_array[FRAME_ARRAY_SIZE];
 struct allocated_block allocated_table[ALLOCATED_TABLE_MAX];
+struct pool_node_16 pool_16;
+struct pool_node_32 pool_32;
+struct pool_node_64 pool_64;
+struct pool_node_128 pool_128;
 
 int list_node_addr_counter = 0;
 
@@ -67,6 +71,63 @@ void buddy_log_allocated_table()
             uart_puts("]\n");
         }
     }
+}
+
+void buddy_log_pool()
+{
+    char temp[10];
+
+    uart_puts("pool16: \n\t");
+    for (int i = 0 ; i < pool_16.num; ++i)
+    {
+        if (pool_16.used[i] == 1)
+        {
+            uart_puts("");
+            itoa(i, temp, 0);
+            uart_puts(temp);
+            uart_puts(", ");
+        }
+    }
+    uart_puts("used\n");
+
+    uart_puts("pool32: \n\t");
+    for (int i = 0 ; i < pool_32.num; ++i)
+    {
+        if (pool_32.used[i] == 1)
+        {
+            uart_puts("");
+            itoa(i, temp, 0);
+            uart_puts(temp);
+            uart_puts(", ");
+        }
+    }
+    uart_puts("used\n");
+
+    uart_puts("pool64: \n\t");
+    for (int i = 0 ; i < pool_64.num; ++i)
+    {
+        if (pool_64.used[i] == 1)
+        {
+            uart_puts("");
+            itoa(i, temp, 0);
+            uart_puts(temp);
+            uart_puts(", ");
+        }
+    }
+    uart_puts("used\n");
+
+    uart_puts("pool128: \n\t");
+    for (int i = 0 ; i < pool_128.num; ++i)
+    {
+        if (pool_128.used[i] == 1)
+        {
+            uart_puts("");
+            itoa(i, temp, 0);
+            uart_puts(temp);
+            uart_puts(", ");
+        }
+    }
+    uart_puts("used\n");
 }
 
 void push_list_tail(int num, int index)
@@ -130,7 +191,6 @@ int pop_list_head(int num)
 
 void buddy_initialize()
 {
-
     for (int i = 1; i < FRAME_ARRAY_SIZE; ++i)
     {
         frame_array[i].val = CONTIGUOUS;
@@ -152,6 +212,34 @@ void buddy_initialize()
     {
         allocated_table[i].index = EMPTY;
         allocated_table[i].page_num = 0;
+    }
+
+    pool_16.ptr = buddy_contiguous_alloc(4096);
+    pool_16.num = 256;
+    for (int i = 0; i < pool_16.num; ++i)
+    {
+        pool_16.used[i] = 0;
+    }
+
+    pool_32.ptr = buddy_contiguous_alloc(4096);
+    pool_32.num = 128;
+    for (int i = 0; i < pool_32.num; ++i)
+    {
+        pool_32.used[i] = 0;
+    }
+
+    pool_64.ptr = buddy_contiguous_alloc(4096);
+    pool_64.num = 64;
+    for (int i = 0; i < pool_64.num; ++i)
+    {
+        pool_64.used[i] = 0;
+    }
+
+    pool_128.ptr = buddy_contiguous_alloc(4096);
+    pool_128.num = 32;
+    for (int i = 0; i < pool_128.num; ++i)
+    {
+        pool_128.used[i] = 0;
     }
 }
 
@@ -192,8 +280,151 @@ int buddy_divid_mem(const int list_index)
 
 void * buddy_alloc(const int size)
 {
+    if (size > 128)
+    {
+        return buddy_contiguous_alloc(size);
+    }
+    else
+    {
+        return buddy_pool_alloc(size);
+    }
+}
+
+void * buddy_pool_alloc(const int size)
+{
+    // 16, 32, 64, 128
+    if (size <= 16)
+    {
+        struct pool_node_16 * current = &pool_16;
+        
+        while (1)
+        {
+            while(current != NULL)
+            {
+                for (int i = 0; i < current->num; ++i)
+                {
+                    if (current->used[i] == 0)
+                    {
+                        current->used[i] = 1;
+                        return current->ptr + 16 * i;
+                    }
+                }
+                current = current->next;
+            }
+            
+            current->ptr = buddy_contiguous_alloc(4096);
+            current->num = 256;
+            for (int i = 0; i < current->num; ++i)
+            {
+                current->used[i] = 0;
+            }
+        }
+    }
+    else if (size <= 32)
+    {
+        struct pool_node_32 * current = &pool_32;
+        
+        while (1)
+        {
+            while(current != NULL)
+            {
+                for (int i = 0; i < current->num; ++i)
+                {
+                    if (current->used[i] == 0)
+                    {
+                        current->used[i] = 1;
+                        return current->ptr + 32 * i;
+                    }
+                }
+                current = current->next;
+            }
+            current->ptr = buddy_contiguous_alloc(4096);
+            current->num = 128;
+            for (int i = 0; i < current->num; ++i)
+            {
+                current->used[i] = 0;
+            }
+        }
+    }
+    else if (size <= 64)
+    {
+        struct pool_node_64 * current = &pool_64;
+        
+        while (1)
+        {
+            while (current != NULL)
+            {
+                for (int i = 0; i < current->num; ++i)
+                {
+                    if (current->used[i] == 0)
+                    {
+                        current->used[i] = 1;
+                        return current->ptr + 64 * i;
+                    }
+                }
+                current = current->next;
+            }
+            current->ptr = buddy_contiguous_alloc(4096);
+            current->num = 64;
+            for (int i = 0; i < current->num; ++i)
+            {
+                current->used[i] = 0;
+            }
+        }
+    }
+    else if (size <= 128)
+    {
+        struct pool_node_128 * current = &pool_128;
+        
+        while (1)
+        {
+            while(current != NULL)
+            {
+                for (int i = 0; i < current->num; ++i)
+                {
+                    if (current->used[i] == 0)
+                    {
+                        current->used[i] = 1;
+                        return current->ptr + 128 * i;
+                    }
+                }
+                current = current->next;
+            }
+            
+            current->ptr = buddy_contiguous_alloc(4096);
+            current->num = 32;
+            for (int i = 0; i < current->num; ++i)
+            {
+                current->used[i] = 0;
+            }
+        }
+    }
+}
+
+void buddy_free_pool(const int pool, const int index)
+{
+    if (pool == 16)
+    {
+        pool_16.used[index] = 0;
+    }
+    else if (pool == 32)
+    {
+        pool_32.used[index] = 0;
+    }
+    else if (pool == 64)
+    {
+        pool_64.used[index] = 0;
+    }
+    else if (pool == 128)
+    {
+        pool_128.used[index] = 0;
+    }
+}
+
+void * buddy_contiguous_alloc(const int size)
+{
     // 4k per unit
-    int alloc_page_num = (size + 3) / 4;
+    int alloc_page_num = (size + 4095) / 4096;
     int target_list_index = -1;
 
     void * ptr = 0x0000;
@@ -268,7 +499,7 @@ void buddy_free(const int section)
         char temp[10];
         uart_puts("Warning: Memory Section ");
         itoa(section, temp, 0);
-        uart_puts(" is already free memory.");
+        uart_puts(" is already free memory.\n");
         return;
     }
 
@@ -301,9 +532,6 @@ void buddy_merge(const int list_index, const int block_index)
 
     if (block_index % pow(2, list_index + 1) == 0) label = 0; // right
     else label = 1; // left
-
-    if (label == 0) uart_puts("right\n");
-    if (label == 1) uart_puts("left\n");
 
     while (current != NULL)
     {
