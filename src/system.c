@@ -19,7 +19,8 @@ struct cmd cmd_list[SYS_CMD_NUM] = {
     {.input = "ls", .description="list rootfs",.callback = sys_list},
     {.input = "cat", .description="show content of file", .callback = sys_cat},
     {.input = "dtb_init", .description="init device by calling driver", .callback = dtb_init},
-    {.input = "lab3", .description="lab3", .callback=__lab3}
+    {.input = "lab3", .description="lab3", .callback=__lab3},
+    {.input = "clear", .description = "clean screen", .callback=sys_clear}
 };
 
 
@@ -29,6 +30,9 @@ void __lab3(char* args){
     DEBUG = 2;
     DMA_test2();
     DEBUG = 0;
+}
+void sys_clear(char* args){
+    uart_puts("\033c");
 }
 uint32_t sys_get32bits(char* ptr){
     uint32_t res = 0;
