@@ -192,9 +192,9 @@ void DMA_test2(){
     for(int i = 0; i < 12; ++i){
         if(index[i] >= 0){
             uart_puts("[Allocate memory] size: ");
-            uart_printhex(size[i]);
+            uart_printhex(size[index[i]]);
             uart_puts("\r\n");
-            addr[i] = dynamic_alloc(size[i]);
+            addr[index[i]] = dynamic_alloc(size[index[i]]);
         }
         else{
             int ti = index[i] + 6;

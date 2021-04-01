@@ -27,7 +27,7 @@ void __lab3(char* args){
     DEBUG = 1;
     buddy_test2();
     DEBUG = 2;
-    DMA_test();
+    DMA_test2();
     DEBUG = 0;
 }
 uint32_t sys_get32bits(char* ptr){
