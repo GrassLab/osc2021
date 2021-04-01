@@ -44,7 +44,7 @@ void* buddy_malloc(size_t size) {
     uart_puts("\n");
   }
   buddy_status();
-  return block;
+  return block + BUDDY_HEADER_OFFSET;
 }
 /**
  * find free block in free list
@@ -83,6 +83,7 @@ void* buddy_find_free_block(int order) {
 }
 
 void buddy_free(void* address) {
+  address -= BUDDY_HEADER_OFFSET;
   if(address < buddy_system.start || address > buddy_system.end) 
     return;
   buddy_merge(address);

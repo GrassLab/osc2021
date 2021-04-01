@@ -5,7 +5,7 @@ void dynamic_init() {
   if(dynamic_system.top_chunk == null) {
     //request page frame from buddy
     dynamic_system.top_chunk = buddy_malloc(PAGE_SIZE);
-    dynamic_system.top_chunk->size = PAGE_SIZE;
+    dynamic_system.top_chunk->size = PAGE_SIZE - BUDDY_HEADER_OFFSET - DYNAMIC_CHUNK_HEADER_OFFSET;
     dynamic_system.top_chunk->next = null;
     dynamic_system.top_chunk->prev_size = 0;
   }
@@ -54,7 +54,7 @@ void* dynamic_malloc(size_t size) {
   uart_puts("allocated size ");
   uart_hex(((struct dynamic_chunk* )chunk)->size);
   uart_puts("\n");
-  return chunk;
+  return chunk + DYNAMIC_CHUNK_HEADER_OFFSET;
 }
 
 void* dynamic_find_free_chunk(int idx) {
@@ -75,7 +75,7 @@ void* dynamic_find_free_chunk(int idx) {
       if(find_idx > idx) {
         //split chunk
         int split_idx = (find_idx - idx) - 1;
-        struct dynamic_chunk* split_chunk = (void *)chunk + size;
+        struct dynamic_chunk* split_chunk = (void *)chunk + size + DYNAMIC_CHUNK_HEADER_OFFSET;
         split_chunk->size = (split_idx + 1) * DYNAMIC_BIN_MIN_SLOT;
         split_chunk->prev_size = size;
         split_chunk->next = dynamic_system.bins[split_idx];
@@ -99,7 +99,7 @@ void* dynamic_top_chunk_malloc(int idx) {
   chunk = dynamic_system.top_chunk;
   chunk_size = (idx + 1) * DYNAMIC_BIN_MIN_SLOT;
   dynamic_system.top_chunk->size = chunk_size + 1; //inuse bit
-  dynamic_system.top_chunk = (void *)dynamic_system.top_chunk + chunk_size;
+  dynamic_system.top_chunk = (void *)dynamic_system.top_chunk + chunk_size + DYNAMIC_CHUNK_HEADER_OFFSET;
   dynamic_system.top_chunk->size = top_chunk_size - chunk_size;
   dynamic_system.top_chunk->next = null;
   dynamic_system.top_chunk->prev_size = chunk_size;
@@ -110,6 +110,7 @@ void dynamic_free(void* address) {
   int merged_idx;
   struct dynamic_chunk *chunk, *prev_chunk, *next_chunk, *next_next_chunk;
   
+  address -= DYNAMIC_CHUNK_HEADER_OFFSET;
   if(address < buddy_system.start || address > buddy_system.end) 
     return;
   
@@ -122,9 +123,9 @@ void dynamic_free(void* address) {
   uart_puts("prev size ");
   uart_hex(chunk->prev_size);
   uart_puts("\n");
-  if(chunk->size > 0 && chunk->size <= DYNAMIC_BIN_MAX * DYNAMIC_BIN_MIN_SLOT) {
-    prev_chunk = (void*)chunk - chunk->prev_size;
-    next_chunk = (void*)chunk + chunk->size;
+  if(chunk->size >= 0x20 && chunk->size <= DYNAMIC_BIN_MAX * DYNAMIC_BIN_MIN_SLOT) {
+    prev_chunk = (void*)chunk - chunk->prev_size - DYNAMIC_CHUNK_HEADER_OFFSET;
+    next_chunk = (void*)chunk + chunk->size + DYNAMIC_CHUNK_HEADER_OFFSET;
     if(chunk->prev_size > 0 && (prev_chunk->size & 0x1) == 0) {
       //prev chunk is freed
       uart_puts("prev chunk is freed.\n");
@@ -138,7 +139,7 @@ void dynamic_free(void* address) {
       chunk = prev_chunk;
     }
 
-    if(next_chunk->prev_size > 0 && (next_chunk->size & 0x1) == 0) {
+    if(next_chunk->prev_size >= 0x20 && (next_chunk->size & 0x1) == 0) {
       //next chunk is free
       if(next_chunk == dynamic_system.top_chunk) {
         //is top chunk
@@ -162,7 +163,7 @@ void dynamic_free(void* address) {
       }
     }
     //set next chunk prev size
-    next_next_chunk = (void*)chunk + chunk->size;
+    next_next_chunk = (void*)chunk + chunk->size + DYNAMIC_CHUNK_HEADER_OFFSET;
     next_next_chunk->prev_size = chunk->size;       
     //put into free list
     if(chunk->size <= DYNAMIC_BIN_MAX * DYNAMIC_BIN_MIN_SLOT) {
@@ -285,7 +286,7 @@ int dynamic_request_new_page() {
   dynamic_top_chunk_free();
   //set to new top chunk
   dynamic_system.top_chunk = tmp;
-  dynamic_system.top_chunk->size = PAGE_SIZE;
+  dynamic_system.top_chunk->size = PAGE_SIZE - BUDDY_HEADER_OFFSET - DYNAMIC_CHUNK_HEADER_OFFSET;
   dynamic_system.top_chunk->next = null;
   dynamic_system.top_chunk->prev_size = 0;
   return 0;
@@ -305,7 +306,7 @@ void* dynamic_unsorted_bin_malloc(size_t size) {
         return null;
       }
       //split chunk
-      split_chunk = (void*) chunk + size;
+      split_chunk = (void*) chunk + size + DYNAMIC_CHUNK_HEADER_OFFSET;
       split_chunk->size = chunk->size - size;
       split_chunk->prev_size = size;
       if(split_chunk->size <= DYNAMIC_BIN_MAX * DYNAMIC_BIN_MIN_SLOT) {

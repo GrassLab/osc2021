@@ -8,7 +8,7 @@
 #define BUDDY_ORDER_MAX 8
 #define BUDDY_BLOCK_NUM (1 << BUDDY_ORDER_MAX)
 #define BUDDY_START  0x10000000 
-#define BUDDY_HEADER_OFFSET 16
+#define BUDDY_HEADER_OFFSET 0x10
 struct buddy_struct
 {
   void* start;
