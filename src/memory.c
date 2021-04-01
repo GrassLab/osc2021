@@ -73,6 +73,7 @@ struct page *block_allocation(int order)
         // free block found
         struct page *temp_block = (struct page *)free_buddy_list[current_order].next;
         list_crop(&temp_block->list, &temp_block->list);
+
         temp_block->used = 1;
         temp_block->order = order;
 
@@ -93,9 +94,11 @@ struct page *block_allocation(int order)
         printf("[block_allocation] block(page: %d, order: %d) allocated\n",
                temp_block->page_number, temp_block->order);
         printf("[block_allocation] done\n\n");
+
         return temp_block;
     }
     printf("[block_allocation] no free space!\n\n");
+
     return 0;
 }
 
@@ -178,7 +181,9 @@ void *object_allocation(int token)
             temp_page->allocator = allocator;
             temp_page->object_count = 0;
 
+            // first_free points to the starting address of the page when allocated
             temp_page->first_free = temp_page->start_address;
+            // block i saves the offset number for block i+1
             for (int i = 0; i < allocator->max_object_count; i++)
                 *(int *)(temp_page->start_address + i * allocator->object_size) =
                         (i + 1) * allocator->object_size;
@@ -190,6 +195,9 @@ void *object_allocation(int token)
     struct page *current_page = allocator->current_page;
     void *object = current_page->first_free;
 
+    // if first_free points to 0x8000 now, and it stores 64, 
+    // which is the location to the next free block behind first_free,
+    // then first_free will point to 0x8040 afterward 
     current_page->first_free = current_page->start_address + 
                                *(int *)(current_page->first_free);
     current_page->object_count++;

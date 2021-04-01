@@ -49,11 +49,11 @@ int main()
     void *address_3 = memory_allocation(64);
     void *address_4 = memory_allocation(64);
     void *address_5 = memory_allocation(64);
+    memory_free(address_5);
     memory_free(address_1);
     memory_free(address_2);
-    memory_free(address_3);
     memory_free(address_4);
-    memory_free(address_5);
+    memory_free(address_3);
 
     return 0;
 }
