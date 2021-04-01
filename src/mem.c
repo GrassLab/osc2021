@@ -332,12 +332,15 @@ void check_buddy_stat() {
 }
 
 void init_slab() {
+
+  void *p1 = alloc_page(PAGE_SIZE);
+  void *p2 = alloc_page(PAGE_SIZE);
   // slab_cache for slab_cache type
-  slab_cache *sc_slab = (slab_cache *)alloc_page(PAGE_SIZE);
+  slab_cache *sc_slab = (slab_cache *)(p1 + 16);
   // slab_cache for page_descriptor type
   slab_cache *pd_slab = sc_slab + 1;
   // page_descriptor for slab_cache type
-  page_descriptor *sc_page = (page_descriptor *)alloc_page(PAGE_SIZE);
+  page_descriptor *sc_page = (page_descriptor *)(p2 + 16);
   // page_descriptor for page_descriptor type
   page_descriptor *pd_page = sc_page + 1;
 
@@ -347,7 +350,7 @@ void init_slab() {
   sc_slab->next_slab = pd_slab;
   sc_slab->free_count = 0;
   sc_slab->cache_pd = sc_page;
-  sc_slab->page_remain = PAGE_SIZE - pad(sizeof(slab_cache), 16) * 2;
+  sc_slab->page_remain = PAGE_SIZE - pad(sizeof(slab_cache), 16) * 2 - 16;
   sc_slab->page_slice_pos = pd_slab + 1;
   sc_slab->head_pd = sc_page;
   sc_slab->size = pad(sizeof(slab_cache), 16);
@@ -355,35 +358,46 @@ void init_slab() {
   pd_slab->next_slab = NULL;
   pd_slab->free_count = 0;
   pd_slab->cache_pd = pd_page;
-  pd_slab->page_remain = PAGE_SIZE - pad(sizeof(page_descriptor), 16) * 2;
+  pd_slab->page_remain = PAGE_SIZE - pad(sizeof(page_descriptor), 16) * 2 - 16;
   pd_slab->page_slice_pos = pd_page + 1;
   pd_slab->head_pd = pd_page;
   pd_slab->size = pad(sizeof(page_descriptor), 16);
 
   sc_page->free_list = NULL;
   sc_page->next_pd = NULL;
-  sc_page->page = (void *)sc_slab;
+  sc_page->page = (void *)p1;
   sc_page->free_count = 0;
 
   pd_page->free_list = NULL;
   pd_page->next_pd = NULL;
-  pd_page->page = (void *)sc_page;
+  pd_page->page = (void *)p2;
   pd_page->free_count = 0;
 
   slab_st = sc_slab;
   sc_slab_tok = sc_slab;
   pd_slab_tok = pd_slab;
+
+  *(void **)p1 = (void *)sc_slab;
+  *(void **)p2 = (void *)pd_slab;
+  log("slab");
+  log_hex((unsigned long long)sc_slab_tok);
+  log("\n");
+  log("slab");
+  log_hex((unsigned long long)pd_slab_tok);
+  log("\n");
 }
 
 void pd_self_alloc() {
-  page_descriptor *new_pd = (page_descriptor *)alloc_page(PAGE_SIZE);
+  void *p = alloc_page(PAGE_SIZE);
+  *(void **)p = (void *)pd_slab_tok;
+  page_descriptor *new_pd = (page_descriptor *)(p + 16);
   set_buddy_flag(buddy_stat[ptr_to_pagenum((void *)new_pd)], SLAB_USE);
-  new_pd->page = (void *)new_pd;
+  new_pd->page = p;
   new_pd->free_count = 0;
   new_pd->free_list = NULL;
   new_pd->next_pd = pd_slab_tok->head_pd;
   pd_slab_tok->head_pd = new_pd;
-  pd_slab_tok->page_remain = PAGE_SIZE - pad(sizeof(page_descriptor), 16);
+  pd_slab_tok->page_remain = PAGE_SIZE - pad(sizeof(page_descriptor), 16) - 16;
   pd_slab_tok->page_slice_pos = new_pd + 1;
   log("pd self allocate\n");
 }
@@ -424,13 +438,17 @@ void *register_slab(size_t size) {
   sc = (slab_cache *)alloc_slab((void *)sc_slab_tok);
   sc->head_pd = new_pd();
   sc->cache_pd = sc->head_pd;
-  sc->page_slice_pos = sc->head_pd->page;
+  sc->page_slice_pos = sc->head_pd->page + 16;
   sc->size = size;
   sc->free_count = 0;
-  sc->page_remain = PAGE_SIZE;
+  sc->page_remain = PAGE_SIZE - 16;
+  *(void **)(sc->head_pd->page) = (void *)sc;
   sc->next_slab = slab_st;
   slab_st = sc;
   log("new slab\n");
+  log("slab");
+  log_hex((unsigned long long)sc);
+  log("\n");
   return (void *)sc;
 }
 
@@ -456,8 +474,9 @@ void *alloc_slab(void *slab_tok) {
       page_descriptor *pd = new_pd();
       pd->next_pd = sc->head_pd;
       sc->head_pd = pd;
-      sc->page_slice_pos = sc->head_pd->page;
-      sc->page_remain = PAGE_SIZE;
+      sc->page_slice_pos = sc->head_pd->page + 16;
+      sc->page_remain = PAGE_SIZE - 16;
+      *(void **)(pd->page) = sc;
     }
   }
   return slice_remain_slab(sc);
@@ -475,18 +494,21 @@ void _free_slab(void *ptr, slab_cache *sc, page_descriptor *pd) {
 
 void free_unknow_slab(void *ptr) {
   log("free slab unknow\n");
-  slab_cache *sc = slab_st;
-  while (sc != NULL) {
-    page_descriptor *pd = sc->head_pd;
-    while (pd != NULL) {
-      if (ptr_to_pagenum(pd->page) == ptr_to_pagenum(ptr)) {
-        _free_slab(ptr, sc, pd);
-        return;
-      }
-      pd = pd->next_pd;
-    }
-    sc = sc->next_slab;
-  }
+  // slab_cache *sc = slab_st;
+  // while (sc != NULL) {
+  //   page_descriptor *pd = sc->head_pd;
+  //   while (pd != NULL) {
+  //     if (ptr_to_pagenum(pd->page) == ptr_to_pagenum(ptr)) {
+  //       _free_slab(ptr, sc, pd);
+  //       return;
+  //     }
+  //     pd = pd->next_pd;
+  //   }
+  //   sc = sc->next_slab;
+  // }
+  slab_cache *sc = *(slab_cache **)pagenum_to_ptr(ptr_to_pagenum(ptr));
+  log_hex((unsigned long long)sc);
+  free_slab(ptr, sc);
 }
 
 void free_slab(void *ptr, void *slab) {

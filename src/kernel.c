@@ -57,8 +57,15 @@ void kernel() {
     kmalloc(0x20);
   }
   log("30\n");
+  void *m[83];
   for(int i = 0; i < 83; i++) {
-    kmalloc(0x30);
+    m[i] = kmalloc(0x30);
+  }
+  for(int i = 0; i < 83; i++) {
+    kfree(m[i]);
+  }
+  for(int i = 0; i < 83; i++) {
+    m[i] = kmalloc(0x30);
   }
   log("40\n");
   for(int i = 0; i < 64; i++) {
