@@ -25,9 +25,9 @@
 
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
-CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
+CFLAGS = -Wall -O2 -ffreestanding -nostartfiles
 
-all: clean kernel8.img uartboot.img
+all: clean kernel8.img
 
 start.o: start.S
 	aarch64-linux-gnu-gcc $(CFLAGS) -c start.S -o start.o
@@ -35,17 +35,12 @@ start.o: start.S
 %.o: %.c
 	aarch64-linux-gnu-gcc $(CFLAGS) -c $< -o $@
 
-kernel8.img: start.o main.o uart.o ramdisk.o
-	aarch64-linux-gnu-ld -nostdlib -nostartfiles start.o uart.o ramdisk.o main.o -T link.ld -o kernel8.elf
+kernel8.img: start.o $(OBJS)
+	aarch64-linux-gnu-ld -nostdlib -nostartfiles start.o $(OBJS) -T link.ld -o kernel8.elf
 	aarch64-linux-gnu-objcopy -O binary kernel8.elf kernel8.img
 
-uartboot.img: start.o Uboot.o uart.o ramdisk.o
-	aarch64-linux-gnu-ld -nostdlib -nostartfiles start.o uart.o ramdisk.o Uboot.o -T link.ld -o uartboot.elf
-	aarch64-linux-gnu-objcopy -O binary uartboot.elf uartboot.img
-
-
 clean:
-	rm kernel8.elf uartboot.elf *.o >/dev/null 2>/dev/null || true
+	rm kernel8.elf *.o >/dev/null 2>/dev/null || true
 
 run:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio

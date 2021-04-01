@@ -23,6 +23,8 @@
  *
  */
 
+#include "bmalloc.h"
+#include "buddy.h"
 #include "ramdisk.h"
 #include "uart.h"
 
@@ -40,12 +42,29 @@ int strCmp(const char* p1, const char* p2)
     } while (c1 == c2);
     return c1 - c2;
 }
+
+void buddy_test()
+{
+    buddy_init();
+    uint64_t* x1 = bmalloc(1 << 12);
+    uint64_t* x2 = bmalloc(1 << 13);
+    uint64_t* x3 = bmalloc(1 << 14);
+    uint64_t* x4 = bmalloc(1 << 5);
+    uint64_t* x5 = bmalloc(1 << 5);
+    uint64_t* x6 = bmalloc(34);
+    bfree(x1);
+    bfree(x2);
+    bfree(x3);
+    bfree(x4);
+    bfree(x5);
+    bfree(x6);
+}
+
 void main()
 {
     // set up serial console
     uart_init();
     uart_puts("Booting...\n");
-
     char uart_buffer[50];
     char* ramdisk = (char*)0x20000000;
     while (1) {
@@ -62,6 +81,8 @@ void main()
             cancel_reset();
         } else if (strCmp(uart_buffer, "ramdisk") == 0) {
             initrd_list(ramdisk);
+        } else if (strCmp(uart_buffer, "buddy") == 0) {
+            buddy_test();
         } else {
             uart_puts(uart_buffer);
             uart_puts("  Command not found\n");

@@ -25,7 +25,7 @@
 
 SECTIONS
 {
-    . = 0x60000;
+    . = 0x80000;
     .text : { KEEP(*(.text.boot)) *(.text .text.*) }
     .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
     PROVIDE(_data = .);

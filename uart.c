@@ -23,6 +23,7 @@
  *
  */
 
+#include "uart.h"
 #include "gpio.h"
 
 /* Auxilary mini UART registers */
@@ -141,7 +142,7 @@ void uart_gets(char* buffer, int length)
     int ptr = 0;
     while (ptr < length) {
         buffer[ptr] = uart_getc();
-        // uart_puts(&buffer[ptr]);
+        uart_puts(&buffer[ptr]);
         if (buffer[ptr] == '\n') {
             buffer[ptr] = '\0';
             break;
@@ -178,5 +179,56 @@ void uart_hex(unsigned int d)
         // 0-9 => '0'-'9', 10-15 => 'A'-'F'
         n += n > 9 ? 0x37 : 0x30;
         uart_send(n);
+    }
+}
+
+void print_string(char* s)
+{
+    uart_puts(s);
+}
+
+void print_char(char c)
+{
+    uart_send(c);
+}
+
+void print_integer(uint64_t i)
+{
+    if (i < 0) {
+        print_char('-');
+        i = -i;
+    }
+    if (i >= 10)
+        print_integer(i / 10);
+    print_char(i % 10 + '0');
+}
+
+void print_address(uint64_t addr)
+{
+    uint64_t quotient, remainder;
+    uint64_t divisor = 0x1000000000000000;
+    remainder = addr;
+    print_string("0x");
+    for (int i = 0; i < 16; i++) {
+        quotient = remainder / divisor;
+        remainder %= divisor;
+        divisor /= 16;
+        if (quotient < 10) {
+            print_integer((int)quotient);
+        } else if (quotient == 10) {
+            print_char('A');
+        } else if (quotient == 11) {
+            print_char('B');
+        } else if (quotient == 12) {
+            print_char('C');
+        } else if (quotient == 13) {
+            print_char('D');
+        } else if (quotient == 14) {
+            print_char('E');
+        } else if (quotient == 15) {
+            print_char('F');
+        } else {
+            print_char('Z');
+        }
     }
 }
