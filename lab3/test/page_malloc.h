@@ -1,7 +1,7 @@
 
 typedef struct page
 {
-	unsigned int addr;
+	unsigned long addr;
 	struct page *next;
 }Page;
 void alloc_page_init(unsigned long addr_low, unsigned long addr_high);

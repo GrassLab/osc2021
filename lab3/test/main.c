@@ -38,7 +38,7 @@ void main() {
             ls(input,0);
         }
         else if(!strcmp(input, "demo")) {
-            alloc_page_init(0x10000000, 0x20000000);           
+            alloc_page_init(0x10000000-0x10, 0x20000000+0x10);           
             unsigned long p0 = alloc_page(4096);
             unsigned long p1 = alloc_page(4096);
             unsigned long p2 = alloc_page(4096);
@@ -51,7 +51,7 @@ void main() {
             p1 = alloc_page(16);
             p2 = alloc_page(16);
             p3 = alloc_page(16);
-            //unsigned long p4 = alloc_page(16);
+            
             free_page(p2, 16);
             free_page(p1, 16);
             free_page(p0, 16);

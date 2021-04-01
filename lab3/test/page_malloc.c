@@ -9,6 +9,7 @@
 
 extern unsigned long __heap_start; /* declared in the linker script */
 static Page frame_freelist[frame_list_amount + 1] = {{0},{NULL}};
+Page address_index = {{0},{NULL}};
 char tmp_string[20];
 unsigned long addr_base;
 
@@ -77,7 +78,11 @@ void insert_framelist(int order, unsigned int addr){
 }
 
 void alloc_page_init(unsigned long addr_low, unsigned long addr_high){
-    addr_low = addr_low >> minimum_base << minimum_base;
+    if(addr_low % minimum_order != 0)
+        addr_low = addr_low / minimum_order * minimum_order + 16;
+    else
+        addr_low = addr_low / minimum_order * minimum_order;
+    
     unsigned long mem_size = addr_high - addr_low;
     unsigned long addr_low_pre = addr_low;
     addr_base = addr_low;
@@ -85,6 +90,9 @@ void alloc_page_init(unsigned long addr_low, unsigned long addr_high){
     uart_puts("-----------------------------------------------------------");
     uart_puts("------------\n");
 
+    Page* page_index_order = &address_index;
+    insert_Page(page_index_order, createNewPage(addr_low));
+    page_index_order = page_index_order -> next;
 
     order = order_2(addr_low) - minimum_base;
     while(order>=0){
@@ -97,7 +105,12 @@ void alloc_page_init(unsigned long addr_low, unsigned long addr_high){
             dec_hex(mem_size,tmp_string);
             uart_puts(tmp_string);
             uart_puts("\n");
-            order = (order_2(addr_low_pre) != order_2(addr_low))? order_2(addr_low) - minimum_base : order;
+            if(order_2(addr_low_pre) != order_2(addr_low)){
+                order =  order_2(addr_low) - minimum_base ;
+                insert_Page(page_index_order, createNewPage(addr_low));
+                page_index_order = page_index_order -> next;
+            }
+                
         }
         else{
             order--;
@@ -122,6 +135,18 @@ Page* find_page(Page* page, int addr){
         }
     }
     return NULL;
+}
+
+unsigned long find_index_base(int addr){
+    Page* page;
+    Page *previous;
+    page = &address_index;
+    previous = page;
+    while(page != NULL && addr > page ->addr){
+            previous = page;
+            page = page->next;
+    }
+    return previous->addr;
 }
 
 int size_to_order(int size){
@@ -182,7 +207,8 @@ unsigned int alloc_page(int size){
 void free_page(int addr, int size){
     Page* current;
     Page* temp;
-    unsigned int index = ((addr - addr_base) / minimum_order);
+    unsigned long index_base = find_index_base(addr);
+    unsigned int index = ((addr - index_base) / minimum_order);
     int order = size_to_order(size);
     int i;
     int buddy_addr;
@@ -197,18 +223,18 @@ void free_page(int addr, int size){
     for(i = order; i<frame_list_amount; i++){
         current = &frame_freelist[i];
         buddy_index = index^pow_2(i);
-        buddy_addr = buddy_index * minimum_order + addr_base;
+        buddy_addr = buddy_index * minimum_order + index_base;
         temp = find_page(current, buddy_addr);
         if(temp != NULL){
             remove_Page(temp, i);
             index = index / pow_2(i+1) * pow_2(i+1);
             asm volatile("nop");
             uart_puts("merge page from:");
-            dec_hex(index*minimum_order + addr_base,tmp_string);
+            dec_hex(index*minimum_order + index_base,tmp_string);
             uart_puts(tmp_string);
             uart_puts(" ");
             buddy_index = index^pow_2(i);
-            buddy_addr = buddy_index * minimum_order + addr_base;
+            buddy_addr = buddy_index * minimum_order + index_base;
             dec_hex(buddy_addr,tmp_string);
             uart_puts(tmp_string);
             uart_puts(" to frame index: ");
@@ -217,7 +243,7 @@ void free_page(int addr, int size){
         else
             break;    
     }
-    insert_framelist(i, index*minimum_order + addr_base);
+    insert_framelist(i, index*minimum_order + index_base);
     uart_puts("-----------------------------------------------------------");
     uart_puts("------------\n");
 }
