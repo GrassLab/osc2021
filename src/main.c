@@ -1,3 +1,4 @@
+#include "allocator.h"
 #include "uart.h"
 #include "mystring.h"
 #include "shell.h"
@@ -8,6 +9,7 @@ void main() {
     char cmd[CMDSIZE] = { 0 };
     int cmd_idx=0;
     uart_init();
+    allocator_init();
     uart_putstr("\r\n");
     uart_putstr("# ");
     while(1) {
