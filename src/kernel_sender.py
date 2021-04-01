@@ -15,9 +15,6 @@ if len(sys.argv) > 1:
         while 1:
             if s.in_waiting > 0:
                 print(s.read().decode('ascii'), end = '')
-                global stop_threads
-                if stop_threads:
-                    break
 
     t = threading.Thread(target = listen)
     stop_threads = False
@@ -27,6 +24,11 @@ if len(sys.argv) > 1:
         s.write('start'.encode())
         s.write(f.read())
         s.write('end'.encode())
+
+    while 1:
+        cmd = input()
+        s.write((cmd + '\r').encode())
+        s.flushInput()
 
     t.join()
 else:

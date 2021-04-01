@@ -145,6 +145,7 @@ void augment_pool()
 
 void pool_stat()
 {
+    printf("----- pool status -----\r\n");
     int count = 0;
     struct chunk_256 *tmp_256 = mem_pool.chunk_256;
     while (tmp_256) {
@@ -184,6 +185,7 @@ void pool_stat()
         tmp_16 = tmp_16->next;
     }
     printf("chunk 16: %d\r\n", count);
+    printf("-----------------------\r\n\n");
 }
 
 void free(void *addr)
