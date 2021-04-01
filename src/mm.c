@@ -179,6 +179,7 @@ void __init_obj_alloc(obj_allocator_t *obj_allocator_p, int objsize)
 void __init_obj_page(page_t *page_p) 
 {
     page_p->obj_used = 0;
+    page_p->obj_alloc = NULL;
     page_p->free = NULL;
 }
 
@@ -322,7 +323,23 @@ void obj_free(void *obj_addr) {
     // and make sure this page not currently used by object allocator
     if (page_p->obj_used == 0 && obj_allocator_p->curr_page != page_p) {
         list_del(&page_p->list); // pop out from partial list
-        list_add_tail(&page_p->list, &obj_allocator_p->empty);
+
+        // Return empty page to free page pool(free_area) if memory becomes tight
+        // otherwise, add it to empty list 
+        if (obj_allocator_p->page_used >= 10) { // TODO: Return empty page only if memory becomes tight
+            #ifdef __DEBUG
+            printf("[obj_free] Free empty page bacause memory is tight");
+            #endif // __DEBUG
+
+            obj_allocator_p->page_used -= 1;
+            page_p->free = NULL;
+            page_p->obj_alloc = NULL;
+            page_p->obj_used = 0;
+            buddy_block_free(page_p);
+        } else {
+            // Add to empty list
+            list_add_tail(&page_p->list, &obj_allocator_p->empty);
+        }
     }
 
     #ifdef __DEBUG
@@ -506,9 +523,11 @@ void mm_init()
     void *k_addr1 = kmalloc(16);
     void *k_addr2 = kmalloc(48);
     kfree(k_addr1);
-    void *k_addr3 = kmalloc(4100);
-    void *k_addr4 = kmalloc(8787);
+    void *k_addr3 = kmalloc(2048);
+    void *k_addr4 = kmalloc(2048);
+    void *k_addr5 = kmalloc(8787);
     kfree(k_addr3);
+    kfree(k_addr4);
 
     // Test case 2
     // void *address_1 = kmalloc(16);
