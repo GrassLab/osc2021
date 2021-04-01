@@ -1,75 +1,96 @@
 #include "allocator.h"
 #include "cpio.h"
+#include "mmio.h"
 #include "uart.h"
 
+extern unsigned char __end;
+struct PageInfo *page;
+
 void allocator_init() {
-    struct PageInfo *page_info = (struct PageInfo *)MEM_INFO_BASE;
-    page_info->page_size = PAGE_SIZE;
-    page_info->id = 0;
-    uart_printf("ALLOCATOR: init, %d 4k pages", page_info->page_size);
+    unsigned long first_avail_page = (unsigned long)&__end / PAGE_SIZE + 1;
+    unsigned long mmio_base_page = MMIO_BASE / PAGE_SIZE;
+    uart_printf("%d\n", mmio_base_page);
+
+    unsigned long bytes = sizeof(struct PageInfo) * mmio_base_page;
+    unsigned long ds_page = align_up(bytes, PAGE_SIZE) / PAGE_SIZE;
+
+    void *page_addr = (void *)(first_avail_page * PAGE_SIZE);
+    page = (struct PageInfo *) page_addr;
+    first_avail_page += ds_page;
+
+    // init buddy system
+    unsigned long step = sizeof(unsigned long)*8 - __builtin_clzl(mmio_base_page) - 1;
+    step = 1<<step;
+    unsigned long idx = 0;
+    while(step) {
+        if(idx+step <= mmio_base_page) {
+            page[idx].size = step;
+            page[idx].status = AVAIL;
+            idx += step;
+        }
+        step >>= 1;
+    }
+    
+
+    // alloc kernel address
+    uart_printf("%d\n", mmio_base_page);
+    kmalloc(first_avail_page * PAGE_SIZE);
 }
 
-void *kmalloc(unsigned long id, unsigned long size) {
+void *kmalloc(unsigned long size) {
     // size need dividing by 4k
-    unsigned long alloc_size = align_up(size, 0x1000) / 0x1000;
+    unsigned long page_need = align_up(size, PAGE_SIZE) / PAGE_SIZE;
 
     // find first more than needed
-    struct PageInfo *starter = (struct PageInfo *)MEM_INFO_BASE;
     //struct PageInfo *end = (struct PageInfo *)MEM_INFO_BASE + PAGE_SIZE * sizeof(struct PageInfo);
 
     // if starter >= end, could not find
     unsigned long offset = 0;
-    while(starter->id != 0 || starter->page_size < alloc_size) {
-        offset += starter->page_size;
-        starter = (struct PageInfo *)((unsigned long)starter + starter->page_size * sizeof(struct PageInfo));
-
+    while(page[offset].status == USED || page[offset].size < page_need) {
+        offset += page[offset].size;
     }
-
-    // use current block
-    void *true_mem = (void *)(MEM_BASE + offset * 0x1000);
-    starter->id = id;
-    starter->real_size = size;
-    starter->mem_addr = true_mem;
-
 
     // split into least need
-    unsigned long s = starter->page_size >> 1;
-    struct PageInfo *p=starter;
-    while(s >= alloc_size) {
-        p = (struct PageInfo *)((unsigned long)starter + s * sizeof(struct PageInfo));
-        p->page_size = s;
-        p->id = 0;
-        p->mem_addr = (void *)(MEM_BASE + (offset + s) * 0x1000);
-        starter->page_size = s;
-        uart_printf("split: %x and %x\n", starter->mem_addr, p->mem_addr);
+    unsigned long s = page[offset].size >> 1;
+    while(s >= page_need) {
+        page[offset].size = s;
+        page[offset+s].size = s;
+        page[offset+s].status = AVAIL;
         s>>=1;
     }
+    page[offset].status = USED;
 
-    uart_printf("ALLOCATOR: alloc %dkb @ 0x%x\n", starter->page_size * 4, true_mem);
+    void *mem = (void *)(offset*PAGE_SIZE);
 
-    return true_mem;
+    uart_printf("ALLOCATOR: alloc %d pages @ page %d - %d\n", page_need, offset, offset+page[offset].size);
+
+    return mem;
 }
 
-void free(unsigned long id) {
-    // find all block belong to id
-    struct PageInfo *starter = (struct PageInfo *)MEM_INFO_BASE;
-    struct PageInfo *end = (struct PageInfo *)(MEM_INFO_BASE+PAGE_SIZE*sizeof(struct PageInfo));
-    struct PageInfo *next;
+void kfree(void *ptr) {
+    unsigned long page_offset = (unsigned long)ptr / PAGE_SIZE;
 
-    while(starter < end) {
-        next = (struct PageInfo *)((unsigned long)starter + starter->page_size*sizeof(struct PageInfo));
-        if(starter->id == id) {
-            starter->id = 0;
+    page[page_offset].status = AVAIL;
+    buddy_merge(page_offset);
+}
 
-            uart_printf("free page %dkb @ 0x%x\n", starter->page_size * 4, starter->mem_addr);
-
-            // merge with next;
-            while(next < end && next->id == 0 && next->page_size == starter->page_size) {
-                uart_printf("merge pool 0x%x and 0x%x\n", starter->mem_addr, next->mem_addr);
-                starter->page_size <<= 1;
-                next = (struct PageInfo *)((unsigned long)starter + starter->page_size*sizeof(struct PageInfo));
-            }
+void buddy_merge(unsigned long offset) {
+    unsigned long buddy_offset = find_buddy(offset, page[offset].size);
+    if(page[buddy_offset].status == AVAIL && page[buddy_offset].size == page[offset].size) {
+        if(buddy_offset < offset) {
+            page[buddy_offset].size = page[offset].size * 2;
+            uart_printf("merge page %d and %d to size %d\n", buddy_offset, offset, page[buddy_offset].size);
+            buddy_merge(buddy_offset);
         }
-        starter = next;
+        else {
+            page[offset].size = page[offset].size * 2;
+            uart_printf("merge page %d and %d to size %d\n", offset, buddy_offset, page[offset].size);
+            buddy_merge(offset);
+        }
     }
+}
+
+unsigned long find_buddy(unsigned long offset, unsigned long size) {
+    unsigned long buddy_offset = offset ^ size;
+    return buddy_offset;
 }

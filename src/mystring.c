@@ -28,8 +28,8 @@ char *itoa(int value, char *s, int base) {
     return s;
 }
 
-int atoi(char *s) {
-    int i = 0;
+long atoi(char *s) {
+    long i = 0;
     while(*s) {
         i = i * 10 + *s - '0';
         s++;

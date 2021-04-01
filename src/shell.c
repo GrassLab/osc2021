@@ -27,28 +27,18 @@ void shell_cmd(char* cmd) {
         print_cpio();
     }
     else if(!strncmp(cmd, "alloc", 5)) {
-        int id;
         int size;
         char *p=cmd;
         char buf[100];
-        int idx;
+        int idx = 0;
         while(*p++!=' ');
-        idx = 0;
-        while(*p!=' ') {
-            buf[idx++] = *p++;
-        }
-        buf[idx] = '\0';
-        id = atoi(buf);
-
-        p++;
-        idx = 0;
         while(*p && *p!=' ') {
             buf[idx++] = *p++;
         }
         buf[idx] = '\0';
         size = atoi(buf);
-        uart_printf("id: %d, size: %d\n", id, size);
-        kmalloc(id, size);
+        void *addr = kmalloc(size);
+        uart_printf("addr: 0x%x, %d\n", addr, addr);
     }
     else if(!strncmp(cmd, "free", 4)) {
         char *p = cmd;
@@ -59,9 +49,8 @@ void shell_cmd(char* cmd) {
             buf[idx++] = *p++;
         }
         buf[idx] = '\0';
-        int id = atoi(buf);
-        uart_printf("id: %d\n", id);
-        free(id); 
+        void *addr = (void *)atoi(buf);
+        kfree(addr); 
     }
     else if(!strcmp(cmd, "")) {
     }
