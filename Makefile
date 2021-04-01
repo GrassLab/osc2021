@@ -30,6 +30,6 @@ clean:
 run: all
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio
 
-deploy:
+deploy: all
 	cp ./kernel8.img /run/media/brothre23/4DFF-0A36/
 	sudo eject /dev/sdc
