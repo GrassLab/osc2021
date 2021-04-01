@@ -4,7 +4,7 @@
 
 | 學號 | GitHub 帳號 | 姓名 | Email |
 | --- | ----------- | --- | --- |
-|`309551087`| `bensonlu0120' | '劉柏嶔` | at881005@gmail.com |
+|`309551087`| `bensonlu0120' | `劉柏嶔` | at881005@gmail.com |
 
 ## How to build
 
