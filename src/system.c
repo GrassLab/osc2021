@@ -11,7 +11,7 @@ struct cmd{
     
 };
 int DEBUG = 0;
-struct cmd cmd_list[SYS_CMD_NUM] = {
+struct cmd cmd_list[] = {
     {.input = "help", .description="list commands", .callback = sys_help},
     {.input = "hello", .description="print hello world",.callback = sys_hello},
     {.input = "reboot", .description="reset raspi3",.callback = sys_reboot},
@@ -97,7 +97,7 @@ void system_command(char* buf){
             break;
         }
     }
-    for(int i = 0; i < SYS_CMD_NUM; ++i){
+    for(int i = 0; i < sizeof(cmd_list) / sizeof(struct cmd); ++i){
         if(strcmp(cmd_list[i].input, buf) == 0){
             cmd_list[i].callback(args);
             break;
@@ -139,7 +139,7 @@ void* malloc(int size){
 }
 void sys_help(char* args){
     uart_puts("[Command] : [Description]\r\n");
-    for(int i = 0; i < SYS_CMD_NUM; ++i){
+    for(int i = 0; i < sizeof(cmd_list) / sizeof(struct cmd); ++i){
         uart_puts(cmd_list[i].input);
         uart_puts(" : ");
         uart_puts(cmd_list[i].description);

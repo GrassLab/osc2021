@@ -9,7 +9,6 @@
 #define PM_RSTS ((volatile unsigned int *)(0x3F100020))
 #define PM_WDOG ((volatile unsigned int *)(0x3F100024))
 
-#define SYS_CMD_NUM 9
 #define CPIO_ADDR ((char *)0x20000000) //QEMU(0x8000000)
 #define KB 0x400
 #define MB 0x100000
