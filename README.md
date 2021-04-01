@@ -38,16 +38,18 @@ screen /dev/<dev_name>
 
 ## How to burn and run it into pi3
 - Copy bootloader.img to your SD card
-- Copt initramfs.cpio to your SD card
+- Copy initramfs.cpio to your SD card
 - Restart raspi3
 - Waiting bootloader shell
-- Type <loadimg> command
+- Type loadimg command
 - Open another terminal to send kernel.img
-- ```bash python3 sender.py ```
+```bash
+python3 sender.py 
+```
 - Tab to raspi3 console, check for the recving kernel.img
-- Type <jumpimg> commmand
+- Type jumpimg commmand
 - You will see the new kernel shell
-- Type <cpio> command
+- Type cpio command
 
 ## Directory structure
 
