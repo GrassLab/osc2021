@@ -84,6 +84,11 @@ void MiniUART::GetS(char* str) {
                 }
             }
         }
+        else if (ch == 'C' - 64) { //Ctrl-C
+            str[0] = '\0';
+            PutS("\r\n");
+            return;
+        }
         else {
             str[offset++] = ch;
         }
@@ -97,8 +102,8 @@ void MiniUART::PutS(const char* str) {
     }
 }
 
-void MiniUART::PutUInt32(uint32_t val) {
-    char buffer[10];
+void MiniUART::PutUInt64(uint64_t val) {
+    char buffer[21];
     int i = 0;
     if (val == 0) {
         Send('0');

@@ -4,68 +4,67 @@
 #include <mini_uart.h>
 #include <stdint.h>
 
+template<uint32_t SIZE_POW>
 struct BuddyInfo {
-    // If bits[31] = 1 not allocated and be the master
-    // If bits[31] = 0 allocated or be the slave
-    // bits[0:30]
-    // If it is the master, the power of block size = 4 * (2 ^ (bits[0:30] - 1)) KB, no matter if it is allocated
-    // If it is the slave, bits[0:30] = 0
-    uint32_t status;
+    // If allocated = 1 allocated or be the slave
+    // If allocated = 0 not allocated and be the master
+    char allocated: 1;
+    // If it is the master, the power of block size = 4 * (2 ^ (size_pow_plus_1 - 1)) KB, no matter if it is allocated
+    // If it is the slave, size_pow_plus_1 = 0
+    char size_pow_plus_1: 6;
     //  If status is not equal to -1, it point to the next same size block.
-    int next;
+    int32_t next: SIZE_POW + 1;
 };
 
 template<uint32_t SIZE_POW>
 class Buddy {
 public:
-    const uint32_t STATUS_NOT_ALLOCATED = 1 << 31;
-    const uint32_t STATUS_POW_SIZE = ~STATUS_NOT_ALLOCATED;
     Buddy() {
         for (uint32_t i = 0; i < (1 << SIZE_POW); i++) {
-            info[i] = {0, -1};
+            info[i] = {1, 0, -1};
         }
         for (uint32_t i = 0; i <= SIZE_POW; i++) {
             first_elem[i] = -1;
         }
-        info[0] = {((1 << 31) | (SIZE_POW + 1)), -1};
+        info[0] = {0, SIZE_POW + 1, -1};
         first_elem[SIZE_POW] = 0;
     }
     // return the offset of the allocated memory
     uint32_t Allocate(const uint32_t alloc_size_pow) {
         int result = AllocateInternal(alloc_size_pow);
-        IO() << "Allocate buddy " << result << " with size 2 ^ " << alloc_size_pow << "\r\n";
+        IO() << "Allocate buddy " << result << " with size " << (1<<alloc_size_pow) << "\r\n";
         return result;
     }
     void Free(uint32_t offset) {
-        if (!(info[offset].status & STATUS_NOT_ALLOCATED)) {
-            uint32_t alloc_size_pow_plus_1 = info[offset].status;
-            if (alloc_size_pow_plus_1 == 0) return;
-            uint32_t alloc_size_pow = alloc_size_pow_plus_1 - 1;
+        if (info[offset].allocated && info[offset].size_pow_plus_1 > 0) {
+            uint32_t alloc_size_pow = info[offset].size_pow_plus_1 - 1;
             int find_buddy_flag = 1 << alloc_size_pow;
-            info[offset].status |= STATUS_NOT_ALLOCATED;
+            info[offset].allocated = 0;
             PutIntoList(offset, alloc_size_pow);
             CombineBuddy(offset, alloc_size_pow);
             IO() << "Freed buddy " << offset << "\r\n";
+        }
+        else {
+            IO() << "Memory not allocated\r\n";
         }
     }
 private:
     void CombineBuddy(uint32_t offset, uint32_t alloc_size_pow) {
         int find_buddy_flag = 1 << alloc_size_pow;
         uint32_t other_offset = offset ^ find_buddy_flag;
-        if (other_offset < (1 << SIZE_POW) &&
-            (info[other_offset].status & STATUS_NOT_ALLOCATED) &&
-            (info[offset].status & STATUS_POW_SIZE) == (info[other_offset].status & STATUS_POW_SIZE)) {
+        if (other_offset < (1 << SIZE_POW) && !info[other_offset].allocated && info[offset].size_pow_plus_1 == info[other_offset].size_pow_plus_1) {
             // Remove both offset from the linked list
             RemoveFromList(offset, alloc_size_pow);
             RemoveFromList(other_offset, alloc_size_pow);
-            info[other_offset].next = -1;
             // Combine 2 of them
             int first_offset = offset < other_offset ? offset : other_offset;
             int second_offset = offset < other_offset ? other_offset : offset;
-            info[second_offset].status = 0;
+            info[second_offset].allocated = 1; // Slave
+            info[second_offset].size_pow_plus_1 = 0;
             info[second_offset].next = -1;
             alloc_size_pow++;
-            info[first_offset].status = STATUS_NOT_ALLOCATED | (alloc_size_pow + 1);
+            info[first_offset].allocated = 0;
+            info[first_offset].size_pow_plus_1 = alloc_size_pow + 1;
             info[first_offset].next = -1;
             IO() << "Combine buddy " << first_offset << " with buddy " << second_offset << "\r\n";
             // Put info[first_offset] into linked list
@@ -84,6 +83,7 @@ private:
             }
             info[iter_offset].next = info[offset].next;
         }
+        info[offset].next = -1;
     }
     void PutIntoList(uint32_t offset, uint32_t alloc_size_pow) {
         int iter_offset = first_elem[alloc_size_pow];
@@ -111,20 +111,22 @@ private:
             first_elem[alloc_size_pow] = info[result].next;
         }
         else {
-            result = Allocate(alloc_size_pow + 1);
+            result = AllocateInternal(alloc_size_pow + 1);
         }
-        info[result].status = alloc_size_pow + 1;
+        info[result].allocated = 1;
+        info[result].size_pow_plus_1 = alloc_size_pow + 1;
         info[result].next = -1;
         if (!hasSameSizeElem) {
             int bottom_half_offset = result + (1 << alloc_size_pow);
-            info[bottom_half_offset].status = (alloc_size_pow + 1) | STATUS_NOT_ALLOCATED;
+            info[bottom_half_offset].allocated = 0;
+            info[bottom_half_offset].size_pow_plus_1 = alloc_size_pow + 1;
             info[bottom_half_offset].next = -1;
             first_elem[alloc_size_pow] = bottom_half_offset;
-            IO() << "Split buddy " << result << " with size 2^" << (alloc_size_pow + 1) << " into 2 buddy with size 2^" << alloc_size_pow << ":" << result << ", " << bottom_half_offset << "\r\n";
+            IO() << "Split buddy " << result << " with size " << (1<<(alloc_size_pow + 1)) << " into 2 buddy with size " << (1<<alloc_size_pow) << ": " << result << ", " << bottom_half_offset << "\r\n";
         }
         return result;
     }
-    BuddyInfo info[(1 << SIZE_POW)];
+    BuddyInfo<SIZE_POW> info[(1 << SIZE_POW)];
     int first_elem[SIZE_POW + 1];
 };
 

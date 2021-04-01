@@ -50,6 +50,8 @@ void Terminal::Help() {
         "hello   | print Hello World!\r\n"
         "reboot  | reboot the raspi\r\n"
         "ls      | list filenames and file contents in cpio\r\n"
+        "malloc  | allocate memory\r\n"
+        "free    | free memory\r\n"
     );
 }
 
@@ -82,23 +84,36 @@ void Terminal::Ls() {
 
 void Terminal::Malloc() {
     char* ptr = buffer;
-    while (*ptr != ' ') ptr++;
-    while (*ptr == ' ') ptr++;
-    int val = 0;
+    while (*ptr != ' ' && *ptr != '\0') ptr++;
+    while (*ptr == ' ' && *ptr != '\0') ptr++;
+    uint64_t val = 0;
     while (*ptr <= '9' && *ptr >= '0') {
         val = val * 10 + (*ptr - '0');
         ptr++;
     }
-    buddy.Allocate(val);
+    char* result = memAlloc.malloc(val);
+    if (result) {
+        IO() << "Allocated memory width address " << uint64_t(result) << "\r\n";
+    }
+    else {
+        IO() << "Failed to allocate memory\r\n";
+    }
+
 }
 void Terminal::Free() {
     char* ptr = buffer;
-    while (*ptr != ' ') ptr++;
-    while (*ptr == ' ') ptr++;
-    int val = 0;
+    while (*ptr != ' ' && *ptr != '\0') ptr++;
+    while (*ptr == ' ' && *ptr != '\0') ptr++;
+    uint64_t val = 0;
     while (*ptr <= '9' && *ptr >= '0') {
         val = val * 10 + (*ptr - '0');
         ptr++;
     }
-    buddy.Free(val);
+    bool result = memAlloc.free((char*)val);
+    if (result) {
+        IO() << "Freed memory " << val << "\r\n";
+    }
+    else {
+        IO() << "Failed to free memory\r\n";
+    }
 }

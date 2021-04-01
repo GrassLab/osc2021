@@ -1,7 +1,7 @@
 #ifndef TERMINAL_H
 #define TERMINAL_H
 
-#include <buddy.h>
+#include <memalloc.h>
 
 class Terminal;
 
@@ -22,7 +22,7 @@ private:
     void Malloc();
     void Free();
     char buffer[1024];
-    Buddy<10> buddy;
+    MemAlloc memAlloc;
     NameFuncMap map[10] = {
         {"ls", &Terminal::Ls},
         {"help", &Terminal::Help},
