@@ -39,7 +39,8 @@ void mem_init(){
 }
 
 void mem_ll_show(){
-  uart_puts("Memery Link List\n");
+  uart_puts("Memory Status\n");
+  uart_puts("address          bytes  pages\n");
   uart_puts("===============================\n");
   struct mem_node *ite = mem_inuse;
   while(ite){
@@ -60,9 +61,6 @@ void mem_ll_show(){
 void mem_add_new_node(int mbytes, int page_need, unsigned long long r){
   char ct[20];
   struct mem_node *new_node = ll_pop_front<struct mem_node>(&mem_unuse);
-  //int_to_hex((unsigned long long)new_node->next, ct);
-  //uart_puts(ct);
-  //uart_puts("\n");
   new_node->addr = r;
   new_node->bytes = mbytes;
   new_node->page_need = page_need;
@@ -77,9 +75,6 @@ void mem_add_new_node(int mbytes, int page_need, unsigned long long r){
   }
   if (target->addr > new_node->addr) target = 0;
   ll_push_elm(&mem_inuse, new_node, target);
-  //int_to_hex((unsigned long long)new_node->next, ct);
-  //uart_puts(ct);
-  //uart_puts("\n");
 }
 
 void* malloc(int mbytes){
@@ -94,7 +89,7 @@ void* malloc(int mbytes){
     page_need = mbytes/BUDDY_PAGE_SIZE;
     page_need = (mbytes%BUDDY_PAGE_SIZE) ? page_need+1 : page_need ;
     int_to_str(mbytes, ct);
-    uart_puts("Alloc memery size ");
+    uart_puts("Alloc memory size ");
     uart_puts(ct);
     uart_puts(", need page ");
     int_to_str(page_need, ct);
@@ -139,6 +134,10 @@ void free(void* addr){
     ll_push_front<struct mem_node>(&mem_unuse, target);
   }
   else{
-    uart_puts("memery addr not found\n");
+    uart_puts("Memory addr <");
+    char ct[20];
+    int_to_hex((unsigned long long)addr, ct);
+    uart_puts(ct);
+    uart_puts("> not found\n");
   }
 }

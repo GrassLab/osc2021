@@ -25,16 +25,20 @@ kernel8.img: link.ld $(OBJS) $(OBJS_ASM)
 	$(OBJCPY) -O binary kernel8.elf kernel8.img
 
 clean:
-	rm kernel8.elf $(BUILD_DIR)/*.o
+	rm kernel8.elf $(BUILD_DIR)/*.o *.cpio
 
-run: kernel8.img
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio
+run: kernel8.img initramfs.cpio
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -initrd initramfs.cpio
 
 asm: kernel8.img
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -d in_asm -serial null -serial pty
 
-pty: kernel8.img
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial pty -initrd ../lab2/initramfs.cpio
+pty: kernel8.img initramfs.cpio
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial pty -initrd initramfs.cpio
+
+initramfs.cpio:
+	cd rootfs; \
+	find . | cpio -o -H newc > ../initramfs.cpio
 
 build_dir: $(BUILD_DIR)
 

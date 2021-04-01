@@ -154,7 +154,7 @@ void buddy_dma_free(unsigned long long addr, int mbytes, int itrn){
   uart_puts(" bytes from addr <");
   int_to_hex(addr, ct);
   uart_puts(ct);
-  uart_puts(", base addr = ");
+  uart_puts(">, base addr <");
   unsigned long long base_addr = addr-(addr%BUDDY_PAGE_SIZE);
   int_to_hex(base_addr, ct);
   uart_puts(ct);
@@ -258,18 +258,6 @@ void buddy_init(){
   buddy_unuse_head = &buddy_ll[0];
 
   buddy_free(BUDDY_BASE_ADDR, BUDDY_SIZE, 0);
-  /*
-  unsigned long long buddy_assign_t = BUDDY_BASE_ADDR;
-  while(buddy_assign_t < BUDDY_BASE_ADDR+BUDDY_SIZE){
-    struct buddy_node *new_node = ll_pop_front<struct buddy_node>(&buddy_unuse_head);
-    new_node->order = BUDDY_MAX_ORDER;
-    new_node->addr = buddy_assign_t;
-    buddy_assign_t += (1 << BUDDY_MAX_ORDER)*BUDDY_PAGE_SIZE;
-    ll_push_back<struct buddy_node>(&buddy_head[BUDDY_MAX_ORDER], new_node);
-    uart_puts("Check init a\n");
-    //bnll_push_end(&buddy_head[BUDDY_MAX_ORDER], new_node);
-  }
-  */
 }
 
 void buddy_push_free_page(struct buddy_node **head, struct buddy_node *node, int itrn){
@@ -523,7 +511,6 @@ void buddy_table_show_init(){
 
 void buddy_table_show(){
   buddy_table_show_init();
-  uart_puts("Hi\n");
   uart_puts("           0   1   2   3 | 4   5   6   7 | 8   9   a   b | c   d   e   f | 10 11  12  13 |14  15  16  17 |18  19  1a  1b |1c  1d  1e  1f |\n");
   uart_puts("===========================================================================================================================================\n");
   int row_offset = (BUDDY_PAGE_NUM%BUDDY_TABLE_COLS) ? 0 : -1;

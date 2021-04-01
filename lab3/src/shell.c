@@ -51,19 +51,12 @@ void invoke_cmd(char *cmd){
     if (str_cmp(argv[1], "buddy") == 1){
       show_file("help/buddy");
     }
-    if (str_cmp(argv[1], "dma") == 1){
+    else if (str_cmp(argv[1], "dma") == 1){
       show_file("help/dma");
     }
     else{
       show_file("help/default");
     }
-    /*
-    uart_puts("Command | Description\n");
-    uart_puts("--------| ----------------------------\n");
-    uart_puts("hello   | print Hello World!\n");
-    uart_puts("help    | print all available commands\n");
-    uart_puts("reboot  | reboot pi\n");
-    */
   }
   else if (str_cmp(argv[0], "reboot") == 1){
     uart_puts("Rebooting ...\n");
@@ -83,13 +76,13 @@ void invoke_cmd(char *cmd){
     char ct[20];
     unsigned long long r = (unsigned long long)malloc(alloc_size);
     if (r){
-      uart_puts("\nGet memery <");
+      uart_puts("\nGet memory <");
       int_to_hex(r, ct);
       uart_puts(ct);
       uart_puts(">\n");
     }
     else{
-      uart_puts("\nMemery alloc fail.\n");
+      uart_puts("\nMemory alloc fail.\n");
     }
   }
   else if (str_cmp(cmd, "free") == 1){
