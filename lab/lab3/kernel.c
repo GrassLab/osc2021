@@ -72,7 +72,7 @@ void shell() {
     } else if (strcmp(buff, "clear"))
       do_clear();
     else if (strcmp(buff, "lab3")) {
-      // buddy_test1();
+      buddy_test1();
       // buddy_test4();
       dma_test1();
       dma_test2();
