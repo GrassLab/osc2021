@@ -90,14 +90,16 @@ static struct frame_flag frame[FRAME_ARRAY_SIZE];
 static struct List_head frame_bins[FRAME_BINS];
 static struct List *cache_bins[CACHE_BINS];
 static uint32_t init = 0;
-
+static int NUM[FRAME_BINS];
 void init_buddy() {
     struct List_head *node;
 
     for (int i = 0; i < FRAME_BINS; i++) {
         frame_bins[i].next = &frame_bins[i];
         frame_bins[i].prev = &frame_bins[i];
+        NUM[i] = 0; 
     }
+    NUM[MAX_ORDER] = 1;
     
     for (uint64_t i = 0; i < FRAME_ARRAY_SIZE; i += 1 << MAX_ORDER) {
         frame[i].order = MAX_ORDER;
@@ -107,18 +109,26 @@ void init_buddy() {
     }
 }
 
+
 void *split_frames(int now_order, int target_order) {
     
     struct List_head *node = List_move_next(&frame_bins[now_order]);
+    uart_printf("start split order %d to %d\n",now_order, target_order);
 
-
-    
+    NUM[now_order] -= 1; 
     for (int i = now_order; i > target_order; i--) {
         struct List_head *s = (struct List_head *)((char *)node + PAGE_SIZE * (1 << (i-1)));
         List_insert_next(&frame_bins[i-1], s);
+
         frame[((uint64_t)s - FRAME_BASE) / PAGE_SIZE].order = i - 1;
+        NUM[i-1] ++;
     }
-    int idx = (((uint64_t)node & -PAGE_SIZE) - FRAME_BASE) / PAGE_SIZE;
+   
+    for(int i = 0; i < FRAME_BINS; i++){
+        
+        uart_printf("now order %d num is %d\n",i, NUM[i]);
+    }
+    int idx = (((uint64_t)node) - FRAME_BASE) / PAGE_SIZE;
     frame[idx].order = target_order;
     frame[idx].flags = 1;
     return node;
@@ -134,8 +144,10 @@ static void *alloc_pages(unsigned count) {
 
     for (int i = order; i < FRAME_BINS; i++) {
         if (frame_bins[i].next != &frame_bins[i]) {
+        	
             return split_frames(i, order);
         }
+        uart_printf("order %d is null \n",i);
     }
 
   
@@ -150,23 +162,30 @@ void free_pages(void *addr) {
     }
     
     unsigned order = frame[page_idx].order;
+
     int buddy_page_idx = page_idx ^ (1 << order);
     frame[page_idx].flags = 0;
-
+    NUM[order]++;
     /* merge frames */
-    while (order <= MAX_ORDER &&
+    uart_printf("%d %d %d %d %d**\n",order, frame[buddy_page_idx].order, frame[buddy_page_idx].flags, buddy_page_idx, page_idx);
+    while (order < MAX_ORDER &&
            frame[buddy_page_idx].flags == 0 &&
            order == frame[buddy_page_idx].order)
     {
         void *buddy_victim = (void *)(FRAME_BASE + buddy_page_idx * PAGE_SIZE);
         unlink((struct List_head *)buddy_victim);
-
+        NUM[order] -= 2;
+        NUM[order+1] +=1;
         order += 1;
         addr = page_idx < buddy_page_idx ? addr : buddy_victim;
         page_idx = page_idx < buddy_page_idx ? page_idx : buddy_page_idx;
         buddy_page_idx = page_idx ^ (1 << order);
     }
-
+    uart_printf("start free & merge\n");
+    for(int i = 0; i < FRAME_BINS; i++){
+        
+        uart_printf("now order %d num is %d\n",i, NUM[i]);
+    }
     List_insert_next(&frame_bins[order], addr);
     frame[page_idx].order = order;
 }
@@ -177,9 +196,11 @@ static void *get_cache(unsigned int size) {
     int order = size / CACHE_MIN_SIZE - 1;
 
     void *addr = cache_bins[order];
+    
     if (addr) {
         cache_bins[order] = cache_bins[order]->next;
-        int idx = (((uint64_t)addr & -PAGE_SIZE) - FRAME_BASE)/ PAGE_SIZE;
+
+        int idx = (((uint64_t)addr) - FRAME_BASE)/ PAGE_SIZE;
         frame[idx].refcnt += 1;
     }
 
@@ -187,18 +208,31 @@ static void *get_cache(unsigned int size) {
 }
 
 static void alloc_cache(void *mem, int size) {
-    int count = PAGE_SIZE / size;
-    int idx = (((uint64_t)mem & -PAGE_SIZE) - FRAME_BASE) / PAGE_SIZE;
+
+    
+    int idx = (((uint64_t)mem) - FRAME_BASE) / PAGE_SIZE;
     int order = size / CACHE_MIN_SIZE - 1;
+    int csize = CACHE_MIN_SIZE * (1 << order);
+    int count = PAGE_SIZE / csize;
     frame[idx].flags = 2;
     frame[idx].refcnt = 0;
     frame[idx].cache_order = order;
-
+    struct List* ptr = cache_bins[order];
     for (int i = 0; i < count; i++) {
-        struct List *addr = (struct List *)((uint64_t)mem + i * size);
-        addr->next = cache_bins[order];
-        cache_bins[order] = addr;
+        struct List *addr = (struct List *)((uint64_t)mem + i * csize);
+        if(i == 0){
+        	cache_bins[order] = addr;
+        	ptr = cache_bins[order];
+        }
+        else{
+	        ptr->next= addr;
+	        ptr = ptr->next;
+	        uart_printf("ptr %x \n",ptr);
+	        //addr->next = cache_bins[order];
+	        //cache_bins[order] = addr;
+	    }
     }
+
 }
 
 
@@ -211,13 +245,17 @@ void *kmalloc(uint64_t size) {
     if (size < CACHE_MIN_SIZE) {
         size = CACHE_MIN_SIZE;
     }
-
+    uart_printf("size is %d\n",size);
     void *cache;
-    if (size < PAGE_SIZE) {   
+    if (size < PAGE_SIZE) {  
+    uart_printf("size is %d\n",size); 
         cache = get_cache(size);
 
         if (!cache) {
+        	uart_printf("size is %d\n",size);
             void *mem = alloc_pages(1);
+
+            uart_printf("address %x\n", mem);
             alloc_cache(mem, size);
             cache = get_cache(size);
         }
@@ -230,7 +268,7 @@ void *kmalloc(uint64_t size) {
 }
 
 void kfree(void *ptr) {
-    int idx = (((uint64_t)ptr & -PAGE_SIZE) - FRAME_BASE) / PAGE_SIZE;
+    int idx = (((uint64_t)ptr) - FRAME_BASE) / PAGE_SIZE;
     if (idx >= FRAME_ARRAY_SIZE) {
         uart_printf("[Warn] Kernel: kfree wrong address");
         return;
