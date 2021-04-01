@@ -1,4 +1,4 @@
-#include "flattened_devicetree.h"
+#include "fdt.h"
 #include "data_type.h"
 #include "uart.h"
 #include "string.h"
@@ -68,23 +68,22 @@ u32 get_fdt_header_size_dt_struct () {
 void show_fdt_info () {
     if (!fdt_head)
         return;
-    uart_send("base address: "); uart_sendh((unsigned long) fdt_head); uart_send("\r\n");
-    uart_send("magic: "); uart_sendh(get_fdt_header_magic()); uart_send("\r\n");
-    uart_send("totalsize: "); uart_sendh(get_fdt_header_totalsize()); uart_send("\r\n");
-    uart_send("off_dt_struct: "); uart_sendh(get_fdt_header_off_dt_struct()); uart_send("\r\n");
-    uart_send("off_dt_strings: "); uart_sendh(get_fdt_header_off_dt_strings()); uart_send("\r\n");
-    uart_send("off_mem_rsvmap: "); uart_sendh(get_fdt_header_off_mem_rsvmap()); uart_send("\r\n");
-    uart_send("version: "); uart_sendh(get_fdt_header_version()); uart_send("\r\n");
-    uart_send("last_comp_version: "); uart_sendh(get_fdt_header_last_comp_version()); uart_send("\r\n");
-    uart_send("boot_cpuid_phys: "); uart_sendh(get_fdt_header_boot_cpuid_phys()); uart_send("\r\n");
-    uart_send("size_dt_strings: "); uart_sendh(get_fdt_header_size_dt_strings()); uart_send("\r\n");
-    uart_send("size_dt_struct: "); uart_sendh(get_fdt_header_size_dt_struct()); uart_send("\r\n");
+    print("base address: %x\n", (unsigned long) fdt_head);
+    print("magic: %x\n", get_fdt_header_magic());
+    print("totalsize: %x\n", get_fdt_header_totalsize());
+    print("off_dt_struct: %x\n", get_fdt_header_off_dt_struct());
+    print("off_dt_strings: %x\n", get_fdt_header_off_dt_strings());
+    print("off_mem_rsvmap: %x\n", get_fdt_header_off_mem_rsvmap());
+    print("version: %x\n", get_fdt_header_version());
+    print("last_comp_version: %x\n", get_fdt_header_last_comp_version());
+    print("boot_cpuid_phys: %x\n", get_fdt_header_boot_cpuid_phys());
+    print("size_dt_strings: %x\n", get_fdt_header_size_dt_strings());
+    print("size_dt_struct: %x\n", get_fdt_header_size_dt_struct());
 }
 
 void print_u32s (u32 *ptr, int num) {
     for (int i = 0; i < num; i++) {
-        uart_sendh(u32_b2l(ptr[i]));
-        uart_send(" ");
+        print("%x ", u32_b2l(ptr[i]));
     }
 }
 
@@ -99,14 +98,13 @@ u32 parse_prop (u32 offset, char is_print) {
     unsigned char *ptr = (unsigned char *)&fdt_struct[offset + 3];
 
     if (is_print) {
-        uart_send(name);
-        uart_send(": ");
+        print("%s: ", name);
         if (strlength((char *)ptr) != len - 1) {
             print_u32s((u32 *)ptr, len / 4);
         }
         else
-            uart_send((char *)&fdt_struct[offset + 3]);
-        uart_send("\r\n");
+            print((char *)&fdt_struct[offset + 3]);
+        print("\n");
     }
 
     return len % 4 ? len / 4 + 4 : len / 4 + 3;
@@ -117,20 +115,14 @@ void show_all_fdt () {
     u32 *fdt_struct = (u32 *)(tmp + get_fdt_header_off_dt_struct());
     char *fdt_string = (char *)(tmp + get_fdt_header_off_dt_strings());
 
-    uart_sendh((unsigned long)fdt_struct);
-    uart_send("\r\n");
-    uart_sendh((unsigned long)fdt_string);
-    uart_send("\r\n");
-    //return;
+    print("%x\n", (unsigned long)fdt_struct);
+    print("%x\n", (unsigned long)fdt_string);
 
     /* start parse structure */
     for (int i = 0; fdt_struct[i] != FDT_END_BIG;) {
         /* next chunck is string */
         if (fdt_struct[i] == FDT_BEGIN_NODE_BIG) {
-            uart_send("\r\n");
-            //uart_send("-->node start\r\n");
-            uart_send((char *)&fdt_struct[i + 1]);
-            uart_send("\r\n");
+            print("\n%s\n", (char *)&fdt_struct[i + 1]);
             unsigned long len = strlength((char *)&fdt_struct[i + 1]) + 1;
             i += len / 4;
             i += len % 4 ? 1 : 0;
@@ -146,9 +138,8 @@ void show_all_fdt () {
             i++;
         }
         else {
-            uart_send("error!!!!!!!\r\n");
-            uart_sendh((unsigned long) &fdt_struct[i]);
-            uart_send("\r\n");
+            print("error!!!!!!!\n");
+            print("%x\n", (unsigned long) &fdt_struct[i]);
             break;
         }
     }

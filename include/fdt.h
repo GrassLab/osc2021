@@ -1,5 +1,5 @@
-#ifndef FLATTENED_DEVICETREE_H
-#define FLATTENED_DEVICETREE_H
+#ifndef FDT_H
+#define FDT_H
 #include "data_type.h"
 
 #define FDT_BEGIN_NODE_BIG 0x1000000

@@ -123,53 +123,52 @@ void header2info (CPIO_HEADER *base, CPIO_INFO *info) {
 }
 
 void show_cpio_info (CPIO_HEADER *base) {
-    uart_send("name: ");
-    uart_send((char *)(base + (0x70 - 2)));
+    print("name: %s", (char *)(base + (0x70 - 2)));
     char *ptr = (char *)base;
-    uart_send((char *)&ptr[0x6e]);
+    print((char *)&ptr[0x6e]);
 
-    uart_send("\r\nmagic: ");
+    print("\nmagic: ");
     print_chars(base->c_magic, 6);
 
-    uart_send("\r\nino: ");
+    print("\nino: ");
     print_chars(base->c_ino, 8);
 
-    uart_send("\r\nmode: ");
+    print("\nmode: ");
     print_chars(base->c_mode, 8);
 
-    uart_send("\r\nuid: ");
+    print("\nuid: ");
     print_chars(base->c_uid, 8);
 
-    uart_send("\r\ngid: ");
+    print("\ngid: ");
     print_chars(base->c_gid, 8);
 
-    uart_send("\r\nnlink: ");
+    print("\nnlink: ");
     print_chars(base->c_nlink, 8);
 
-    uart_send("\r\nmtime: ");
+    print("\nmtime: ");
     print_chars(base->c_mtime, 8);
 
-    uart_send("\r\nfilesize: ");
+    print("\nfilesize: ");
     print_chars(base->c_filesize, 8);
 
-    uart_send("\r\ndevmajor: ");
+    print("\ndevmajor: ");
     print_chars(base->c_devmajor, 8);
 
-    uart_send("\r\ndevminor: ");
+    print("\ndevminor: ");
     print_chars(base->c_devminor, 8);
 
-    uart_send("\r\nrdevmajor: ");
+    print("\nrdevmajor: ");
     print_chars(base->c_rdevmajor, 8);
 
-    uart_send("\r\nrdevminor: ");
+    print("\nrdevminor: ");
     print_chars(base->c_rdevminor, 8);
 
-    uart_send("\r\nnamesize: ");
+    print("\nnamesize: ");
     print_chars(base->c_namesize, 8);
 
-    uart_send("\r\ncheck: ");
+    print("\ncheck: ");
     print_chars(base->c_check, 8);
-    uart_send("\r\n");
+    print("\n");
 }
 
 CPIO_index * cpio_find_file (char *path) {
@@ -193,8 +192,8 @@ void cpio_cat_interface (char *buffer) {
 
 void cpio_show_files () {
     for (CPIO_index *ptr = cpio_index_head; ptr; ptr = ptr->next) {
-        uart_send(ptr->name);
-        uart_send(" ");
+        print(ptr->name);
+        print(" ");
     }
-    uart_send("\r\n");
+    print("\n");
 }

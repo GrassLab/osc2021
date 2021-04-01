@@ -28,14 +28,8 @@ MINI-UART := -serial null -serial stdio
 # flag
 BOOTLOADER := bootloader
 TEST_IMG := $(BOOTLOADER).img
-#TEST_IMG := $(TARGET).img
 UART := UART_MINI # UART_MINI or UART_PL011
-ifeq ($(tar), raspi3)
-TAR = M_RASPI3
-else
-TAR = M_QEMU
-endif
-CCFLAG := -Wall -nostdlib -Og -D$(UART) -D$(TAR) -I$(INC_DIR)
+CCFLAG := -Wall -nostdlib -Og -D$(UART) -I$(INC_DIR)
 ASMFLAG := -Isrc
 
 # cpio archive
@@ -74,7 +68,7 @@ $(BUILD_DIR)/%.o: $(DIR)/%.S
 
 # bootloader
 $(BOOTLOADER).img:
-	@cd $(BOOTLOADER) && make tar=$(tar)
+	@cd $(BOOTLOADER) && make
 	@cp $(BOOTLOADER)/$(BOOTLOADER).img ./
 	@cp $(BOOTLOADER)/$(BOOTLOADER).elf ./
 

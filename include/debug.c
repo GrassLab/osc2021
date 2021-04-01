@@ -10,15 +10,13 @@ void mem_hex_print (unsigned long address, unsigned int num) {
     for (int i = 0; i < num; i++) {
         if (!(i % 2)) {
             if (i != 0)
-                uart_send("\r\n");
-            uart_sendhf(address + 8 * i);
-            uart_send(":\t");
+                print("\n");
+            print("%x:\t", address + 8 * i);
         }
         ptr = (unsigned long *) (address + 8 * i);
-        uart_sendhf(*ptr);
-        uart_send("\t");
+        print("%x\t", *ptr);
     }
-    uart_send("\r\n");
+    print("\n");
 }
 
 int mem_print (char *b) {
@@ -37,7 +35,7 @@ int mem_print (char *b) {
         size = size + 1 < 128 ? size + 1 : 128;
         strncopy(tmp, &b[2], size);
         u64 c_addr = atoui(&b[address_start]);
-        uart_send((char *)c_addr);
+        print((char *)c_addr);
         return 1;
     }
     else if (b[size + 2] == 'g' || b[size + 3] == 'x') {

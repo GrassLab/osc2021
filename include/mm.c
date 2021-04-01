@@ -21,17 +21,8 @@ void * (*m_malloc) (u64 size);
 void (*m_free) (void *addr);
 
 #define log(type, message, start, end) \
-    uart_send("["); \
-    uart_sendf(get_time()); \
-    uart_send("] "); \
-    uart_send(type); \
-    uart_send(": "); \
-    uart_send(message); \
-    uart_send(" "); \
-    uart_sendh((u64) start); \
-    uart_send(" ~ "); \
-    uart_sendh((u64) end); \
-    uart_send("\r\n"); \
+    print("[%f] %s: %s %x ~ %x\n", get_time(), type, message, (u64)start, \
+            (u64)end);
 
 struct startup_mm_list {
     u64 addr_start, addr_end, orig_start;
@@ -69,22 +60,19 @@ void startup_aligned (u64 size) {
 
 void show_malloc_bins () {
     for (u64 i = 0; i < small_bin_size; i++) {
-        uart_sendh(i * 0x10 + 0x20);
-        uart_send(":");
+        print("%x:", i * 0x10 + 0x20);
             for (small_bin_list *ptr = small_bin[i].next; ptr;
                     ptr = ptr->next) {
-                uart_send(" -> ");
-                uart_sendh((u64)ptr - 0x10);
+                print(" -> %x", (u64)ptr - 0x10);
             }
-        uart_send("\r\n");
+        print("\n");
     }
-    uart_send("large bin: ");
+    print("large bin: ");
     for (large_bin_list *ptr = large_bin.next; ptr;
             ptr = ptr->next) {
-        uart_send(" -> ");
-        uart_sendh((u64)ptr - 0x10);
+        print(" -> %x", (u64)ptr - 0x10);
     }
-    uart_send("\r\n");
+    print("\n");
 }
 
 malloc_struct *search_freed_bins (u64 size) {
@@ -307,10 +295,7 @@ void show_list () {
     //for (struct startup_mm_list *ptr = init_freed_head; ptr;
     for (struct startup_mm_list *ptr = init_used_head; ptr;
             ptr = ptr->next) {
-        uart_sendh(ptr->addr_start);
-        uart_send(" ");
-        uart_sendh(ptr->addr_end);
-        uart_send("\r\n");
+        print("%x %x\n", ptr->addr_start, ptr->addr_end);
     }
 }
 
@@ -422,7 +407,7 @@ void buddy_system_init () {
             break;
 
     if (!ptr) {
-        uart_send("buddy system intialization failed: no memory space to create table\r\n");
+        print("buddy system intialization failed: no memory space to create table\r\n");
         return;
     }
     boot_info.buddy_system_addr = ptr->addr_start;
@@ -452,15 +437,11 @@ void buddy_system_init () {
 
 void buddy_system_show_buckets () {
     for (u64 i = 0; i < bucket_size; i++) {
-        uart_sendi(i);
-        uart_send("(");
-        uart_sendi(bs_frame_bucket[i].num);
-        uart_send("):");
+        print("%u(%u):", i, bs_frame_bucket[i].num);
         for (BS_frame *ptr = bs_frame_bucket[i].head; ptr; ptr = ptr->next) {
-            uart_send(" -> ");
-            uart_sendh((u64)ptr->addr);
+            print(" -> %x", (u64)ptr->addr);
         }
-        uart_send("\r\n");
+        print("\n");
     }
 }
 
@@ -505,7 +486,7 @@ int bs_scann_table (u64 ptr, u64 size) {
     u64 buf = 0;
     for (u64 tmp = ptr; buf < size;) {
         if (!(bs_get_val(tmp) & bs_size_bit)) {
-            uart_send("Error: page table is wrong\r\n");
+            print("Error: page table is wrong\n");
             return 0;
         }
 
@@ -567,7 +548,7 @@ void bs_merge (u64 offset) {
         if (bs_get_val(tmp) & bs_used_bit)
             break;
         if (!(bs_get_val(tmp) & bs_size_bit)) {
-            uart_send("Error: page table is wrong\r\n");
+            print("Error: page table is wrong\n");
             break;
         }
 
@@ -683,7 +664,7 @@ void dynamic_free(void *addr) {
 void dynamic_allocator_init () {
     dynamic_allocator_ptr = (malloc_struct *)bs_malloc(da_init_size);
     if (!dynamic_allocator_ptr) {
-        uart_send("Error: dynamic allocator initialization failed\r\n");
+        print("Error: dynamic allocator initialization failed\n");
         return;
     }
     m_malloc = dynamic_malloc;
