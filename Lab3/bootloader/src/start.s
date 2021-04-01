@@ -13,9 +13,9 @@ _start:
 	b	1b
 
 
-	ldr	x1, =__bss_start
+2:	ldr	x1, =__bss_start
 	ldr	x2, =__bss_size
-2:	cbz	x2, 3f
+	cbz	x2, 3f
 	str	xzr, [x1], #8
 	sub	x2, x2, #1
 	cbnz	x2, 2b
