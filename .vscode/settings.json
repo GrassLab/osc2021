@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "stddef.h": "c",
+        "uart.h": "c",
+        "memory.h": "c",
+        "printf.h": "c"
+    }
+}
