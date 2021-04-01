@@ -10,6 +10,7 @@ void do_help() {
   uart_puts("reboot: restart device\r\n");
   uart_puts("ls: list file\r\n");
   uart_puts("cat: print file context\r\n");
+  uart_puts("clear: clean screen\r\n");
 }
 void do_except(char *buff) {
   uart_puts("No command: ");
@@ -45,7 +46,7 @@ void do_cat(char *buff) {
   for (int i = 0; i < context_size; i++) uart_send(context[i]);
   uart_puts("\r\n");
 }
-
+void do_clear() { uart_puts("\033c"); }
 void shell() {
   char buff[buff_size];
   /* say hello */
@@ -68,10 +69,13 @@ void shell() {
       do_reset(100);
       return;
 
-    } else if (strcmp(buff, "test")) {
+    } else if (strcmp(buff, "clear"))
+      do_clear();
+    else if (strcmp(buff, "lab3")) {
       // buddy_test1();
-      // buddy_test2();
+      // buddy_test4();
       dma_test1();
+      dma_test2();
     } else
       do_except(buff);
   }
@@ -81,5 +85,6 @@ void main() {
   uart_init();  // set up serial console
   buddy_init((char *)BUDDY_START);
   dma_init();
+  do_clear();
   shell();
 }
