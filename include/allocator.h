@@ -12,12 +12,8 @@ enum page_status {
 };
 
 struct PageInfo {
-    void *mem_addr;
-    unsigned long real_size;
-    unsigned long page_size;
     unsigned long size;
     enum page_status status;
-    unsigned long id;
 };
 
 
