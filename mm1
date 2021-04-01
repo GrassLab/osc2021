@@ -886,180 +886,182 @@ Disassembly of section .text:
  d38:	94000000 	bl	c18 <alloc_slab>
  d3c:	aa0003f3 	mov	x19, x0
  d40:	94000000 	bl	b58 <new_pd>
- d44:	a9008260 	stp	x0, x0, [x19, #8]
- d48:	f9400000 	ldr	x0, [x0]
- d4c:	f9000e60 	str	x0, [x19, #24]
- d50:	29047e74 	stp	w20, wzr, [x19, #32]
- d54:	d503201f 	nop
- d58:	52820000 	mov	w0, #0x1000                	// #4096
- d5c:	b9002a60 	str	w0, [x19, #40]
- d60:	90000000 	adrp	x0, 0 <pop_slab_cache>
- d64:	91000000 	add	x0, x0, #0x0
- d68:	94000000 	bl	0 <log>
- d6c:	f94002b5 	ldr	x21, [x21]
- d70:	90000000 	adrp	x0, 0 <pop_slab_cache>
- d74:	91000000 	add	x0, x0, #0x0
- d78:	f94002a1 	ldr	x1, [x21]
- d7c:	f9000261 	str	x1, [x19]
- d80:	f90002b3 	str	x19, [x21]
- d84:	94000000 	bl	0 <log>
- d88:	aa1303e0 	mov	x0, x19
- d8c:	a94153f3 	ldp	x19, x20, [sp, #16]
- d90:	f94013f5 	ldr	x21, [sp, #32]
- d94:	a8c37bfd 	ldp	x29, x30, [sp], #48
- d98:	d65f03c0 	ret
- d9c:	d503201f 	nop
+ d44:	aa0003e1 	mov	x1, x0
+ d48:	90000002 	adrp	x2, 0 <pop_slab_cache>
+ d4c:	91000040 	add	x0, x2, #0x0
+ d50:	a9008661 	stp	x1, x1, [x19, #8]
+ d54:	f9400021 	ldr	x1, [x1]
+ d58:	f9000e61 	str	x1, [x19, #24]
+ d5c:	b9002274 	str	w20, [x19, #32]
+ d60:	94000000 	bl	0 <log>
+ d64:	d2c20000 	mov	x0, #0x100000000000        	// #17592186044416
+ d68:	f8024260 	stur	x0, [x19, #36]
+ d6c:	90000000 	adrp	x0, 0 <pop_slab_cache>
+ d70:	91000000 	add	x0, x0, #0x0
+ d74:	94000000 	bl	0 <log>
+ d78:	f94002b5 	ldr	x21, [x21]
+ d7c:	90000000 	adrp	x0, 0 <pop_slab_cache>
+ d80:	91000000 	add	x0, x0, #0x0
+ d84:	f94002a1 	ldr	x1, [x21]
+ d88:	f9000261 	str	x1, [x19]
+ d8c:	f90002b3 	str	x19, [x21]
+ d90:	94000000 	bl	0 <log>
+ d94:	aa1303e0 	mov	x0, x19
+ d98:	a94153f3 	ldp	x19, x20, [sp, #16]
+ d9c:	f94013f5 	ldr	x21, [sp, #32]
+ da0:	a8c37bfd 	ldp	x29, x30, [sp], #48
+ da4:	d65f03c0 	ret
 
-0000000000000da0 <kmalloc>:
- da0:	91003c00 	add	x0, x0, #0xf
- da4:	927cec00 	and	x0, x0, #0xfffffffffffffff0
- da8:	f120001f 	cmp	x0, #0x800
- dac:	54000049 	b.ls	db4 <kmalloc+0x14>  // b.plast
- db0:	14000000 	b	450 <alloc_page>
- db4:	a9bf7bfd 	stp	x29, x30, [sp, #-16]!
- db8:	910003fd 	mov	x29, sp
- dbc:	94000000 	bl	cd0 <register_slab>
- dc0:	a8c17bfd 	ldp	x29, x30, [sp], #16
- dc4:	14000000 	b	c18 <alloc_slab>
+0000000000000da8 <kmalloc>:
+ da8:	91003c00 	add	x0, x0, #0xf
+ dac:	927cec00 	and	x0, x0, #0xfffffffffffffff0
+ db0:	f120001f 	cmp	x0, #0x800
+ db4:	54000049 	b.ls	dbc <kmalloc+0x14>  // b.plast
+ db8:	14000000 	b	450 <alloc_page>
+ dbc:	a9bf7bfd 	stp	x29, x30, [sp, #-16]!
+ dc0:	910003fd 	mov	x29, sp
+ dc4:	94000000 	bl	cd0 <register_slab>
+ dc8:	a8c17bfd 	ldp	x29, x30, [sp], #16
+ dcc:	14000000 	b	c18 <alloc_slab>
 
-0000000000000dc8 <_free_slab>:
- dc8:	a9bd7bfd 	stp	x29, x30, [sp, #-48]!
- dcc:	910003fd 	mov	x29, sp
- dd0:	a90153f3 	stp	x19, x20, [sp, #16]
- dd4:	aa0203f3 	mov	x19, x2
- dd8:	aa0103f4 	mov	x20, x1
- ddc:	90000001 	adrp	x1, 0 <pop_slab_cache>
- de0:	f90013f5 	str	x21, [sp, #32]
- de4:	aa0003f5 	mov	x21, x0
- de8:	91000020 	add	x0, x1, #0x0
- dec:	94000000 	bl	0 <log>
- df0:	f9400a60 	ldr	x0, [x19, #16]
- df4:	f9400a82 	ldr	x2, [x20, #16]
- df8:	b9401a61 	ldr	w1, [x19, #24]
- dfc:	f90002a0 	str	x0, [x21]
- e00:	b9402680 	ldr	w0, [x20, #36]
- e04:	11000421 	add	w1, w1, #0x1
- e08:	f9000a75 	str	x21, [x19, #16]
- e0c:	b9001a61 	str	w1, [x19, #24]
- e10:	11000400 	add	w0, w0, #0x1
- e14:	f9400841 	ldr	x1, [x2, #16]
- e18:	b9002680 	str	w0, [x20, #36]
- e1c:	b40000a1 	cbz	x1, e30 <_free_slab+0x68>
- e20:	a94153f3 	ldp	x19, x20, [sp, #16]
- e24:	f94013f5 	ldr	x21, [sp, #32]
- e28:	a8c37bfd 	ldp	x29, x30, [sp], #48
- e2c:	d65f03c0 	ret
- e30:	f9000a93 	str	x19, [x20, #16]
- e34:	a94153f3 	ldp	x19, x20, [sp, #16]
- e38:	f94013f5 	ldr	x21, [sp, #32]
- e3c:	a8c37bfd 	ldp	x29, x30, [sp], #48
- e40:	d65f03c0 	ret
- e44:	d503201f 	nop
+0000000000000dd0 <_free_slab>:
+ dd0:	a9bd7bfd 	stp	x29, x30, [sp, #-48]!
+ dd4:	910003fd 	mov	x29, sp
+ dd8:	a90153f3 	stp	x19, x20, [sp, #16]
+ ddc:	aa0203f3 	mov	x19, x2
+ de0:	aa0103f4 	mov	x20, x1
+ de4:	90000001 	adrp	x1, 0 <pop_slab_cache>
+ de8:	f90013f5 	str	x21, [sp, #32]
+ dec:	aa0003f5 	mov	x21, x0
+ df0:	91000020 	add	x0, x1, #0x0
+ df4:	94000000 	bl	0 <log>
+ df8:	f9400a60 	ldr	x0, [x19, #16]
+ dfc:	f9400a82 	ldr	x2, [x20, #16]
+ e00:	b9401a61 	ldr	w1, [x19, #24]
+ e04:	f90002a0 	str	x0, [x21]
+ e08:	b9402680 	ldr	w0, [x20, #36]
+ e0c:	11000421 	add	w1, w1, #0x1
+ e10:	f9000a75 	str	x21, [x19, #16]
+ e14:	b9001a61 	str	w1, [x19, #24]
+ e18:	11000400 	add	w0, w0, #0x1
+ e1c:	f9400841 	ldr	x1, [x2, #16]
+ e20:	b9002680 	str	w0, [x20, #36]
+ e24:	b40000a1 	cbz	x1, e38 <_free_slab+0x68>
+ e28:	a94153f3 	ldp	x19, x20, [sp, #16]
+ e2c:	f94013f5 	ldr	x21, [sp, #32]
+ e30:	a8c37bfd 	ldp	x29, x30, [sp], #48
+ e34:	d65f03c0 	ret
+ e38:	f9000a93 	str	x19, [x20, #16]
+ e3c:	a94153f3 	ldp	x19, x20, [sp, #16]
+ e40:	f94013f5 	ldr	x21, [sp, #32]
+ e44:	a8c37bfd 	ldp	x29, x30, [sp], #48
+ e48:	d65f03c0 	ret
+ e4c:	d503201f 	nop
 
-0000000000000e48 <free_unknow_slab>:
- e48:	a9be7bfd 	stp	x29, x30, [sp, #-32]!
- e4c:	90000001 	adrp	x1, 0 <pop_slab_cache>
- e50:	910003fd 	mov	x29, sp
- e54:	f9000bf3 	str	x19, [sp, #16]
- e58:	aa0003f3 	mov	x19, x0
- e5c:	91000020 	add	x0, x1, #0x0
- e60:	94000000 	bl	0 <log>
- e64:	90000000 	adrp	x0, 8 <pop_slab_cache+0x8>
- e68:	f9400000 	ldr	x0, [x0]
- e6c:	f9400001 	ldr	x1, [x0]
- e70:	b4000201 	cbz	x1, eb0 <free_unknow_slab+0x68>
- e74:	d34cfe64 	lsr	x4, x19, #12
- e78:	f9400422 	ldr	x2, [x1, #8]
- e7c:	b5000082 	cbnz	x2, e8c <free_unknow_slab+0x44>
- e80:	1400000a 	b	ea8 <free_unknow_slab+0x60>
- e84:	f9400442 	ldr	x2, [x2, #8]
- e88:	b4000102 	cbz	x2, ea8 <free_unknow_slab+0x60>
- e8c:	f9400043 	ldr	x3, [x2]
- e90:	eb43309f 	cmp	x4, x3, lsr #12
- e94:	54ffff81 	b.ne	e84 <free_unknow_slab+0x3c>  // b.any
- e98:	aa1303e0 	mov	x0, x19
- e9c:	f9400bf3 	ldr	x19, [sp, #16]
- ea0:	a8c27bfd 	ldp	x29, x30, [sp], #32
- ea4:	14000000 	b	dc8 <_free_slab>
- ea8:	f9400021 	ldr	x1, [x1]
- eac:	b5fffe61 	cbnz	x1, e78 <free_unknow_slab+0x30>
- eb0:	f9400bf3 	ldr	x19, [sp, #16]
- eb4:	a8c27bfd 	ldp	x29, x30, [sp], #32
- eb8:	d65f03c0 	ret
- ebc:	d503201f 	nop
+0000000000000e50 <free_unknow_slab>:
+ e50:	a9be7bfd 	stp	x29, x30, [sp, #-32]!
+ e54:	90000001 	adrp	x1, 0 <pop_slab_cache>
+ e58:	910003fd 	mov	x29, sp
+ e5c:	f9000bf3 	str	x19, [sp, #16]
+ e60:	aa0003f3 	mov	x19, x0
+ e64:	91000020 	add	x0, x1, #0x0
+ e68:	94000000 	bl	0 <log>
+ e6c:	90000000 	adrp	x0, 8 <pop_slab_cache+0x8>
+ e70:	f9400000 	ldr	x0, [x0]
+ e74:	f9400001 	ldr	x1, [x0]
+ e78:	b4000201 	cbz	x1, eb8 <free_unknow_slab+0x68>
+ e7c:	d34cfe64 	lsr	x4, x19, #12
+ e80:	f9400422 	ldr	x2, [x1, #8]
+ e84:	b5000082 	cbnz	x2, e94 <free_unknow_slab+0x44>
+ e88:	1400000a 	b	eb0 <free_unknow_slab+0x60>
+ e8c:	f9400442 	ldr	x2, [x2, #8]
+ e90:	b4000102 	cbz	x2, eb0 <free_unknow_slab+0x60>
+ e94:	f9400043 	ldr	x3, [x2]
+ e98:	eb43309f 	cmp	x4, x3, lsr #12
+ e9c:	54ffff81 	b.ne	e8c <free_unknow_slab+0x3c>  // b.any
+ ea0:	aa1303e0 	mov	x0, x19
+ ea4:	f9400bf3 	ldr	x19, [sp, #16]
+ ea8:	a8c27bfd 	ldp	x29, x30, [sp], #32
+ eac:	14000000 	b	dd0 <_free_slab>
+ eb0:	f9400021 	ldr	x1, [x1]
+ eb4:	b5fffe61 	cbnz	x1, e80 <free_unknow_slab+0x30>
+ eb8:	f9400bf3 	ldr	x19, [sp, #16]
+ ebc:	a8c27bfd 	ldp	x29, x30, [sp], #32
+ ec0:	d65f03c0 	ret
+ ec4:	d503201f 	nop
 
-0000000000000ec0 <kfree>:
- ec0:	90000002 	adrp	x2, 8 <pop_slab_cache+0x8>
- ec4:	d34cfc01 	lsr	x1, x0, #12
- ec8:	f9400042 	ldr	x2, [x2]
- ecc:	f9400042 	ldr	x2, [x2]
- ed0:	38616841 	ldrb	w1, [x2, x1]
- ed4:	53057c21 	lsr	w1, w1, #5
- ed8:	7100043f 	cmp	w1, #0x1
- edc:	540000c0 	b.eq	ef4 <kfree+0x34>  // b.none
- ee0:	71000c3f 	cmp	w1, #0x3
- ee4:	540000a0 	b.eq	ef8 <kfree+0x38>  // b.none
- ee8:	7100083f 	cmp	w1, #0x2
- eec:	54000080 	b.eq	efc <kfree+0x3c>  // b.none
- ef0:	d65f03c0 	ret
- ef4:	14000000 	b	5f8 <free_page>
- ef8:	14000000 	b	728 <free_reserve>
- efc:	14000000 	b	e48 <free_unknow_slab>
+0000000000000ec8 <kfree>:
+ ec8:	90000002 	adrp	x2, 8 <pop_slab_cache+0x8>
+ ecc:	d34cfc01 	lsr	x1, x0, #12
+ ed0:	f9400042 	ldr	x2, [x2]
+ ed4:	f9400042 	ldr	x2, [x2]
+ ed8:	38616841 	ldrb	w1, [x2, x1]
+ edc:	53057c21 	lsr	w1, w1, #5
+ ee0:	7100043f 	cmp	w1, #0x1
+ ee4:	540000c0 	b.eq	efc <kfree+0x34>  // b.none
+ ee8:	71000c3f 	cmp	w1, #0x3
+ eec:	540000a0 	b.eq	f00 <kfree+0x38>  // b.none
+ ef0:	7100083f 	cmp	w1, #0x2
+ ef4:	54000080 	b.eq	f04 <kfree+0x3c>  // b.none
+ ef8:	d65f03c0 	ret
+ efc:	14000000 	b	5f8 <free_page>
+ f00:	14000000 	b	728 <free_reserve>
+ f04:	14000000 	b	e50 <free_unknow_slab>
 
-0000000000000f00 <free_slab>:
- f00:	a9be7bfd 	stp	x29, x30, [sp, #-32]!
- f04:	910003fd 	mov	x29, sp
- f08:	a90153f3 	stp	x19, x20, [sp, #16]
- f0c:	aa0103f3 	mov	x19, x1
- f10:	aa0003f4 	mov	x20, x0
- f14:	90000000 	adrp	x0, 0 <pop_slab_cache>
- f18:	91000000 	add	x0, x0, #0x0
- f1c:	94000000 	bl	0 <log>
- f20:	f9400662 	ldr	x2, [x19, #8]
- f24:	b40001a2 	cbz	x2, f58 <free_slab+0x58>
- f28:	d34cfe84 	lsr	x4, x20, #12
- f2c:	14000003 	b	f38 <free_slab+0x38>
- f30:	f9400442 	ldr	x2, [x2, #8]
- f34:	b4000122 	cbz	x2, f58 <free_slab+0x58>
- f38:	f9400043 	ldr	x3, [x2]
- f3c:	eb43309f 	cmp	x4, x3, lsr #12
- f40:	54ffff81 	b.ne	f30 <free_slab+0x30>  // b.any
- f44:	aa1303e1 	mov	x1, x19
- f48:	aa1403e0 	mov	x0, x20
- f4c:	a94153f3 	ldp	x19, x20, [sp, #16]
- f50:	a8c27bfd 	ldp	x29, x30, [sp], #32
- f54:	14000000 	b	dc8 <_free_slab>
- f58:	a94153f3 	ldp	x19, x20, [sp, #16]
- f5c:	a8c27bfd 	ldp	x29, x30, [sp], #32
- f60:	d65f03c0 	ret
- f64:	d503201f 	nop
+0000000000000f08 <free_slab>:
+ f08:	a9be7bfd 	stp	x29, x30, [sp, #-32]!
+ f0c:	910003fd 	mov	x29, sp
+ f10:	a90153f3 	stp	x19, x20, [sp, #16]
+ f14:	aa0103f3 	mov	x19, x1
+ f18:	aa0003f4 	mov	x20, x0
+ f1c:	90000000 	adrp	x0, 0 <pop_slab_cache>
+ f20:	91000000 	add	x0, x0, #0x0
+ f24:	94000000 	bl	0 <log>
+ f28:	f9400662 	ldr	x2, [x19, #8]
+ f2c:	b40001a2 	cbz	x2, f60 <free_slab+0x58>
+ f30:	d34cfe84 	lsr	x4, x20, #12
+ f34:	14000003 	b	f40 <free_slab+0x38>
+ f38:	f9400442 	ldr	x2, [x2, #8]
+ f3c:	b4000122 	cbz	x2, f60 <free_slab+0x58>
+ f40:	f9400043 	ldr	x3, [x2]
+ f44:	eb43309f 	cmp	x4, x3, lsr #12
+ f48:	54ffff81 	b.ne	f38 <free_slab+0x30>  // b.any
+ f4c:	aa1303e1 	mov	x1, x19
+ f50:	aa1403e0 	mov	x0, x20
+ f54:	a94153f3 	ldp	x19, x20, [sp, #16]
+ f58:	a8c27bfd 	ldp	x29, x30, [sp], #32
+ f5c:	14000000 	b	dd0 <_free_slab>
+ f60:	a94153f3 	ldp	x19, x20, [sp, #16]
+ f64:	a8c27bfd 	ldp	x29, x30, [sp], #32
+ f68:	d65f03c0 	ret
+ f6c:	d503201f 	nop
 
-0000000000000f68 <check_slab>:
- f68:	a9bd7bfd 	stp	x29, x30, [sp, #-48]!
- f6c:	90000000 	adrp	x0, 8 <pop_slab_cache+0x8>
- f70:	910003fd 	mov	x29, sp
- f74:	f9400000 	ldr	x0, [x0]
- f78:	a90153f3 	stp	x19, x20, [sp, #16]
- f7c:	f9400013 	ldr	x19, [x0]
- f80:	b4000273 	cbz	x19, fcc <check_slab+0x64>
- f84:	90000014 	adrp	x20, 0 <pop_slab_cache>
- f88:	91000294 	add	x20, x20, #0x0
- f8c:	a9025bf5 	stp	x21, x22, [sp, #32]
- f90:	90000016 	adrp	x22, 0 <pop_slab_cache>
- f94:	90000015 	adrp	x21, 0 <pop_slab_cache>
- f98:	910002d6 	add	x22, x22, #0x0
- f9c:	910002b5 	add	x21, x21, #0x0
- fa0:	aa1603e0 	mov	x0, x22
- fa4:	94000000 	bl	0 <log>
- fa8:	aa1503e0 	mov	x0, x21
+0000000000000f70 <check_slab>:
+ f70:	a9bd7bfd 	stp	x29, x30, [sp, #-48]!
+ f74:	90000000 	adrp	x0, 8 <pop_slab_cache+0x8>
+ f78:	910003fd 	mov	x29, sp
+ f7c:	f9400000 	ldr	x0, [x0]
+ f80:	a90153f3 	stp	x19, x20, [sp, #16]
+ f84:	f9400013 	ldr	x19, [x0]
+ f88:	b4000273 	cbz	x19, fd4 <check_slab+0x64>
+ f8c:	90000014 	adrp	x20, 0 <pop_slab_cache>
+ f90:	91000294 	add	x20, x20, #0x0
+ f94:	a9025bf5 	stp	x21, x22, [sp, #32]
+ f98:	90000016 	adrp	x22, 0 <pop_slab_cache>
+ f9c:	90000015 	adrp	x21, 0 <pop_slab_cache>
+ fa0:	910002d6 	add	x22, x22, #0x0
+ fa4:	910002b5 	add	x21, x21, #0x0
+ fa8:	aa1603e0 	mov	x0, x22
  fac:	94000000 	bl	0 <log>
- fb0:	b9402260 	ldr	w0, [x19, #32]
- fb4:	94000000 	bl	0 <log_hex>
- fb8:	aa1403e0 	mov	x0, x20
- fbc:	94000000 	bl	0 <log>
- fc0:	f9400273 	ldr	x19, [x19]
- fc4:	b5fffef3 	cbnz	x19, fa0 <check_slab+0x38>
- fc8:	a9425bf5 	ldp	x21, x22, [sp, #32]
- fcc:	a94153f3 	ldp	x19, x20, [sp, #16]
- fd0:	a8c37bfd 	ldp	x29, x30, [sp], #48
- fd4:	d65f03c0 	ret
+ fb0:	aa1503e0 	mov	x0, x21
+ fb4:	94000000 	bl	0 <log>
+ fb8:	b9402260 	ldr	w0, [x19, #32]
+ fbc:	94000000 	bl	0 <log_hex>
+ fc0:	aa1403e0 	mov	x0, x20
+ fc4:	94000000 	bl	0 <log>
+ fc8:	f9400273 	ldr	x19, [x19]
+ fcc:	b5fffef3 	cbnz	x19, fa8 <check_slab+0x38>
+ fd0:	a9425bf5 	ldp	x21, x22, [sp, #32]
+ fd4:	a94153f3 	ldp	x19, x20, [sp, #16]
+ fd8:	a8c37bfd 	ldp	x29, x30, [sp], #48
+ fdc:	d65f03c0 	ret
