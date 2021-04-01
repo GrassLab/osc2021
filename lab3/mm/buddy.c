@@ -127,25 +127,23 @@ void buddy_merge(void* address) {
 }
 
 int buddy_remove_block(void* address, int order) {
-  struct buddy_block* block = buddy_system.bins[order];
+  struct buddy_block* block, *prev_block;
+  block = buddy_system.bins[order];
+  prev_block = null;
   //free list has only one element
-  if(block != null && (block == (struct buddy_block* ) address)) {
-    uart_puts("remove block from free list order ");
-    uart_hex(order);
-    uart_puts(".\n");
-    buddy_system.bins[order] = block->next;
-    return 0;
-  }
-  
   while(block != null) {
-    if(block->next == (struct buddy_block* ) address) {
+    if(block == (struct buddy_block* ) address) {
       //remove buddy block in free list
-      block->next = ((struct buddy_block* )address)->next;
+      if(prev_block != null)
+        prev_block->next = block->next;
+      else
+        buddy_system.bins[order] = block->next;  
       uart_puts("remove block from free list order ");
       uart_hex(order);
       uart_puts(".\n");
       return 0;
     }
+    prev_block = block;
     block = block->next;
   }
   //not found buddy block
