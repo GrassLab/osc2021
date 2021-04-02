@@ -1,6 +1,6 @@
-#include "mem.h"
 #include "bool.h"
 #include "list.h"
+#include "mem.h"
 #include "uart.h"
 #include <stddef.h>
 
@@ -126,8 +126,6 @@ void buddy_init(BuddyAllocater *alloc, Frame *frame_arr) {
     alloc->frame_array[i].exp = -1;
     alloc->frame_array[i].addr =
         (void *)(((long)i << FRAME_SHIFT) + MEMORY_START);
-    alloc->frame_array[i].list_base.next = NULL;
-    alloc->frame_array[i].list_base.prev = NULL;
   }
   for (int i = 0; i < BUDDY_NUM_FREE_LISTS; i++) {
     list_init(&alloc->free_lists[i]);
@@ -136,132 +134,4 @@ void buddy_init(BuddyAllocater *alloc, Frame *frame_arr) {
   Frame *root_frame = alloc->frame_array + 0;
   root_frame->exp = BUDDY_MAX_EXPONENT;
   list_push(&root_frame->list_base, &alloc->free_lists[BUDDY_MAX_EXPONENT]);
-}
-
-void *slab_alloc(SlabAllocator *alloc) {
-  Frame *frame;
-
-  if (alloc->cur_frame == NULL) {
-    if (!list_empty(&alloc->partial_list)) {
-      frame = (Frame *)list_pop(&alloc->partial_list);
-      alloc->cur_frame = frame;
-      uart_println("slab: Recycle frame from partial filled slab");
-    } else {
-      frame = buddy_alloc(alloc->frame_allocator, 0);
-      if (frame == NULL)
-        return NULL;
-      uart_println("slab: Request frame from buddy system");
-      frame->slab_allocator = alloc;
-      alloc->cur_frame = frame;
-      for (int i = 0; i < SLAB_MAX_SLOTS; i++) {
-        frame->slot_available[i] = 1;
-      }
-      frame->free_slot_remains = alloc->max_slab_num_obj;
-      // frame->free_slot_remains = 5;
-      uart_println("  slot remains: %d, max:%d", frame->free_slot_remains,
-                   alloc->max_slab_num_obj);
-    }
-  }
-  frame = alloc->cur_frame;
-
-  void *addr;
-
-  // find a space for allocation
-  for (int i = 0; i < SLAB_MAX_SLOTS; i++) {
-    if (frame->slot_available[i] == 1) {
-      addr = frame->addr + i * alloc->unit_size;
-      frame->slot_available[i] = 0;
-      frame->free_slot_remains -= 1;
-      break;
-    }
-  }
-
-  if (frame->free_slot_remains <= 0) {
-    // if the page is full, move it to the full-list
-    list_push(&frame->list_base, &alloc->full_list);
-    alloc->cur_frame = NULL;
-    uart_println("==== slab frame is full");
-  }
-  return addr;
-}
-
-void slab_free(void *obj) {
-  // get frame address first
-  int arr_index = (long)(obj - MEMORY_START) >> FRAME_SHIFT;
-  struct Frame *frame = &Frames[arr_index];
-  struct SlabAllocator *alloc = frame->slab_allocator;
-
-  int obj_index = (((long)(obj - MEMORY_START) & ((1 << FRAME_SHIFT) - 1)) /
-                   alloc->unit_size);
-
-  if (frame->slot_available[obj_index] == 1) {
-    uart_println("!!Free after free");
-  }
-  uart_println("slab: Free object");
-  frame->slot_available[obj_index] = 1;
-  frame->free_slot_remains += 1;
-  if (frame != alloc->cur_frame) {
-    list_del(&frame->list_base);
-    if (frame->slot_available > 0) {
-      list_push(&frame->list_base, &alloc->partial_list);
-    } else {
-      uart_println("slab: release block");
-      buddy_free(alloc->frame_allocator, frame);
-    }
-  }
-}
-
-void KAllocManager_init() {
-  AllocationManager *am = &KAllocManager;
-  buddy_init(am->frame_allocator, Frames);
-
-  SlabAllocator *slab_alloc;
-  for (int i = SLAB_OBJ_MIN_SIZE_EXP; i <= SLAB_OBJ_MAX_SIZE_EXP; i++) {
-    slab_alloc = &am->obj_allocator_list[i - SLAB_OBJ_MIN_SIZE_EXP];
-    slab_alloc->unit_size = 1 << i;
-    slab_alloc->max_slab_num_obj = 4096 / slab_alloc->unit_size;
-    slab_alloc->frame_allocator = am->frame_allocator;
-    slab_alloc->cur_frame = NULL;
-    list_init(&slab_alloc->partial_list);
-    list_init(&slab_alloc->full_list);
-  }
-}
-
-void KAllocManager_show_status() { buddy_dump(KAllocManager.frame_allocator); }
-
-void *kalloc(int size) {
-  void *addr;
-  if (size <= (1 << SLAB_OBJ_MAX_SIZE_EXP)) {
-    for (int i = SLAB_OBJ_MIN_SIZE_EXP; i < SLAB_OBJ_MAX_SIZE_EXP; i++) {
-      if (size < 1 << i) {
-        uart_println("Allocation from slab allocator, size: %d", size);
-        addr = slab_alloc(
-            &KAllocManager.obj_allocator_list[i - SLAB_OBJ_MIN_SIZE_EXP]);
-        return addr;
-      }
-    }
-  }
-  // allcation using buddy system
-  for (int i = 0; i < BUDDY_MAX_EXPONENT; i++) {
-    if ((i << FRAME_SHIFT) >= size) {
-      uart_println("Allocate Request exp:%d", i);
-      Frame *frame = buddy_alloc(KAllocManager.frame_allocator, i);
-      uart_println("Allocated addr:%x, frame_idx:%d", frame->addr,
-                   frame->arr_index);
-      return frame->addr;
-    }
-  }
-  return NULL;
-}
-void kfree(void *addr) {
-  // Get frame from address provided
-  int arr_index = (long)(addr - MEMORY_START) >> FRAME_SHIFT;
-  Frame *frame = &Frames[arr_index];
-  if (frame->slab_allocator) {
-    slab_free(addr);
-  } else {
-    uart_println("Free Request addr:%x, frame_idx:%d", frame->addr,
-                 frame->arr_index);
-    buddy_free(KAllocManager.frame_allocator, frame);
-  }
 }

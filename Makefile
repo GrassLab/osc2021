@@ -3,7 +3,7 @@
 kernel_impl = impl-c
 # kernel_impl = impl-rs
 
-OPT_BUILD_BOOTLOADER = 0
+OPT_BUILD_BOOTLOADER = 1
 bootloader_impl = bootloader
 
 
