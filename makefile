@@ -11,6 +11,7 @@ ROOTFS = rootfs
 MOUNT_DIR = sd_mount
 SDB = /dev/sdb1
 INITRAMFS = initramfs.cpio
+DTB = bcm2710-rpi-3-b-plus.dtb
 
 CFLAGS = -Wall -I $(IDIR) -g -ffreestanding -march=armv8-a -O2
 
@@ -35,7 +36,7 @@ all: $(BDIR) $(BL).img $(KN).elf $(INITRAMFS)
 $(BL).elf: $(S_OBJS) $(BL_LD) $(C_OBJS) 
 	$(LD) -T $(BL_LD) --gc-sections -g -o $(BL).elf $(S_OBJS) $(C_OBJS)
 
-$(KN).elf: $(S_OBJS) $(BOOT_LD) $(C_OBJS) 
+$(KN).elf: $(S_OBJS) $(KN_LD) $(C_OBJS) 
 	$(LD) -T $(KN_LD) --gc-sections -e kernel -g -o $(KN).elf $(S_OBJS) $(C_OBJS)
 
 $(BDIR)/%.o: $(SDIR)/%.c
@@ -48,16 +49,19 @@ clean:
 	rm -f $(BDIR)/*.asmo $(BDIR)/*.o *.elf $(BL).img initramfs.cpio
 
 run: all
-	qemu-system-aarch64 -M raspi3 -kernel $(BL).img -serial null -serial "pty" -display none
+	qemu-system-aarch64 -M raspi3 -kernel $(BL).img -initrd $(INITRAMFS) \
+	-dtb $(DTB) -serial null -serial "pty" -display none
 
 debug: all
-	qemu-system-aarch64 -M raspi3 -kernel $(BL).img -serial null -serial "pty" -display none -S -s
+	qemu-system-aarch64 -M raspi3 -kernel $(BL).img -initrd $(INITRAMFS) \
+	-dtb $(DTB) -serial null -serial "pty" -display none -S -s
 
 burn: $(SDB) $(MOUNT_DIR) all
 	sudo mount $(SDB) $(MOUNT_DIR) && \
 	sudo cp $(BL).img $(MOUNT_DIR)/$(BL).img && \
 	sudo cp $(INITRAMFS) $(MOUNT_DIR)/$(INITRAMFS) && \
 	sudo cp config.txt $(MOUNT_DIR)/config.txt && \
+	sudo cp $(DTB) $(MOUNT_DIR)/$(DTB) && \
 	sudo umount $(MOUNT_DIR) 
 
 $(MOUNT_DIR):
@@ -65,7 +69,6 @@ $(MOUNT_DIR):
 
 $(ROOTFS):
 	mkdir $(ROOTFS)
-	echo "test" > $(ROOTFS)/test.txt
 
 $(INITRAMFS): $(ROOTFS)
 	cd $(ROOTFS) && \

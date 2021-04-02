@@ -1,5 +1,5 @@
 #include "io.h"
-#include "mem.h"
+// #include "mem.h"
 #include "ramfs.h"
 #include "reset.h"
 #include "util.h"
@@ -41,59 +41,61 @@ void shell() {
 }
 
 void kernel() {
+  void *dtb_addr = *(void **)(0x20000);
+
   puts("Lab 3:");
 
-  reserve_mem((void *)0x0, 0x1000);                         // spin table
-  reserve_mem((void *)0x60000, 0x20000);                    // stack
-  reserve_mem((void *)(&kn_start), (&kn_end - &kn_start));  // kernel
-  reserve_mem((void *)(&kn_end), mem_size / PAGE_SIZE);     // buddy system
-  reserve_mem((void *)0x3f000000, 0x1000000);               // MMIO
+  // reserve_mem((void *)0x0, 0x1000);                         // spin table
+  // reserve_mem((void *)0x60000, 0x20000);                    // stack
+  // reserve_mem((void *)(&kn_start), (&kn_end - &kn_start));  // kernel
+  // reserve_mem((void *)(&kn_end), mem_size / PAGE_SIZE);     // buddy system
+  // reserve_mem((void *)0x3f000000, 0x1000000);               // MMIO
 
-  init_buddy((char *)(&kn_end));
-  init_slab();
+  // init_buddy((char *)(&kn_end));
+  // init_slab();
 
-  log("20\n");
-  for(int i = 0; i < 126; i++) {
-    kmalloc(0x20);
-  }
-  log("30\n");
-  for(int i = 0; i < 83; i++) {
-    kmalloc(0x30);
-  }
-  log("40\n");
-  for(int i = 0; i < 64; i++) {
-    kmalloc(0x40);
-  }
-  kmalloc(0x40);
+  // log("20\n");
+  // for(int i = 0; i < 126; i++) {
+  //   kmalloc(0x20);
+  // }
+  // log("30\n");
+  // for(int i = 0; i < 83; i++) {
+  //   kmalloc(0x30);
+  // }
+  // log("40\n");
+  // for(int i = 0; i < 64; i++) {
+  //   kmalloc(0x40);
+  // }
+  // kmalloc(0x40);
 
-  check_slab();
+  // check_slab();
 
-  // init_rootfs(new_ramfs());
-  // dentry root;
-  // init_dentry(&root);
+  // // init_rootfs(new_ramfs());
+  // // dentry root;
+  // // init_dentry(&root);
 
-  // opendir("/", &root);
-  // parse_initramfs(&root);
-  // closedir(&root);
+  // // opendir("/", &root);
+  // // parse_initramfs(&root);
+  // // closedir(&root);
 
-  log("float\n");
-  double a = 3.0;
-  double b = 1.3333333333333333;
+  // log("float\n");
+  // double a = 3.0;
+  // double b = 1.3333333333333333;
 
-  double c = a * b;
-  log_hex((unsigned long long)c);
+  // double c = a * b;
+  // log_hex((unsigned long long)c);
 
-  double d[50];
-  for (int i = 0; i < 50; i++) {
-    d[i] = i;
-  }
-  for(int i = 0; i < 50; i++) {
-    d[i] *= d[i];
-  }
+  // double d[50];
+  // for (int i = 0; i < 50; i++) {
+  //   d[i] = i;
+  // }
+  // for(int i = 0; i < 50; i++) {
+  //   d[i] *= d[i];
+  // }
 
-  for(int i = 0; i < 50; i++) {
-    log_hex((unsigned long long)d[i]);
-  }
-  
+  // for(int i = 0; i < 50; i++) {
+  //   log_hex((unsigned long long)d[i]);
+  // }
+
   shell();
 }
