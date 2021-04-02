@@ -6,8 +6,8 @@
 
 void KAllocManager_init() {
   AllocationManager *am = &KAllocManager;
+  buddy_init(&am->frame_allocator);
 
-  buddy_init(am->frame_allocator, Frames);
   for (int i = 0; i < (1 << BUDDY_MAX_EXPONENT); i++) {
     Frames[i].list_base.next = NULL;
     Frames[i].list_base.prev = NULL;
@@ -23,14 +23,14 @@ void KAllocManager_init() {
     slab_alloc = &am->obj_allocator_list[i - SLAB_OBJ_MIN_SIZE_EXP];
     slab_alloc->unit_size = 1 << i;
     slab_alloc->max_slab_num_obj = 4096 / slab_alloc->unit_size;
-    slab_alloc->frame_allocator = am->frame_allocator;
+    slab_alloc->frame_allocator = &am->frame_allocator;
     slab_alloc->cur_frame = NULL;
     list_init(&slab_alloc->partial_list);
     list_init(&slab_alloc->full_list);
   }
 }
 
-void KAllocManager_show_status() { buddy_dump(KAllocManager.frame_allocator); }
+void KAllocManager_show_status() { buddy_dump(&KAllocManager.frame_allocator); }
 
 void *kalloc(int size) {
   void *addr;
@@ -48,7 +48,7 @@ void *kalloc(int size) {
   for (int i = 0; i < BUDDY_MAX_EXPONENT; i++) {
     if ((i << FRAME_SHIFT) >= size) {
       uart_println("Allocate Request exp:%d", i);
-      Frame *frame = buddy_alloc(KAllocManager.frame_allocator, i);
+      Frame *frame = buddy_alloc(&KAllocManager.frame_allocator, i);
       uart_println("Allocated addr:%x, frame_idx:%d", frame->addr,
                    frame->arr_index);
       return frame->addr;
@@ -65,6 +65,6 @@ void kfree(void *addr) {
   } else {
     uart_println("Free Request addr:%x, frame_idx:%d", frame->addr,
                  frame->arr_index);
-    buddy_free(KAllocManager.frame_allocator, frame);
+    buddy_free(&KAllocManager.frame_allocator, frame);
   }
 }

@@ -4,6 +4,7 @@
 
 int main() {
   uart_init();
+  uart_println("uart initialized");
   KAllocManager_init();
   // KAllocManager_show_status();
 
@@ -14,7 +15,7 @@ int main() {
   void *a[30];
   for (int i = 0; i < 5; i++) {
     a[i] = kalloc(8192);
-    uart_println("i:%d, a: %x", i, a);
+    uart_println("i:%d, a: %x", i, a[i]);
   }
 
   for (int i = 0; i < 5; i++) {
@@ -23,7 +24,7 @@ int main() {
 
   for (int i = 0; i < 5; i++) {
     a[i] = kalloc(13);
-    uart_println("i:%d, a: %x", i, a);
+    uart_println("i:%d, a: %x", i, a[i]);
   };
   if (a[0] == a[1]) {
     uart_println("nooo");
@@ -31,14 +32,6 @@ int main() {
   for (int i = 0; i < 5; i++) {
     kfree(a[i]);
   }
-
-  // KAllocManager_show_status();
-  // int d = buddy_alloc(&buddy, 10);
-  // kfree(a);
-  // kfree(c);
-
-  // kfree(b);
-  // KAllocManager_show_status();
   uart_println(" input filename to see file content");
   while (1) {
     shellPrintPrompt();
