@@ -156,8 +156,8 @@ void *slab_alloc(SlabAllocator *alloc) {
       for (int i = 0; i < SLAB_MAX_SLOTS; i++) {
         frame->slot_available[i] = 1;
       }
-      // frame->free_slot_remains = alloc->max_slab_num_obj;
-      frame->free_slot_remains = 5;
+      frame->free_slot_remains = alloc->max_slab_num_obj;
+      // frame->free_slot_remains = 5;
       uart_println("  slot remains: %d, max:%d", frame->free_slot_remains,
                    alloc->max_slab_num_obj);
     }
