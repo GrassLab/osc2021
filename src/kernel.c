@@ -1,5 +1,5 @@
 #include "io.h"
-// #include "mem.h"
+#include "mem.h"
 #include "ramfs.h"
 #include "reset.h"
 #include "util.h"
@@ -43,32 +43,32 @@ void shell() {
 void kernel() {
   void *dtb_addr = *(void **)(0x20000);
 
+  log_hex("dtb address", (unsigned long)dtb_addr, LOG_DEBUG);
   puts("Lab 3:");
 
-  // reserve_mem((void *)0x0, 0x1000);                         // spin table
-  // reserve_mem((void *)0x60000, 0x20000);                    // stack
-  // reserve_mem((void *)(&kn_start), (&kn_end - &kn_start));  // kernel
-  // reserve_mem((void *)(&kn_end), mem_size / PAGE_SIZE);     // buddy system
-  // reserve_mem((void *)0x3f000000, 0x1000000);               // MMIO
+  reserve_mem((void *)0x0, 0x1000);                         // spin table
+  reserve_mem((void *)0x60000, 0x20000);                    // stack
+  reserve_mem((void *)(&kn_start), (&kn_end - &kn_start));  // kernel
+  reserve_mem((void *)0x3f000000, 0x1000000);               // MMIO
 
-  // init_buddy((char *)(&kn_end));
-  // init_slab();
+  init_kmalloc();
 
-  // log("20\n");
-  // for(int i = 0; i < 126; i++) {
-  //   kmalloc(0x20);
-  // }
-  // log("30\n");
-  // for(int i = 0; i < 83; i++) {
-  //   kmalloc(0x30);
-  // }
-  // log("40\n");
-  // for(int i = 0; i < 64; i++) {
-  //   kmalloc(0x40);
-  // }
-  // kmalloc(0x40);
-
-  // check_slab();
+  void *addr[6];
+  for (int i = 0; i < 6; i++) {
+    addr[i] = kmalloc(PAGE_SIZE / 2 - 11);
+    log_hex("kmalloc addr", (unsigned long)addr[i], LOG_DEBUG);
+  }
+  for (int i = 0; i < 6; i++) {
+    kfree(addr[i]);
+  }
+  for (int i = 0; i < 6; i++) {
+    addr[i] = kmalloc(PAGE_SIZE / 2 - 11);
+    log_hex("kmalloc addr", (unsigned long)addr[i], LOG_DEBUG);
+  }
+  for (int i = 0; i < 6; i++) {
+    addr[i] = kmalloc(PAGE_SIZE / 2 - 11);
+    log_hex("kmalloc addr", (unsigned long)addr[i], LOG_DEBUG);
+  }
 
   // // init_rootfs(new_ramfs());
   // // dentry root;

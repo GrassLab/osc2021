@@ -7,26 +7,23 @@
 #define MEM_MAX_RESERVE 16  // max reserve slot
 #define PAGE_SIZE 4096
 #define PAGE_SIZE_CTZ 12
+#define MEM_PAD 16
+
+#define RESERVE_NOT_ALIGN -1
+#define RESERVE_SLOT_FULL -2
+#define RESERVE_COLLISION -3
 
 extern unsigned long mem_size;
 
+// allocate continuous mem with size align {MEM_PAD}
 void *kmalloc(unsigned long size);
+// free memory allocate by kmalloc, reserve_mem, reserve_alloc
 void kfree(void *ptr);
+// initialize kmalloc before using
+void init_kmalloc();
+// reserve memory using startup allocator align {PAGE_SIZE}
+int reserve_mem(void *addr, unsigned long size);
+// allocate memory using startup allocator align {PAGE_SIZE}
+void *reserve_alloc(unsigned long size);
 
-// void init_buddy(char *ps);
-// void init_slab();
-// void *register_slab(size_t size);
-
-// void *alloc_page(size_t size);
-// int reserve_mem(void *addr, unsigned long size);
-// void *alloc_slab(void *slab_tok);
-
-// void free_page(void *ptr);
-// void free_reserve(void *ptr);
-// void free_slab(void *ptr, void *slab);
-// void free_unknow_slab(void *ptr);
-
-// void log_buddy();
-// void check_buddy_stat();
-// void check_slab();
 #endif

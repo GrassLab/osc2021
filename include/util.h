@@ -4,6 +4,8 @@
 #include <stddef.h>
 
 #define pad(x, y) ((((x) + (y)-1) / (y)) * (y))
+#define max(x, y) (x > y ? x : y)
+#define min(x, y) (x < y ? x : y)
 
 int strcmp(const char *s1, const char *s2);
 int strcmp_n(const char *s1, const char *s2, size_t n);
