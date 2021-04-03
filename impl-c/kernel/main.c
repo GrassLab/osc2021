@@ -1,5 +1,6 @@
 #include "cfg.h"
 #include "mem.h"
+#include "mm/startup.h"
 #include "shell.h"
 #include "test.h"
 #include "uart.h"
