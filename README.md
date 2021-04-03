@@ -1,4 +1,4 @@
-# My OSDI 2020 - LAB 02
+# My OSDI 2020 - LAB 03
 
 ## Author
 
@@ -7,18 +7,17 @@
 | 0856167    | Yunyung        | 許振揚| yungyung7654321@gmail.com  |
 
 ### Goals of this lab
-- Implement a bootloader that loads kernel images through UART.
+- Understand memory management techiques in Linux . 
 
-- Write a program to parse cpio archive
+- Implement a page frame allocator (Buddy Memory Allocator).
 
-- Implement bootloader self relocation 
+- Implement a dynamic memory allocator (Slab).
 
-- Understand what’s initial ramdisk.
-
-- Understand what’s devicetree.
+- Understand and implement a startup allocator (elective goal).
+- Note: In this lab, we implement simplified version of linux's memory management strategies.
 
 ## Directory structure
-
+mm.h and mm.c is key files in our implementation.
 ```
 .
 ├── bootloader          # Bootloader to load actual kernel in run time through miniUART(UART1)
@@ -31,8 +30,10 @@
 │   ├── shell.h         # header file to process shell flow
 │   ├── string.h        # header file to implement some function in <string.h>
 │   ├── printf.h        # header file to provide a simple and small printf functionality
+│   ├── list.h          # The implementation of subset of list.h in linux
+│   ├── types.h         # Definition of some data type
 │   ├── cpio.h          # header file to parse  cpio archive function
-│   └── uart.h          # header file to process uart interface
+│   └── mm.h            # header file to provide memory allocation
 │
 ├── src                 # source files
 │   ├── command.c       # source file to process command
@@ -43,7 +44,8 @@
 │   ├── math.c          # source file to implement some function in <math.h>
 │   ├── printf.c        # source file to provide a simple and small printf functionality
 │   ├── cpio.c          # source file to parse "New ASCII Format" cpio archive
-│   └── uart.c          # source file to process uart interface
+│   ├── uart.c          # source file to process uart interface
+│   └── mm.c            # Implementation of buudy system and object allocator(slab) for memory allocation
 │ 
 ├── rootfs              # file will be made as cpio archive
 │   └── ...             # any file 
@@ -66,7 +68,7 @@
 | reboot            | reset rpi3                         |
 | ls                | list cpio file                     |
 | cat {filename}    | print cpio content in {filename}   |
-
+| ma                | Test Memory allocation             |
 
 ## How to interact with Rpi3
 - miniUART
