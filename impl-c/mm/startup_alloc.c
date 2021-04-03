@@ -17,12 +17,16 @@ bool is_overlap(ReservedArea *a1, ReservedArea *a2) {
   return low_end > ((unsigned long)high->addr);
 }
 
-void sort_reserved(StartupAllocator *sa) {
+void sort_reserved_area(StartupAllocator *sa) {
   // simple bubble sort
-  for (int i = 0; i < sa->max_reserved; i++) {
-    for (int j = i + 1; j < sa->max_reserved; j++) {
-      int k = 0;
-      k++;
+  ReservedArea tmpArea;
+  for (int i = 0; i < sa->num_reserved; i++) {
+    for (int j = i + 1; j < sa->num_reserved; j++) {
+      if (sa->_reserved[i].addr < sa->_reserved[j].addr) {
+        tmpArea = sa->_reserved[i];
+        sa->_reserved[i] = sa->_reserved[j];
+        sa->_reserved[j] = tmpArea;
+      }
     }
   }
 }
@@ -59,6 +63,7 @@ bool reserveMemory(StartupAllocator *sa, void *addr, unsigned long size) {
 }
 
 #ifdef CFG_RUN_STATUP_ALLOC_TEST
+
 bool test_is_overlap() {
   ReservedArea a1 = {.addr = (void *)0, .size = 13};
   ReservedArea a2 = {.addr = (void *)20, .size = 5};
@@ -74,6 +79,23 @@ bool test_is_overlap() {
   ReservedArea a6 = {.addr = (void *)2, .size = 5};
   uart_println("case: partial overlap");
   assert(is_overlap(&a5, &a6) == true);
+  return true;
+};
+
+bool test_sort_reserve_area() {
+  StartupAllocator sa;
+  struct ReservedArea reservd[5];
+  struct ReservedArea a1 = {.addr = (void *)4, .size = 2};
+  struct ReservedArea a2 = {.addr = (void *)99, .size = 2};
+  StartupAllocator_init(&sa, reservd, 5);
+  sa._reserved[0] = a1;
+  sa._reserved[1] = a2;
+  sa.num_reserved = 2;
+  sort_reserved_area(&sa);
+  assert(sa._reserved[0].addr == a2.addr);
+  assert(sa._reserved[0].size == a2.size);
+  assert(sa._reserved[1].addr == a1.addr);
+  assert(sa._reserved[1].size == a1.size);
   return true;
 };
 
@@ -119,5 +141,6 @@ void test_startup_alloc() {
   unittest(test_is_overlap, "starup_alloc", "is_overlap");
   unittest(test_startup_alloc_init, "starup_alloc", "init");
   unittest(test_reserveMemory, "starup_alloc", "reserveMemory");
+  unittest(test_sort_reserve_area, "starup_alloc", "sort_reserve");
 #endif
 }
