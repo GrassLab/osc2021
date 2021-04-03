@@ -1,11 +1,11 @@
 #pragma once
 
 #include "list.h"
+#include "mm/frame.h"
 #include <stdint.h>
 
 // #define BUDDY_MAX_EXPONENT 17 // 512Mb
 #define BUDDY_MAX_EXPONENT 10
-#define FRAME_SHIFT 14 // 4Kb
 
 #define BUDDY_NUM_FREE_LISTS (BUDDY_MAX_EXPONENT + 1)
 
