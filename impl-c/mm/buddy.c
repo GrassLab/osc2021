@@ -1,6 +1,7 @@
 #include "bool.h"
 #include "list.h"
-#include "mem.h"
+#include "mm.h"
+#include "mm/alloc.h"
 #include "mm/startup.h"
 #include "uart.h"
 #include <stddef.h>
@@ -207,9 +208,8 @@ void buddy_init_reserved(BuddyAllocater *alloc, StartupAllocator_t *sa) {
 }
 
 void buddy_init(BuddyAllocater *alloc, StartupAllocator_t *sa,
-                struct Frame *frames, unsigned long num_frames) {
+                struct Frame *frames) {
   alloc->frames = frames;
-  alloc->num_frames = num_frames;
   for (int i = 0; i < (1 << BUDDY_MAX_EXPONENT); i++) {
     alloc->frames[i].arr_index = i;
     alloc->frames[i].exp = -1;

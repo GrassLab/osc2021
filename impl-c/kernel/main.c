@@ -1,5 +1,5 @@
 #include "cfg.h"
-#include "mem.h"
+#include "mm.h"
 #include "mm/startup.h"
 #include "shell.h"
 #include "test.h"
@@ -26,26 +26,8 @@ int main() {
   KAllocManager_init();
   KAllocManager_show_status();
 
-  // void *a[30];
-  // for (int i = 0; i < 5; i++) {
-  //   a[i] = kalloc(8192);
-  //   uart_println("i:%d, a: %x", i, a[i]);
-  // }
-
-  // for (int i = 0; i < 5; i++) {
-  //   kfree(a[i]);
-  // }
-
-  // for (int i = 0; i < 5; i++) {
-  //   a[i] = kalloc(13);
-  //   uart_println("i:%d, a: %x", i, a[i]);
-  // };
-  // if (a[0] == a[1]) {
-  //   uart_println("nooo");
-  // }
-  // for (int i = 0; i < 5; i++) {
-  //   kfree(a[i]);
-  // }
+  KAllocManager_run_example();
+  KAllocManager_show_status();
 
   uart_println("-------------------------------");
   uart_println(" Operating System Capstone 2021");

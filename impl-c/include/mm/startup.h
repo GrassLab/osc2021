@@ -5,6 +5,19 @@
 
 #define STARTUP_MAX_RESERVE_COUNT 10
 
+/**
+ * Startup allocator:
+ *  The very first memory allocator of the opoerating system
+ *
+ * The purpose of startup allocator is to reserve spaces on system starup,
+ * Hand all of it's knowledfe to( memory regions have bee reserved)
+ * to the dynamic memory allcator.
+ *
+ * This allocator is fairly basic, which only allocate but not free spaces at
+ * all.
+ *
+ * */
+
 typedef struct MemRegion {
   void *addr;
   unsigned long size;

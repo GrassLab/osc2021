@@ -1,6 +1,6 @@
 #include "bool.h"
 #include "list.h"
-#include "mem.h"
+#include "mm.h"
 #include "mm/startup.h"
 #include "uart.h"
 #include <stddef.h>
@@ -8,10 +8,33 @@
 struct AllocationManager KAllocManager;
 struct Frame Frames[BUDDY_MAX_EXPONENT << 1];
 
+void KAllocManager_run_example() {
+  void *a[30];
+  uart_println("[Example] Allocate 5 single frames:");
+  for (int i = 0; i < 5; i++) {
+    a[i] = kalloc(8192);
+    uart_println("i:%d, a: %x", i, a[i]);
+  }
+
+  uart_println("[Example] free 5 frames we've just allocated");
+  for (int i = 0; i < 5; i++) {
+    kfree(a[i]);
+  }
+
+  uart_println("[Example] print 5 objects with 13 bytes each");
+  for (int i = 0; i < 5; i++) {
+    a[i] = kalloc(13);
+    uart_println("i:%d, a: %x", i, a[i]);
+  };
+  uart_println("[Example] free 5 frames we've just allocated");
+  for (int i = 0; i < 5; i++) {
+    kfree(a[i]);
+  }
+}
+
 void KAllocManager_init() {
   AllocationManager *am = &KAllocManager;
-  buddy_init(&am->frame_allocator, &StartupAlloc, Frames,
-             (1 << BUDDY_MAX_EXPONENT));
+  buddy_init(&am->frame_allocator, &StartupAlloc, Frames);
 
   for (int i = 0; i < (1 << BUDDY_MAX_EXPONENT); i++) {
     for (int j = 0; j < (SLAB_MAX_SLOTS >> 3); j++) {
