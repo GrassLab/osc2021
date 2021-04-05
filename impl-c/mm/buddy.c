@@ -1,17 +1,29 @@
 #include "bool.h"
 #include "list.h"
 #include "mem.h"
+#include "mm/startup.h"
 #include "uart.h"
 #include <stddef.h>
 
 #define NOT_AVAILABLE -9999
+
+struct Frame Frames[BUDDY_MAX_EXPONENT << 1];
 
 static inline int buddy_idx(Frame *self) {
   int bit_to_invert = 1 << self->exp;
   return self->arr_index ^ bit_to_invert;
 }
 
+static inline void *end_addr(Frame *f) {
+  void *addr = f->addr + ((1 << f->exp) << FRAME_SHIFT);
+  return addr;
+}
+
 static bool provide_frame_with_exp(BuddyAllocater *alloc, int required_exp);
+static Frame *find_buddy_collide_reserved(BuddyAllocater *alloc,
+                                          StartupAllocator_t *sa);
+static bool is_frame_wrapped_by_collison(Frame *node, StartupAllocator_t *sa);
+static void buddy_init_reserved(BuddyAllocater *alloc, StartupAllocator_t *sa);
 
 void buddy_dump(BuddyAllocater *alloc) {
   uart_println("========Status========");
@@ -116,13 +128,97 @@ bool provide_frame_with_exp(BuddyAllocater *alloc, int required_exp) {
   return false;
 }
 
-void buddy_init(BuddyAllocater *alloc) {
-  // Bind the physical frame for manipulation
+// Return a frame if it's area is collide with the reserved area
+Frame *find_buddy_collide_reserved(BuddyAllocater *alloc,
+                                   StartupAllocator_t *sa) {
+  int total_reserved = sa->num_reserved;
+  Frame *node;
+  list_head_t *list, *entry;
+  MemRegion node_region;
+  bool overlap = false;
+  // for every list
+  for (int exp = 0; exp <= BUDDY_MAX_EXPONENT; exp++) {
+    list = &alloc->free_lists[exp];
+    // for every entries
+    for (entry = list->next; entry != list; entry = entry->next) {
+      node = (Frame *)entry;
+      node_region.addr = node->addr;
+      node_region.size = (1 << (node->exp)) << FRAME_SHIFT;
+      for (int i = 0; i < total_reserved; i++) {
+        overlap = is_overlap(&node_region, &sa->_reserved[i]);
+        if (overlap) {
+          return node;
+        }
+      }
+    }
+  }
+  return NULL;
+}
 
+bool is_frame_wrapped_by_collison(Frame *node, StartupAllocator_t *sa) {
+  int total_reserved = sa->num_reserved;
+  // node region
+  void *nstart = node->addr;
+  void *nend = nstart + ((1 << (node->exp)) << FRAME_SHIFT);
+
+  // reserved region
+  void *rstart, *rend;
+
+  for (int i = 0; i < total_reserved; i++) {
+    rstart = sa->_reserved[i].addr;
+    rend = rstart + sa->_reserved[i].size;
+    if (rstart <= nstart && nend <= rend) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Initialize buddy systems initial state to prevent overlap with reserved
+// memregion
+void buddy_init_reserved(BuddyAllocater *alloc, StartupAllocator_t *sa) {
+  Frame *node, *child1, *child2;
+  int child_exp;
+  while (NULL != (node = find_buddy_collide_reserved(alloc, sa))) {
+    // split node
+    list_del(&node->list_base);
+    if (true == is_frame_wrapped_by_collison(node, sa)) {
+      uart_println("collison -  remove node[%x, %x]", node->addr,
+                   end_addr(node));
+      continue;
+    }
+
+    uart_println("collison -  node[%x, %x]", node->addr, end_addr(node));
+    child_exp = (node->exp) - 1;
+    child1 = &Frames[node->arr_index];
+    child2 = &Frames[node->arr_index + (1 << child_exp)];
+    child1->exp = child_exp;
+    child2->exp = child_exp;
+    if (false == is_frame_wrapped_by_collison(child1, sa)) {
+      uart_println("collison -  push child[%x, %x]", child1->addr,
+                   end_addr(child1));
+      list_push(&child1->list_base, &alloc->free_lists[child_exp]);
+    }
+    if (false == is_frame_wrapped_by_collison(child2, sa)) {
+      uart_println("collison -  push child[%x, %x]", child2->addr,
+                   end_addr(child2));
+      list_push(&child2->list_base, &alloc->free_lists[child_exp]);
+    }
+    buddy_dump(alloc);
+  }
+}
+
+void buddy_init(BuddyAllocater *alloc, StartupAllocator_t *sa) {
+  // Bind the physical frame for manipulation
+  // uart_println("startup %x", ReservedRegions);
   for (int i = 0; i < (1 << BUDDY_MAX_EXPONENT); i++) {
     Frames[i].arr_index = i;
     Frames[i].exp = -1;
     Frames[i].addr = (void *)(((long)i << FRAME_SHIFT) + MEMORY_START);
+    // uart_println("frame :%x", &Frames[i]);
+    // uart_println("next: %x", Frames[i].list_base.next);
+    Frames[i].list_base.next = NULL;
+    Frames[i].list_base.prev = NULL;
   }
   for (int i = 0; i < BUDDY_NUM_FREE_LISTS; i++) {
     uart_println("addr for list %d, %x", i, &(alloc->free_lists[i]));
@@ -133,4 +229,5 @@ void buddy_init(BuddyAllocater *alloc) {
   Frame *root_frame = &Frames[0];
   root_frame->exp = BUDDY_MAX_EXPONENT;
   list_push(&root_frame->list_base, &alloc->free_lists[BUDDY_MAX_EXPONENT]);
+  buddy_init_reserved(alloc, sa);
 }

@@ -1,16 +1,18 @@
 #include "bool.h"
 #include "list.h"
 #include "mem.h"
+#include "mm/startup.h"
 #include "uart.h"
 #include <stddef.h>
 
+struct AllocationManager KAllocManager;
+struct Frame Frames[BUDDY_MAX_EXPONENT << 1];
+
 void KAllocManager_init() {
   AllocationManager *am = &KAllocManager;
-  buddy_init(&am->frame_allocator);
+  buddy_init(&am->frame_allocator, &StartupAlloc);
 
   for (int i = 0; i < (1 << BUDDY_MAX_EXPONENT); i++) {
-    Frames[i].list_base.next = NULL;
-    Frames[i].list_base.prev = NULL;
     for (int j = 0; j < (SLAB_MAX_SLOTS >> 3); j++) {
       Frames[i].slot_available[j] = 0;
     }

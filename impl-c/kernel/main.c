@@ -13,8 +13,18 @@ int main() {
   run_tests();
 #endif
 
-  // KAllocManager_init();
-  // KAllocManager_show_status();
+  startup_init();
+
+  // startup_reserve((void *)0x0, 0x1000);      // spin table
+  // startup_reserve((void *)0x60000, 0x20000); // stack
+  startup_reserve((void *)0xa0000, 0x8000);
+  // startup_reserve((void *)(&kn_start), (&kn_end - &kn_start)); // kernel
+  // startup_reserve((void *)(&kn_end), mem_size / PAGE_SIZE);    // buddy
+  // system
+  // startup_reserve((void *)0x3f000000, 0x1000000); // MMIO
+
+  KAllocManager_init();
+  KAllocManager_show_status();
 
   // void *a[30];
   // for (int i = 0; i < 5; i++) {

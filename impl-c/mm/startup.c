@@ -8,10 +8,12 @@
 
 #include <stddef.h>
 
+StartupAllocator_t StartupAlloc;
+struct MemRegion ReservedRegions[STARTUP_MAX_RESERVE_COUNT];
+
 // Mask for address inside frame
 #define FRAME_MASK ((1 << FRAME_SHIFT) - 1)
 
-static bool is_overlap(MemRegion *a1, MemRegion *a2);
 static void sa_init(StartupAllocator_t *sa, struct MemRegion *reserved,
                     int max_reserved_count);
 // static void *sa_alloc(StartupAllocator_t *sa, unsigned long size);

@@ -16,8 +16,10 @@ typedef struct StartupAllocator {
   struct MemRegion *_reserved;
 } StartupAllocator_t;
 
-struct MemRegion ReservedRegions[STARTUP_MAX_RESERVE_COUNT];
-StartupAllocator_t StartupAlloc;
+extern struct MemRegion ReservedRegions[STARTUP_MAX_RESERVE_COUNT];
+extern StartupAllocator_t StartupAlloc;
+
+bool is_overlap(MemRegion *a1, MemRegion *a2);
 
 // Public api: Initialize the starup allocator module
 void startup_init();

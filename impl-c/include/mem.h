@@ -2,10 +2,12 @@
 
 #include "list.h"
 #include "mm/frame.h"
+#include "mm/startup.h"
 #include <stdint.h>
 
 // #define BUDDY_MAX_EXPONENT 17 // 512Mb
-#define BUDDY_MAX_EXPONENT 10
+// #define BUDDY_MAX_EXPONENT 10
+#define BUDDY_MAX_EXPONENT 5
 
 #define BUDDY_NUM_FREE_LISTS (BUDDY_MAX_EXPONENT + 1)
 
@@ -74,8 +76,8 @@ void KAllocManager_show_status();
 
 // Statically linked to the heap space
 // because their lifetimes is equal to the system itself
-struct Frame Frames[BUDDY_MAX_EXPONENT << 1];
-struct AllocationManager KAllocManager;
+extern struct Frame Frames[BUDDY_MAX_EXPONENT << 1];
+extern struct AllocationManager KAllocManager;
 
 // Call slab allocator for allocate an object
 void *slab_alloc(SlabAllocator *alloc);
@@ -83,7 +85,7 @@ void *slab_alloc(SlabAllocator *alloc);
 // Free an object
 void slab_free(void *obj);
 
-void buddy_init(BuddyAllocater *alloc);
+void buddy_init(BuddyAllocater *alloc, StartupAllocator_t *sa);
 struct Frame *buddy_alloc(BuddyAllocater *alloc, int size_in_byte);
 void buddy_free(BuddyAllocater *alloc, struct Frame *frame);
 void buddy_dump(BuddyAllocater *alloc);
