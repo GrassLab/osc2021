@@ -121,7 +121,8 @@ endef
 
 # Start qemu with tty opend on host, waiting for gdb to connect
 define DEBUG_KERNEL
-	$(_run_qemu_mux_base) \
+	$(_run_qemu_base) \
+	-serial null -serial stdio \
 	-s -S \
 	-kernel
 endef
