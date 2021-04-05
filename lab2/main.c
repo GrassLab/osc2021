@@ -21,16 +21,17 @@ char *cmd_lst[][2] = {
     { "hello  ", "print hello world"},
     { "reboot ", "reboot"},
     { "cat    ", "show file contents"},
+    { "run    ", "run user program"},
     { "ls     ", "show all file"},
     { "relo   ", "Relocate bootloader"},
     { "load   ", "Load image from host to pi, then jump to it"},
     { "showmem", "show memory contents"},
-    { "dtp    ", "device tree parse"},
     { "size   ", "show type size"},
     { "mm     ", "show memory management"},
     { "testbs ", "test buddy system"},
     { "testks ", "test kmalloc system"},
     { "testsms", "test startup memory system"},
+    { "el     ", "Get current EL"},
     { "eocl", "This won't print out (end of cmd list)"}
 };
 
@@ -163,6 +164,47 @@ int ls_initramfs()
     return 0;
 }
 
+
+int run_initramfs()
+{
+    char file_name_buf[FILE_NAME_SIZE];
+    struct cpio_newc_header* ent;
+    int filesize, namesize;
+    char *name_start, *data_start;
+
+    uart_send_string("Please enter file path: ");
+    read_line(file_name_buf, FILE_NAME_SIZE);
+
+    ent = (struct cpio_newc_header*)INITRAMFS_BASE;
+    while (1)
+    {
+        // uart_send_string("hey");
+        namesize = hex_string_to_int(ent->c_namesize, 8);
+        filesize = hex_string_to_int(ent->c_filesize, 8);
+        name_start = ((char *)ent) + sizeof(struct cpio_newc_header);
+        data_start = align_upper(name_start + namesize, 4);
+        if (!strcmp(file_name_buf, name_start)) {
+            if (!filesize)
+                return 0;
+            // Load file to page A
+            struct page *A = get_free_frames(1);
+            char *page_ptr = (char*)A;
+            for (int i = 0; i < filesize; ++i)
+                page_ptr[i] = data_start[i];
+            run_user_program(page_ptr, page_ptr + 4096 - 1);
+            return 0;
+        }
+        ent = (struct cpio_newc_header*)align_upper(data_start + filesize, 4);
+
+        if (!strcmp(name_start, "TRAILER!!!"))
+            break;
+    }
+    uart_send_string("run: ");
+    uart_send_string(file_name_buf);
+    uart_send_string(": No such file or directory\r\n");
+    return 1;
+}
+
 int do_showmem(char *cmd)
 { // showmem 60000 200
     char *addr_ptr, *cmd_ptr, *arg1, *arg2;
@@ -262,6 +304,30 @@ int show_type_size()
     return 0;
 }
 
+int show_sys_reg()
+{
+    int el = get_el();
+    uart_send_string("Current EL: ");
+    uart_send_int(el);
+    uart_send_string("\r\n");
+    uart_send_string("sctlr_el1: ");
+    uart_send_uint(get_sctlr_el1());
+    uart_send_string("\r\n");
+    uart_send_string("cntfrq_el0: ");
+    uart_send_uint(get_cntfrq_el0());
+    uart_send_string("\r\n");
+    
+    if (el == 2) {
+        uart_send_string("hcr_el2: ");
+        uart_send_ulong(get_hcr_el2());
+        uart_send_string("\r\n");
+        uart_send_string("spsr_el2: ");
+        uart_send_uint(get_spsr_el2());
+        uart_send_string("\r\n");
+    }
+    return 0;
+}
+
 int cmd_handler(char *cmd)
 {
     if (!strcmp(cmd, "help"))
@@ -272,6 +338,8 @@ int cmd_handler(char *cmd)
         return do_reboot();
     if (!strcmp(cmd, "cat"))
         return cat_file_initramfs();
+    if (!strcmp(cmd, "run"))
+        return run_initramfs();
     if (!strcmp(cmd, "ls"))
         return ls_initramfs();
     if (!strcmp(cmd, "relo"))
@@ -280,8 +348,6 @@ int cmd_handler(char *cmd)
         kernel_load_and_jump(); // Won't come back
     if (!strcmp_with_len(cmd, "showmem", 7))
         return do_showmem(cmd);
-    // if (!strcmp(cmd, "dtp"))
-    //     return do_dtp();
     if (!strcmp(cmd, "size"))
         return show_type_size();
     if (!strcmp(cmd, "mm"))
@@ -297,6 +363,9 @@ int cmd_handler(char *cmd)
         uart_send_string("\r\n");
         return 0;
     }
+    if (!strcmp(cmd, "el"))
+        return show_sys_reg();
+
     uart_send_string("Command '");
     uart_send_string(cmd);
     uart_send_string("' not found\r\n");

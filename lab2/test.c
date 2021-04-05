@@ -8,32 +8,34 @@ int _test_buddy_system(void)
 {
     struct page *A, *B, *C, *D;
     uart_send_string("================= Start =====================\r\n");
-    show_mm();
+    A = get_free_frames(17);
+    // show_mm();
     uart_send_string("=================alloc A=====================\r\n");
-    A = get_free_frames(1);
-    show_mm();
+    // A = get_free_frames(1);
+    // show_mm();
     uart_send_string("=================alloc B=====================\r\n");
-    B = get_free_frames(2);
-    show_mm();
+    B = get_free_frames(8);
+    // show_mm();
     uart_send_string("=================alloc C=====================\r\n");
     C = get_free_frames(1);
-    show_mm();
+    // show_mm();
     uart_send_string("=================alloc D=====================\r\n");
     D = get_free_frames(2);
-    show_mm();
+    // show_mm();
 
     uart_send_string("=================free B=====================\r\n");
     free_frames(B);
-    show_mm();
+    // show_mm();
     uart_send_string("=================free D=====================\r\n");
     free_frames(D);
-    show_mm();
+    // show_mm();
     uart_send_string("=================free A=====================\r\n");
     free_frames(A);
-    show_mm();
+    // show_mm();
     uart_send_string("=================free C=====================\r\n");
     free_frames(C);
-    show_mm();
+    free_frames(C);
+    // show_mm();
 
     return 0;
 }
