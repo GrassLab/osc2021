@@ -7,8 +7,6 @@
 
 #define NOT_AVAILABLE -9999
 
-struct Frame Frames[BUDDY_MAX_EXPONENT << 1];
-
 static inline int buddy_idx(Frame *self) {
   int bit_to_invert = 1 << self->exp;
   return self->arr_index ^ bit_to_invert;
@@ -29,7 +27,7 @@ void buddy_dump(BuddyAllocater *alloc) {
   uart_println("========Status========");
   uart_println("Framenodes (idx, exp)");
   for (int i = 0; i < (1 << BUDDY_MAX_EXPONENT); i++) {
-    Frame *node = &Frames[i];
+    Frame *node = &alloc->frames[i];
     uart_printf("[%d,%d,%x]", node->arr_index, node->exp, node->addr);
   }
   uart_println("");
@@ -65,14 +63,14 @@ void buddy_free(BuddyAllocater *alloc, struct Frame *frame) {
   Frame *low, *high;
   int frame_idx;
   for (frame_idx = frame->arr_index;;) {
-    node = &Frames[frame_idx];
+    node = &alloc->frames[frame_idx];
     if (buddy_idx(node) >= (1 << BUDDY_MAX_EXPONENT)) {
       list_push(&node->list_base, &alloc->free_lists[node->exp]);
       uart_println(" push to freelist: node(idx:%d,exp:%d)", node->arr_index,
                    node->exp);
       break;
     }
-    buddy = &Frames[buddy_idx(node)];
+    buddy = &alloc->frames[buddy_idx(node)];
     uart_printf("Try to merge buddy(idx:%d,exp:%d) node(idx:%d,exp:%d)",
                 buddy->arr_index, buddy->exp, node->arr_index, node->exp);
 
@@ -115,8 +113,8 @@ bool provide_frame_with_exp(BuddyAllocater *alloc, int required_exp) {
       Frame *node = (Frame *)list_pop(&alloc->free_lists[exp]);
 
       int child_exp = exp - 1;
-      Frame *child1 = &Frames[node->arr_index];
-      Frame *child2 = &Frames[node->arr_index + (1 << child_exp)];
+      Frame *child1 = &alloc->frames[node->arr_index];
+      Frame *child2 = &alloc->frames[node->arr_index + (1 << child_exp)];
       child1->exp = child_exp;
       child2->exp = child_exp;
       list_push(&child1->list_base, &alloc->free_lists[child_exp]);
@@ -190,8 +188,8 @@ void buddy_init_reserved(BuddyAllocater *alloc, StartupAllocator_t *sa) {
 
     uart_println("collison -  node[%x, %x]", node->addr, end_addr(node));
     child_exp = (node->exp) - 1;
-    child1 = &Frames[node->arr_index];
-    child2 = &Frames[node->arr_index + (1 << child_exp)];
+    child1 = &alloc->frames[node->arr_index];
+    child2 = &alloc->frames[node->arr_index + (1 << child_exp)];
     child1->exp = child_exp;
     child2->exp = child_exp;
     if (false == is_frame_wrapped_by_collison(child1, sa)) {
@@ -208,17 +206,16 @@ void buddy_init_reserved(BuddyAllocater *alloc, StartupAllocator_t *sa) {
   }
 }
 
-void buddy_init(BuddyAllocater *alloc, StartupAllocator_t *sa) {
-  // Bind the physical frame for manipulation
-  // uart_println("startup %x", ReservedRegions);
+void buddy_init(BuddyAllocater *alloc, StartupAllocator_t *sa,
+                struct Frame *frames, unsigned long num_frames) {
+  alloc->frames = frames;
+  alloc->num_frames = num_frames;
   for (int i = 0; i < (1 << BUDDY_MAX_EXPONENT); i++) {
-    Frames[i].arr_index = i;
-    Frames[i].exp = -1;
-    Frames[i].addr = (void *)(((long)i << FRAME_SHIFT) + MEMORY_START);
-    // uart_println("frame :%x", &Frames[i]);
-    // uart_println("next: %x", Frames[i].list_base.next);
-    Frames[i].list_base.next = NULL;
-    Frames[i].list_base.prev = NULL;
+    alloc->frames[i].arr_index = i;
+    alloc->frames[i].exp = -1;
+    alloc->frames[i].addr = (void *)(((long)i << FRAME_SHIFT) + MEMORY_START);
+    alloc->frames[i].list_base.next = NULL;
+    alloc->frames[i].list_base.prev = NULL;
   }
   for (int i = 0; i < BUDDY_NUM_FREE_LISTS; i++) {
     uart_println("addr for list %d, %x", i, &(alloc->free_lists[i]));
@@ -226,7 +223,7 @@ void buddy_init(BuddyAllocater *alloc, StartupAllocator_t *sa) {
   }
 
   // push a root frame
-  Frame *root_frame = &Frames[0];
+  Frame *root_frame = &alloc->frames[0];
   root_frame->exp = BUDDY_MAX_EXPONENT;
   list_push(&root_frame->list_base, &alloc->free_lists[BUDDY_MAX_EXPONENT]);
   buddy_init_reserved(alloc, sa);

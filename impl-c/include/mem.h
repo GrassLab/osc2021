@@ -46,6 +46,8 @@ typedef struct Frame {
 //    allocate contiguous frames
 typedef struct BuddyAllocater {
   list_head_t free_lists[BUDDY_NUM_FREE_LISTS];
+  struct Frame *frames;
+  unsigned long num_frames;
 } BuddyAllocater;
 
 typedef struct SlabAllocator {
@@ -85,7 +87,8 @@ void *slab_alloc(SlabAllocator *alloc);
 // Free an object
 void slab_free(void *obj);
 
-void buddy_init(BuddyAllocater *alloc, StartupAllocator_t *sa);
+void buddy_init(BuddyAllocater *alloc, StartupAllocator_t *sa,
+                struct Frame *frames, unsigned long num_frames);
 struct Frame *buddy_alloc(BuddyAllocater *alloc, int size_in_byte);
 void buddy_free(BuddyAllocater *alloc, struct Frame *frame);
 void buddy_dump(BuddyAllocater *alloc);

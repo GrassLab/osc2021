@@ -10,7 +10,8 @@ struct Frame Frames[BUDDY_MAX_EXPONENT << 1];
 
 void KAllocManager_init() {
   AllocationManager *am = &KAllocManager;
-  buddy_init(&am->frame_allocator, &StartupAlloc);
+  buddy_init(&am->frame_allocator, &StartupAlloc, Frames,
+             (1 << BUDDY_MAX_EXPONENT));
 
   for (int i = 0; i < (1 << BUDDY_MAX_EXPONENT); i++) {
     for (int j = 0; j < (SLAB_MAX_SLOTS >> 3); j++) {
