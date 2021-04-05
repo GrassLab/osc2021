@@ -105,6 +105,8 @@ void shell(){
 			uart_puts("          archive\n");
 			uart_puts("          falloc\n");
 			uart_puts("          ffree\n");
+			uart_puts("          dalloc\n");
+			uart_puts("          dfree\n");
 		}else if(strcmp(buffer,"hello")==0){
 			uart_puts("Hello World!\n");
 		}else if(strcmp(buffer,"reboot")==0){
