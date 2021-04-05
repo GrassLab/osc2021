@@ -178,6 +178,13 @@ bool is_frame_wrapped_by_collison(Frame *node, StartupAllocator_t *sa) {
 void buddy_init_reserved(BuddyAllocater *alloc, StartupAllocator_t *sa) {
   Frame *node, *child1, *child2;
   int child_exp;
+
+  MemRegion reg;
+  for (int i = 0; i < sa->num_reserved; i++) {
+    reg.addr = sa->_reserved[i].addr;
+    reg.size = sa->_reserved[i].size;
+    uart_println("reserved: %d, %d", reg.addr, reg.size);
+  }
   while (NULL != (node = find_buddy_collide_reserved(alloc, sa))) {
     // split node
     list_del(&node->list_base);
@@ -203,7 +210,7 @@ void buddy_init_reserved(BuddyAllocater *alloc, StartupAllocator_t *sa) {
                    end_addr(child2));
       list_push(&child2->list_base, &alloc->free_lists[child_exp]);
     }
-    buddy_dump(alloc);
+    // buddy_dump(alloc);
   }
 }
 
@@ -218,7 +225,7 @@ void buddy_init(BuddyAllocater *alloc, StartupAllocator_t *sa,
     alloc->frames[i].list_base.prev = NULL;
   }
   for (int i = 0; i < BUDDY_NUM_FREE_LISTS; i++) {
-    uart_println("addr for list %d, %x", i, &(alloc->free_lists[i]));
+    // uart_println("addr for list %d, %x", i, &(alloc->free_lists[i]));
     list_init(&alloc->free_lists[i]);
   }
 

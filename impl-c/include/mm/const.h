@@ -2,13 +2,14 @@
 
 #define SLAB_NUM_SLAB_SIZES 6
 
-// #define BUDDY_MAX_EXPONENT 17 // 512Mb
+#define BUDDY_MAX_EXPONENT 18 // 1GB
 // #define BUDDY_MAX_EXPONENT 10
-#define BUDDY_MAX_EXPONENT 5
+// #define BUDDY_MAX_EXPONENT 5
 
 #define BUDDY_NUM_FREE_LISTS (BUDDY_MAX_EXPONENT + 1)
 
-#define MEMORY_START 0x90000
+// #define MEMORY_START 0x90000
+#define MEMORY_START 0x0
 
 // SlabAllocator
 //    manage slabs with the same allocation size,

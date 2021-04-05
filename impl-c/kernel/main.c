@@ -5,6 +5,8 @@
 #include "test.h"
 #include "uart.h"
 
+extern unsigned char __kernel_start, __kernel_end;
+
 int main() {
   uart_init();
   uart_println("uart initialized");
@@ -15,19 +17,18 @@ int main() {
 
   startup_init();
 
-  // startup_reserve((void *)0x0, 0x1000);      // spin table
-  // startup_reserve((void *)0x60000, 0x20000); // stack
-  startup_reserve((void *)0xa0000, 0x8000);
-  // startup_reserve((void *)(&kn_start), (&kn_end - &kn_start)); // kernel
+  // Kernel
+  startup_reserve((void *)0x0, 0x1000);      // spin table
+  startup_reserve((void *)0x60000, 0x20000); // stack
+  startup_reserve((void *)(&__kernel_start),
+                  (&__kernel_end - &__kernel_start)); // kernel
   // startup_reserve((void *)(&kn_end), mem_size / PAGE_SIZE);    // buddy
-  // system
-  // startup_reserve((void *)0x3f000000, 0x1000000); // MMIO
+  // System
+  startup_reserve((void *)0x3f000000, 0x1000000); // MMIO
 
   KAllocManager_init();
-  KAllocManager_show_status();
-
   KAllocManager_run_example();
-  KAllocManager_show_status();
+  // KAllocManager_show_status();
 
   uart_println("-------------------------------");
   uart_println(" Operating System Capstone 2021");

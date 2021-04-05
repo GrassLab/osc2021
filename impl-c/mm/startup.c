@@ -23,7 +23,13 @@ void startup_init() {
   sa_init(&StartupAlloc, ReservedRegions, STARTUP_MAX_RESERVE_COUNT);
 }
 bool startup_reserve(void *addr, unsigned long size) {
-  return sa_reserve(&StartupAlloc, addr, size);
+  bool succes = sa_reserve(&StartupAlloc, addr, size);
+  if (succes) {
+    uart_println("reserve addr: %x", addr);
+  } else {
+    uart_println("failed to reserve addr: %x", addr);
+  }
+  return succes;
 }
 
 // void *startup_alloc(unsigned long size) {
@@ -75,15 +81,18 @@ void sa_init(StartupAllocator_t *sa, struct MemRegion *reserved,
 bool sa_reserve(StartupAllocator_t *sa, void *addr, unsigned long size) {
   if (((unsigned long long)addr & FRAME_MASK) != 0 ||
       (size & FRAME_MASK) != 0) {
+    uart_println("not aligned");
     return false;
   }
   if (sa->num_reserved >= sa->max_reserved) {
+    uart_println("limited reached");
     return false;
   }
   MemRegion requested = {.addr = addr, .size = size};
   // Should not overlapped with space that reserved already
   for (int i = 0; i < sa->num_reserved; i++) {
     if (is_overlap(&requested, &sa->_reserved[i])) {
+      uart_println("overlap");
       return false;
     }
   }
