@@ -1,0 +1,11 @@
+char *align_upper(char *addr, int alignment);
+int strlen(char *str);
+int strcmp(char *str1, char *str2);
+int strcmp_with_len(char *str1, char *str2, int len);
+char *strstr(char *haystack, char *needle);
+int hex_string_to_int(char *hex_str, int len);
+unsigned long hex_string_to_unsigned_long(char *hex_str, int len);
+int dec_string_to_int(char *dec_str, int len);
+int bit_test(char *buf, int bit);
+int bit_set(char *buf, int bit);
+int bit_clr(char *buf, int bit);

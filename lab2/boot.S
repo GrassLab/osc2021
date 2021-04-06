@@ -12,14 +12,14 @@ proc_hang:
     b      proc_hang
 
 master:
-    bl     set_dt_base         // dt_base_g is address of device tree now
+    ldr    x1, =0x30000000
+    mov    sp, x1
+
+    bl     set_dt_base         // After this, dt_base_g will become address of device tree
 
     adr    x0, bss_begin
     adr    x1, bss_end
     sub    x1, x1, x0
     bl     memzero
 
-    ldr   x0, =0x3E000000
-    mov   sp, x0
-    mov   x1, x2
     bl    kernel_main

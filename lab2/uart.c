@@ -1,4 +1,6 @@
 #include "utils.h"
+#include "include/dtp.h"
+#include "include/cutils.h"
 
 #define PBASE 0x3F000000
 
@@ -46,6 +48,16 @@ void uart_init ( void )
     put32(AUX_MU_BAUD_REG,270);             //Set baud rate to 115200
 
     put32(AUX_MU_CNTL_REG,3);               //Finally, enable transmitter and receiver
+}
+
+// return 0 for match, 1 for not.
+int uart_probe(struct dtn *node)
+{
+    if (strstr(node->compatible, "uart")) {
+        uart_init();
+        return 0;
+    }
+    return 1;
 }
 
 void uart_send ( char c )
@@ -114,13 +126,21 @@ void reverse(char *str,int index)
 }
 
 void uart_send_int(int number) {
-    int i = 0, j;
+    int i = 0, j, neg_flag = 0;
     char str[100];
+    
+    if (number < 0) {
+        neg_flag = 1;
+        number = (-1) * number;
+    }
     while (number) {
         str[i++] = (number % 10) + '0';
         number = number / 10;
     }
+
     reverse(str, i);
+    if (neg_flag)
+        uart_send('-');
     for ( j = 0 ; j < i ; j++) {
         uart_send(str[j]);
     }
@@ -144,6 +164,21 @@ void uart_send_uint(unsigned int number) {
 }
 
 void uart_send_long(long number) {
+    int i = 0, j; 
+    char str[100];
+    while (number) { 
+        str[i++] = (number % 10) + '0'; 
+        number = number / 10; 
+    } 
+    reverse(str, i);
+    for ( j = 0 ; j < i ; j++) {
+        uart_send(str[j]);
+    }
+    // uart_send('\r\n');
+    return ; 
+}
+
+void uart_send_ulong(unsigned long number) {
     int i = 0, j; 
     char str[100];
     while (number) { 
