@@ -6,5 +6,6 @@
 #define PM_WDOG (volatile unsigned int*)0x3F100024
 
 void reset(int tick);
+void loadimg();
 
 #endif

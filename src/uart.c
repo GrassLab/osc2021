@@ -51,8 +51,15 @@ char uart_getchar() {
     } while(!(*AUX_MU_LSR_REG & 0x01));
 
     char r = (char)(*AUX_MU_IO_REG);
-    return r=='\r'?'\n':r;
+    return r=='\r' ? '\n':r;
+}
 
+__attribute__((section(".text.loader.util")))
+char uart_read_raw() {
+    do {
+        asm volatile("nop");
+    } while(!(*AUX_MU_LSR_REG & 0x01));
+    return (char)(*AUX_MU_IO_REG);
 }
 
 void uart_putstr(char* str) {
