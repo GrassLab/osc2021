@@ -22,10 +22,10 @@
  * DEALINGS IN THE SOFTWARE.
  *
  */
- 
+
 SECTIONS
 {
-    . = 0x80000;
+    . = 0x60000;
     .text : { *(.text) }
     .rodata : { *(.rodata) }
     .data : { *(.data) }

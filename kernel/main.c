@@ -1,5 +1,5 @@
-#include "uart.h"
-#include "myshell.h"
+#include "../include/uart.h"
+#include "../include/myshell.h"
 
 int main(){
 
