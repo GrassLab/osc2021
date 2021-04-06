@@ -8,85 +8,53 @@
 
 ## How To Run
 
-- Build Kernel
+- Build
 
  ~~~shell
- cd Kernel
  make
- cd ..
  ~~~
 
-- Build Bootloader & Deploy to Raspberry Pi
+- Run on QEMU
 
  ~~~shell
- cd loader
- make
- make deploy
- cd ..
+ make run
  ~~~
 
-- Send Kernel
+## Usage
 
- ~~~shell
- sudo python writer.py
- ~~~
-  
- (Remember to run as sudo, or you will get an error.)
-
-## Simple Shell
-
-| command   | description                   |
-| ----------| ----------------------------- |
-| hello     | print Hello World!            |
-| help      | print all available commands  |
-| timestamp | print current timestamp       |
-| reboot    | reset rpi3                    |
-| cpio      | read initramfs.cpio           |
+~~~c
+void *address = memory_allocation(size);
+memory_free(address);
+~~~
 
 ## Directory Structure
 
 ~~~shell
 ├── LICENSE
+├── Makefile
 ├── README.md
-├── initramfs.cpio
-├── kernel
-│   ├── Makefile
-│   ├── build
-│   ├── include
-│   │   ├── command.h
-│   │   ├── cpio.h
-│   │   ├── gpio.h
-│   │   ├── math.h
-│   │   ├── printf.h
-│   │   ├── shell.h
-│   │   ├── string.h
-│   │   └── uart.h
-│   ├── link.ld
-│   ├── src
-│   │   ├── command.c
-│   │   ├── cpio.c
-│   │   ├── main.c
-│   │   ├── math.c
-│   │   ├── printf.c
-│   │   ├── shell.c
-│   │   ├── string.c
-│   │   └── uart.c
-│   └── start.S
-├── loader
-│   ├── Makefile
-│   ├── build
-│   ├── include
-│   │   ├── gpio.h
-│   │   ├── math.h
-│   │   ├── printf.h
-│   │   └── uart.h
-│   ├── link.ld
-│   └── src
-│       ├── main.c
-│       ├── math.c
-│       ├── printf.c
-│       ├── start.S
-│       └── uart.c
-└── writer.py
-
+├── build
+├── include
+│   ├── command.h
+│   ├── cpio.h
+│   ├── gpio.h
+│   ├── list.h
+│   ├── math.h
+│   ├── memory.h
+│   ├── printf.h
+│   ├── shell.h
+│   ├── string.h
+│   └── uart.h
+├── link.ld
+├── src
+│   ├── command.c
+│   ├── cpio.c
+│   ├── main.c
+│   ├── math.c
+│   ├── memory.c
+│   ├── printf.c
+│   ├── shell.c
+│   ├── string.c
+│   └── uart.c
+└── start.S
 ~~~

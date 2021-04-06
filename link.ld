@@ -22,26 +22,42 @@
  * DEALINGS IN THE SOFTWARE.
  *
  */
- 
+
+ /*
 SECTIONS
 {
     . = 0x80000;
-    /* .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) } */
     .text : { KEEP(*(.text.boot)) *(.text .text.*) }
-    /* .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) } */
     .rodata : { *(.rodata .rodata.*) }
-    /* PROVIDE(_data = .); */
-    /* .data : { *(.data .data.* .gnu.linkonce.d*) } */
     .data : { *(.data .data.*) }
     .bss (NOLOAD) : {
         . = ALIGN(8);
-        __bss_start = .;
+        _bss_start = .;
         *(.bss .bss.*)
         *(COMMON)
-        __bss_end = .;
+        _bss_end = .;
+    }
+    _end = .;
+}
+_bss_size = (_bss_end - _bss_start) >> 3;
+*/
+
+SECTIONS
+{
+    . = 0x80000;
+    .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
+    .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
+    PROVIDE(_data = .);
+    .data : { *(.data .data.* .gnu.linkonce.d*) }
+    .bss (NOLOAD) : {
+        . = ALIGN(16);
+        _bss_start = .;
+        *(.bss .bss.*)
+        *(COMMON)
+        _bss_end = .;
     }
     _end = .;
 
    /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
 }
-__bss_size = (__bss_end - __bss_start) >> 3;
+_bss_size = (_bss_end - _bss_start)>>3;

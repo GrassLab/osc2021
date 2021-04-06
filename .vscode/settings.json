@@ -8,6 +8,7 @@
         "cpio.h": "c",
         "string.h": "c",
         "cstdio": "c",
-        "command.h": "c"
+        "command.h": "c",
+        "memory.h": "c"
     }
 }

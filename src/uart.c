@@ -137,3 +137,8 @@ void uart_puts(char *s)
         uart_send(*s++);
     }
 }
+
+void putc(void *p, char c)
+{
+    uart_send(c);
+}

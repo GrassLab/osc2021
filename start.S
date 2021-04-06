@@ -23,8 +23,8 @@ _start:
     mov     sp, x1
 
     // clear bss
-    ldr     x1, =__bss_start
-    ldr     w2, =__bss_size
+    ldr     x1, =_bss_start
+    ldr     w2, =_bss_size
 3:  cbz     w2, 4f
     # set the content x1 points to as zero
     # and x1 = x1 + 8
