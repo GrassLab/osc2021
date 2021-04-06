@@ -23,16 +23,41 @@
  *
  */
 
+#include "bmalloc.h"
+#include "buddy.h"
+#include "ramdisk.h"
 #include "uart.h"
 
-int strCmp(const char* s1, const char* s2)
+int strCmp(const char* p1, const char* p2)
 {
-    while(*s1 && (*s1 == *s2))
-    {
-        s1++;
-        s2++;
-    }
-    return *(const unsigned char*)s1 - *(const unsigned char*)s2;
+    const unsigned char* s1 = (const unsigned char*)p1;
+    const unsigned char* s2 = (const unsigned char*)p2;
+    unsigned char c1, c2;
+    do {
+        asm volatile("nop");
+        c1 = (unsigned char)*s1++;
+        c2 = (unsigned char)*s2++;
+        if (c1 == '\0')
+            return c1 - c2;
+    } while (c1 == c2);
+    return c1 - c2;
+}
+
+void buddy_test()
+{
+    buddy_init();
+    uint64_t* x1 = bmalloc(1 << 12);
+    uint64_t* x2 = bmalloc(1 << 13);
+    uint64_t* x3 = bmalloc(1 << 14);
+    uint64_t* x4 = bmalloc(1 << 5);
+    uint64_t* x5 = bmalloc(1 << 5);
+    uint64_t* x6 = bmalloc(34);
+    bfree(x1);
+    bfree(x2);
+    bfree(x3);
+    bfree(x4);
+    bfree(x5);
+    bfree(x6);
 }
 
 void main()
@@ -40,26 +65,27 @@ void main()
     // set up serial console
     uart_init();
     uart_puts("Booting...\n");
-
     char uart_buffer[50];
-    while(1){
+    char* ramdisk = (char*)0x20000000;
+    while (1) {
         uart_puts("> ");
         uart_gets(uart_buffer, 50);
-        if(strCmp(uart_buffer, "help") == 0){
+        if (strCmp(uart_buffer, "help") == 0) {
             uart_puts("help:  print all available commands\n");
             uart_puts("hello:  print Hello World!\n");
-        }
-        else if(strCmp(uart_buffer, "hello") == 0){
+        } else if (strCmp(uart_buffer, "hello") == 0) {
             uart_puts("Hello World!\n");
-        }
-        else if(strCmp(uart_buffer, "reboot") == 0){
+        } else if (strCmp(uart_buffer, "reboot") == 0) {
             reset(10);
-        }
-        else if(strCmp(uart_buffer, "cancel") == 0){
+        } else if (strCmp(uart_buffer, "cancel") == 0) {
             cancel_reset();
-        }
-        else{
-            uart_puts("Command not found\n");
+        } else if (strCmp(uart_buffer, "ramdisk") == 0) {
+            initrd_list(ramdisk);
+        } else if (strCmp(uart_buffer, "buddy") == 0) {
+            buddy_test();
+        } else {
+            uart_puts(uart_buffer);
+            uart_puts("  Command not found\n");
         }
     }
 }

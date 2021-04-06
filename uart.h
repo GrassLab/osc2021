@@ -23,10 +23,18 @@
  *
  */
 
+#include <stdint.h>
+
 void uart_init();
 void uart_send(unsigned int c);
 char uart_getc();
-void uart_puts(char *s);
-void uart_gets(char *buffer, int length);
+void uart_puts(char* s);
+void uart_Wputs(char* s, int width);
+void uart_gets(char* buffer, int length);
 void reset(int tick);
 void cancel_reset();
+void uart_hex(unsigned int d);
+void print_string(char* s);
+void print_char(char c);
+void print_integer(uint64_t i);
+void print_address(uint64_t addr);

@@ -25,7 +25,7 @@
 
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
-CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
+CFLAGS = -Wall -O2 -ffreestanding -nostartfiles
 
 all: clean kernel8.img
 
@@ -47,3 +47,6 @@ run:
 	
 pty:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial pty
+
+ramdisk:
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial pty -initrd initramfs.cpio -monitor stdio
