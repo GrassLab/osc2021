@@ -1,7 +1,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#define MEMORY_START            0x90000
+#define MEMORY_START            0xA0000
 
 #define PAGE_SHIFT              12
 #define PAGE_SIZE               (1 << PAGE_SHIFT)
@@ -53,8 +53,8 @@ void block_free(struct page *block);
 void *object_allocation(int token);
 void object_free(void *object);
 
-void *memory_allocation(int size);
-void memory_free(void *address);
+void *km_allocation(int size);
+void km_free(void *address);
 
 int find_buddy(int page_number, int order);
 

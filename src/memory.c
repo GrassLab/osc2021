@@ -300,7 +300,7 @@ void object_free(void *object)
     printf("[object_free] done\n\n");
 }
 
-void *memory_allocation(int size)
+void *km_allocation(int size)
 {
     void *address;
 
@@ -333,7 +333,7 @@ void *memory_allocation(int size)
     return 0;
 }
 
-void memory_free(void *address)
+void km_free(void *address)
 {
     int page_number = (long)(address - MEMORY_START) >> PAGE_SHIFT;
     struct page *page = &bookkeep[page_number];
