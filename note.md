@@ -1,38 +1,60 @@
-## Terms
-* bare-metal: develop program without OS
-* boot loader: the program that is executed after the BIOS is being booted
-* elf: Executable and Linkable Format 
-* Peripherals: 周邊設備
-* UART: [Universal asynchronous receiver-transmitter](https://en.wikipedia.org/wiki/Universal_asynchronous_receiver-transmitter)，可以把memory-mapped register內的value轉成sequence of high and low voltage and pass it to the computer via TTL-to-serial cable.
+# lab2 note
 
-## Makefile
-當專案有許多檔案，且處理方式複雜，有dependency時，makefile就是好幫手
-可以看看此[網站](https://bit.ly/3sOqwON)了解詳情
-* COPS: parameters of C compiler
-* nostdlib: don't use C std lib. The reason is that C std lib eventually interact with operating system.
-* nostartfiles: don't use standard startup files. It would setting an initial stack pointer...... But we'll do it on our own
+## Goal of this lab
+* implement a bootloader that loads kernel images through UART
+* Understand what's initial ramdisk
+* Understand what's devicetree (I do not finish this part)
 
-## Linker Script
-describe how the sections in the input object files (???.o) should be mapped into the output file (???.elf). 
-Making the size of .bss to be multiple of 8. It allows us to use str to initialize .bss section to zero.
+### Scoring
+* require1: implement UART bootloader that loads kernel images through UART
+* require2: Parse New ASCII Format Cpio archive, and read file's content given file's pathname.
+* elective1:
+* elective2:
 
-### more explanation on linker script
-第一行的SECTION是keywords, 代表開始宣告SECTIONS
-"." 在linker script中代表 location counter，會隨著宣告的section而增加。也可以直接assign值給location counter，例如 .=0x80000;
-接下來，用個小例子來解釋
->   .rodata : { *(.rodata) }
+## Loads kernel images through UART
+傳統上，當我們撰寫出新的kernel image，我們需要將他裝到SD卡之上
+這樣就要做滿多實體的動作（插卡讀卡之類的），這樣不僅麻煩，也可能會讓記憶卡有所損壞
+因此，我們希望能賺寫出一個bootloader和kernel，而這組合的目的是從UART讀取由電腦傳來的，真正要用來運行的kernel
 
-左方的.rodata代表，定義一個output section，名為rodata(read-only data)。而{}中的內容，則是將input file的rodata放入這個定義的output section。
-\*則是wildcard符號，概念很像下指令會使用的\*，就是一個for all的概念
-在linker script之中需要紀錄bss.begin和bss.end，為了之後初始化使用
-不然linker script只會紀錄section大小
+### /dev/ttyUSB0
+寫到這邊就回想到之前在修 Advance UNIX programming時，在UNIX系統下，terminal之類的裝置都會被註冊在/dev（各subsystem會有實作上的不同）
+例如我們可以在程式中直接寫入/dev/tty0，然後內容就會直接show在terminal之上
+而/dev/ttyUSB0也是。我們可以將/dev/ttyUSB0直接當成檔案來進行讀寫
+所以可以用這個機制來傳輸新的kernel至板子上
 
-## boot.S
-the program being executed after the RPI3 is booted.
+### notes
+傳輸的protocol沒有硬性限制，可以自己衡量要不要做錯誤偵測，例如checksum的動作
+傳輸錯誤的機率其實沒有很大，但有做有保佑囉XD
+基本上就是將kernel讀成binary file，然後從電腦一個byte一個byte傳輸，板子就一byte一byte接收
+請注意要將收來的資料放置正確位置，然後在接收完所有資料後，branch到該address
+理論上就可以正常運行了
 
-### detailed 
-* MPIDR_EL1: register that stores the processor ID.
+## Initial Ramdisk
+一般的OS在開機後會mount filesystem，讓user去使用
+不過作業到目前為止還沒有此功能，所以需要時做簡單的Initial ramdisk
 
-For RPI3 has four cores and we only want to execute the program once, so we check the processor ID of current process. Making sure that only the core with ID equals to zero execute this program.
-Then, we ask one processor to initializing bss section.
-After initializing the stack pointer, we can execute our kernel program.
+### CPIO format
+[reference](https://www.systutorials.com/docs/linux/man/5-cpio/)
+這次使用的架構是Cpio，簡而言之就是能夠將directories and files 包成一個架構（包成一個header）的概念
+若是使用linux開發，那很容易可以將自己的檔案包成cpio格式
+
+### note
+要讓板子知道你需要mount Cpio filesystem，需要在config.txt註冊（config.txt也會被放入SD card），並assign好address
+之後在撰寫kernel時，直接去該address就能access到這個filesystem了
+
+content that you have to write to config.txt
+> initramfs initramfs.cpio 0x20000000
+
+
+## Bootloader Self Relocation
+傳統上，在Rpi3，若kernel不放置於0x80000時，需要去config.txt特別宣告，不然可能會有問題
+例如，這次作業中，我們希望first kernel放置在0x70000，然後真實的kernel放在0x80000
+但假如板子幫我們預設的把first kernel放在0x80000，這樣真實kernel在填寫時就會蓋掉原本的kernel
+這種情況可能造成當機
+所以我們希望說，不用特別在config.txt宣告kernel擺放位置，只需要在kernel code和bootloader裡有做好機制，就能夠讓這份kernel出現在該出現的位置
+
+### note
+機制其實不難，就是bootloader一進去會先確認PC跟我期望的位置合不合
+在這作業，PC（板子的機制）是0x80000，我們期望的位置是0x70000，這兩者存在差異
+所以bootloader就會手動把kernel 的東西搬到0x70000中
+這樣就是self relocation bootloader的精髓

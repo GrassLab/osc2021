@@ -15,4 +15,6 @@ typedef signed char int8_t;
 
 uint64_t hex_to_int64(char*);
 uint8_t hex_to_int8(char);
+uint8_t hex_to_int64(char*);
+uint64_t hex_to_int8(char);
 #endif

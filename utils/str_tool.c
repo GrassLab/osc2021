@@ -39,6 +39,9 @@ char* itoa(int64_t val, int base){
         sign = 0;
         val = -1*val;
     }
+=======
+char* itoa(int64_t val, int base){
+    static char buf[32] = {0};
     int i = 30;
     if (val == 0) {
         buf[i] = '0';
@@ -53,5 +56,6 @@ char* itoa(int64_t val, int base){
         i -= 1;
     }
 
+=======
     return &buf[i + 1];
 }

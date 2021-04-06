@@ -7,22 +7,23 @@
 |`309551092`| `samuelyen36` | `顏劭庭` | samuelyen.cs05@g2.nctu.edu.tw |
 
 ## How to build
-Makefile is ready to be used.
-> make
-
+- Simply type ```make``` to build the OS
+- It would generate two .img files, which are used to meet the requirement of this homework
 
 ## How to run
-I add another command to run the code in qemu.
-> make run
+- ```make run``` to start the enumerator
 
 ## How to burn it into pi3
-I follow the instruction in lab0, loading bootcode.bin, fixup.dat and start.elf into SD card, and also put our kernel8.img into Rpi3. Then, we can start the board to check the result.
+1. Replace the ```bootloader.img``` file and ```config.txt``` to the new one which previous ```make``` had created
+2. You can connect to your pi3 by UART
 
-## Architecture
-* linker.ld: linker script of this homework.
-* boot.S: bootloader, clear bss and setup stack pointer and jump to kernel function.
-* mm.S: defines memzero function.
-* kernel.c: our kernel function, I call simple shell here.
-* shell.c: Where I implement the simple shell.
-* utils.S: defines put32, get32 function and delay function that is used in UART initialization.
-* mini_uart.c: initialization function, uart_getc, uart_putc and uart_puts are defined here.
+## Note
+remove > kernel_address=0x70000 from config.txt
+
+<!-- ## Architecture
+
+**WIP**
+
+## Directory structure
+
+**WIP** -->

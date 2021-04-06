@@ -6,6 +6,7 @@
 #include "device_tree.h"
 #include "allocator.h"
 #include "str_tool.h"
+=======
 
 #define MAX_INPUT 100
 
@@ -26,6 +27,8 @@ struct CMD command[] = {
     {.name="pdtinfo", .help="print Device Tree Info", .func=print_dt_info},
     {.name="parsedt", .help="parse Device Tree", .func=parse_dt},
     {.name="memory", .help="do some memory operation", .func=shell_memory}
+=======
+    {.name="ls", .help="list all the file", .func=shell_ls}
 };
 
 char input_buffer[MAX_INPUT+1];
@@ -200,6 +203,9 @@ void shell_ls(){
             uart_putc(file_content[i]);
         }
 
+=======
+            
+        // uart_puts(file_content);
         uart_puts("\r\n");
         uart_puts("File Size: ");
         uart_puts(itoa(file_size, 10));
@@ -241,7 +247,8 @@ void shell_memory(){
                 uart_puts("New Memory Address: ");
                 uart_puts(itoa(mem, 16));
                 uart_puts("\r\n");
-            }
+           resolved
+Only those with write access to this repository can merge pull requests. }
         }
         else if(cur_char == 'd'){   //delete memory
             uart_puts("Enter the allocated memory address (hex)\r\n");
@@ -274,4 +281,6 @@ void shell_memory(){
             break;
         }
     }
+=======
+
 }
