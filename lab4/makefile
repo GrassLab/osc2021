@@ -3,7 +3,7 @@ APP:=kernel8
 LINKER:=linker.ld
 CFLAGS:=-nostdinc -nostdlib -nostartfiles
 LIBS:=$(wildcard inc/*.c)
-OBJS:=start.o main.o $(LIBS:.c=.o)
+OBJS:=start.o main.o exception.o $(LIBS:.c=.o)
 
 all:
 	cd inc&&make
@@ -24,7 +24,8 @@ start.o:start.S
 run:
 	make all
 	#qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial stdio -initrd ./archive/initramfs.cpio
-	qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial pty -initrd ./archive/initramfs.cpio
+	#qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial pty -initrd ./archive/initramfs.cpio
+	qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial stdio -initrd ./archive/initramfs.cpio -d int
 
 onboard:
 	sudo screen /dev/ttyUSB0 115200

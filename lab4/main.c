@@ -159,7 +159,7 @@ void printHWInfo(){
 
 void main(){
 	uart_init();
-	allocator_init();
 	printHWInfo();
+	allocator_init();
 	shell();
 }
