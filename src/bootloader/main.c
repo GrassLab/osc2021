@@ -9,6 +9,9 @@ union large_int_by_byte{
 
 void boot_main(){
     uart_init();
+    union large_int_by_byte program;
+    volatile uint8_t *program_addr = (volatile uint8_t *)0x80000;
+
 
     union large_int_by_byte program;
     volatile uint8_t *program_addr = (volatile uint8_t *)0x80000;

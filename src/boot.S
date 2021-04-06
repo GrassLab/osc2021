@@ -4,6 +4,8 @@
 
 .globl _start
 _start:
+    //ldr     x1, =0x100000
+    //str     x0, [x1]            // store dt loading address to 0x100000
     mrs     x0, mpidr_el1
     and     x0, x0, #0xFF       // Check processor id
     cbz     x0, master          // Hang for all non-primary CPU

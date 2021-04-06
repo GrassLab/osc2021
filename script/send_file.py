@@ -13,6 +13,8 @@ if __name__ == '__main__':
         "-s", 
         "--src_file_pth",
         type=str, 
+        help='source file path'
+=======
         help='source file path',
         default='../kernel8.img'
     )
@@ -27,6 +29,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     with serial.Serial(args.target_pth, 115200, xonxoff=True) as tty:
+=======
         magic = 0x01020304.to_bytes(4, 'big')
         send_all_data(tty, magic)
 
@@ -38,5 +41,7 @@ if __name__ == '__main__':
                 data = src_file.read()
                 if data == b'':
                     break
+                send_all_data(tty, data)
+=======
                 send_all_data(tty, data)
         print("finish sending kernel8.img\n")
