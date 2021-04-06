@@ -4,15 +4,15 @@
 
 extern void _halt();
 
-void wait_clock(unsigned int t) {
+void wait_clock(unsigned long t) {
   t >>= 2;
   while (t--)
     ;
 }
 
-void system_error(const char *msg) {
-  puts("Error :");
-  puts(msg);
-  puts("\n");
+void sys_error(const char *msg) {
+  log("sys error: ");
+  log(msg);
+  log("\n");
   _halt();
 }

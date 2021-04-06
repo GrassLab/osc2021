@@ -1,23 +1,21 @@
 #include "util.h"
-#include "io.h"
 
-int strcmp(const char *p1, const char *p2) {
-  const unsigned char *s1 = (const unsigned char *)p1;
-  const unsigned char *s2 = (const unsigned char *)p2;
-  unsigned char c1, c2;
-  do {
-    c1 = (unsigned char)*s1++;
-    c2 = (unsigned char)*s2++;
-    if (c1 == '\0') return c1 - c2;
-  } while (c1 == c2);
-  return c1 - c2;
+#include "io.h"
+#include "mem.h"
+
+int strcmp(const char *s1, const char *s2) {
+  while (*s1 && (*s1 == *s2)) {
+    ++s1;
+    ++s2;
+  }
+  return (*(unsigned char *)s1 - *(unsigned char *)s2);
 }
 
-void *memcpy(void *dest, const void *src, size_t len) {
-  char *d = dest;
+void *memcpy(void *dst, const void *src, size_t len) {
+  char *d = dst;
   const char *s = src;
   while (len--) *d++ = *s++;
-  return dest;
+  return dst;
 }
 
 int strcmp_n(const char *s1, const char *s2, size_t n) {
@@ -33,32 +31,24 @@ int strcmp_n(const char *s1, const char *s2, size_t n) {
   }
 }
 
-char *strcpy(char *destination, const char *source) {
-  if (destination == NULL) return NULL;
-
-  char *ptr = destination;
-  while (*source != '\0') {
-    *destination = *source;
-    destination++;
-    source++;
+char *strcpy(char *dst, const char *src) {
+  if (dst == NULL) return NULL;
+  char *ptr = dst;
+  while (*src != 0) {
+    *dst++ = *src++;
   }
-  *destination = '\0';
+  *dst = 0;
   return ptr;
 }
 
-char *strcpy_n(char *destination, const char *source, size_t len) {
-  if (destination == NULL) return NULL;
-  char *ptr = destination;
-  while (*source != ' ') {
-    *destination = *source;
-    destination++;
-    source++;
-    len--;
-    if (!len) {
-      break;
-    }
+char *strcpy_n(char *dst, const char *src, size_t len) {
+  if (dst == NULL) return NULL;
+  char *ptr = dst;
+  while (len != 0 && *src != 0) {
+    --len;
+    *dst++ = *src++;
   }
-  *destination = '\0';
+  *dst = 0;
   return ptr;
 }
 
@@ -69,28 +59,27 @@ size_t strlen(const char *str) {
   return (s - str);
 }
 
-long long atoi(char *s) {
+long long atoi(const char *s) {
   if (*s == '-') {
     return -1 * (long long)atol(s + 1);
   }
   return (long long)atol(s);
 }
 
-long long atoi_n(char *s, size_t max_len, int base) {
-  if (max_len == 0) return 0;
+long long atoi_n(const char *s, size_t len, int base) {
+  if (len == 0) return 0;
   if (*s == '-') {
-    return -1 * (long long)atol_n(s + 1, max_len - 1, base);
+    return -1 * (long long)atol_n(s + 1, len - 1, base);
   }
-  return (long long)atol_n(s, max_len, base);
+  return (long long)atol_n(s, len, base);
 }
 
-unsigned long long atol(char *s) { return atol_n(s, 21, 10); }
+unsigned long long atol(const char *s) { return atol_n(s, 21, 10); }
 
-unsigned long long atol_n(char *s, size_t max_len, int base) {
+unsigned long long atol_n(const char *s, size_t len, int base) {
   unsigned long long num = 0;
-  while (*s && max_len) {
+  while (*s && len) {
     unsigned long long n = 0;
-    // putc(*s);
     if (*s >= '0' && *s <= '9') {
       n = *s - '0';
     } else if (*s >= 'a' && *s <= 'f') {
@@ -99,9 +88,34 @@ unsigned long long atol_n(char *s, size_t max_len, int base) {
       n = *s - 'A' + 10;
     }
     num = num * (unsigned long long)base + n;
-    max_len--;
+    len--;
     s++;
   }
-  // putc('\n');
   return num;
 }
+
+char *new_str(char *src) {
+  size_t len = strlen(src);
+  char *str = (char *)kmalloc(len + 1);
+  strcpy(str, src);
+  return str;
+}
+
+void init_list(list_head *l) {
+  l->bk = l;
+  l->fd = l;
+}
+
+void push_list(list_head *l, list_head *chunk) {
+  chunk->bk = l;
+  chunk->fd = l->fd;
+  l->fd->bk = chunk;
+  l->fd = chunk;
+}
+
+void pop_list(list_head *chunk) {
+  chunk->fd->bk = chunk->bk;
+  chunk->bk->fd = chunk->fd;
+}
+
+int list_empty(list_head *l) { return l->fd == l; }

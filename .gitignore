@@ -8,3 +8,4 @@ __pycache__
 initramfs.cpio
 *.dts
 *.dtb
+test
