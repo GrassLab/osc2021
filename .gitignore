@@ -1,0 +1,5 @@
+kernel8.img
+kernel8.elf
+out/
+tmp.txt
+test.c

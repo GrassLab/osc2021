@@ -1,0 +1,2 @@
+kernel=bootloader.img
+arm_64bit=1
