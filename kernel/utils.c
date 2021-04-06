@@ -25,7 +25,7 @@ int atoi(char* s, int base) {
 
 void itoa(int num, char *s) {
     int i = 0;
-    // handel the special case
+    // handle the special case
     if(num == 0) {
         s[i++] = '0';
     }
