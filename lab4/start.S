@@ -85,13 +85,10 @@ from_el2_to_el1:
 	msr spsr_el2, x0
 	msr elr_el2, x30//x30 = link register
 
-	// disable coprocessor traps: built-ins of uart_printf need FPU
+	// disable SIMD traps: built-ins of uart_printf will use SIMD
 	// https://github.com/bztsrc/raspi3-tutorial/tree/master/12_printf
-    mov x0, #0x33FF
-    msr cptr_el2, x0
-    msr hstr_el2, xzr
-    mov x0, #(3 << 20)
-    msr cpacr_el1, x0
+	mov x0, #(3 << 20)
+	msr cpacr_el1, x0
 	eret // return to EL1
 
 //exception table
