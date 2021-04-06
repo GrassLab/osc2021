@@ -1,3 +1,4 @@
+/*
 exception_vector_table:
     
     // Current EL with SP0
@@ -38,3 +39,4 @@ exception_vector_table:
     b exception_handler     // FIQ
     .align 7
     b exception_handler     // SError
+*/

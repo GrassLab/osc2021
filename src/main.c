@@ -6,9 +6,9 @@
 int main()
 {
     uart_init();
-    uart_puts("Hello World!\n");
-    // init_printf(0, putc);
-    // printf("Hello World!\n\n");
+    // uart_puts("Hello World!\n");
+    init_printf(0, putc);
+    printf("Hello World!\n\n");
     shell_start();
 
     // printf("--------------------\n\n");

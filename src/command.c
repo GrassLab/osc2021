@@ -30,20 +30,20 @@ void command_hello()
 
 void command_timestamp()
 {
-    unsigned long int cnt_freq, cnt_tpct;
-    char str[20];
+    // unsigned long int cnt_freq, cnt_tpct;
+    // char str[20];
 
-    asm volatile(
-        "mrs %0, cntfrq_el0 \n\t"
-        "mrs %1, cntpct_el0 \n\t"
-        : "=r"(cnt_freq), "=r"(cnt_tpct)
-        :);
+    // asm volatile(
+    //     "mrs %0, cntfrq_el0 \n\t"
+    //     "mrs %1, cntpct_el0 \n\t"
+    //     : "=r"(cnt_freq), "=r"(cnt_tpct)
+    //     :);
 
-    ftoa(((float)cnt_tpct) / cnt_freq, str, 6);
+    // ftoa(((float)cnt_tpct) / cnt_freq, str, 6);
 
-    uart_send('[');
-    uart_puts(str);
-    uart_puts("]\n");
+    // uart_send('[');
+    // uart_puts(str);
+    // uart_puts("]\n");
 }
 
 void command_cpio()

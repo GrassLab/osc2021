@@ -5,7 +5,7 @@ S_OBJS = $(addprefix ./build/, $(notdir $(S_SRCS:%.S=%_s.o)))
 
 INCLUDE_DIR = include
 
-CFLAGS = -Wall -O2 -ffreestanding -nostdlib
+CFLAGS = -Wall -O2 -ffreestanding -nostdlib -mgeneral-regs-only
 CC = aarch64-linux-gnu-gcc
 LINKER = aarch64-linux-gnu-ld
 OBJ_CPY = aarch64-linux-gnu-objcopy
