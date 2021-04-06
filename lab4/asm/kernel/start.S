@@ -31,7 +31,7 @@ _from_el2_to_el1:
 	msr  sp_el1, x0
 	#set exception vector table
 	bl _set_exception_vector_table
-	#store Pstate to spsr_el2
+    #store Pstate to spsr_el2
     mov  x0, 0x3c5 // EL1h (SPSel = 1) with interrupt disabled
     msr  spsr_el2, x0
 	#return to EL1
