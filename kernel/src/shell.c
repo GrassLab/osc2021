@@ -1,3 +1,5 @@
+
+
 #include "shell.h"
 #include "string.h"
 #include "command.h"
@@ -9,7 +11,7 @@ void shell_start()
     char input_char;
     char buffer[MAX_BUFFER_LEN];
     enum SPECIAL_CHARACTER input_parse;
-  
+
     strset(buffer, 0, MAX_BUFFER_LEN);
 
     // new line head
