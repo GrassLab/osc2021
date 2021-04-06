@@ -5,5 +5,7 @@ int strcmp(char *str1, char *str2);
 int strlen(char *str);
 void * memset ( void * ptr, int value, int num );
 int hextoi(char *hexStr);
+char *itoa(int value, char *str, int base);
+
 
 #endif

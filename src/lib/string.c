@@ -1,4 +1,5 @@
 #include "string.h"
+#include "mini_uart.h"
 
 int strcmp(char *str1, char *str2)
 {
@@ -63,4 +64,31 @@ int hextoi(char *hexStr)
     }
 
     return value;
+}
+
+char *itoa(int value, char *str, int base)
+{   
+    int i = 0;
+    if (value == 0) {
+        str[0] = '0';
+    } else {
+        while(value != 0)
+        {
+            str[i] = (value % base) + '0';
+            value = value / base;
+
+            i++;
+        }
+    }
+    
+    int len = strlen(str);
+
+    for (int low = 0, high = len - 1; low < high; low++, high--)
+    {
+        int temp = str[low];
+        str[low] = str[high];
+        str[high] = temp;
+    }
+
+    return str;
 }
