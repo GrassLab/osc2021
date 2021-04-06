@@ -23,6 +23,18 @@ uint64_t align_up(uint64_t addr, uint64_t alignment) {
   return (addr + alignment - 1) & (~(alignment - 1));
 }
 
+uint64_t align_up_exp(uint64_t n) {
+  n--;
+  n |= n >> 1;
+  n |= n >> 2;
+  n |= n >> 4;
+  n |= n >> 8;
+  n |= n >> 16;
+  n |= n >> 32;
+  n++;
+  return n;
+}
+
 uint32_t get_value32(uint64_t addr, char endian) {
   char *base = (char *)addr;
   uint32_t value = 0;
@@ -43,4 +55,11 @@ uint32_t get_value32(uint64_t addr, char endian) {
 uint32_t be2le(uint32_t x) {
   return (((x >> 24) & 0xFF) << 0) | (((x >> 16) & 0xFF) << 8) |
          (((x >> 8) & 0xFF) << 16) | (((x >> 0) & 0xFF) << 24);
+}
+
+uint64_t log2(uint64_t num) {
+  for (uint64_t i = 0; i < 64; i++) {
+    if (num == (1 << i)) return i;
+  }
+  return 0;
 }
