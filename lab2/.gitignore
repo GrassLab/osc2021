@@ -1,0 +1,5 @@
+*.txt
+*.img
+*.elf
+*.cpio
+*.o
