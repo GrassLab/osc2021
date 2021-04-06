@@ -23,7 +23,7 @@
  *
  */
 
-#include "gpio.h"
+#include "gpio/gpio.h"
 
 /* Auxilary mini UART registers */
 #define AUX_ENABLE ((volatile unsigned int *)(MMIO_BASE + 0x00215004))
@@ -47,8 +47,8 @@ void uart_init() {
 
   /* initialize UART */
   *AUX_ENABLE |= 1;  // enable UART1, AUX mini uart
-  *AUX_MU_CNTL = 0;  // turn off transmitter and receiver
-  *AUX_MU_LCR = 3;   // 8 bits mode
+  *AUX_MU_CNTL = 0;
+  *AUX_MU_LCR = 3;  // 8 bits
   *AUX_MU_MCR = 0;
   *AUX_MU_IER = 0;
   *AUX_MU_IIR = 0xc6;  // disable interrupts
@@ -100,34 +100,12 @@ char uart_getc() {
 }
 
 /**
- * Send a string
+ * Display a string
  */
 void uart_puts(char *s) {
   while (*s) {
     /* convert newline to carrige return + newline */
     if (*s == '\n') uart_send('\r');
     uart_send(*s++);
-  }
-}
-
-/**
- * Receive a string
- */
-void uart_gets(char *buf, int len) {
-  int idx = 0;
-  while (idx < len) {
-    buf[idx] = uart_getc();
-    if (buf[idx] == '\n') {
-      uart_send('\r');
-    }
-    uart_send(buf[idx]);
-    if (buf[idx] == '\n') {
-      buf[idx] = '\0';
-      break;
-    }
-    idx += 1;
-  }
-  if (idx >= len) {
-    buf[len - 1] = '\0';
   }
 }
