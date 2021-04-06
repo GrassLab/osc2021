@@ -1,5 +1,5 @@
 // Copyright (c) 2021 Marco Wang <m.aesophor@gmail.com>. All rights reserved.
-#include <Console.h>
+#include <dev/Console.h>
 
 namespace {
 
@@ -20,8 +20,18 @@ void initialize(MiniUART* mini_uart) {
   init_printf(nullptr, _putchar);
 }
 
+void set_color(Color fg_color, bool bold) {
+  printf("\033[%d;3%dm", bold, fg_color);
+}
+
+void clear_color() {
+  puts("\033[0m", /*newline=*/false);
+}
+
 }  // namespace valkyrie::kernel::console
 
+
+extern "C" {
 
 char _recv() {
   return ::mini_uart->recv();
@@ -41,4 +51,6 @@ void gets(char* s) {
 
 void puts(const char* s, bool newline) {
   ::mini_uart->puts(s, newline);
+}
+
 }

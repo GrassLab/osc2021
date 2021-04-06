@@ -1,5 +1,7 @@
 // Copyright (c) 2021 Marco Wang <m.aesophor@gmail.com>. All rights reserved.
-#include <String.h>
+#include <libs/String.h>
+
+extern "C" {
 
 void* memcpy(void* dest, const void* src, size_t n) {
   const uint8_t* src_p = reinterpret_cast<const uint8_t*>(src);
@@ -181,4 +183,6 @@ int atoi(const char* str, const int base) {
   }
 
   return (is_negative) ? -result : result;
+}
+
 }

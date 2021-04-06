@@ -4,14 +4,13 @@
 
 #include <Types.h>
 
-#define CPIO_BASE 0x20000000
-//#define CPIO_BASE 0x8000000
+#define CPIO_BASE 0x8000000
 
 namespace valkyrie::kernel {
 
 class CPIO {
  public:
-  CPIO(const char* base_addr);
+  explicit CPIO(const size_t base_addr);
   ~CPIO() = default;
 
   void parse() const;

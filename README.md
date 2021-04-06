@@ -1,76 +1,32 @@
-## NYCU (NCTU) 作業系統總整與實作 - 2021 Spring
+<div align="center">
+  <h3>Unix-like ARM64 kernel</h3>
+  <img src="/Documentation/logo.png">
+</div>
+
+<br>
+
+## Overview
 
 | 學號 | GitHub 帳號 | 姓名 | Email |
 | --- | ----------- | --- | --- |
 | `309551004` | `aesophor` | `王冠中` | aesophor.cs09g@nctu.edu.tw |
 
-<br>
+## Progress
 
-## Install Cross-Compilation Toolchains
+- [x] Bootloader [see tag: lab2-bootloader](https://github.com/aesophor/valkyrie/tree/lab2-bootloader)
+- [x] Exception/Interrupt Handling
+- [x] System Calls
+- [x] Physical Page Allocator
+- [x] Optimized SLOB Allocator (a minimal version of ptmalloc)
+- [ ] Virtual Memory
+- [ ] Multitasking
+- [ ] Filesystem
+- [ ] Virtual Filesystem
 
-Arch Linux
-```
-$ sudo pacman -S aarch64-linux-gnu-gcc \
-                 aarch64-linux-gnu-gdb \
-                 qemu-arch-extra
-```
+## Build and Deploy
 
-<br>
+* [BUILD.md](https://github.com/aesophor/valkyrie/blob/309551004/Documentation/BUILD.md)
+* [DEPLOY.md](https://github.com/aesophor/valkyrie/blob/309551004/Documentation/DEPLOY.md)
 
-## Build
-
-```
-$ git clone https://github.com/aesophor/valkyrie.git
-$ cd valkyrie
-$ make
-```
-
-The kernel image file `kernel8.img` can be located at `build/kernel8.img`.
-
-<br>
-
-## Run (Normal)
-
-This method allows you to interact with the kernel via stdin/stdout
-```
-$ make run
-```
-
-<br>
-
-## Run (Debugging with GDB)
-
-This method should only be used if you want to debug this kernel with GDB.
-```
-$ make run-debug
-```
-
-Now, spawn another shell and run
-```
-$ make gdb
-```
-
-and the gdb will attach to the kernel we've just run.
-
-<br>
-
-## Set up the USB-TO-TTL (USB-TO-SERIAL) Converter
-
-| RPI3 Pin | USB-TO-TTL Pin |
-| --- | --- |
-| GND | GND |
-| UART0 TX | RXD |
-| UART0 RX | TXD |
-
-![](https://docs.microsoft.com/en-us/windows/iot-core/media/pinmappingsrpi/rp2_pinout.png)
-
-<br>
-
-## Manually Deploying the Kernel on a Real RPI3
-
-1. Flash a [bootable image](https://github.com/GrassLab/osdi/raw/master/supplement/nctuos.img) to the SD card.
-2. Mount the SD card and replace the `kernel8.img` on the SD card with the one we've just built.
-3. Eject the SD card and plug it into RPI3.
-4. Plug in the USB-TO-TTL converter to your computer
-   - for macOS, run `screen /dev/tty.usbserial-0001 115200`
-   - for linux, run `screen /dev/ttyUSB0 115200`
+## License
+Available under the [MIT License](https://github.com/aesophor/valkyrie/blob/309551004/LICENSE)

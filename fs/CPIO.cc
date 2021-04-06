@@ -1,9 +1,9 @@
 // Copyright (c) 2021 Marco Wang <m.aesophor@gmail.com>. All rights reserved.
-#include <CPIO.h>
+#include <fs/CPIO.h>
 
-#include <Console.h>
-#include <Kernel.h>
-#include <String.h>
+#include <dev/Console.h>
+#include <kernel/Kernel.h>
+#include <libs/String.h>
 
 #define CPIO_MAGIC     "070701"
 #define CPIO_MAGIC_LEN 6
@@ -11,7 +11,8 @@
 
 namespace valkyrie::kernel {
 
-CPIO::CPIO(const char* base_addr) : _base_addr(base_addr) {}
+CPIO::CPIO(const size_t base_addr)
+    : _base_addr(reinterpret_cast<const char*>(base_addr)) {}
 
 
 void CPIO::parse() const {

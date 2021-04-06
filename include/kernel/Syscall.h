@@ -2,8 +2,8 @@
 #ifndef VALKYRIE_SYSCALL_H_
 #define VALKYRIE_SYSCALL_H_
 
-#include <Console.h>
 #include <Types.h>
+#include <dev/Console.h>
 
 namespace valkyrie::kernel {
 
@@ -18,7 +18,7 @@ void sys_irq();
 // the parameters are stored in x2 ~ x7,
 // and the return value will be stored in x0.
 template <typename... Args>
-uint64_t syscall(const size_t number, const Args ...args) {
+void syscall(const size_t number, const Args ...args) {
   switch (number) {
     case 0:
       sys_irq();

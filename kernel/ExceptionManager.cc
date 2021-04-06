@@ -1,12 +1,9 @@
 // Copyright (c) 2021 Marco Wang <m.aesophor@gmail.com>. All rights reserved.
-#include <ExceptionManager.h>
+#include <kernel/ExceptionManager.h>
 
-#include <Console.h>
-#include <Kernel.h>
-#include <Syscall.h>
-
-#define EL0_STACK 0x20000
-#define EL1_STACK 0x40000
+#include <dev/Console.h>
+#include <kernel/Kernel.h>
+#include <kernel/Syscall.h>
 
 extern "C" void* evt;
 
@@ -23,12 +20,12 @@ ExceptionManager::ExceptionManager() : _arm_core_timer() {
 }
 
 
-void ExceptionManager::enable_irqs() {
-  asm volatile("msr daifclr, 0b0010");  // unmask IRQs
+void ExceptionManager::enable() {
+  asm volatile("msr DAIFCLR, 0b1111");
 }
 
-void ExceptionManager::disable_irqs() {
-  asm volatile("msr daifset, 0b0010");  // mask IRQs
+void ExceptionManager::disable() {
+  asm volatile("msr DAIFSET, 0b1111");
 }
 
 
@@ -55,11 +52,16 @@ void ExceptionManager::handle_exception(const size_t number,
       }
       break;
 
-    case 0b11000:  // Trapped MSR, MRS, or System instruction execution
-      printk("oh shit 888\n");
+    case 0b11000:
+      Kernel::panic("Trapped MSR, MRS, or System instruction execution\n");
+      break;
+
+    case 0b011001:
+      Kernel::panic("Trapped access to SVE functionality\n");
       break;
 
     default:
+      Kernel::panic("Unknown exception: EC=%d, ISS=%d\n", ex.ec, ex.iss);
       break;
   }
 }
@@ -80,9 +82,9 @@ uint8_t ExceptionManager::get_exception_level() const {
 
 void ExceptionManager::switch_to_exception_level(const uint8_t level,
                                                  const size_t new_sp) {
-  uint64_t spsr [[gnu::aligned(16)]];
-  void* saved_stack_pointer [[gnu::aligned(16)]];
-  void* saved_return_address [[gnu::aligned(16)]];
+  uint64_t spsr;
+  void* saved_stack_pointer;
+  void* saved_return_address;
 
   asm volatile("mov %0, lr" : "=r" (saved_return_address));
   asm volatile("mov %0, sp" : "=r" (saved_stack_pointer));
@@ -92,13 +94,12 @@ void ExceptionManager::switch_to_exception_level(const uint8_t level,
       // Setup EL1 stack
       asm volatile("msr SP_EL1, %0" :: "r" (saved_stack_pointer));
       // Setup SPSR_EL2 (Saved Processor Status Register)
-      asm volatile("mrs %0, SPSR_EL2" : "=r" (spsr));
-      spsr |= (1 << 0);  // use SP_ELx, not SP_EL0
-      spsr |= (1 << 2);  // exception was taken from EL1
+      spsr  = (1 << 0);       // use SP_ELx, not SP_EL0
+      spsr |= (1 << 2);       // exception was taken from EL1
       spsr |= (0b1111 << 6);  // DAIF masked
       asm volatile("msr SPSR_EL2, %0" :: "r" (spsr));
       // Setup ELR_EL2
-      asm volatile("msr ELR_EL2, %0" :: "r" (&&__restore_link_register));
+      asm volatile("msr ELR_EL2, %0" :: "r" (&&restore_link_register));
       break;
 
     case 0:
@@ -107,24 +108,24 @@ void ExceptionManager::switch_to_exception_level(const uint8_t level,
       // Setup SPSR_EL1 (Saved Processor Status Register)
       asm volatile("msr SPSR_EL1, %0" :: "r" (0));
       // Setup ELR_EL1
-      asm volatile("msr ELR_EL1, %0" :: "r" (&&__restore_link_register));
+      asm volatile("msr ELR_EL1, %0" :: "r" (&&restore_link_register));
       break;
 
     default:
-      break;
+      return;
   }
 
   // Execute `eret`
   asm volatile("eret");
 
-__restore_link_register:
+restore_link_register:
   // Restore `saved_return_address` to `lr`
   asm volatile("mov lr, %0" :: "r" (saved_return_address));
 
   // Maybe set the new stack
-  //if (new_sp) {
-  //  asm volatile("mov sp, %0" :: "r" (new_sp));
-  //}
+  if (new_sp) {
+    asm volatile("mov sp, %0" :: "r" (new_sp));
+  }
 }
 
 
