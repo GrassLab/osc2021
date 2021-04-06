@@ -37,10 +37,37 @@ int strlen ( char * s )
     return i;
 }
 
+int isdigit(const char c)
+{
+    if (c >= '0' && c <= '9') return 1;
+    else return 0;
+}
+
+int atoi(const char *c)
+{
+    int value = 0;
+    int sign = 1;
+    if( *c == '+' || *c == '-' )
+    {
+        if( *c == '-' ) sign = -1;
+        c++;
+    }
+    while (isdigit(*c))
+    {
+        value *= 10;
+        value += (int) (*c-'0');
+        c++;
+    }
+    return (value * sign);
+}
+
 // https://www.geeksforgeeks.org/convert-floating-point-number-string/
 void itoa (int x, char str[], int d) 
 { 
     int i = 0; 
+
+    if (x == 0) str[i++] = '0';
+
     while (x) { 
         str[i++] = (x % 10) + '0'; 
         x = x / 10; 

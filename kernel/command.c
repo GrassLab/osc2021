@@ -2,6 +2,7 @@
 #include "uart.h"
 #include "string.h"
 #include "reader.h"
+#include "allocator.h"
 
 void InputBufferOverflowMessage(char cmd[])
 {
@@ -57,6 +58,41 @@ void CommandTimestamp()
     uart_puts(str);
     uart_puts("]\n");
 } 
+
+void CommandBuddyInit()
+{
+    buddy_initialize();
+}
+
+void CommandBuddyLogList()
+{
+    buddy_log_list();    
+}
+
+void CommandBuddyLogTable()
+{
+    buddy_log_allocated_table();
+}
+
+void CommandBuddyLogPool()
+{
+    buddy_log_pool();
+}
+
+void CommandBuddyFree(const int section)
+{
+    buddy_free(section);
+}
+
+void CommandBuddyFreePool(int pool, int index)
+{
+    buddy_free_pool(pool, index);
+}
+
+void CommandBuddyAlloc(const int size)
+{
+    buddy_alloc(size);
+}
 
 void CommandNotFound(char *s)
 {
