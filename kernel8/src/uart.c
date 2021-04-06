@@ -1,7 +1,7 @@
 #include "uart.h"
 
-
 void uart_init(){
+
     register unsigned int reg;
 
     /* initialize UART */
@@ -95,6 +95,7 @@ void uart_puts_bySize(char *s, int size){
     }
 }
 
+
 void uart_put_hex(unsigned long d) {
     uart_puts("0x");
     unsigned long n;
@@ -107,4 +108,5 @@ void uart_put_hex(unsigned long d) {
         uart_send(n);
     }
 }
+
 

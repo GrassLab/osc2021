@@ -2,8 +2,10 @@
 .global _start
 
 _start:
+
     ldr     	x1, =0x31000000
     str     	x0, [x1]            // store dt loading address to 0x31000000
+
     
     adr     	x0, __start
     adr     	x1, __start
@@ -27,7 +29,9 @@ loop_end:
   	bl 			kernel_main
     b 			proc_hang
 
+
 .globl memzero    
+
 memzero:
     str 		xzr, [x0], #8
     subs 		x1, x1, #8

@@ -1,5 +1,6 @@
 #include "uart.h"
 #include "shell.h"
+
 #include "mm.h"
 
 void kernel_main(){
@@ -7,6 +8,7 @@ void kernel_main(){
     uart_init();
 	// init memory system
     init_memory_system();
+
     // start shell
     shell();
 }

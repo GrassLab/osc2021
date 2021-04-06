@@ -48,4 +48,3 @@ void cpio_list();
 void cpio_cat(char *args);
 
 #endif /* _CPIO_H_ */
-

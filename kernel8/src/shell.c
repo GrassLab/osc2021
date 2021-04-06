@@ -1,8 +1,6 @@
 #include "shell.h"
 
 
-
-
 void shell_welcome(){
     uart_puts("\r\n------------------------\r\n");
     uart_puts("=        Kernel        =\r\n");

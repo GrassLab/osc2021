@@ -82,5 +82,3 @@ void cancel_reset() {
   *PM_RSTC = PM_PASSWORD | 0; // full reset
   *PM_WDOG = PM_PASSWORD | 0; // number of watchdog tick
 }
-
-

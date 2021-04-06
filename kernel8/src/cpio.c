@@ -52,8 +52,3 @@ void cpio_cat(char *args){
         uart_puts("\r\n");
     }
 }
-
-
-
-
-
