@@ -1,5 +1,5 @@
 #include "printf.h"
-#include "memory.h"
+#include "mm.h"
 #include "math.h"
 
 struct page bookkeep[MAX_PAGE_NUMBER];
