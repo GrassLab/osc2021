@@ -1,14 +1,15 @@
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
-TARGET = kernel8.img
-ELF_TARGET = kernel8.elf
+TARGET = bootloader.img
+ELF_TARGET = bootloader.elf
+CPIO = ../initramfs.cpio
 
 CC = aarch64-linux-gnu-gcc
 LD = aarch64-linux-gnu-ld
 OC = aarch64-linux-gnu-objcopy
 QEMU = qemu-system-aarch64
 
-CFLAGS = -Wall -O0 -ffreestanding -nostdinc -nostdlib -nostartfiles
+CFLAGS = -g -Wall -O0 -ffreestanding -nostdinc -nostdlib -nostartfiles
 LDFLAGS = -nostdlib
 
 .PHONY: all clean run debug 
@@ -29,7 +30,7 @@ clean:
 	- rm *.o $(ELF_TARGET) $(TARGET) > /dev/null 2> /dev/null
 
 run:
-	$(QEMU) -M raspi3 -kernel $(TARGET) -serial null -serial stdio -display none
+	$(QEMU) -M raspi3 -kernel $(TARGET) -serial null -display none -serial pty -initrd $(CPIO)
 
 debug:
-	$(QEMU) -M raspi3 -kernel $(TARGET) -serial null -serial stdio -display none -S -s
+	$(QEMU) -M raspi3 -kernel $(TARGET) -display none -serial null -serial pty -S -s -initrd $(CPIO)
