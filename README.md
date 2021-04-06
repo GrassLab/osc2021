@@ -12,32 +12,22 @@
 - load kernel image via mini-uart
 - parse and print all flattened device tree nodes
 - a python script to interact with raspberry pi trough tty
+- startup allocator
+- dynamic allocator
+- buddy system
 
 ## How to build
-Due to some data are stored in different address in Qemu and Raspberry Pi, we need to specify different macros when compiling.
-- for Qemu
 ```
 $ make
 ```
 
-- for Raspberry Pi 3B+
-```
-$ make tar=raspi3
-```
-
 ## How to interact with raspberry pi
-- If using Raspberry Pi, [tty] will be something like `/dev/ttyUSB0` and [baud rate] would be 115200.
-- If using Qemu, [tty] will be something like `/dev/pts/0`. tty of Qemu don't need baud rate, so [buad rate] should be blank.
+- Load kernel automatically.
 ```
-$ ./screen.py [tty] [baud rate]
-```
-
-- load kernel image
-```
-$ load
+$ ./screen.py -load /dev/ttyUSB[num]
 ```
 
-- If loads kernel image successfully, it will show content below.
+- If load kernel image successfully, it will show content below.
 ```
 +========================+
 |       kernel info      |

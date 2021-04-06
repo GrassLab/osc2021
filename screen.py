@@ -2,14 +2,31 @@
 import sys
 import os
 import serial
+import time
+import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument('fd', type=str, help="fd's path")
+parser.add_argument('-rate', type=int, default=115200, help='baud rate')
+parser.add_argument('-load', action='store_true', help='load kernel rate automatically')
+args = parser.parse_args()
 ser = None
-#kernel = open('./kernel8.img', 'rb')
 
-if len(sys.argv) == 2:
-    ser = serial.Serial(sys.argv[1], timeout=0.1)
-elif len(sys.argv) == 3:
-    ser = serial.Serial(sys.argv[1], int(sys.argv[2]), timeout=0.1)
+#kernel = open('./kernel8.img', 'rb')
+if args.fd.find('ttyUSB') > 0:
+    ser = serial.Serial(args.fd, args.rate, timeout=0.1)
+#    try:
+#        ser = serial.Serial(args.fd, args.rate, timeout=0.1)
+#    except:
+#        print(f'Error: {args.fd} not found.')
+#        sys.exit(1)
+else:
+#    try:
+#        ser = serial.Serial(args.fd, timeout=0.1)
+#    except:
+#        print(f'Error: {args.fd} not found.')
+#        sys.exit(1)
+    ser = serial.Serial(args.fd, timeout=0.1)
 
 def nonblock_read ():
     while True:
@@ -44,7 +61,11 @@ def get_until (token):
         buf += ser.read(1)
         if buf.find(str.encode(token)) >= 0:
             break
-    return buf.decode('utf-8')
+    try:
+        return buf.decode('utf-8')
+    except:
+        print(buf)
+        return "okay"
 
 
 def send (message):
@@ -58,7 +79,17 @@ def load_data (buf, base_address=0x80000):
     buf += end_tag.to_bytes(8, byteorder='little')
     aligned_size = len(buf)
 
-    send('load')
+    is_load = False
+    for i in range(5):
+        time.sleep(0.1)
+        nonblock_clear()
+        send('load')
+        if get_line() == 'okay':
+            is_load = True
+            break
+    if not is_load:
+        return False
+
     nonblock_clear()
     send(f'{base_address}')
     nonblock_clear()
@@ -96,6 +127,8 @@ def load_data (buf, base_address=0x80000):
 
     if not isFail:
         print("=" * (totalCount - count) + "] 100%")
+        return True
+    return False
 
 
 def load_kernel (fileName):
@@ -107,20 +140,26 @@ def load_kernel (fileName):
         if not c:
             break
         image += c
-    load_data(image)
+    return load_data(image)
 
 def auto_load ():
-    load_kernel('kernel8.img')
+    if not load_kernel('kernel8.img'):
+        print("load failed")
+        return
+
     get_until('$ ')
     send('jump')
     print(get_until('$ '), end='')
 
 
-#auto_load()
+if args.load:
+    auto_load()
 
 while True:
     command = input()
     if command == 'exit':
+        if args.load:
+            send('reboot')
         break
 
     if command == 'load':

@@ -1,25 +1,5 @@
 #include "string.h"
 
-
-void mem_set (char *dst, char value, u64 size) {
-    u64 addr = (u64) dst;
-    u64 aliged_addr = (addr + 0xf) & 0xfffffffffffffff0;
-    u64 tmp = size < aliged_addr - aliged_addr ? size : aliged_addr - aliged_addr;
-    for (u64 i = 0; i < tmp; i++)
-        dst[i] = 0;
-
-    if (tmp == size)
-        return;
-
-    tmp = size - tmp;
-    tmp = (tmp + 0xf) & 0xfffffffffffffff0;
-
-    for (u64 i = 0; i < tmp / 8; i++) {
-        u64 *ptr = (u64 *)aliged_addr;
-        ptr[i] = 0;
-    }
-}
-
 int strlength (char *str) {
     int num = 0;
     while (str[num]) num++;
@@ -34,7 +14,8 @@ int strcmp (char *str1, char *str2) {
             return 1;
     }
     if (*str1)
-        return -1; else if (*str2)
+        return -1;
+    else if (*str2)
         return 1;
     return 0;
 }

@@ -1,20 +1,22 @@
 #include "cpio.h"
 #include "uart.h"
 #include "string.h"
+#include "mm.h"
+#include "loader.h"
 
-#ifdef M_RASPI3
-CPIO_HEADER *cpio_base_address = (CPIO_HEADER *) 0x20000000;
-#else
-CPIO_HEADER *cpio_base_address = (CPIO_HEADER *) 0x8000000;
-#endif
+CPIO_HEADER *cpio_base_address = 0x0;
+CPIO_index *cpio_index_head = NULL;
 
-void print_chars (char *addr, unsigned int len) {
-    for (int i = 0; i < len; i++) {
-        uart_sendc(addr[i]);
-    }
+CPIO_index *allocate_index_node () {
+    u64 size = aligned16(sizeof(CPIO_index));
+    CPIO_index *index = (CPIO_index *)startup_malloc(size);
+    u64 *ptr = (u64 *)index;
+    for (int i = 0; i < size / 8; i++)
+        ptr[i] = 0;
+    return index;
 }
 
-unsigned hex2int (char *buf, unsigned int len) {
+u32 hex2int (char *buf, unsigned int len) {
     unsigned int num = 0;
     for (int i = 0; i < 8; i++) {
         unsigned tmp;
@@ -27,6 +29,69 @@ unsigned hex2int (char *buf, unsigned int len) {
     }
     return num;
 }
+
+#define is_cpio_header(header) (hex2int((header)->c_magic, 6) == CPIO_MAGIC)
+
+/* return next header */
+CPIO_HEADER *parse_cpio_struct (CPIO_HEADER *header, CPIO_index *index) {
+    if (!is_cpio_header(header))
+        return NULL;
+    index->filesize = hex2int(header->c_filesize, 8);
+    index->namesize = hex2int(header->c_namesize, 8);
+    index->name = &((char *)header)[0x6e];
+    index->header = header;
+
+    u64 tmp = (u64)header + 0x6e + index->namesize;
+    if (tmp % 4)
+        tmp += 4 - tmp % 4;
+    index->data = (char *)tmp;
+
+    tmp = (unsigned long)index->data + index->filesize;
+    if (tmp % 4)
+        tmp += 4 - tmp % 4;
+    return (CPIO_HEADER *)tmp;
+}
+
+/* initialize cpio index */
+void cpio_init () {
+    if (is_cpio_header((CPIO_HEADER*) 0x20000000)) {
+        cpio_base_address = (CPIO_HEADER *) 0x20000000;
+    }
+    else if (is_cpio_header((CPIO_HEADER*) 0x8000000)) {
+        cpio_base_address = (CPIO_HEADER *) 0x8000000;
+    }
+    /* no cpio archive */
+    else {
+        cpio_base_address = (CPIO_HEADER *) 0x0;
+        return;
+    }
+
+    CPIO_index *prev = allocate_index_node();
+    cpio_index_head = prev;
+    CPIO_HEADER *header = cpio_base_address;
+    boot_info.cpio_addr = (u64)cpio_base_address;
+    header = parse_cpio_struct(header, prev);
+
+    while (1) {
+        CPIO_index *curr = allocate_index_node();
+        header = parse_cpio_struct(header, curr);
+        if (!strcmp(curr->name, "TRAILER!!!")) {
+            boot_info.cpio_end = (u64)header;
+            startup_lock_memory((u64)cpio_base_address, (u64)header);
+            break;
+        }
+        prev->next = curr;
+        prev = curr;
+    }
+    prev->next = NULL;
+}
+
+void print_chars (char *addr, unsigned int len) {
+    for (int i = 0; i < len; i++) {
+        uart_sendc(addr[i]);
+    }
+}
+
 
 void header2info (CPIO_HEADER *base, CPIO_INFO *info) {
     info->magic = hex2int(base->c_magic, 6);
@@ -58,92 +123,65 @@ void header2info (CPIO_HEADER *base, CPIO_INFO *info) {
 }
 
 void show_cpio_info (CPIO_HEADER *base) {
-    uart_send("name: ");
-    uart_send((char *)(base + (0x70 - 2)));
+    print("name: %s", (char *)(base + (0x70 - 2)));
     char *ptr = (char *)base;
-    uart_send((char *)&ptr[0x6e]);
+    print((char *)&ptr[0x6e]);
 
-    uart_send("\r\nmagic: ");
+    print("\nmagic: ");
     print_chars(base->c_magic, 6);
 
-    uart_send("\r\nino: ");
+    print("\nino: ");
     print_chars(base->c_ino, 8);
 
-    uart_send("\r\nmode: ");
+    print("\nmode: ");
     print_chars(base->c_mode, 8);
 
-    uart_send("\r\nuid: ");
+    print("\nuid: ");
     print_chars(base->c_uid, 8);
 
-    uart_send("\r\ngid: ");
+    print("\ngid: ");
     print_chars(base->c_gid, 8);
 
-    uart_send("\r\nnlink: ");
+    print("\nnlink: ");
     print_chars(base->c_nlink, 8);
 
-    uart_send("\r\nmtime: ");
+    print("\nmtime: ");
     print_chars(base->c_mtime, 8);
 
-    uart_send("\r\nfilesize: ");
+    print("\nfilesize: ");
     print_chars(base->c_filesize, 8);
 
-    uart_send("\r\ndevmajor: ");
+    print("\ndevmajor: ");
     print_chars(base->c_devmajor, 8);
 
-    uart_send("\r\ndevminor: ");
+    print("\ndevminor: ");
     print_chars(base->c_devminor, 8);
 
-    uart_send("\r\nrdevmajor: ");
+    print("\nrdevmajor: ");
     print_chars(base->c_rdevmajor, 8);
 
-    uart_send("\r\nrdevminor: ");
+    print("\nrdevminor: ");
     print_chars(base->c_rdevminor, 8);
 
-    uart_send("\r\nnamesize: ");
+    print("\nnamesize: ");
     print_chars(base->c_namesize, 8);
 
-    uart_send("\r\ncheck: ");
+    print("\ncheck: ");
     print_chars(base->c_check, 8);
-    uart_send("\r\n");
+    print("\n");
 }
 
-CPIO_HEADER * cpio_find_file (char *path) {
-    CPIO_HEADER *cpioh = cpio_base_address;
-    CPIO_INFO cpio_info;
-
-    while (1) {
-        header2info(cpioh, &cpio_info);
-        if (cpio_info.magic != CPIO_MAGIC)
-            break;
-        if (!strcmp(path, cpio_info.name))
-            return cpioh;
-
-        cpioh = cpio_info.next_header;
-    }
-
-    return 0;
+CPIO_index * cpio_find_file (char *path) {
+    for (CPIO_index *ptr = cpio_index_head; ptr; ptr = ptr->next)
+        if (!strcmp(path, ptr->name))
+            return ptr;
+    return NULL;
 }
 
 void cpio_cat_file (char *path) {
-    CPIO_HEADER *h = cpio_find_file(path);
-    if (!h) {
-        uart_send("No such file: ");
-        uart_send(path);
-        uart_send("\r\n");
-        return;
-    }
-
-    CPIO_INFO cpio_info;
-    header2info(h, &cpio_info);
-
-    if (!is_cpio_file(cpio_info)) {
-        uart_send(path);
-        uart_send(" is not a file");
-        uart_send("\r\n");
-        return;
-    }
-
-    print_chars(cpio_info.data, cpio_info.filesize);
+    CPIO_index *index = cpio_find_file(path);
+    if (index)
+        print_chars(index->data, index->filesize);
 }
 
 void cpio_cat_interface (char *buffer) {
@@ -153,18 +191,9 @@ void cpio_cat_interface (char *buffer) {
 }
 
 void cpio_show_files () {
-    CPIO_HEADER *cpioh = cpio_base_address;
-    CPIO_INFO cpio_info;
-
-    while (1) {
-        header2info(cpioh, &cpio_info);
-        if (cpio_info.magic != CPIO_MAGIC)
-            break;
-        cpioh = cpio_info.next_header;
-
-        if (is_cpio_file(cpio_info) || is_cpio_dir(cpio_info))
-            uart_send(cpio_info.name);
-        uart_send(" ");
+    for (CPIO_index *ptr = cpio_index_head; ptr; ptr = ptr->next) {
+        print(ptr->name);
+        print(" ");
     }
-    uart_send("\r\n");
+    print("\n");
 }

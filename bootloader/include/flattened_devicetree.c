@@ -3,7 +3,11 @@
 #include "uart.h"
 #include "string.h"
 
-FDT_HEADER *fdt_head;
+FDT_HEADER *fdt_head = 0;
+
+void fdt_init () {
+
+}
 
 u32 u32_b2l (u32 num) {
     u32 value = 0;
@@ -55,6 +59,8 @@ u32 get_fdt_header_size_dt_struct () {
 }
 
 void show_fdt_info () {
+    if (!fdt_head)
+        return;
     uart_send("base address: "); uart_sendh((unsigned long) fdt_head); uart_send("\r\n");
     uart_send("magic: "); uart_sendh(get_fdt_header_magic()); uart_send("\r\n");
     uart_send("totalsize: "); uart_sendh(get_fdt_header_totalsize()); uart_send("\r\n");
@@ -108,6 +114,7 @@ void show_all_fdt () {
     uart_send("\r\n");
     uart_sendh((unsigned long)fdt_string);
     uart_send("\r\n");
+    //return;
 
     /* start parse structure */
     for (int i = 0; fdt_struct[i] != FDT_END_BIG;) {

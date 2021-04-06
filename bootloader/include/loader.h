@@ -13,12 +13,6 @@ typedef struct boot_information {
     u64 bss_size;
     u64 stack_base;
     u64 stack_size;
-    u64 startup_allocator_addr;
-    u64 cpio_addr;
-    u64 cpio_end;
-    u64 device_tree_size;
-    u64 buddy_system_addr;
-    u64 buddy_system_size;
 } BOOT_INFO;
 extern BOOT_INFO boot_info;
 

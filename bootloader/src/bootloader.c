@@ -22,9 +22,10 @@ void parse_command (char *b) {
         uart_send("x/[num]gx [address]: print value in memory\r\n");
         uart_send("load: load kernel image via mini-uart\r\n");
         uart_send("fdt: show flattened device tree address\r\n");
+        uart_send("boot_info: show booting information\r\n");
     }
     else if (!strcmp(b, "reboot")) {
-        reset(10000);
+        reset(1000);
     }
     else if (!strcmp(b, "time")) {
         uart_sendf(get_time());
@@ -47,6 +48,7 @@ void parse_command (char *b) {
             uart_send("fail\r\n");
     }
     else if (!strcmp(b, "load")) {
+        uart_send("okay\r\n");
         uart_send("address: ");
         char buffer[BUFFER_SIZE];
         uart_getline(buffer, BUFFER_SIZE);
@@ -72,10 +74,16 @@ void parse_command (char *b) {
     else if (!strcmp(b, "jump")) {
         jump_address(0x80000);
     }
+    else if (!strcmp(b, "boot_info")) {
+        show_boot_info();
+    }
     else if (!strcmp(b, "fdt")) {
-        uart_sendh(bootloader_info[0]);
-        //uart_sendh((u64)&(bootloader_info[0]));
+        uart_sendh(boot_info.device_tree_addr);
         uart_send("\r\n");
+    }
+    else if (!strcmp(b, "tmp")) {
+        uart_send("boot_info addr: ");
+        uart_sendh((u64)&boot_info);
     }
     else if (mem_print(b)) {
     }
