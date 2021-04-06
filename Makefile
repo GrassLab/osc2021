@@ -2,7 +2,10 @@
 
 kernel_impl = impl-c
 # kernel_impl = impl-rs
+
+OPT_BUILD_BOOTLOADER = 0
 bootloader_impl = bootloader
+
 
 INIT_RAM_FS = res/initramfs.cpio
 INIT_RAM_FS_SRC = res/rootfs
@@ -30,7 +33,9 @@ shell:
 
 clean:
 	@python3 scripts/builder.py $(kernel_impl) clean
+ifeq ($(OPT_BUILD_BOOTLOADER), 1)
 	@python3 scripts/builder.py $(bootloader_impl) clean
+endif
 	$(RM) $(INIT_RAM_FS)
 	$(RM) -rf scripts/__pycache__
 	@echo "${YELLOW} 🚚 Finish cleanup${RESET}"
@@ -38,31 +43,22 @@ clean:
 export:
 	poetry export -f requirements.txt --output requirements.txt
 
+# LINTER_TARGET = scripts
+LINTER_TARGET = algo
 better:
-	poetry run isort scripts
-	poetry run black scripts
-	poetry run pylama scripts --ignore E501
-
-.PHONY: bootloader-stdio
-bootloader-stdio: all
-	@echo "${YELLOW} 🚧 Start bootloader(stdio)${RESET}"
-	@echo "${YELLOW} Use ${RED}ctrl-c${YELLOW} to quit session${RESET}"
-	$(RUN_STDIO_KERNEL) $(BOOT_LOADER_IMG)
-
-.PHONY: bootloader-tty
-bootloader-tty: all
-	@echo "${YELLOW} 🚧 Start bootloader(tty)${RESET}"
-	@echo "${YELLOW} Use ${RED}ctrl-c${YELLOW} to quit session${RESET}"
-	@$(RUN_TTY_KERNEL) $(BOOT_LOADER_IMG)
+	poetry run autoflake --in-place --remove-unused-variables --recursive $(LINTER_TARGET)
+	poetry run isort $(LINTER_TARGET)
+	poetry run black $(LINTER_TARGET)
+	poetry run pylama $(LINTER_TARGET) --ignore E501
 
 .PHONY: run-stdio
-run-stdio: all
+run: all
 	@echo "${YELLOW} 🚧 Start kernel(stdio)${RESET}"
 	@echo "${YELLOW} Use ${RED}ctrl-c${YELLOW} to quit session${RESET}"
 	@$(RUN_STDIO_KERNEL) $(KERNEL_IMG)
 
 .PHONY: run-tty
-run-tty: all
+tty: all
 	@echo "${YELLOW} 🚧 Start kernel(tty)${RESET}"
 	@echo "${YELLOW} Use ${RED}ctrl-c${YELLOW} to quit session${RESET}"
 	@$(RUN_TTY_KERNEL) $(KERNEL_IMG)
@@ -73,25 +69,17 @@ debug: all
 	@echo "${YELLOW}Open another terminal and use ${GREEN}make gdb${YELLOW} to connect to host${RESET}"
 	@$(DEBUG_KERNEL) $(KERNEL_IMG)
 
-.PHONY: debug-bootloader
-debug-bootloader: all
-	@echo "${YELLOW} 🐛 Start debugging bootloader${RESET}"
-	@echo "${YELLOW}Open another terminal and use ${GREEN}make gdb-bootloader${YELLOW} to connect to host${RESET}"
-	@$(DEBUG_KERNEL) $(BOOT_LOADER_IMG)
-
 .PHONY: gdb
 gdb: all
 	@echo "${YELLOW} 🕵️‍♀️ Using ${GREEN}${CROSS_GDB}${RESET}"
 	$(CROSS_GDB) --init-command $(kernel_impl)/gdbinit
 
-.PHONY: gdb-bootloader
-gdb-bootloader: all
-	@echo "${YELLOW} 🕵️‍♀️ Using ${GREEN}${CROSS_GDB}${RESET}"
-	$(CROSS_GDB) --init-command $(bootloader_impl)/gdbinit
 
 # == Resources
 $(BOOT_LOADER_IMG): $(shell find $(bootloader_impl))
+ifeq ($(OPT_BUILD_BOOTLOADER), 1)
 	@python3 scripts/builder.py $(bootloader_impl) build
+endif
 
 $(KERNEL_IMG): $(shell find $(kernel_impl))
 	@python3 scripts/builder.py $(kernel_impl) build
@@ -133,7 +121,8 @@ endef
 
 # Start qemu with tty opend on host, waiting for gdb to connect
 define DEBUG_KERNEL
-	$(_run_qemu_mux_base) \
+	$(_run_qemu_base) \
+	-serial null -serial stdio \
 	-s -S \
 	-kernel
 endef
