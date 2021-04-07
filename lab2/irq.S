@@ -3,7 +3,7 @@
 core_timer_handler:
     ldr   x0, =0x927C000  // 19.2MHz
     msr   cntp_tval_el0, x0
-    ret          
+    ret
 
 .globl core_timer_get_sec
 core_timer_get_sec:
@@ -11,3 +11,8 @@ core_timer_get_sec:
 	mrs   x1, cntpct_el0
 	udiv  x0, x1, x2
 	ret
+
+.globl set_core_timer
+set_core_timer:
+    msr   cntp_tval_el0, x0
+    ret

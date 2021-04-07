@@ -10,4 +10,7 @@ extern unsigned int get_scr_el3(void);
 extern unsigned int get_spsr_el2(void);
 extern unsigned int get_cntfrq_el0(void);
 extern unsigned long run_user_program(char *start, char *sp);
-
+extern void enable_irq(void);
+extern void disable_irq(void);
+extern void core_timer_enable(void);
+extern void core_timer_disable(void);

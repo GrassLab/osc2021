@@ -3,12 +3,13 @@
 #include "include/cutils.h"
 #include "include/dtp.h"
 #include "include/test.h"
+#include "include/cirq.h"
 // #include "include/initramfs.h"
 #include "utils.h"
 #define CMD_SIZE 64
 #define FILE_NAME_SIZE 64
-#define INITRAMFS_BASE 0x20000000 // rpi3
-// #define INITRAMFS_BASE 0x8000000 // QEMU
+// #define INITRAMFS_BASE 0x20000000 // rpi3
+#define INITRAMFS_BASE 0x8000000 // QEMU
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC 0x3F10001c
 #define PM_WDOG 0x3F100024
@@ -17,21 +18,22 @@ int BSSTEST = 0;
 extern char *dt_base_g;
 
 char *cmd_lst[][2] = {
-    { "help   ", "list all commands"},
-    { "hello  ", "print hello world"},
-    { "reboot ", "reboot"},
-    { "cat    ", "show file contents"},
-    { "run    ", "run user program"},
-    { "ls     ", "show all file"},
-    { "relo   ", "Relocate bootloader"},
-    { "load   ", "Load image from host to pi, then jump to it"},
-    { "showmem", "show memory contents"},
-    { "size   ", "show type size"},
-    { "mm     ", "show memory management"},
-    { "testbs ", "test buddy system"},
-    { "testks ", "test kmalloc system"},
-    { "testsms", "test startup memory system"},
-    { "el     ", "Get current EL"},
+    { "help       ", "list all commands"},
+    { "hello      ", "print hello world"},
+    { "reboot     ", "reboot"},
+    { "cat        ", "show file contents"},
+    { "run        ", "run user program"},
+    { "ls         ", "show all file"},
+    { "relo       ", "Relocate bootloader"},
+    { "load       ", "Load image from host to pi, then jump to it"},
+    { "showmem    ", "showmem start length"},
+    { "size       ", "show type size"},
+    { "mm         ", "show memory management"},
+    { "testbs     ", "test buddy system"},
+    { "testks     ", "test kmalloc system"},
+    { "testsms    ", "test startup memory system"},
+    { "el         ", "Get current EL"},
+    { "setTimeout ", "setTimeout MESSAGE SECONDS"},
     { "eocl", "This won't print out (end of cmd list)"}
 };
 
@@ -192,6 +194,7 @@ int run_initramfs()
             for (int i = 0; i < filesize; ++i)
                 page_ptr[i] = data_start[i];
             run_user_program(page_ptr, page_ptr + 4096 - 1);
+            // never come back again.
             return 0;
         }
         ent = (struct cpio_newc_header*)align_upper(data_start + filesize, 4);
@@ -316,7 +319,7 @@ int show_sys_reg()
     uart_send_string("cntfrq_el0: ");
     uart_send_uint(get_cntfrq_el0());
     uart_send_string("\r\n");
-    
+
     if (el == 2) {
         uart_send_string("hcr_el2: ");
         uart_send_ulong(get_hcr_el2());
@@ -325,6 +328,43 @@ int show_sys_reg()
         uart_send_uint(get_spsr_el2());
         uart_send_string("\r\n");
     }
+    return 0;
+}
+
+void *wakeup_mesg(void* arg)
+{
+    char *mesg = (char*)arg;
+    uart_send_string("\r\n");
+    uart_send_string(mesg);
+    return 0; // null
+}
+char globl_mesg[100];
+
+int do_setTimeout(char *cmd)
+{ // setTimeout MESSAGE second
+    char *addr_ptr, *cmd_ptr, *arg1, *arg2;
+    int arg1_len, arg2_len, seconds;
+    unsigned long addr;
+
+    cmd_ptr = cmd;
+    while (*cmd_ptr++ != ' ');
+    arg1 = cmd_ptr;
+    globl_mesg[0] = '\0';
+    arg1_len = 0;
+    while (*cmd_ptr != ' ') {
+        globl_mesg[arg1_len] = *cmd_ptr;
+        cmd_ptr++;
+        arg1_len++;
+    }
+    globl_mesg[arg1_len] = '\0';  // make arg1 a null-end string
+    arg2 = ++cmd_ptr;
+    arg2_len = 0;
+    while (*cmd_ptr++ != '\0')
+        arg2_len++;
+    seconds = dec_string_to_int(arg2, arg2_len);
+    // Now, globl_mesg is MESSAGE and arg2 is SECONDS
+    tqe_add(seconds * TICKS_FOR_ITR, wakeup_mesg, (void*)globl_mesg);
+
     return 0;
 }
 
@@ -365,13 +405,22 @@ int cmd_handler(char *cmd)
     }
     if (!strcmp(cmd, "el"))
         return show_sys_reg();
+    if (!strcmp_with_len(cmd, "setTimeout", 10))
+        return do_setTimeout(cmd);
+    if (!strcmp(cmd, "eirq")) {
+        enable_irq();
+        return 0;
+    }
+    if (!strcmp(cmd, "dirq")) {
+        disable_irq();
+        return 0;
+    }
 
     uart_send_string("Command '");
     uart_send_string(cmd);
     uart_send_string("' not found\r\n");
     return 0;
 }
-
 
 int kernel_main(char *sp)
 {
@@ -381,6 +430,9 @@ int kernel_main(char *sp)
     // uart_init();
     rd_init();
     dynamic_mem_init();
+    timerPool_init();
+    // enable_irq();
+    core_timer_enable();
     uart_send_string("Welcome to RPI3-OS\r\n");
     while (1) {
         uart_send_string("user@rpi3:~$ ");
