@@ -103,7 +103,16 @@ exception_table:
 	b TODO
 
 	.align 7
-	b curSynchronous
+	b TODO
+	.align 7
+	b TODO
+	.align 7
+	b TODO
+	.align 7
+	b TODO
+
+	.align 7
+	b lowerSynchronous
 	.align 7
 	b TODO
 	.align 7
@@ -120,17 +129,8 @@ exception_table:
 	.align 7
 	b TODO
 
-	.align 7
-	b TODO
-	.align 7
-	b TODO
-	.align 7
-	b TODO
-	.align 7
-	b TODO
-
-//Synchronous from current level
-curSynchronous:
+//Synchronous from lower level
+lowerSynchronous:
 	save_regs
 	bl exception_handler
 	load_regs

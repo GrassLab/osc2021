@@ -18,13 +18,17 @@ typedef struct{//cpio_newc_header
 	char c_check[8];
 }cpio_header;
 
+#define CPIO_BASE ((cpio_header*)0x8000000)
+
 unsigned long strToU(char* str){
 	unsigned long ret=0;
 	for(int i=0;i<8;++i){
 		if(str[i]>='0'&&str[i]<='9'){
 			ret=ret*16+str[i]-'0';
-		}else{
+		}else if(str[i]>='a'&&str[i]<='f'){
 			ret=ret*16+str[i]-'a'+10;
+		}else if(str[i]>='A'&&str[i]<='F'){
+			ret=ret*16+str[i]-'A'+10;
 		}
 	}
 	return ret;
@@ -96,9 +100,37 @@ void getName(char* target){
 
 void dumpArchive(){
 	//cpio_header* addr=(cpio_header*)getBase();
-	cpio_header* addr=(cpio_header*)0x8000000;
+	cpio_header* addr=CPIO_BASE;
 	char target[100];getName(target);
-
 	cpio_header* ret=findEntry(addr,target);
 	if(ret)dumpEntry(ret);
+}
+
+void loadApp(char* path,unsigned long a_addr,unsigned long a_size){
+	cpio_header* ret=findEntry(CPIO_BASE,path);
+	if(!ret){
+		uart_puts("App not found!\n");
+		return;
+	}
+	unsigned long psize=strToU(ret->c_namesize);
+	if((sizeof(cpio_header)+psize)&3)psize+=4-((sizeof(cpio_header)+psize)&3);
+	unsigned char* data=(unsigned char*)(ret+1)+psize;
+
+	unsigned char* target=(unsigned char*)a_addr;
+	while(a_size--){
+		*target=*data;
+		target++;
+		data++;
+	}
+
+	uart_puts("loading...\n");
+
+	asm volatile("mov x0, 0x3c0			\n");
+	asm volatile("msr spsr_el1, x0		\n");
+	asm volatile("msr elr_el1, %0		\n"::"r"(a_addr));
+	asm volatile("msr sp_el0, %0		\n"::"r"(a_addr));
+	//asm volatile("mov x0, #(3 << 20)	\n");
+	//asm volatile("msr cpacr_el0, x0		\n");
+	asm volatile("eret					\n");
+	//asm volatile("br %0\n"::"r"(a_addr));
 }
