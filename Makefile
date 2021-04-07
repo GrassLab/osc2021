@@ -28,7 +28,7 @@ clean:
 	rm kernel8.elf kernel8.img start.o build/*.o >/dev/null 2>/dev/null || true
 
 run: all
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -initrd initramfs.cpio
 
 deploy: all
 	cp ./kernel8.img /run/media/brothre23/4DFF-0A36/

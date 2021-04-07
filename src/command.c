@@ -52,6 +52,7 @@ void command_cpio()
     uart_puts("Valid Option:\n");
     uart_puts("\t1:\t\tGet the file list.\n");
     uart_puts("\t2:\t\tSearch for a specific file.\n");
+    uart_puts("\t3:\t\tRun an executable.\n");
     uart_puts("\n");
     uart_puts("# ");
 
@@ -67,42 +68,80 @@ void command_cpio()
         break;
 
     case '2':
+    {
+        char file_name[100];
+        char c;
+        int counter = 0;
+
+        uart_puts("# ");
+
+        while (1)
         {
-            char file_name[100];
-            char c;
-            int counter = 0;
-
-            uart_puts("# ");
-
-            while (1)
+            c = uart_getc();
+            // delete
+            if ((c == 127) && counter > 0)
             {
-                c = uart_getc();
-                // delete
-                if ((c == 127) && counter > 0)
-                {
-                    counter--;
-                    uart_puts("\b \b");
-                }
-                // new line
-                else if ((c == 10) || (c == 13))
-                {
-                    file_name[counter] = '\0';
-                    uart_send(c);
-                    break;
-                }
-                // regular input
-                else if (counter < 100)
-                {
-                    file_name[counter] = c;
-                    counter++;
-                    uart_send(c);
-                }
+                counter--;
+                uart_puts("\b \b");
             }
-
-            cpio_find_file(file_name);
+            // new line
+            else if ((c == 10) || (c == 13))
+            {
+                file_name[counter] = '\0';
+                uart_send(c);
+                break;
+            }
+            // regular input
+            else if (counter < 100)
+            {
+                file_name[counter] = c;
+                counter++;
+                uart_send(c);
+            }
         }
 
-        break;
+        cpio_find_file(file_name);
+    }
+
+    break;
+
+    case '3':
+    {
+        char file_name[100];
+        char c;
+        int counter = 0;
+
+        uart_puts("# ");
+
+        while (1)
+        {
+            c = uart_getc();
+            // delete
+            if ((c == 127) && counter > 0)
+            {
+                counter--;
+                uart_puts("\b \b");
+            }
+            // new line
+            else if ((c == 10) || (c == 13))
+            {
+                file_name[counter] = '\0';
+                uart_send(c);
+                break;
+            }
+            // regular input
+            else if (counter < 100)
+            {
+                file_name[counter] = c;
+                counter++;
+                uart_send(c);
+            }
+        }
+
+        cpio_run_executable(file_name);
+    }
+
+    break;
 
     default:
         break;

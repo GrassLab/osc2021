@@ -23,7 +23,7 @@ el2_entry:
     msr     spsr_el2, x1
 
     # init sp for EL1
-    sub     x0, x0, #0x10000
+    mov     x0, #0x70000
     msr     sp_el1, x0
 
     adr     x1, el1_entry         // eret return address
@@ -32,6 +32,9 @@ el2_entry:
     eret
 
 el1_entry:
+    ldr     x0, =exception_vector_table  // set up el1 exception table
+    msr     vbar_el1, x0
+
     // clear bss
     ldr     x1, =_bss_start
     ldr     w2, =_bss_size
