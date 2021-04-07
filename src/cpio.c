@@ -168,7 +168,7 @@ void cpio_run_executable(char executable_name[])
         if (strcmp(file_name, executable_name) == 0)
             break;
         else if ((strcmp(file_name, "TRAILER!!!") == 0))
-            break;
+            return;
     }
 
     ramfs -= file_size;

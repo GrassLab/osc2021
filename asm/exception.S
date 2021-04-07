@@ -84,6 +84,9 @@ exception_vector_table:
 
 exception_handler:
     save_regs
-    bl exception_entry
+    mrs x0, spsr_el1
+    mrs x1, elr_el1
+    mrs x2, esr_el1
+    bl  exception_entry
     load_regs
-    b shell_start
+    b   shell_start
