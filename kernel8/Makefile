@@ -1,24 +1,16 @@
-# cross-compiler
-CC 			= aarch64-linux-gnu-gcc
-LINKER 		= aarch64-linux-gnu-ld
-OBJ_CPY 	= aarch64-linux-gnu-objcopy
-QEMU		= qemu-system-aarch64
+ARMGNU = aarch64-linux-gnu
+QEMU = qemu-system-aarch64
+# -Iinclude tells it to look for header files in the include folder.
+# -fPIC makes the addresses relative instead of absolute allowing us to place the kernel anywhere in memory.
+COPS = -Wall -O0 -ffreestanding -nostdinc -nostdlib -nostartfiles -Iinclude
+ASMOPS = -Iinclude
 
+BUILD_DIR = build
+SRC_DIR = src
 
-
-SRCDIR 		= src
-INCLUDE_DIR = include
-LIB_DIR 	= lib
-LIB_HEADER	= lib/headers
-
-
-SRCS = $(wildcard $(SRCDIR)/*.c )
-OBJS = $(patsubst $(SRCDIR)/%.c, %.o, $(SRCS))
-LINK_SCRIPT = linker.ld
 KERNEL = kernel8
-CFLAGS = -Wall -O0 -ffreestanding -nostdinc -nostdlib -nostartfiles -g 
+Linker = linker.ld
 
-# cpio archive
 CPIO_DIR = rootfs
 CPIO_FILES = $(wildcard $(CPIO_DIR)/*)
 CPIO = initramfs.cpio
@@ -29,28 +21,33 @@ DTB = bcm2710-rpi-3-b-plus.dtb
 QEMU_DTB = -dtb $(DTB)
 
 
-VPATH = $(SRCDIR)
-vpath %.c %.S $(SRCDIR) 
+all : clean $(KERNEL).img
 
-# cpio archive
+clean :
+	rm -rf $(BUILD_DIR) *.img
+	
+$(BUILD_DIR)/%_s.o: $(SRC_DIR)/%.S
+	mkdir -p $(@D)
+	$(ARMGNU)-gcc $(ASMOPS) -c $< -o $@
+	
+$(BUILD_DIR)/%_c.o: $(SRC_DIR)/%.c
+	$(ARMGNU)-gcc $(COPS) -c $< -o $@
 
 
+ASM_FILES = $(wildcard $(SRC_DIR)/*.S) 
+C_FILES = $(wildcard $(SRC_DIR)/*.c) 
+OBJ_FILES = $(ASM_FILES:$(SRC_DIR)/%.S=$(BUILD_DIR)/%_s.o)
+OBJ_FILES += $(C_FILES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%_c.o)
 
-all:  $(KERNEL).img
+DEP_FILES = $(OBJ_FILES:%.o=%.d)
+-include $(DEP_FILES)
 
+$(KERNEL).img: $(SRC_DIR)/$(Linker) $(OBJ_FILES)
+	$(ARMGNU)-ld -T $(SRC_DIR)/$(Linker) -o $(BUILD_DIR)/$(KERNEL).elf  $(OBJ_FILES)
+	$(ARMGNU)-objcopy $(BUILD_DIR)/$(KERNEL).elf -O binary $(KERNEL).img
 
-
-# include files
-start.o: start.S
-	$(CC) $(CFLAGS)  -c $< -o $@
-
-%.o: %.c
-	$(CC) $(CFLAGS) -I $(INCLUDE_DIR) -c $< -o $@
-
-kernel8.img: start.o  $(OBJS)
-	$(LINKER) -nostdlib -nostartfiles start.o  $(OBJS) -T $(LINK_SCRIPT) -o kernel8.elf
-	$(OBJ_CPY) -O binary kernel8.elf $@
-
+run:
+	$(QEMU) -M raspi3 -kernel $(KERNEL).img -serial null -serial stdio
 
 
 
@@ -60,9 +57,3 @@ cpio: $(CPIO_FILES)
 	
 debug:
 	$(QEMU) -M raspi3 -kernel $(KERNEL).img   $(QEMU_CPIO) $(QEMU_DTB) $(MINI-UART)
-	
-clean:
-	rm -f  *.o
-	rm -f  $(KERNEL).elf $(KERNEL).img
-	rm -rf $(BOOTLOADER).elf $(BOOTLOADER).img
-	

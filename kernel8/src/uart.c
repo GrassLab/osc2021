@@ -1,8 +1,7 @@
 #include "uart.h"
 
+void uart_init(){
 
-void uart_init()
-{
     register unsigned int reg;
 
     /* initialize UART */
@@ -93,6 +92,20 @@ void uart_puts_bySize(char *s, int size){
     for(int i = 0; i < size ;++i){
         if(*s == '\n') uart_send('\r');
         uart_send(*s++);
+    }
+}
+
+
+void uart_put_hex(unsigned long d) {
+    uart_puts("0x");
+    unsigned long n;
+    int c;
+    for(c=28;c>=0;c-=4) {
+        // get highest tetrad
+        n=(d>>c)&0xF;
+        // 0-9 => '0'-'9', 10-15 => 'A'-'F'
+        n+=n>9?0x37:0x30;
+        uart_send(n);
     }
 }
 

@@ -1,7 +1,6 @@
 #include "system.h"
 
 
-extern char __cpio_addr [];
 
 
 struct cmd{
@@ -11,14 +10,19 @@ struct cmd{
 
 
 struct cmd cmd_list[SYS_CMD_NUM] = {
-    {.input = "help", .description="List commands."},
-    {.input = "hello", .description="Print hello world."},
-    {.input = "reset", .description="Reset raspi3."},
-    {.input = "loadimg", .description="Load new kernel."},
-    {.input = "ls", .description="List rootfs"},
-    {.input = "cat", .description="Show content of file"},
-    {.input = "dtb_ls",. description="List device tree"},
-    {.input = "dtb_cat",. description="Parse device tree"}
+    {.input = "help", 		.description="List commands."},
+    {.input = "hello", 		.description="Print hello world."},
+    {.input = "reset", 		.description="Reset raspi3."},
+    {.input = "loadimg", 	.description="Load new kernel."},
+    {.input = "ls", 		.description="List rootfs."},
+    {.input = "cat", 		.description="Show content of file."},
+    {.input = "dtb_ls",		.description="List device tree."},
+    {.input = "dtb_cat",	.description="Parse device tree."},
+    {.input = "info",		.description="Print buddy info."},
+    {.input = "stat",		.description="Print buddy stat."},
+    {.input = "slab",		.description="Print slab."},
+    {.input = "test_buddy",	.description="Test buddy."},
+    {.input = "test_slab",	.description="Test slab."}
 };
 
 void system_command(char* buf){
@@ -33,18 +37,24 @@ void system_command(char* buf){
     }
 	
 	
-	if     (strcmp(buf, "help" ) == 0) 		help();
-	else if(strcmp(buf, "hello") == 0)		hello();
-	else if(strcmp(buf, "reset") == 0)		reset(100);
-    else if(strcmp(buf, "loadimg") == 0)	loadimg();
-    else if(strcmp(buf, "ls") == 0)   		cpio_list();
-	else if(strcmp(buf, "cat") == 0)   		cpio_cat(args);
-	else if(strcmp(buf, "dtb_ls") == 0)   	print_dt_info();
-	else if(strcmp(buf, "dtb_cat") == 0)   	parse_dt();
+	if     (strcmp(buf, "help" ) == 0) 			help();
+	else if(strcmp(buf, "hello") == 0)			hello();
+	else if(strcmp(buf, "reset") == 0)			reset(100);
+    else if(strcmp(buf, "loadimg") == 0)		loadimg();
+    else if(strcmp(buf, "ls") == 0)   			cpio_list();
+	else if(strcmp(buf, "cat") == 0)   			cpio_cat(args);
+	else if(strcmp(buf, "dtb_ls") == 0)   		print_dt_info();
+	else if(strcmp(buf, "dtb_cat") == 0)   		parse_dt();
+	else if(strcmp(buf, "info") == 0)   		print_buddy_info();
+	else if(strcmp(buf, "stat") == 0)   		print_buddy_stat();
+	else if(strcmp(buf, "slab") == 0)   		print_slab();
+	else if(strcmp(buf, "test_buddy") == 0)   	test_buddy();
+	else if(strcmp(buf, "test_slab") == 0)   	test_slab();
 }
 
+
 void help(){
-    uart_puts("\n\r###########################################\r\n");
+    uart_puts("*********************************************\n");
     uart_puts("[Command]\t\t[Description]\r\n");
     for(int i = 0; i < SYS_CMD_NUM; ++i){
         uart_puts(cmd_list[i].input);
@@ -52,8 +62,7 @@ void help(){
         uart_puts(cmd_list[i].description);
         uart_puts("\r\n");
     }
-	uart_puts("###########################################\r\n\n\r");
-    
+	uart_puts("*********************************************\n");
 }
 
 void hello(){
@@ -73,5 +82,3 @@ void cancel_reset() {
   *PM_RSTC = PM_PASSWORD | 0; // full reset
   *PM_WDOG = PM_PASSWORD | 0; // number of watchdog tick
 }
-
-

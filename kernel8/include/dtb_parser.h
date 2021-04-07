@@ -2,7 +2,7 @@
 #define __DTB_PARSER_H__
 #include "uart.h"
 #include "system.h"
-#include "string.h"
+#include "utils.h"
 
 #define PADDING         0
 #define FDT_BEGIN_NODE  1
@@ -10,7 +10,8 @@
 #define FDT_PROP        3
 #define FDT_NOP         4
 #define FDT_END         9
-#define DT_ADDR         0x90000
+#define DT_ADDR         0x31000000
+
 
 
 

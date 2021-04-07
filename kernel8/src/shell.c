@@ -1,8 +1,4 @@
 #include "shell.h"
-#include "string.h"
-#include "uart.h"
-#include "system.h"
-
 
 
 void shell_welcome(){

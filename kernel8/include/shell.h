@@ -1,6 +1,10 @@
 #ifndef SHELL_H
 #define SHELL_H
 
+#include "utils.h"
+#include "uart.h"
+#include "system.h"
+
 #define MAX_BUFFER_LEN 128
 
 #define  USER_NAME     "andy"
