@@ -25,7 +25,7 @@ run:
 	make all
 	#qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial stdio -initrd ./archive/initramfs.cpio
 	#qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial pty -initrd ./archive/initramfs.cpio
-	qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial stdio -initrd ./archive/initramfs.cpio -d int
+	qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial pty -initrd ./archive/initramfs.cpio -d int
 
 onboard:
 	sudo screen /dev/ttyUSB0 115200

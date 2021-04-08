@@ -125,12 +125,24 @@ void loadApp(char* path,unsigned long a_addr,unsigned long a_size){
 
 	uart_puts("loading...\n");
 
-	asm volatile("mov x0, 0x3c0			\n");
+	//change exception level
+	//asm volatile("mov x0, 0x3c0			\n");//disable interrupt
+	asm volatile("mov x0, 0x340			\n");//enable interrupt
 	asm volatile("msr spsr_el1, x0		\n");
 	asm volatile("msr elr_el1, %0		\n"::"r"(a_addr));
 	asm volatile("msr sp_el0, %0		\n"::"r"(a_addr));
 	//asm volatile("mov x0, #(3 << 20)	\n");
 	//asm volatile("msr cpacr_el0, x0		\n");
+
+	//enable the core timer’s interrupt
+	asm volatile("mov x0, 1				\n");
+	asm volatile("msr cntp_ctl_el0, x0	\n");
+	asm volatile("mrs x0, cntfrq_el0	\n");
+	asm volatile("add x0, x0, x0		\n");
+	asm volatile("msr cntp_tval_el0, x0	\n");
+	asm volatile("mov x0, 2				\n");
+	asm volatile("ldr x1, =0x40000040	\n");
+	asm volatile("str w0, [x1]			\n");
+
 	asm volatile("eret					\n");
-	//asm volatile("br %0\n"::"r"(a_addr));
 }

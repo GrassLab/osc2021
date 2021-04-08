@@ -4,10 +4,10 @@ CFLAGS:=-nostdinc -nostdlib -nostartfiles
 
 all:
 	make clean
-	make kernel7.img
+	make app.img
 	cd rootfs&&find . | cpio -o -H newc > ../initramfs.cpio
 
-kernel7.img:app.o
+app.img:app.o
 	aarch64-linux-gnu-ld -T $(LINKER) -o tmp.elf $<
 	aarch64-linux-gnu-objcopy -O binary tmp.elf $@
 	rm tmp.elf
