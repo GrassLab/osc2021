@@ -90,6 +90,9 @@ void buddy_print() {
     print("------------------end---------------------\n\n\n");
 }
 
+/*
+ *  Page frame allocator
+ */
 static void page_allocator_init() {
     /* Initial buddy system */
     for (int i = 0; i <= MAX_ORDER; i++) {
@@ -211,6 +214,9 @@ static void buddy_free(page_t *block) {
     buddy_merge(block);
 }
 
+/*
+ *  Object allocator
+ */
 static void chunk_init() {
     chunk_pos = 0;
     for (int i = 0; i < CHUNK_BUFF_SIZE; i++) {
@@ -241,7 +247,7 @@ static void* obj_alloc(unsigned int entry) {
     print("\n");
     pool_t *p = &pool[entry];
     if (p->head.next != &p->head) {
-        print("Get chunk from chunk buffer\n");
+        print("Get chunk from:  chunk buffer\n\n");
         chunk_t *chu = list_entry(p->head.next, chunk_t, list);
         list_del(p->head.next);
         void *addr = chu->addr;
@@ -251,7 +257,7 @@ static void* obj_alloc(unsigned int entry) {
         return addr;
     }
 
-    print("Get chunk from chunk page\n");
+    print("Get chunk from:  page\n\n");
     p->obj_used++;
     if ((p->obj_size * (p->obj_used - 1)) >= PAGE_SIZE) {
         if ((p->page[p->page_used] = buddy_alloc(0)) == NULL)
@@ -259,10 +265,7 @@ static void* obj_alloc(unsigned int entry) {
         p->page_used++;
         p->obj_used = 1;
     }
-    //void *tmp = (void*)get_address(p->page[p->page_used - 1]) + p->obj_size * (p->obj_used - 1);
-    //print_int((unsigned int)tmp);
-    //return tmp;
-    return (void*)get_address(p->page[p->page_used - 1]) + p->obj_size * (p->obj_used - 1);
+    return (void*)(get_address(p->page[p->page_used - 1]) + p->obj_size * (p->obj_used - 1));
 }
 
 static void obj_free(void *addr, unsigned int entry) {
@@ -289,6 +292,8 @@ void* kmalloc(unsigned int size){
     }
     else {
         unsigned int fit_size = (size / MIN_OBJ_SIZE) * MIN_OBJ_SIZE + MIN_OBJ_SIZE;
+        if (!(size % MIN_OBJ_SIZE))
+            fit_size -= MIN_OBJ_SIZE;
         for (int i = 0; i < MAX_POOL_NUM; i++) {
             if (pool[i].used && pool[i].obj_size == fit_size) {
                 return obj_alloc(i);
