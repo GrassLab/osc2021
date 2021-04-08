@@ -1,3 +1,5 @@
+#define CORE0_TIMER_IRQ_CTRL 0x40000040
+
 // save general registers to stack
 .macro save_regs
     sub sp, sp, 32 * 8
@@ -96,11 +98,13 @@ svc_handler:
 
 core_timer_handler:
     save_regs
-    bl print_core_timer
+    mrs x0, cntpct_el0
+    mrs x1, cntfrq_el0
+    bl  print_core_timer
     load_regs
 
     mrs x0, cntfrq_el0
-    mov x1, 2
+    mov x1, 5
     mul x0, x0, x1
     msr cntp_tval_el0, x0
 
@@ -108,14 +112,19 @@ core_timer_handler:
     msr elr_el1, x0
     eret
 
-#define CORE0_TIMER_IRQ_CTRL 0x40000040
+exception_handler:
+    save_regs
+    bl  show_invalid_entry_message
+invalid_hang:
+	b invalid_hang
+
 .global core_timer_enable
 core_timer_enable:
     mov x0, 1
     msr cntp_ctl_el0, x0            // enable
 
     mrs x0, cntfrq_el0
-    mov x1, 2
+    mov x1, 5
     mul x0, x0, x1
     msr cntp_tval_el0, x0           // set expired time
     
@@ -124,8 +133,18 @@ core_timer_enable:
     str w0, [x1]                    // unmask timer 
     ret
 
-exception_handler:
-    save_regs
-    bl  show_invalid_entry_message
-invalid_hang:
-	b invalid_hang
+.global core_timer_disable
+core_timer_disable:
+    mrs x0, cntp_ctl_el0
+    mov x1, 1
+    eor x1, x1, x1                  // not x1
+    and x0, x0, x1
+    msr cntp_ctl_el0, x0
+
+    ldr x2, =CORE0_TIMER_IRQ_CTRL
+    ldr x0, [x2]
+    mov x1, 2
+    eor x1, x1, x1                  // not x1
+    and x0, x0, x1
+    str x0, [x2]                    // enable timer interrupt
+    ret

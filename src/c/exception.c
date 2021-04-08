@@ -20,6 +20,11 @@ void svc_router(unsigned long spsr, unsigned long elr, unsigned long esr)
         core_timer_enable();
         break;
 
+    case 2:
+        printf("disable core timer\n");
+        core_timer_disable();
+        break;
+
     default:
         break;
     }
@@ -27,10 +32,10 @@ void svc_router(unsigned long spsr, unsigned long elr, unsigned long esr)
     return;
 }
 
-
-void print_core_timer()
+void print_core_timer(unsigned long cntpct, unsigned long cntfrq)
 {
-    printf("core timer interrupt!\n");
+    int timestamp = cntpct / cntfrq;
+    printf("timestamp: %d\n", timestamp);
     return;
 }
 

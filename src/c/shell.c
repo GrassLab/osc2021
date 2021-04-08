@@ -1,5 +1,3 @@
-
-
 #include "shell.h"
 #include "string.h"
 #include "command.h"
@@ -69,14 +67,14 @@ void command_controller(enum SPECIAL_CHARACTER input_parse, char c, char buffer[
                 command_help();
             else if (!strcmp(buffer, "hello"))
                 command_hello();
-            else if (!strcmp(buffer, "timestamp"))
-                command_timestamp();
             else if (!strcmp(buffer, "reboot"))
                 command_reboot();
             else if (!strcmp(buffer, "cpio"))
                 command_cpio();
-            else if (!strcmp(buffer, "timer"))
-                command_timer();
+            else if (!strcmp(buffer, "timer_on"))
+                command_timer_on();
+            else if (!strcmp(buffer, "timer_off"))
+                command_timer_off();
             else
                 command_not_found(buffer);
         }

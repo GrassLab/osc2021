@@ -17,33 +17,16 @@ void command_help()
     uart_puts("Valid Command:\n");
     uart_puts("\thelp:\t\tprint this help.\n");
     uart_puts("\thello:\t\tprint \"Hello World!\".\n");
-    uart_puts("\ttimestamp:\tget current timestamp.\n");
     uart_puts("\treboot:\t\treboot Raspberry Pi.\n");
     uart_puts("\tcpio:\t\tread initramfs.cpio on the SD card.\n");
+    uart_puts("\ttimer_on:\tturn on the core timer.\n");
+    uart_puts("\ttimer_off:\tturn off the core timer.\n");
     uart_puts("\n");
 }
 
 void command_hello()
 {
     uart_puts("Hello World!\n");
-}
-
-void command_timestamp()
-{
-    // unsigned long int cnt_freq, cnt_tpct;
-    // char str[20];
-
-    // asm volatile(
-    //     "mrs %0, cntfrq_el0 \n\t"
-    //     "mrs %1, cntpct_el0 \n\t"
-    //     : "=r"(cnt_freq), "=r"(cnt_tpct)
-    //     :);
-
-    // ftoa(((float)cnt_tpct) / cnt_freq, str, 6);
-
-    // uart_send('[');
-    // uart_puts(str);
-    // uart_puts("]\n");
 }
 
 void command_cpio()
@@ -148,10 +131,14 @@ void command_cpio()
     }
 }
 
-void command_timer()
+void command_timer_on()
 {
     asm volatile("svc 1");
-    // core_timer_enable();
+}
+
+void command_timer_off()
+{
+    asm volatile("svc 2");
 }
 
 void command_not_found(char *s)
