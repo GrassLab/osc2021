@@ -45,9 +45,6 @@ _start:
     ldr     x1, =__bss_start
     ldr     w2, =__bss_size
 
-    // set el2 to el1
-    bl      from_el2_to_el1
-
 3:  cbz     w2, 4f
     str     xzr, [x1], #8
     sub     w2, w2, #1
@@ -57,11 +54,3 @@ _start:
 4:  bl      main
     // for failsafe, halt this core too
     b       1b
-
-from_el2_to_el1:
-    mov     x0, (1 << 31) // EL1 uses aarch64
-    msr     hcr_el2, x0
-    mov     x0, 0x3c5     // EL1h (SPSel = 1) with interrupt disabled
-    msr     spsr_el2, x0
-    msr     elr_el2, ldr
-    eret                  // return to EL1

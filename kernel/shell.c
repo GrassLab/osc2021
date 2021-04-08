@@ -20,9 +20,9 @@ void ShellStart()
     {
         input_char = uart_getc();
 
-	input_parse = Parse(input_char);
+		input_parse = Parse(input_char);
 
-	CommandController(input_parse, input_char, buffer, &buffer_counter);
+		CommandController(input_parse, input_char, buffer, &buffer_counter);
     }
 }
 
