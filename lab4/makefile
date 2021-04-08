@@ -5,8 +5,8 @@ LIB = ./lib
 CPIO:=initramfs.cpio
 all: $(KERNEL).img
 
-$(KERNEL).img:start.o rd.o main.o lib/uart.o  lib/shell.o lib/stringUtils.o lib/initrd.o lib/printf.o lib/memAlloc.o
-	aarch64-linux-gnu-ld  -T $(LINKER) -o $(KERNEL).elf start.o rd.o main.o lib/uart.o lib/stringUtils.o  lib/shell.o lib/initrd.o lib/printf.o lib/memAlloc.o
+$(KERNEL).img:start.o rd.o main.o lib/uart.o  lib/shell.o lib/stringUtils.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o
+	aarch64-linux-gnu-ld  -T $(LINKER) -o $(KERNEL).elf start.o rd.o main.o lib/uart.o lib/stringUtils.o  lib/shell.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o
 	aarch64-linux-gnu-objcopy -O binary $(KERNEL).elf $@
 
 cpio:
@@ -19,6 +19,8 @@ rd.o:$(CPIO)
 	aarch64-linux-gnu-ld -r -b binary -o rd.o $(CPIO)
 %.o:%.c
 	aarch64-linux-gnu-gcc $(CFLAGS) -o $@ -c $<
+%.o:%.s
+	aarch64-linux-gnu-gcc $(CFLAGS) -o $@ -c $<
 $(LIB)/%.o:$(LIB)/%.c
 	aarch64-linux-gnu-gcc $(CFLAGS) -o $@ -c $<
 
@@ -26,7 +28,7 @@ $(LIB)/%.o:$(LIB)/%.c
 
 run:
 #	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio
-	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio -initrd ./initramfs.cpio
+	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio -initrd ./initramfs.cpio -d int
 try: clean cpio all run
 
 onboard:

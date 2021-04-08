@@ -13,6 +13,8 @@ void main()
     mem_status_dump();
     uart_puts("Hello World!\n");
     // echo everything back
+    int el = get_el();
+    uart_printf("Exception level: %d\n",el);
     while(1) {
         shell();
     }
