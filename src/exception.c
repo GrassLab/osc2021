@@ -1,6 +1,6 @@
 #include "printf.h"
 
-void exception_entry(unsigned long spsr, unsigned long elr, unsigned long esr)
+void svc_entry(unsigned long spsr, unsigned long elr, unsigned long esr)
 {
     printf("\n");
     printf("spsr_el1\t%x\n", spsr);

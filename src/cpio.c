@@ -181,9 +181,9 @@ void cpio_run_executable(char executable_name[])
     asm volatile(
         "ldr x0, 0x3c0 \n\t"
         "msr spsr_el1, x0 \n\t"
-        "mov x0, #0x10A0000 \n\t"
+        "mov x0, 0x10A0000 \n\t"
         "msr elr_el1, x0 \n\t"
-        "mov x0, #0x60000 \n\t"
+        "mov x0, 0x60000 \n\t"
         "msr sp_el0, x0 \n\t"
         "eret \n\t"
     );
