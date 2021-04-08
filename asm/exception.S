@@ -74,7 +74,7 @@ exception_vector_table:
 
     // Lower EL using AArch32
     .align 7
-    b svc_handler     // Synchronous
+    b exception_handler     // Synchronous
     .align 7
     b exception_handler     // IRQ
     .align 7
@@ -89,7 +89,10 @@ svc_handler:
     mrs x2, esr_el1
     bl  svc_entry
     load_regs
-    b   shell_start
+    
+    ldr x0, =shell_start
+    msr elr_el1, x0
+    eret
 
 exception_handler:
     nop
