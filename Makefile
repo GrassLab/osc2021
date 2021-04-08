@@ -1,5 +1,5 @@
-C_SRCS = $(wildcard ./src/*.c)
-S_SRCS = $(wildcard ./asm/*.S)
+C_SRCS = $(wildcard ./src/c/*.c)
+S_SRCS = $(wildcard ./src/asm/*.S)
 C_OBJS = $(addprefix ./build/, $(notdir $(C_SRCS:%.c=%_c.o)))
 S_OBJS = $(addprefix ./build/, $(notdir $(S_SRCS:%.S=%_s.o)))
 
@@ -14,10 +14,10 @@ OBJ_CPY = aarch64-linux-gnu-objcopy
 
 all: kernel8.img
 
-build/%_s.o: asm/%.S
+build/%_s.o: src/asm/%.S
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
-build/%_c.o: src/%.c
+build/%_c.o: src/c/%.c
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@	
 
 kernel8.img: $(S_OBJS) $(C_OBJS)
