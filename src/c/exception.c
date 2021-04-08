@@ -32,14 +32,14 @@ void svc_router(unsigned long spsr, unsigned long elr, unsigned long esr)
     return;
 }
 
-void print_core_timer(unsigned long cntpct, unsigned long cntfrq)
+void print_time_stamp(unsigned long cntpct, unsigned long cntfrq)
 {
     int timestamp = cntpct / cntfrq;
     printf("timestamp: %d\n", timestamp);
     return;
 }
 
-void show_invalid_entry_message()
+void print_invalid_entry_message()
 {
     printf("unknown exception!\n");
     return;

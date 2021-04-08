@@ -8,7 +8,7 @@ _start:
     // read the content of mpidr_el1, indicating the core number, into x1
     mrs     x1, mpidr_el1
     // keep only the first and the second bit
-    and     x1, x1, #3
+    and     x1, x1, 3
     // jump to el2_entry if x0 is zero
     cbnz    x1, hang_on
     
@@ -16,23 +16,27 @@ _start:
     mov     sp, x0
 
 el2_entry:
-    ldr     x1, =HCR_EL2_VALUE    // set EL1 aarch
+    ldr     x1, =HCR_EL2_VALUE              // set EL1 aarch
     msr     hcr_el2, x1
 
-    ldr     x1, =SPSR_EL2_VALUE   // set processor restore state after calling eret  
+    ldr     x1, =SPSR_EL2_VALUE             // set processor restore state after calling eret  
     msr     spsr_el2, x1
 
     # init sp for EL1
-    mov     x0, #0x70000
+    mov     x0, 0x70000
     msr     sp_el1, x0
 
-    adr     x1, el1_entry         // eret return address
+    adr     x1, el1_entry                   // eret return address
     msr     elr_el2, x1
 
     eret
 
 el1_entry:
-    ldr     x0, =exception_vector_table  // set up el1 exception table
+    mrs x1, cpacr_el1
+    orr x1, x1, 0b1100000000000000000000    // turn on the accessibility to SIMD and floating registers
+    msr cpacr_el1, x1
+
+    ldr     x0, =exception_vector_table     // set up el1 exception table
     msr     vbar_el1, x0
 
     // clear bss
@@ -43,9 +47,9 @@ clear_loop:
     cbz     w2, pseudo_main
     # set the content x1 points to as zero
     # and x1 = x1 + 8
-    str     xzr, [x1], #8
+    str     xzr, [x1], 8
     # w2 = w2 - 1
-    sub     w2, w2, #1
+    sub     w2, w2, 1
     cbnz    w2, clear_loop
 
 pseudo_main:

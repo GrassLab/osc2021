@@ -100,7 +100,7 @@ core_timer_handler:
     save_regs
     mrs x0, cntpct_el0
     mrs x1, cntfrq_el0
-    bl  print_core_timer
+    bl  print_time_stamp
     load_regs
 
     mrs x0, cntfrq_el0
@@ -114,7 +114,7 @@ core_timer_handler:
 
 exception_handler:
     save_regs
-    bl  show_invalid_entry_message
+    bl  print_invalid_entry_message
 invalid_hang:
 	b invalid_hang
 
