@@ -18,6 +18,12 @@ void Cpiocat(char arg[])
     PrintFileContent(arg);
 }
 
+void Cpioexe(char arg[])
+{
+    ReadCpio();
+    // TODO
+}
+
 void ReadBytesData(char data[], int offset, int bytes)
 {
     for (int i = 0; i < bytes; ++i)
