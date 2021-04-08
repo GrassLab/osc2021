@@ -8,6 +8,7 @@ void command_hello();
 void command_timestamp();
 void command_not_found(char *);
 void command_cpio();
+void command_timer();
 void command_reboot();
 
 #endif

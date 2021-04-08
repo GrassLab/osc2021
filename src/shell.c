@@ -75,6 +75,8 @@ void command_controller(enum SPECIAL_CHARACTER input_parse, char c, char buffer[
                 command_reboot();
             else if (!strcmp(buffer, "cpio"))
                 command_cpio();
+            else if (!strcmp(buffer, "timer"))
+                command_timer();
             else
                 command_not_found(buffer);
         }

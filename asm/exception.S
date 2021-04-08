@@ -66,7 +66,7 @@ exception_vector_table:
     .align 7
     b svc_handler           // Synchronous
     .align 7
-    b exception_handler     // IRQ
+    b core_timer_handler    // IRQ
     .align 7 
     b exception_handler     // FIQ
     .align 7 
@@ -87,12 +87,45 @@ svc_handler:
     mrs x0, spsr_el1
     mrs x1, elr_el1
     mrs x2, esr_el1
-    bl  svc_entry
+    bl  svc_router
     load_regs
-    
+
     ldr x0, =shell_start
     msr elr_el1, x0
     eret
 
+core_timer_handler:
+    save_regs
+    bl print_core_timer
+    load_regs
+
+    mrs x0, cntfrq_el0
+    mov x1, 2
+    mul x0, x0, x1
+    msr cntp_tval_el0, x0
+
+    ldr x0, =shell_start
+    msr elr_el1, x0
+    eret
+
+#define CORE0_TIMER_IRQ_CTRL 0x40000040
+.global core_timer_enable
+core_timer_enable:
+    mov x0, 1
+    msr cntp_ctl_el0, x0            // enable
+
+    mrs x0, cntfrq_el0
+    mov x1, 2
+    mul x0, x0, x1
+    msr cntp_tval_el0, x0           // set expired time
+    
+    mov x0, 2
+    ldr x1, =CORE0_TIMER_IRQ_CTRL
+    str w0, [x1]                    // unmask timer 
+    ret
+
 exception_handler:
-    nop
+    save_regs
+    bl  show_invalid_entry_message
+invalid_hang:
+	b invalid_hang

@@ -148,6 +148,12 @@ void command_cpio()
     }
 }
 
+void command_timer()
+{
+    asm volatile("svc 1");
+    // core_timer_enable();
+}
+
 void command_not_found(char *s)
 {
     uart_puts("Err: command ");
