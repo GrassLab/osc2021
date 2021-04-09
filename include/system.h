@@ -16,6 +16,7 @@
 
 #define nullptr ((void *)0)
 extern int DEBUG;
+extern void core_timer_enable(void);
 
 struct cpio_size_info
 {

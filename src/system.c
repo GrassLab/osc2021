@@ -147,14 +147,12 @@ void sys_load_user_program(char* args){
             char *ptr = (char*)USER_PROGRAM_ADDR;
             for(int i = 0; i < size_info.file_size; ++i){
                 *(ptr + i) = *(context_addr + i);
-                uart_printhex(*(ptr + i));
-                uart_puts("\r\n");
+                // uart_printhex(*(ptr + i));
+                // uart_puts("\r\n");
             }
-            // uart_printint(get_el());
-            // void (*new_kernel_start)(void) = (void*)ptr;
-            // new_kernel_start();
-
+            core_timer_enable();
             _load_user_program((void*)ptr, (void*)0x80000);
+
             return;
         }
         now_ptr += size_info.offset;

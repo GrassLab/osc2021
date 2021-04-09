@@ -46,5 +46,8 @@ check:
 user_program:
 	$(CC) $(CFLAG) -c user_program.S -o user_program.elf
 	aarch64-linux-gnu-objcopy -O binary user_program.elf user_program.img
+	-rm ../initramfs.cpio
+	cp ./user_program.img ../rootfs
+	cd ../rootfs && find . | cpio -o -H newc > ../initramfs.cpio
 	
 	

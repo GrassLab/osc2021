@@ -39,7 +39,7 @@ from_el2_to_el1:
 .align 11 // vector table should be aligned to 0x800
 .global exception_vector_table
 exception_vector_table:
-  b exception_handler        // branch to a handler function.
+  b exception_handler   // branch to a handler function.
   .align 7                   // entry size is 0x80, .align will pad 0
   b exception_handler
   .align 7
@@ -59,7 +59,7 @@ exception_vector_table:
 
   b exception_handler1
   .align 7
-  b exception_handler
+  b core_timer_handler
   .align 7
   b exception_handler
   .align 7
@@ -132,14 +132,14 @@ set_exception_vector_table:
 	add sp, sp, 32
 .endm
 
-exception_handler:
-	eret
-
 exception_handler1:
     save_all
     bl exception_entry
     load_all
     eret	
+
+exception_handler:
+	eret
 
 exception_entry:
 	sub sp, sp, 32
@@ -155,3 +155,22 @@ exception_entry:
 	add sp, sp, 32
 	ret
 	
+#define CORE0_TIMER_IRQ_CTRL 0x40000040
+.globl core_timer_enable
+core_timer_enable:
+  mov x0, 1
+  msr cntp_ctl_el0, x0 // enable
+  mrs x0, cntfrq_el0
+  //mov x0, #0x100000
+  msr cntp_tval_el0, x0 // set expired time
+  mov x0, 2
+  ldr x1, =CORE0_TIMER_IRQ_CTRL
+  str w0, [x1] // unmask timer interrupt
+  ret
+
+core_timer_handler:
+	mrs x0, cntfrq_el0
+	print_el x0
+  mrs x0, cntfrq_el0
+  msr cntp_tval_el0, x0
+  ret
