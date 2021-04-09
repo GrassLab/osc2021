@@ -7,5 +7,5 @@ void get_core_time() {
   asm volatile("mrs  %[result], cntpct_el0": [result]"=r"(count));
   asm volatile("mrs  %[result], cntfrq_el0": [result]"=r"(freq));
   time = count / freq;
-  printf("core timer interrupt: %x\n", time);
+  printf("[%d] core timer interrupt\n", time);
 }

@@ -58,7 +58,7 @@ void cpio_parse_newc_header(size_t address) {
   }
 }
 
-void get_file_content(char* pathname, uint32_t size) {
+void cpio_get_file_content(char* pathname, uint32_t size) {
   for(int i = 0; i < cpio_file_list_size; i++) {
     if(strncmp((char *)cpio_file_list[i].name_address, pathname, size) == 0) {
       uart_write((char *)cpio_file_list[i].file_address, cpio_file_list[i].file_size);
@@ -69,10 +69,20 @@ void get_file_content(char* pathname, uint32_t size) {
   uart_puts("file not found.\n");
 }
 
-void get_all_pathname() {
+void cpio_get_all_pathname() {
   for(int i = 0; i < cpio_file_list_size; i++) {
     uart_write((char *)cpio_file_list[i].name_address, cpio_file_list[i].name_size);
     uart_send(' ');
   }
   uart_puts("\n");
 }
+
+void* cpio_get_file_address(char* pathname, uint32_t size) {
+  for(int i = 0; i < cpio_file_list_size; i++) {
+    if(strncmp((char *)cpio_file_list[i].name_address, pathname, size) == 0) {
+      return (void* )cpio_file_list[i].file_address;
+    }
+  }
+  return null;
+}
+

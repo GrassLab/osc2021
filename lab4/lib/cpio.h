@@ -40,7 +40,7 @@ struct cpio_metadata cpio_file_list[CPIO_FILE_LIST_SIZE];
 uint32_t cpio_file_list_size;
 
 void cpio_parse_newc_header(size_t address);
-void get_file_content(char* pathname, uint32_t size);
-void get_all_pathname();
-
+void cpio_get_file_content(char* pathname, uint32_t size);
+void cpio_get_all_pathname();
+void* cpio_get_file_address(char* pathname, uint32_t size);
 #endif

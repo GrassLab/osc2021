@@ -7,7 +7,7 @@
 #include <buddy.h>
 #include <dynamic.h>
 #include <exception.h>
-
+#include <printf.h>
 void shell() {
   uart_puts("*****************************Hello World*****************************\r\n");
   uart_puts("% ");
@@ -41,21 +41,24 @@ void shell() {
 }
 void do_command(char* command) {
   if(strncmp(command, "help", 5) == 0) {
-    uart_puts("help: print all available commands.\n");
-    uart_puts("hello: print Hello World!.\n");
-    uart_puts("reboot: reboot rpi3.\n");
-    uart_puts("loadimg: load kernel image.\n");
-    uart_puts("lscpio: list cpio files.\n");
-    uart_puts("lsdtb: list dtb node name.\n");
-    uart_puts("lsdtbprop [node name]: list [node name] property.\n");
-    uart_puts("cat [file]: cat cpio file.\n");
-    uart_puts("bmalloc [size]: buddy malloc.\n");
-    uart_puts("bfree [address]: buddy free.\n");
-    uart_puts("dmalloc [size]: dynamic malloc.\n");
-    uart_puts("dfree [address]: dynamic free.\n");
+    printf("help: print all available commands.\n");
+    printf("hello: print Hello World!.\n");
+    printf("reboot: reboot rpi3.\n");
+    printf("loadimg: load kernel image.\n");
+    printf("lscpio: list cpio files.\n");
+    printf("lsdtb: list dtb node name.\n");
+    printf("lsdtbprop [node name]: list [node name] property.\n");
+    printf("cat [file]: cat cpio file.\n");
+    printf("bmalloc [size]: buddy malloc.\n");
+    printf("bfree [address]: buddy free.\n");
+    printf("dmalloc [size]: dynamic malloc.\n");
+    printf("dfree [address]: dynamic free.\n");
+    printf("svc: trigger interrupt\n");
+    printf("run: run user program in el0\n");
+    printf("el12el0: from el1 to el0\n");
   }
   else if(strncmp(command, "hello", 6) == 0) {
-    uart_puts("Hello World!\n");
+    printf("Hello World!\n");
   }
   else if(strncmp(command, "reboot", 7) == 0) {
     reset(100);
@@ -64,18 +67,15 @@ void do_command(char* command) {
     loadimg();
   }
   else if(strncmp(command, "cat ", 4) == 0) {
-    get_file_content(command + 4, strlen(command + 4));
+    cpio_get_file_content(command + 4, strlen(command + 4));
   }
   else if(strncmp(command, "lscpio", 3) == 0) {
-    get_all_pathname();
+    cpio_get_all_pathname();
   }
   else if(strncmp(command, "lsbss", 6) == 0) {
     extern void *_bss_begin;
     extern void *_bss_end;
-    uart_puts("bss_begin: \n");
-    uart_hex((unsigned long)&_bss_begin);
-    uart_puts("\n_bss_end\n");
-    uart_hex((unsigned long)&_bss_end);
+    printf("bss_begin: %x\n _bss_end %x\n", (unsigned long)&_bss_begin, (unsigned long)&_bss_end);
   }
   else if(strncmp(command, "lsdtb", 6) == 0) {
     devicetree_parse(get_dtb_address(), DISPLAY_DEVICE_NAME, null);
@@ -98,11 +98,20 @@ void do_command(char* command) {
   else if(strncmp(command, "svc", 4) == 0) {
     asm volatile("svc #1");
   }
-  else if(strncmp(command, "elinfo", 7) == 0) {
-    exception_level_info();
+  else if(strncmp(command, "run", 4) == 0) {
+    void* addr = cpio_get_file_address("user_program.elf", 15);
+    printf("addr: %x\n", addr);
+    //from el1 to el0 and jump to user_program
+    asm volatile("mov  x0, #0x3c0\n" "msr  spsr_el1, x0\n");
+    asm volatile("mov x0, %0\n" "msr elr_el1, x0\n" "eret\n"::"r"(addr + 0x40));
+  }
+  else if(strncmp(command, "el12el0", 8) == 0) {
+    //from el1 to el0
+    asm volatile("mov  x0, #0\n" "msr  spsr_el1, x0\n");
+    asm volatile("mov x0, %0\n" "msr elr_el1, x0\n" "eret\n"::"r"((void*)shell));
   }
   else {
-    uart_puts("unknown command\n");
+    printf("unknown command\n");
   }	
 }
 

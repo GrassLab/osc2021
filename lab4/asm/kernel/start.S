@@ -52,9 +52,9 @@ _from_el1_to_el0:
   orr x0, x0, #(3 << 20)
   msr cpacr_el1, x0
   #return to el0
-  ldr  x0, = _load_main
-  msr  elr_el1, x0
-  eret
+  #ldr  x0, = _load_main
+  #msr  elr_el1, x0
+  #eret
 _load_main:
   mov  x0, x3
   bl main

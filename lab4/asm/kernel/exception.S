@@ -43,15 +43,6 @@
 exception_vector_table:
   b exception_handler // branch to a handler function.
   .align 7 // entry size is 0x80, .align will pad 0
-  b exception_handler
-  .align 7
-  b exception_handler
-  .align 7
-  b exception_handler
-  .align 7
-
-  b exception_handler
-  .align 7
   b irq_handler
   .align 7
   b exception_handler
@@ -70,7 +61,16 @@ exception_vector_table:
 
   b exception_handler
   .align 7
+  b irq_handler
+  .align 7
   b exception_handler
+  .align 7
+  b exception_handler
+  .align 7
+
+  b exception_handler
+  .align 7
+  b irq_handler
   .align 7
   b exception_handler
   .align 7
