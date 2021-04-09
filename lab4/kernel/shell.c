@@ -158,7 +158,7 @@ void loadimg() {
   "r" (img_size),
   "r" (load_address),
   "r" (get_dtb_address()),
-	"r" (relocated_readimg_jump):"x0", "x1", "x2");
+	"r" (relocated_readimg_jump): "x0", "x1", "x2");
 }
 //read kernel img, and jump 
 void readimg_jump(size_t load_address, size_t img_size, size_t dtb_address) {
@@ -166,6 +166,6 @@ void readimg_jump(size_t load_address, size_t img_size, size_t dtb_address) {
   asm volatile ("mov x0, %0\n" "mov sp, %1\n" "blr %2\n"::
   "r" (dtb_address),
   "r" (load_address),
-	"r" (load_address));
+	"r" (load_address): "x0");
   //((void (*)(void))(load_address))();
 }
