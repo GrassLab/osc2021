@@ -9,6 +9,10 @@ typedef unsigned long long int uint64_t;
 
 extern void _moveTo(void *, unsigned int);
 extern void _branch(void *);
+extern void _run_el0(void *, void *);
+extern uint64_t _get_el();
+extern void _core_timer_enable(uint64_t);
+extern void _core_timer_disable();
 
 char *itoa(int num, char *str) {
   int i = 0;
@@ -141,7 +145,7 @@ void print_h(unsigned long int x) {
     n += n > 9 ? 'A' - 10 : '0';
     uart_send(n);
   }
-  // uart_puts("\r\n");
+  uart_puts("\r\n");
 };
 int get_int32(unsigned int **addr) {
   int result = **addr;

@@ -2,24 +2,17 @@
 #include "uart.h"
 #include "utils.h"
 
-#define BUDDY_START 0x10000000
-// #define BUDDY_END (BUDDY_START + 1024 * PAGE_SIZE)
-#define BUDDY_END 0x40000000
-#define CPIO_ARRD 0x8000000
-
-#define PAGE_SIZE (4 * KB)
-#define BUDDY_ARRAY_SIZE ((BUDDY_END - BUDDY_START) / PAGE_SIZE)
-#define BUDDY_INDEX 20
-
-#define CPIO_MAGIC_BYTES 6
-#define CPIO_OTHERS_BYTES 8
-#define CPIO_SIZE (CPIO_MAGIC_BYTES + CPIO_OTHERS_BYTES * 13)
-
 void pause() {
   uart_puts("Press any key to continue . . .");
   uart_getc();
   uart_puts("\r                                \r");
 }
+/* cpio */
+#define CPIO_ARRD 0x8000000
+#define CPIO_MAGIC_BYTES 6
+#define CPIO_OTHERS_BYTES 8
+#define CPIO_SIZE (CPIO_MAGIC_BYTES + CPIO_OTHERS_BYTES * 13)
+
 typedef struct cpio_newc_header {
   char c_magic[6];
   char c_ino[8];
@@ -58,6 +51,13 @@ int cpio_info(cpio_newc_header **cpio_ptr, char **cpio_addr, char **context) {
   *cpio_addr += header_size + size;
   return context_size;
 }
+
+/* buddy system */
+#define BUDDY_START 0x10000000
+#define BUDDY_END 0x20000000
+#define PAGE_SIZE (4 * KB)
+#define BUDDY_ARRAY_SIZE ((BUDDY_END - BUDDY_START) / PAGE_SIZE)
+#define BUDDY_INDEX 20
 
 typedef struct buddy_list {
   struct buddy_list *next;
@@ -155,7 +155,7 @@ void print_buddyList(buddy_list **lists) {
     }
   }
 }
-
+/* dma */
 typedef struct dma {
   struct dma *next;
   buddy_list *page;
@@ -246,174 +246,4 @@ void printDmaPool(dma *list) {
     // print_h((unsigned long int)now->addr + now->size * 4 * KB);
   }
   uart_puts("pool end\r\n");
-}
-/* test block */
-void dma_test1() {
-  uart_puts("\r\n+++++++++ dma_test1 +++++++++\r\n");
-  int alloc_size[] = {0.5 * PAGE_SIZE,
-                      0.5 * PAGE_SIZE,
-                      3 * PAGE_SIZE,
-                      5 * PAGE_SIZE,
-                      2,
-                      13 * PAGE_SIZE,
-                      4},
-      alloc_num = sizeof(alloc_size) / sizeof(int),
-      free_ind[] = {0, 2, 1, 3, 4, 6, 5};
-  void *p[buff_size];
-  for (int i = 0; i < 2 * alloc_num + 1; ++i) {
-    if (i == 0)
-      uart_puts("\r\n********* init *********\r\n");
-    else if (i < alloc_num + 1) {
-      uart_puts("\r\n********* alloced *********\r\n");
-      p[i - 1] = malloc(alloc_size[i - 1]);
-    } else {
-      uart_puts("\r\n********* freed *********\r\n");
-      free(p[free_ind[i - alloc_num - 1]]);
-    }
-    // uart_puts("buddy free:\r\n");
-    // print_buddyList(free_list);
-    // uart_puts("buddy used:\r\n");
-    // print_buddyList(used_list);
-    uart_puts("DMA free:\r\n");
-    printDmaPool(free_pool);
-    uart_puts("DMA used:\r\n");
-    printDmaPool(used_pool);
-    pause();
-  }
-  uart_puts("\r\nending\r\n");
-}
-void dma_test2() {
-  uart_puts("\r\n+++++++++ dma_test2 +++++++++\r\n");
-  int alloc_size[] = {1 * sizeof(int),    2201 * sizeof(int), 100 * sizeof(int),
-                      3068 * sizeof(int), 9 * sizeof(int),    8 * sizeof(int)},
-      alloc_num = sizeof(alloc_size) / sizeof(int),
-      free_ind[] = {5, 2, 1, 4, 3, 0};
-  void *p[buff_size];
-  for (int i = 0; i < 2 * alloc_num + 1; ++i) {
-    if (i == 0)
-      uart_puts("\r\n********* init *********\r\n");
-    else if (i < alloc_num + 1) {
-      uart_puts("\r\n********* alloced *********\r\n");
-      p[i - 1] = malloc(alloc_size[i - 1]);
-    } else {
-      uart_puts("\r\n********* freed *********\r\n");
-      free(p[free_ind[i - alloc_num - 1]]);
-    }
-    // uart_puts("buddy free:\r\n");
-    // print_buddyList(free_list);
-    // uart_puts("buddy used:\r\n");
-    // print_buddyList(used_list);
-    uart_puts("DMA free:\r\n");
-    printDmaPool(free_pool);
-    uart_puts("DMA used:\r\n");
-    printDmaPool(used_pool);
-    pause();
-  }
-  uart_puts("\r\nending\r\n");
-}
-
-void buddy_test1() {
-  uart_puts("\r\n+++++++++ buddy_test1 +++++++++\r\n");
-  int alloc_size[] = {1 * PAGE_SIZE, 16 * PAGE_SIZE, 16 * PAGE_SIZE,
-                      2 * PAGE_SIZE, 4 * PAGE_SIZE,  8 * PAGE_SIZE},
-      alloc_num = sizeof(alloc_size) / sizeof(int),
-      free_ind[] = {3, 2, 0, 1, 4, 5};
-
-  buddy_list *p[buff_size];
-  for (int i = 0; i < 2 * alloc_num + 1; ++i) {
-    if (i == 0)
-      uart_puts("\r\n********* init *********\r\n");
-    else if (i < alloc_num + 1) {
-      uart_puts("\r\n********* alloced *********\r\n");
-      p[i - 1] = buddy_alloc(alloc_size[i - 1]);
-    } else {
-      uart_puts("\r\n********* freed *********\r\n");
-      buddy_free(p[free_ind[i - alloc_num - 1]]);
-    }
-    uart_puts("buddy free:\r\n");
-    print_buddyList(free_list);
-    uart_puts("buddy used:\r\n");
-    print_buddyList(used_list);
-    pause();
-  }
-  uart_puts("\r\nending\r\n");
-  return;
-}
-
-void buddy_test2() {
-  uart_puts("\r\n+++++++++ buddy_test2 +++++++++\r\n");
-  int alloc_size[] = {1 * PAGE_SIZE, 1 * PAGE_SIZE, 1 * PAGE_SIZE,
-                      1 * PAGE_SIZE, 1 * PAGE_SIZE, 1 * PAGE_SIZE},
-      alloc_num = sizeof(alloc_size) / sizeof(int);
-  buddy_list *p[buff_size];
-  for (int i = 0; i < 2 * alloc_num + 1; ++i) {
-    if (i == 0)
-      uart_puts("\r\n********* init *********\r\n");
-    else if (i < alloc_num + 1) {
-      uart_puts("\r\n********* alloced *********\r\n");
-      p[i - 1] = buddy_alloc(alloc_size[i - 1]);
-    } else {
-      uart_puts("\r\n********* freed *********\r\n");
-      buddy_free(p[i - alloc_num - 1]);
-    }
-    uart_puts("buddy free:\r\n");
-    print_buddyList(free_list);
-    uart_puts("buddy used:\r\n");
-    print_buddyList(used_list);
-    pause();
-  }
-  uart_puts("\r\nending\r\n");
-  return;
-}
-void buddy_test3() {
-  uart_puts("\r\n+++++++++ buddy_test0 +++++++++\r\n");
-  uart_puts("\r\n********* init *********\r\n");
-  print_buddyList(free_list);
-  uart_puts("\r\n");
-  print_buddyList(used_list);
-  uart_puts("\r\n********* alloced *********\r\n");
-  struct buddy_list *list0 = buddy_alloc(1024 * PAGE_SIZE);
-  print_buddyList(free_list);
-  uart_puts("\r\n");
-  print_buddyList(used_list);
-  uart_puts("\r\n********* freed *********\r\n");
-  buddy_free(list0);
-  uart_puts("\r\n");
-  print_buddyList(free_list);
-  uart_puts("\r\n");
-  print_buddyList(used_list);
-  uart_puts("\r\nending\r\n");
-  return;
-}
-
-void buddy_test4() {
-  uart_puts("\r\n+++++++++ buddy_test0 +++++++++\r\n");
-  uart_puts("\r\n********* init *********\r\n");
-  print_buddyList(free_list);
-  uart_puts("\r\n");
-  print_buddyList(used_list);
-  uart_puts("\r\n********* alloced *********\r\n");
-  struct buddy_list *list0 = buddy_alloc(1 * PAGE_SIZE);
-  struct buddy_list *list1 = buddy_alloc(16 * PAGE_SIZE);
-  struct buddy_list *list2 = buddy_alloc(16 * PAGE_SIZE);
-  struct buddy_list *list3 = buddy_alloc(2 * PAGE_SIZE);
-  struct buddy_list *list4 = buddy_alloc(4 * PAGE_SIZE);
-  struct buddy_list *list5 = buddy_alloc(8 * PAGE_SIZE);
-
-  print_buddyList(free_list);
-  uart_puts("\r\n");
-  print_buddyList(used_list);
-  uart_puts("\r\n********* freed *********\r\n");
-  buddy_free(list0);
-  buddy_free(list1);
-  buddy_free(list2);
-  buddy_free(list3);
-  buddy_free(list4);
-  buddy_free(list5);
-  uart_puts("\r\n");
-  print_buddyList(free_list);
-  uart_puts("\r\n");
-  print_buddyList(used_list);
-  uart_puts("\r\nending\r\n");
-  return;
 }
