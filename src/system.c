@@ -20,6 +20,7 @@ struct cmd cmd_list[] = {
     {.input = "cat", .description="show content of file", .callback = sys_cat},
     {.input = "dtb_init", .description="init device by calling driver", .callback = dtb_init},
     {.input = "lab3", .description="lab3", .callback=__lab3},
+    {.input = "run", .description="execute user program in el0", .callback = sys_load_user_program},
     {.input = "clear", .description = "clean screen", .callback=sys_clear}
 };
 
@@ -128,14 +129,46 @@ void sys_cat(char* args){
         uart_puts("\r\n");
     }
 }
+void sys_load_user_program(char* args){
+    char *now_ptr = CPIO_ADDR;
+    struct cpio_newc_header *cpio_addr = (struct cpio_newc_header* )now_ptr;
+    struct cpio_size_info size_info;
+    int flag = 0;
+    while(1){
+        extract_header(cpio_addr, &size_info);
+        char *pathname = (char*)((char*)cpio_addr + 110);
+        if(strcmp("TRAILER!!!", pathname) == 0) break;
+        if(strcmp("user_program.img", pathname) == 0){
+            // uart_puts_bySize((char*)((char*)cpio_addr + 110 + size_info.name_size + size_info.name_padding), size_info.file_size);
+            // uart_puts("\r\n");
+            char* context_addr = (char*)cpio_addr + 110 + size_info.name_size + size_info.name_padding;
+            // char* ptr = malloc(size_info.file_size);
+            uart_printint(size_info.file_size);
+            char *ptr = (char*)USER_PROGRAM_ADDR;
+            for(int i = 0; i < size_info.file_size; ++i){
+                *(ptr + i) = *(context_addr + i);
+                uart_printhex(*(ptr + i));
+                uart_puts("\r\n");
+            }
+            // uart_printint(get_el());
+            // void (*new_kernel_start)(void) = (void*)ptr;
+            // new_kernel_start();
+
+            _load_user_program((void*)ptr, (void*)0x80000);
+            return;
+        }
+        now_ptr += size_info.offset;
+        cpio_addr = (struct cpio_newc_header* )now_ptr;
+    }
+}
 void swap(int* a, int* b){
     int tmp = *a;
     *a = *b;
     *b = tmp;
 }
 void* malloc(int size){
-    memFrame* ptr = buddy_alloc(size);
-    return (void*)(ptr->addr);
+    return dynamic_alloc(size);
+    // return (void*)(ptr->addr);
 }
 void sys_help(char* args){
     uart_puts("[Command] : [Description]\r\n");

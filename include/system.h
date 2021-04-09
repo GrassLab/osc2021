@@ -4,12 +4,13 @@
 #include "buddy.h"
 #include "dynamic_allocator.h"
 #include "uart.h"
+#include "entry.h"
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC ((volatile unsigned int *)(0x3F10001c))
 #define PM_RSTS ((volatile unsigned int *)(0x3F100020))
 #define PM_WDOG ((volatile unsigned int *)(0x3F100024))
 
-#define CPIO_ADDR ((char *)0x20000000) //QEMU(0x8000000)
+#define CPIO_ADDR ((char *)0x8000000) //QEMU(0x8000000)0x20000000
 #define KB 0x400
 #define MB 0x100000
 
@@ -46,6 +47,7 @@ void reset(int);
 void cancel_reset();
 void sys_list(char *);
 void sys_cat(char *);
+void sys_load_user_program(char *);
 void sys_clear(char*);
 void extract_header(struct cpio_newc_header *, struct cpio_size_info *);
 unsigned long long int hex2int(char *, int);
