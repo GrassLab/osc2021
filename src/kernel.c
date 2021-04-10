@@ -1,7 +1,10 @@
+#include "exc.h"
+#include "gpio.h"
 #include "io.h"
 #include "mem.h"
 #include "ramfs.h"
 #include "reset.h"
+#include "timer.h"
 #include "util.h"
 #include "vfs.h"
 
@@ -40,11 +43,19 @@ void shell() {
   }
 }
 
-void kernel() {
-  void *dtb_addr = *(void **)(0x20000);
+void svc_test() {
+  for (int i = 0; i < 5; i++) {
+    asm volatile("svc 0;");
+  }
+}
 
-  log_hex("dtb address", (unsigned long)dtb_addr, LOG_DEBUG);
-  puts("Lab 3:");
+void kernel() {
+  // void *dtb_addr = *(void **)(0x20000);
+
+  el2_to_el1_preserve_sp();
+  set_el1_evt();
+
+  puts("Lab 4:");
 
   reserve_mem((void *)0x0, 0x1000);                         // spin table
   reserve_mem((void *)0x60000, 0x20000);                    // stack
@@ -53,22 +64,19 @@ void kernel() {
 
   init_kmalloc();
 
-  void *addr[6];
-  for (int i = 0; i < 6; i++) {
-    addr[i] = kmalloc(PAGE_SIZE / 2 - 11);
-    log_hex("kmalloc addr", (unsigned long)addr[i], LOG_DEBUG);
-  }
-  for (int i = 0; i < 6; i++) {
-    kfree(addr[i]);
-  }
-  for (int i = 0; i < 6; i++) {
-    addr[i] = kmalloc(PAGE_SIZE / 2 - 11);
-    log_hex("kmalloc addr", (unsigned long)addr[i], LOG_DEBUG);
-  }
-  for (int i = 0; i < 6; i++) {
-    addr[i] = kmalloc(PAGE_SIZE / 2 - 11);
-    log_hex("kmalloc addr", (unsigned long)addr[i], LOG_DEBUG);
-  }
+  enable_interrupt();
+
+  core_timer_enable();
+  add_timer(2, &print_time, NULL);
+
+  add_timer(3, &print, (void *)"3\n");
+  add_timer(2, &print, (void *)"2\n");
+  add_timer(1, &print, (void *)"1\n");
+  add_timer(5, &print, (void *)"5\n");
+
+  void *usr_sp = kmalloc(PAGE_SIZE);
+
+  exec_usr(&svc_test, usr_sp, 0x0);
 
   // // init_rootfs(new_ramfs());
   // // dentry root;
@@ -77,25 +85,6 @@ void kernel() {
   // // opendir("/", &root);
   // // parse_initramfs(&root);
   // // closedir(&root);
-
-  // log("float\n");
-  // double a = 3.0;
-  // double b = 1.3333333333333333;
-
-  // double c = a * b;
-  // log_hex((unsigned long long)c);
-
-  // double d[50];
-  // for (int i = 0; i < 50; i++) {
-  //   d[i] = i;
-  // }
-  // for(int i = 0; i < 50; i++) {
-  //   d[i] *= d[i];
-  // }
-
-  // for(int i = 0; i < 50; i++) {
-  //   log_hex((unsigned long long)d[i]);
-  // }
 
   shell();
 }

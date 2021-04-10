@@ -2,6 +2,7 @@ ARM = aarch64-linux-gnu
 CC = $(ARM)-gcc
 LD = $(ARM)-ld
 OBJCOPY = $(ARM)-objcopy
+MAKE = make
 
 IDIR = include
 SDIR = src
@@ -26,9 +27,11 @@ KN_LD = kn_linker.ld
 BL = bootloader
 KN = kernel8
 
-.PHONY: clean all
+UDIR = usr
 
-all: $(BDIR) $(BL).img $(KN).elf $(INITRAMFS)
+.PHONY: clean all USR
+
+all: $(BDIR) $(BL).img $(KN).elf USR $(INITRAMFS)
 
 %.img: %.elf
 	$(OBJCOPY) -O binary $< $@
@@ -82,3 +85,6 @@ genfs:
 
 $(BDIR):
 	mkdir $(BDIR)
+
+USR: $(UDIR)
+	$(MAKE) -C $(UDIR)

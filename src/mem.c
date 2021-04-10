@@ -167,7 +167,7 @@ void *alloc_page(unsigned long size) {
   set_page_flag(bs.page_stat[pn], BUDDY_USE);
   set_page_ord(bs.page_stat[pn], ord);
   while (find_ord > ord) {
-    log_hex("release order", find_ord, LOG_PRINT);
+    log_hex("release order", find_ord, LOG_DEBUG);
     find_ord--;
     unsigned long bd = buddy_pn(pn, find_ord);
     set_page_flag(bs.page_stat[bd], BUDDY_FREE);
@@ -251,7 +251,7 @@ void free_page(void *ptr) {
     unsigned long bd = buddy_pn(pn, ord);
     if (get_page_flag(bs.page_stat[bd]) == BUDDY_FREE &&
         get_page_ord(bs.page_stat[bd]) == ord) {
-      log_hex("coalesce order", ord, LOG_PRINT);
+      log_hex("coalesce order", ord, LOG_DEBUG);
       pop_cdl_list((cdl_list *)pn_to_ptr(bd));
       bs.page_stat[bd] = BUDDY_USE;
       ord++;

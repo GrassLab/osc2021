@@ -2,7 +2,7 @@
 
 #include "uart.h"
 
-#define LOGGING_DEBUG
+// #define LOGGING_DEBUG
 #define LOGGING_ERROR
 #define LOGGING_PRINT
 
