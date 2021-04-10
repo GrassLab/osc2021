@@ -11,7 +11,6 @@ typedef struct list_head {
 #define list_entry(ptr, type, member) \
 ((type*)((char*)(ptr) - (unsigned long)(&(((type*)0)->member))))
 
-
 void list_init(list_head_t*);
 void list_add(list_head_t*,
               list_head_t*);

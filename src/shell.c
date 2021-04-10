@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "cpio.h"
 #include "type.h"
+#include "mm.h"
 
 #define CMD_LEN 128
 
@@ -124,10 +125,12 @@ static void cmd_controler(char *cmd) {
                 print("Num:");
                 print_int(i);
                 print(" Address:");
-                print_int((unsigned long)addr);
+                print_int((unsigned int)addr[i]);
                 print("\n");
             }
         }
+    } else if (!strcmp(cmd_list[0], "buddy_print")) {
+        buddy_print();
     } else if (!strcmp(cmd_list[0], "reboot")) {
         print("Rebooting.....\n\n");
         reset(100);
