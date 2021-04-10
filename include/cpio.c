@@ -86,7 +86,7 @@ void cpio_init () {
     prev->next = NULL;
 }
 
-void print_chars (char *addr, unsigned int len) {
+void printf_chars (char *addr, unsigned int len) {
     for (int i = 0; i < len; i++) {
         uart_sendc(addr[i]);
     }
@@ -123,52 +123,52 @@ void header2info (CPIO_HEADER *base, CPIO_INFO *info) {
 }
 
 void show_cpio_info (CPIO_HEADER *base) {
-    print("name: %s", (char *)(base + (0x70 - 2)));
+    printf("name: %s", (char *)(base + (0x70 - 2)));
     char *ptr = (char *)base;
-    print((char *)&ptr[0x6e]);
+    printf((char *)&ptr[0x6e]);
 
-    print("\nmagic: ");
-    print_chars(base->c_magic, 6);
+    printf("\nmagic: ");
+    printf_chars(base->c_magic, 6);
 
-    print("\nino: ");
-    print_chars(base->c_ino, 8);
+    printf("\nino: ");
+    printf_chars(base->c_ino, 8);
 
-    print("\nmode: ");
-    print_chars(base->c_mode, 8);
+    printf("\nmode: ");
+    printf_chars(base->c_mode, 8);
 
-    print("\nuid: ");
-    print_chars(base->c_uid, 8);
+    printf("\nuid: ");
+    printf_chars(base->c_uid, 8);
 
-    print("\ngid: ");
-    print_chars(base->c_gid, 8);
+    printf("\ngid: ");
+    printf_chars(base->c_gid, 8);
 
-    print("\nnlink: ");
-    print_chars(base->c_nlink, 8);
+    printf("\nnlink: ");
+    printf_chars(base->c_nlink, 8);
 
-    print("\nmtime: ");
-    print_chars(base->c_mtime, 8);
+    printf("\nmtime: ");
+    printf_chars(base->c_mtime, 8);
 
-    print("\nfilesize: ");
-    print_chars(base->c_filesize, 8);
+    printf("\nfilesize: ");
+    printf_chars(base->c_filesize, 8);
 
-    print("\ndevmajor: ");
-    print_chars(base->c_devmajor, 8);
+    printf("\ndevmajor: ");
+    printf_chars(base->c_devmajor, 8);
 
-    print("\ndevminor: ");
-    print_chars(base->c_devminor, 8);
+    printf("\ndevminor: ");
+    printf_chars(base->c_devminor, 8);
 
-    print("\nrdevmajor: ");
-    print_chars(base->c_rdevmajor, 8);
+    printf("\nrdevmajor: ");
+    printf_chars(base->c_rdevmajor, 8);
 
-    print("\nrdevminor: ");
-    print_chars(base->c_rdevminor, 8);
+    printf("\nrdevminor: ");
+    printf_chars(base->c_rdevminor, 8);
 
-    print("\nnamesize: ");
-    print_chars(base->c_namesize, 8);
+    printf("\nnamesize: ");
+    printf_chars(base->c_namesize, 8);
 
-    print("\ncheck: ");
-    print_chars(base->c_check, 8);
-    print("\n");
+    printf("\ncheck: ");
+    printf_chars(base->c_check, 8);
+    printf("\n");
 }
 
 CPIO_index * cpio_find_file (char *path) {
@@ -181,7 +181,7 @@ CPIO_index * cpio_find_file (char *path) {
 void cpio_cat_file (char *path) {
     CPIO_index *index = cpio_find_file(path);
     if (index)
-        print_chars(index->data, index->filesize);
+        printf_chars(index->data, index->filesize);
 }
 
 void cpio_cat_interface (char *buffer) {
@@ -192,8 +192,8 @@ void cpio_cat_interface (char *buffer) {
 
 void cpio_show_files () {
     for (CPIO_index *ptr = cpio_index_head; ptr; ptr = ptr->next) {
-        print(ptr->name);
-        print(" ");
+        printf(ptr->name);
+        printf(" ");
     }
-    print("\n");
+    printf("\n");
 }

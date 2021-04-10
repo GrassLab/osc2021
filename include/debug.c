@@ -3,20 +3,20 @@
 #include "string.h"
 #include "uart.h"
 
-void mem_hex_print (unsigned long address, unsigned int num) {
+void mem_hex_printf (unsigned long address, unsigned int num) {
     unsigned long *ptr = 0;
     /* clear least four bits */
     address &= ~(0xF);
     for (int i = 0; i < num; i++) {
         if (!(i % 2)) {
             if (i != 0)
-                print("\n");
-            print("%x:\t", address + 8 * i);
+                printf("\n");
+            printf("%x:\t", address + 8 * i);
         }
         ptr = (unsigned long *) (address + 8 * i);
-        print("%x\t", *ptr);
+        printf("%x\t", *ptr);
     }
-    print("\n");
+    printf("\n");
 }
 
 int mem_print (char *b) {
@@ -35,7 +35,7 @@ int mem_print (char *b) {
         size = size + 1 < 128 ? size + 1 : 128;
         strncopy(tmp, &b[2], size);
         u64 c_addr = atoui(&b[address_start]);
-        print((char *)c_addr);
+        printf((char *)c_addr);
         return 1;
     }
     else if (b[size + 2] == 'g' || b[size + 3] == 'x') {
@@ -47,9 +47,9 @@ int mem_print (char *b) {
         strncopy(tmp, &b[2], size);
 
         if (size == 1)
-            mem_hex_print(atoui(&b[address_start]), 1);
+            mem_hex_printf(atoui(&b[address_start]), 1);
         else
-            mem_hex_print(atoui(&b[address_start]), atoui(tmp));
+            mem_hex_printf(atoui(&b[address_start]), atoui(tmp));
         return 1;
     }
     return 0;

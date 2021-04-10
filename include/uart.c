@@ -30,7 +30,7 @@ long find_special_token (char *b) {
     return -1;
 }
 
-void print (char *format, ...) {
+void printf (char *format, ...) {
     char buffer[print_buffer_size];
     u64 counter = 0;
 

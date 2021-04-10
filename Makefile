@@ -27,9 +27,10 @@ MINI-UART := -serial null -serial stdio
 
 # flag
 BOOTLOADER := bootloader
-TEST_IMG := $(BOOTLOADER).img
+#TEST_IMG := $(BOOTLOADER).img
+TEST_IMG := $(TARGET).img
 UART := UART_MINI # UART_MINI or UART_PL011
-CCFLAG := -Wall -nostdlib -Og -D$(UART) -I$(INC_DIR)
+CCFLAG := -Wall -ffreestanding -nostdinc -nostdlib -nostartfiles -Og -g -D$(UART) -I$(INC_DIR)
 ASMFLAG := -Isrc
 
 # cpio archive

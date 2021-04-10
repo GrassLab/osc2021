@@ -3,8 +3,11 @@
 .global boot_info
 _start:
 /* store flatten device tree */
-mov x20, x0
-mov x21, x1
+    mov x20, x0
+    mov x21, x1
+
+/* switch from el2 to el1 */
+    bl from_el2_to_el1
 
 /* init bss section */
     ldr x0, =__bss_start
@@ -73,3 +76,15 @@ _main:
     bl main
     nop
     nop
+
+from_el2_to_el1:
+    mov x0, (1 << 31) // EL1 uses aarch64
+    msr hcr_el2, x0
+    mov x0, 0x3c5 // EL1h (SPSel = 1) with interrupt disabled
+    msr spsr_el2, x0
+    msr elr_el2, lr
+
+    mov     x0, #(3 << 20)
+    msr     cpacr_el1, x0
+
+    eret // return to EL1

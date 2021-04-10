@@ -11,5 +11,5 @@ void uart_send (char *str);
 char uart_getc ();
 void uart_getline (char *buffer, unsigned int size);
 
-void print (char *format, ...);
+void printf (char *format, ...);
 #endif

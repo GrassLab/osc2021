@@ -21,7 +21,7 @@ void * (*m_malloc) (u64 size);
 void (*m_free) (void *addr);
 
 #define log(type, message, start, end) \
-    print("[%f] %s: %s %x ~ %x\n", get_time(), type, message, (u64)start, \
+    printf("[%f] %s: %s %x ~ %x\n", get_time(), type, message, (u64)start, \
             (u64)end);
 
 struct startup_mm_list {
@@ -60,19 +60,19 @@ void startup_aligned (u64 size) {
 
 void show_malloc_bins () {
     for (u64 i = 0; i < small_bin_size; i++) {
-        print("%x:", i * 0x10 + 0x20);
+        printf("%x:", i * 0x10 + 0x20);
             for (small_bin_list *ptr = small_bin[i].next; ptr;
                     ptr = ptr->next) {
-                print(" -> %x", (u64)ptr - 0x10);
+                printf(" -> %x", (u64)ptr - 0x10);
             }
-        print("\n");
+        printf("\n");
     }
-    print("large bin: ");
+    printf("large bin: ");
     for (large_bin_list *ptr = large_bin.next; ptr;
             ptr = ptr->next) {
-        print(" -> %x", (u64)ptr - 0x10);
+        printf(" -> %x", (u64)ptr - 0x10);
     }
-    print("\n");
+    printf("\n");
 }
 
 malloc_struct *search_freed_bins (u64 size) {
@@ -295,7 +295,7 @@ void show_list () {
     //for (struct startup_mm_list *ptr = init_freed_head; ptr;
     for (struct startup_mm_list *ptr = init_used_head; ptr;
             ptr = ptr->next) {
-        print("%x %x\n", ptr->addr_start, ptr->addr_end);
+        printf("%x %x\n", ptr->addr_start, ptr->addr_end);
     }
 }
 
@@ -407,7 +407,7 @@ void buddy_system_init () {
             break;
 
     if (!ptr) {
-        print("buddy system intialization failed: no memory space to create table\r\n");
+        printf("buddy system intialization failed: no memory space to create table\r\n");
         return;
     }
     boot_info.buddy_system_addr = ptr->addr_start;
@@ -437,11 +437,11 @@ void buddy_system_init () {
 
 void buddy_system_show_buckets () {
     for (u64 i = 0; i < bucket_size; i++) {
-        print("%u(%u):", i, bs_frame_bucket[i].num);
+        printf("%u(%u):", i, bs_frame_bucket[i].num);
         for (BS_frame *ptr = bs_frame_bucket[i].head; ptr; ptr = ptr->next) {
-            print(" -> %x", (u64)ptr->addr);
+            printf(" -> %x", (u64)ptr->addr);
         }
-        print("\n");
+        printf("\n");
     }
 }
 
@@ -486,7 +486,7 @@ int bs_scann_table (u64 ptr, u64 size) {
     u64 buf = 0;
     for (u64 tmp = ptr; buf < size;) {
         if (!(bs_get_val(tmp) & bs_size_bit)) {
-            print("Error: page table is wrong\n");
+            printf("Error: page table is wrong\n");
             return 0;
         }
 
@@ -548,7 +548,7 @@ void bs_merge (u64 offset) {
         if (bs_get_val(tmp) & bs_used_bit)
             break;
         if (!(bs_get_val(tmp) & bs_size_bit)) {
-            print("Error: page table is wrong\n");
+            printf("Error: page table is wrong\n");
             break;
         }
 
@@ -664,7 +664,7 @@ void dynamic_free(void *addr) {
 void dynamic_allocator_init () {
     dynamic_allocator_ptr = (malloc_struct *)bs_malloc(da_init_size);
     if (!dynamic_allocator_ptr) {
-        print("Error: dynamic allocator initialization failed\n");
+        printf("Error: dynamic allocator initialization failed\n");
         return;
     }
     m_malloc = dynamic_malloc;
