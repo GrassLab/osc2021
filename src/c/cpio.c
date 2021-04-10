@@ -1,4 +1,4 @@
-#include "uart.h"
+#include "printf.h"
 #include "string.h"
 #include "cpio.h"
 #include "printf.h"
@@ -99,8 +99,8 @@ void cpio_ls()
         if ((strcmp(file_name, "TRAILER!!!") == 0))
             break;
 
-        uart_puts(file_name);
-        uart_send('\n');
+        printf(file_name);
+        printf("\n");
     }
 }
 
@@ -130,11 +130,11 @@ void cpio_find_file(char file_name_to_find[])
     }
 
     if (found)
-        uart_puts(file_content);
+        printf(file_content);
     else
-        uart_puts("FILE NOT FOUND!");
+        printf("FILE NOT FOUND!");
 
-    uart_send('\n');
+    printf("\n");
 }
 
 void cpio_run_executable(char executable_name[])
@@ -174,17 +174,21 @@ void cpio_run_executable(char executable_name[])
     ramfs -= file_size;
 
     char *program_position = 0x10A0000;
-    
+
     while(file_size--)
+    {
         *program_position = *ramfs;
+        program_position++;
+        ramfs++;
+    }
 
     asm volatile(
         "ldr x0, 0x0        \n\t"
         "msr spsr_el1, x0   \n\t"
         "mov x0, 0x10A0000  \n\t"
+        "add x0, x0, 0x78   \n\t"
         "msr elr_el1, x0    \n\t"
         "mov x0, 0x60000    \n\t"
         "msr sp_el0, x0     \n\t"
-        "eret               \n\t"
-    );
+        "eret               \n\t");
 }

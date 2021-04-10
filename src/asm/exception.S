@@ -48,7 +48,7 @@ exception_vector_table:
     .align 7
     b invalid_handler_0     // IRQ
     .align 7
-    b invalid_handler_4     // FIQ
+    b invalid_handler_0     // FIQ
     .align 7
     b invalid_handler_0     // SError
     
@@ -58,7 +58,7 @@ exception_vector_table:
     .align 7
     b invalid_handler_1     // IRQ
     .align 7
-    b invalid_handler_1     // FIQ
+    b invalid_handler_4     // FIQ
     .align 7
     b invalid_handler_1     // SError
     
@@ -143,4 +143,8 @@ invalid_handler_4:
     mov x0, 4
     bl  print_invalid_entry_message
     b   invalid_hang
+
+.global svc_0
+svc_0:
+    svc 0
 
