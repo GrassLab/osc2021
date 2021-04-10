@@ -29,7 +29,7 @@ el2_entry:
 
 el1_entry:
     mrs     x1, cpacr_el1
-    orr     x1, x1, 0b1100000000000000000000    // turn on the accessibility to SIMD and floating registers
+    orr     x1, x1, 0x300000                    // turn on the accessibility to SIMD and floating registers
     msr     cpacr_el1, x1
 
     ldr     x0, =exception_vector_table         // set up el1 exception table

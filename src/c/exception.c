@@ -45,6 +45,6 @@ void print_time_stamp(unsigned long cntpct, unsigned long cntfrq)
 
 void print_invalid_entry_message(unsigned long n)
 {
-    printf("invalid exception %d !\n", n);
+    printf("invalid exception %d!\n", n);
     return;
 }
