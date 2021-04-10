@@ -39,8 +39,8 @@ void print_time_stamp(unsigned long cntpct, unsigned long cntfrq)
     return;
 }
 
-void print_invalid_entry_message()
+void print_invalid_entry_message(unsigned long n)
 {
-    printf("unknown exception!\n");
+    printf("unknown exception %d !\n", n);
     return;
 }

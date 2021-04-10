@@ -1,7 +1,7 @@
 #include "shell.h"
 #include "string.h"
 #include "command.h"
-#include "uart.h"
+#include "printf.h"
 
 void shell_start()
 {
@@ -13,7 +13,7 @@ void shell_start()
     strset(buffer, 0, MAX_BUFFER_LEN);
 
     // new line head
-    uart_puts("# ");
+    printf("# ");
 
     // read input
     while (1)
@@ -48,12 +48,12 @@ void command_controller(enum SPECIAL_CHARACTER input_parse, char c, char buffer[
         if ((*counter) > 0)
         {
             (*counter)--;
-            uart_puts("\b \b");
+            printf("\b \b");
         }
     }
     else if (input_parse == NEW_LINE)
     {
-        uart_send(c);
+        printf("%c", c);
 
         if ((*counter) == MAX_BUFFER_LEN)
         {
@@ -83,11 +83,11 @@ void command_controller(enum SPECIAL_CHARACTER input_parse, char c, char buffer[
         strset(buffer, 0, MAX_BUFFER_LEN);
 
         // new line head;
-        uart_puts("# ");
+        printf("# ");
     }
     else if (input_parse == REGULAR_INPUT)
     {
-        uart_send(c);
+        printf("%c", c);
 
         if (*counter < MAX_BUFFER_LEN)
         {

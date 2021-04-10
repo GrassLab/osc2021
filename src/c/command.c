@@ -1,48 +1,49 @@
 #include "uart.h"
 #include "string.h"
 #include "cpio.h"
+#include "printf.h"
 
 void input_buffer_overflow_message(char cmd[])
 {
-    uart_puts("Follow command: \"");
-    uart_puts(cmd);
-    uart_puts("\"... is too long to process.\n");
+    printf("Follow command: \"");
+    printf(cmd);
+    printf("\"... is too long to process.\n");
 
-    uart_puts("The maximum length of input is 64.");
+    printf("The maximum length of input is 64.");
 }
 
 void command_help()
 {
-    uart_puts("\n");
-    uart_puts("Valid Command:\n");
-    uart_puts("\thelp:\t\tprint this help.\n");
-    uart_puts("\thello:\t\tprint \"Hello World!\".\n");
-    uart_puts("\treboot:\t\treboot Raspberry Pi.\n");
-    uart_puts("\tcpio:\t\tread initramfs.cpio on the SD card.\n");
-    uart_puts("\ttimer_on:\tturn on the core timer.\n");
-    uart_puts("\ttimer_off:\tturn off the core timer.\n");
-    uart_puts("\n");
+    printf("\n");
+    printf("Valid Command:\n");
+    printf("\thelp:\t\tprint this help.\n");
+    printf("\thello:\t\tprint \"Hello World!\".\n");
+    printf("\treboot:\t\treboot Raspberry Pi.\n");
+    printf("\tcpio:\t\tread initramfs.cpio on the SD card.\n");
+    printf("\ttimer_on:\tturn on the core timer.\n");
+    printf("\ttimer_off:\tturn off the core timer.\n");
+    printf("\n");
 }
 
 void command_hello()
 {
-    uart_puts("Hello World!\n");
+    printf("Hello World!\n");
 }
 
 void command_cpio()
 {
-    uart_puts("\n");
-    uart_puts("Valid Option:\n");
-    uart_puts("\t1:\t\tGet the file list.\n");
-    uart_puts("\t2:\t\tSearch for a specific file.\n");
-    uart_puts("\t3:\t\tRun an executable.\n");
-    uart_puts("\n");
-    uart_puts("# ");
+    printf("\n");
+    printf("Valid Option:\n");
+    printf("\t1:\t\tGet the file list.\n");
+    printf("\t2:\t\tSearch for a specific file.\n");
+    printf("\t3:\t\tRun an executable.\n");
+    printf("\n");
+    printf("# ");
 
     char choice = uart_getc();
-    uart_send(choice);
+    printf("%c", choice);
     char new_line = uart_getc();
-    uart_send('\n');
+    printf("\n");
 
     switch (choice)
     {
@@ -56,7 +57,7 @@ void command_cpio()
         char c;
         int counter = 0;
 
-        uart_puts("# ");
+        printf("# ");
 
         while (1)
         {
@@ -65,7 +66,7 @@ void command_cpio()
             if ((c == 127) && counter > 0)
             {
                 counter--;
-                uart_puts("\b \b");
+                printf("\b \b");
             }
             // new line
             else if ((c == 10) || (c == 13))
@@ -94,7 +95,7 @@ void command_cpio()
         char c;
         int counter = 0;
 
-        uart_puts("# ");
+        printf("# ");
 
         while (1)
         {
@@ -103,13 +104,13 @@ void command_cpio()
             if ((c == 127) && counter > 0)
             {
                 counter--;
-                uart_puts("\b \b");
+                printf("\b \b");
             }
             // new line
             else if ((c == 10) || (c == 13))
             {
                 file_name[counter] = '\0';
-                uart_send(c);
+                printf("%c", c);
                 break;
             }
             // regular input
@@ -117,7 +118,7 @@ void command_cpio()
             {
                 file_name[counter] = c;
                 counter++;
-                uart_send(c);
+                printf("%c", c);
             }
         }
 
@@ -143,14 +144,14 @@ void command_timer_off()
 
 void command_not_found(char *s)
 {
-    uart_puts("Err: command ");
-    uart_puts(s);
-    uart_puts(" not found, try <help>\n");
+    printf("Err: command ");
+    printf(s);
+    printf(" not found, try <help>\n");
 }
 
 void command_reboot()
 {
-    uart_puts("Start Rebooting...\n");
+    printf("Start Rebooting...\n");
 
     *PM_WDOG = PM_PASSWORD | 100;
     *PM_RSTC = PM_PASSWORD | 0x20;

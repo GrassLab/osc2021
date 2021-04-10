@@ -1,5 +1,3 @@
-#define CORE0_TIMER_IRQ_CTRL 0x40000040
-
 // save general registers to stack
 .macro save_regs
     sub sp, sp, 32 * 8
@@ -46,23 +44,23 @@
 exception_vector_table:
     
     // Current EL with SP0
-    b exception_handler     // Synchronous
+    b invalid_handler_0     // Synchronous
     .align 7
-    b exception_handler     // IRQ
+    b invalid_handler_0     // IRQ
     .align 7
-    b exception_handler     // FIQ
+    b invalid_handler_4     // FIQ
     .align 7
-    b exception_handler     // SError
+    b invalid_handler_0     // SError
     
     // Current EL with SPx
     .align 7
-    b exception_handler     // Synchronous
+    b invalid_handler_1     // Synchronous
     .align 7
-    b exception_handler     // IRQ
+    b invalid_handler_1     // IRQ
     .align 7
-    b exception_handler     // FIQ
+    b invalid_handler_1     // FIQ
     .align 7
-    b exception_handler     // SError
+    b invalid_handler_1     // SError
     
     // Lower EL using AArch64
     .align 7
@@ -70,19 +68,19 @@ exception_vector_table:
     .align 7
     b core_timer_handler    // IRQ
     .align 7 
-    b exception_handler     // FIQ
+    b invalid_handler_2     // FIQ
     .align 7 
-    b exception_handler     // SError
+    b invalid_handler_2     // SError
 
     // Lower EL using AArch32
     .align 7
-    b exception_handler     // Synchronous
+    b invalid_handler_3     // Synchronous
     .align 7
-    b exception_handler     // IRQ
+    b invalid_handler_3     // IRQ
     .align 7
-    b exception_handler     // FIQ
+    b invalid_handler_3     // FIQ
     .align 7
-    b exception_handler     // SError
+    b invalid_handler_3     // SError
 
 svc_handler:
     save_regs
@@ -96,6 +94,7 @@ svc_handler:
     msr elr_el1, x0
     eret
 
+.global core_timer_handler
 core_timer_handler:
     save_regs
     mrs x0, cntpct_el0
@@ -112,39 +111,36 @@ core_timer_handler:
     msr elr_el1, x0
     eret
 
-exception_handler:
-    save_regs
-    bl  print_invalid_entry_message
 invalid_hang:
 	b invalid_hang
 
-.global core_timer_enable
-core_timer_enable:
+invalid_handler_0:
+    save_regs
+    mov x0, 0
+    bl  print_invalid_entry_message
+    b   invalid_hang
+
+invalid_handler_1:
+    save_regs
     mov x0, 1
-    msr cntp_ctl_el0, x0            // enable
+    bl  print_invalid_entry_message
+    b   invalid_hang
 
-    mrs x0, cntfrq_el0
-    mov x1, 5
-    mul x0, x0, x1
-    msr cntp_tval_el0, x0           // set expired time
-    
+invalid_handler_2:
+    save_regs
     mov x0, 2
-    ldr x1, =CORE0_TIMER_IRQ_CTRL
-    str w0, [x1]                    // unmask timer 
-    ret
+    bl  print_invalid_entry_message
+    b   invalid_hang
 
-.global core_timer_disable
-core_timer_disable:
-    mrs x0, cntp_ctl_el0
-    mov x1, 1
-    eor x1, x1, x1                  // not x1
-    and x0, x0, x1
-    msr cntp_ctl_el0, x0
+invalid_handler_3:
+    save_regs
+    mov x0, 3
+    bl  print_invalid_entry_message
+    b   invalid_hang
 
-    ldr x2, =CORE0_TIMER_IRQ_CTRL
-    ldr x0, [x2]
-    mov x1, 2
-    eor x1, x1, x1                  // not x1
-    and x0, x0, x1
-    str x0, [x2]                    // enable timer interrupt
-    ret
+invalid_handler_4:
+    save_regs
+    mov x0, 4
+    bl  print_invalid_entry_message
+    b   invalid_hang
+
