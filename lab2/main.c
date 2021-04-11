@@ -8,8 +8,8 @@
 #include "utils.h"
 #define CMD_SIZE 64
 #define FILE_NAME_SIZE 64
-// #define INITRAMFS_BASE 0x20000000 // rpi3
-#define INITRAMFS_BASE 0x8000000 // QEMU
+#define INITRAMFS_BASE 0x20000000 // rpi3
+// #define INITRAMFS_BASE 0x8000000 // QEMU
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC 0x3F10001c
 #define PM_WDOG 0x3F100024
@@ -117,8 +117,8 @@ int cat_file_initramfs()
     char *name_start, *data_start;
 
     uart_send_string("Please enter file path: ");
-    read_line(file_name_buf, FILE_NAME_SIZE);
-
+    // read_line();
+    read_line_low_power(file_name_buf, FILE_NAME_SIZE);
     ent = (struct cpio_newc_header*)INITRAMFS_BASE;
     while (1)
     {
@@ -175,7 +175,8 @@ int run_initramfs()
     char *name_start, *data_start;
 
     uart_send_string("Please enter file path: ");
-    read_line(file_name_buf, FILE_NAME_SIZE);
+    // read_line(file_name_buf, FILE_NAME_SIZE);
+    read_line_low_power(file_name_buf, FILE_NAME_SIZE);
 
     ent = (struct cpio_newc_header*)INITRAMFS_BASE;
     while (1)
@@ -249,7 +250,7 @@ void bootloader_relocate()
     long dest_offset;
 
     uart_send_string("Please enter relocation address(hex without '0x'): ");
-    address_len = read_line(buf, 100);
+    address_len = read_line_low_power(buf, 100);
     bootloader_new_addr = hex_string_to_unsigned_long(buf, address_len);
     // uart_send_long(bootloader_new_addr);
     dest = (char*)bootloader_new_addr;
@@ -422,6 +423,29 @@ int cmd_handler(char *cmd)
     return 0;
 }
 
+// int kernel_main(char *sp)
+// {
+//     char cmd_buf[CMD_SIZE];
+
+//     do_dtp(uart_probe);
+//     // uart_init();
+//     rd_init();
+//     dynamic_mem_init();
+//     timerPool_init();
+//     // enable_irq();
+//     core_timer_enable();
+//     uart_send_string("Welcome to RPI3-OS\r\n");
+//     while (1) {
+//         uart_send_string("user@rpi3:~$ ");
+//         wait_for_interrupt(); // low power standby
+//         read_line(cmd_buf, CMD_SIZE);
+//         if (!strlen(cmd_buf))  // User input nothing but Enter
+//             continue;
+//         cmd_handler(cmd_buf);
+//     }
+//     return 0;
+// }
+
 int kernel_main(char *sp)
 {
     char cmd_buf[CMD_SIZE];
@@ -431,15 +455,18 @@ int kernel_main(char *sp)
     rd_init();
     dynamic_mem_init();
     timerPool_init();
-    // enable_irq();
-    core_timer_enable();
+    enable_irq();
+    // core_timer_enable();
+    put32(ENABLE_IRQS_1, 1 << 29); // Enable AUX interrupt
     uart_send_string("Welcome to RPI3-OS\r\n");
+
     while (1) {
         uart_send_string("user@rpi3:~$ ");
-        read_line(cmd_buf, CMD_SIZE);
+        read_line_low_power(cmd_buf, CMD_SIZE);
         if (!strlen(cmd_buf))  // User input nothing but Enter
             continue;
         cmd_handler(cmd_buf);
     }
     return 0;
 }
+

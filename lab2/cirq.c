@@ -13,7 +13,7 @@ struct tqe *timerPool_h;
 void *core_timer_btm(void* arg)
 {
     enable_irq();
-    uart_send_string("From core_timer_btm \r\n");
+    // uart_send_string("From core_timer_btm \r\n");
     // After bottom half finished, we have to disable interrupt.
     disable_irq();
     /* Critical section start */
@@ -25,14 +25,15 @@ void *core_timer_btm(void* arg)
 
 void do_core_timer_handler(void)
 {
-    uart_send_string("From do_core_timer_handler: ");
-    uart_send_ulong(core_timer_get_sec());
-    uart_send_string(" seconds have passed.\r\n");
+    // uart_send_string("From do_core_timer_handler: ");
+    // uart_send_ulong(core_timer_get_sec());
+    // uart_send_string(" seconds have passed.\r\n");
     set_core_timer(TICKS_FOR_ITR);
     tqe_decr(TICKS_FOR_ITR);
     /* After top half, we have to set bottom half task. */
     irq_btm_q_insert(PRIORITY_TIMER, core_timer_btm);
 }
+
 /* btm_sched will only be called in 2 cases:
  * 1. After top half finished
  * 2. After bottom half finished
@@ -44,7 +45,6 @@ void do_core_timer_handler(void)
  */
 void btm_sched()
 {
-    /* Critical section start */
     // max is dirty, means max task has once
     // been interrupted. This will only return
     // to case 1 caller. 
@@ -52,34 +52,46 @@ void btm_sched()
         return;
     irq_btm_q[1].dirty = 1;
     void *(*btm_handler)(void*) = irq_btm_q[1].btm_handler;
-    /* Critical section end */
-    // enable_irq();
-    // Now, interrupt may come in anytime.
     btm_handler(0);
 }
+
+#define CNTPSIRQ  0
+#define CNTPNSIRQ 1
+#define CNTHPIRQ  2
+#define CNTVIRQ   3
+#define MAILBOX0  4
+#define MAILBOX1  5
+#define MAILBOX2  6
+#define MAILBOX3  7
+#define GPU       8
+#define PMU       9
 
 
 void first_level_irq_handler(int type)
 {
     switch (type) {
-        case (2):
+        case CNTPNSIRQ:
             do_core_timer_handler();
             break;
+        case GPU:
+            // level 2 has pending interrupt
+            // uart_send_string("level1 GPU interrupt.\r\n");
+            break;
         default:
-            uart_send_string("Unknown pending irq.\r\n");
+            uart_send_string("Unknown first level irq.\r\n");
     }
 }
 
 void second_level_irq_handler(int type)
 {
-    // switch (type) {
-    //     case (SYSTEM_TIMER_IRQ_1):
-    //         handle_timer_irq();
-    //         break;
-    //     default:
-    //         uart_send_string("Unknown pending irq.\r\n");
-    // }
-    ;
+
+    switch (type) {
+        case (AUX_IRQ):
+            do_uart_handler();
+            break;
+        default:
+            uart_send_string("Unknown second level irq.\r\n");
+    }
 }
 
 void irq_handler(void)
@@ -87,13 +99,17 @@ void irq_handler(void)
     unsigned int second_level_irq_pend = get32(IRQ_PENDING_1);
     unsigned int first_level_irq_pend = get32(CORE0_INTERRUPT_SOURCE);
 
-    /* Handle all pending first level irq. */
+    /* Handle all pending first level irq.
+     * https://github.com/raspberrypi/documentation/blob/master/hardware/raspberrypi/bcm2836/QA7_rev3.4.pdf
+     * p.16 tells the CORE0_INTERRUPT_SOURCE
+     */
     for (int i = 0; i < 32; ++i)
         if (first_level_irq_pend & (1 << i))
-            first_level_irq_handler(i+1);
-            // uart_send_uint(first_level_irq_pend);
+            first_level_irq_handler(i);
 
-    /* Handle all pending second level irq. */
+    /* Handle all pending second level irq.
+     * BCM2837-ARM-Peripherals p.113 tells the interrupt table.
+    */
     for (int i = 0; i < 32; ++i)
         if (second_level_irq_pend & (1 << i))
             second_level_irq_handler(i);
@@ -242,3 +258,52 @@ int irq_btm_q_insert(int priority, void *(*btm_handler)(void*))
     return 0;
 }
 
+#define UART_BUF_SIZE 256
+char uart_send_buf[UART_BUF_SIZE];
+int uart_send_buf_in = 0;
+int uart_send_buf_out = 0;
+char uart_recv_buf[UART_BUF_SIZE];
+int uart_recv_buf_idx = 0;
+int recv_ready = 0;
+/* AUX_MU_IIR_REG: peripheral p.13 */
+void do_uart_handler()
+{
+    char ch;
+    unsigned int iir;
+
+    iir = get32(AUX_MU_IIR_REG);
+    if ((iir & 0x6) == 0x2)
+    { // Transmit holding register empty 
+        while (get32(AUX_MU_LSR_REG) & 0x20) {
+            // 5th bit is set if the transmit FIFO can
+            // accept at least one byte.
+            if (uart_send_buf_in == uart_send_buf_out){
+                put32(AUX_MU_IER_REG, 1); //Only enable receive interrupts
+                return;
+            }
+            ch = uart_send_buf[uart_send_buf_out];
+            uart_send_buf_out = (uart_send_buf_out + 1) % UART_BUF_SIZE;
+            put32(AUX_MU_IO_REG, ch);
+        }
+        put32(AUX_MU_IER_REG, 1); //Only enable receive interrupts
+    }
+    else if ((iir & 0x6) == 0x4)
+    { // Receiver holds valid byte
+        if (recv_ready)
+            return;
+        while (get32(AUX_MU_LSR_REG) & 0x1) {
+        // if (get32(AUX_MU_LSR_REG) & 0x1) {
+            // The receive FIFO holds at least 1 symbol.
+            ch = get32(AUX_MU_IO_REG) & 0xFF;
+            if (ch != '\r') {
+                uart_send_async(ch);
+                uart_recv_buf[uart_recv_buf_idx++] = ch;
+            } else {
+                uart_recv_buf[uart_recv_buf_idx] = '\0';
+                recv_ready = 1;
+                uart_recv_buf_idx = 0;
+            }
+            // uart_recv_buf_idx = (uart_recv_buf_idx + 1) % UART_BUF_SIZE;
+        }
+    }
+}

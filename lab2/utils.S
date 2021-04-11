@@ -93,3 +93,8 @@ core_timer_disable:
     ldr x1, =CORE0_TIMER_IRQ_CTRL
     str w0, [x1]          // unmask timer interrupt
     ret
+
+.globl wait_for_interrupt
+wait_for_interrupt:
+    wfi
+    ret
