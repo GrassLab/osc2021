@@ -45,6 +45,7 @@
 exception_vector_table:
     
     // Current EL with SP0
+    .align 7
     b invalid_handler       // Synchronous
     .align 7
     b invalid_handler       // IRQ
