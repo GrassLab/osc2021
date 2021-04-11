@@ -40,6 +40,7 @@
     add sp, sp, 32 * 8
 .endm
 
+.align  11
 .global exception_vector_table
 exception_vector_table:
     
@@ -142,7 +143,11 @@ invalid_handler_4:
     save_regs
     mov x0, 4
     bl  print_invalid_entry_message
-    b   invalid_hang
+    // b   invalid_hang
+
+    ldr x0, =shell_start
+    msr elr_el1, x0
+    eret
 
 .global svc_0
 svc_0:

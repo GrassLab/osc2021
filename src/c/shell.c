@@ -75,6 +75,17 @@ void command_controller(enum SPECIAL_CHARACTER input_parse, char c, char buffer[
                 command_timer_on();
             else if (!strcmp(buffer, "timer_off"))
                 command_timer_off();
+            else if (!strcmp(buffer, "test"))
+            {
+                asm volatile(
+                    "mov x0, 0x340      \n\t"
+                    "msr spsr_el1, x0   \n\t"
+                    "ldr x0, =svc_0     \n\t"
+                    "msr elr_el1, x0    \n\t"
+                    "mov x0, 0x60000    \n\t"
+                    "msr sp_el0, x0     \n\t"
+                    "eret               \n\t");
+            }
             else
                 command_not_found(buffer);
         }
