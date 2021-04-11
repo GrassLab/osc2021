@@ -324,7 +324,7 @@ void obj_free(void *obj_addr) {
     if (page_p->obj_used == 0 && obj_allocator_p->curr_page != page_p) {
         list_del(&page_p->list); // pop out from partial list
 
-        // Return empty page to free page pool(free_area) if memory becomes tight
+        // Return empty page to free page pool(free_area)
         // otherwise, add it to empty list 
         if (obj_allocator_p->page_used >= 10) { // TODO: Return empty page only if memory becomes tight
             #ifdef __DEBUG
@@ -472,19 +472,15 @@ void mm_init()
     /**
      *  Test Buddy memory Allocator
      */
-    // int allocate_test1[] = {5, 0, 6, 3, 0};
-    // int test1_size = sizeof(allocate_test1) / sizeof(int);
-    // page_t *(one_pages[test1_size]);
-    // for (int i = 0;i < test1_size;i++) {
-    //     page_t *one_page = buddy_block_alloc(allocate_test1[i]); // Allocate one page frame
-    //     //printf("\n Allocated Block{ pfn(%d), order(%d), phy_addr_16(0x%x) }: %u\n", one_page->pfn, one_page->order, one_page->phy_addr);
-    //     one_pages[i] = one_page;
-    // }
-    // buddy_block_free(one_pages[2]);
-    // buddy_block_free(one_pages[1]);
-    // buddy_block_free(one_pages[4]);
-    // buddy_block_free(one_pages[3]);
-    // buddy_block_free(one_pages[0]);
+    int allocate_test1[] = {1};
+    int test1_size = sizeof(allocate_test1) / sizeof(int);
+    page_t *(one_pages[test1_size]);
+    for (int i = 0;i < test1_size;i++) {
+        page_t *one_page = buddy_block_alloc(allocate_test1[i]); // Allocate one page frame
+        //printf("\n Allocated Block{ pfn(%d), order(%d), phy_addr_16(0x%x) }: %u\n", one_page->pfn, one_page->order, one_page->phy_addr);
+        one_pages[i] = one_page;
+    }
+    buddy_block_free(one_pages[0]);
 
     /**
      *  Test object allcator
@@ -518,17 +514,17 @@ void mm_init()
     
     
     /* Test Dynamic Memory Allocator */
-    __init_kmalloc();
-    // Test case 1
-    void *k_addr1 = kmalloc(16);
-    void *k_addr2 = kmalloc(48);
-    kfree(k_addr1);
-    void *k_addr3 = kmalloc(2048);
-    void *k_addr4 = kmalloc(2048);
-    void *k_addr5 = kmalloc(8787);
-    kfree(k_addr3);
-    kfree(k_addr4);
-
+    // __init_kmalloc();
+    // // Test case 1
+    // void *k_addr1 = kmalloc(16);
+    // void *k_addr2 = kmalloc(48);
+    // kfree(k_addr1);
+    // void *k_addr3 = kmalloc(2048);
+    // void *k_addr4 = kmalloc(2048);
+    // void *k_addr5 = kmalloc(8787);
+    // kfree(k_addr3);
+    // kfree(k_addr4);
+    // kfree(k_addr5);
     // Test case 2
     // void *address_1 = kmalloc(16);
     // void *address_2 = kmalloc(64);
