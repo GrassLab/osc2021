@@ -1,5 +1,8 @@
 .section ".text.boot"
 
+// create alias for lr(link register) x30
+lr .req x30
+
 .global _start
 
 _start:
@@ -15,6 +18,9 @@ _start:
 
 // cpuid = 0
 2:
+    // Set exception levle to el1
+    bl from_el2_to_el1
+
     // Initialize stack pointer: set to __stack_top
     ldr x0, = __stack_top
     mov sp, x0
@@ -29,3 +35,12 @@ _start:
 
 4:  bl      main  // Jump to Kernel Entry Point (Main function)
     b       1b    // Stay in busy loop if returned
+
+
+from_el2_to_el1:
+    mov x0, (1 << 31) // EL1 uses aarch64
+    msr hcr_el2, x0
+    mov x0, 0x3c5 // EL1h (SPSel = 1) with interrupt disabled
+    msr spsr_el2, x0
+    msr elr_el2, lr
+    eret // return to EL1
