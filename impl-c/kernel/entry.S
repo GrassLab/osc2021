@@ -60,7 +60,7 @@ _start:
 
 // cpuid = 0
 2:
-    // Set exception levle to el1
+    // Set exception level to el1
     bl from_el2_to_el1
 
     // Set exception table
@@ -91,55 +91,65 @@ from_el2_to_el1:
     msr elr_el2, lr
 
     // Enable access to SIMD/Floating point registers
-	mov x0, #(3 << 20)
-	msr cpacr_el1, x0
+    mov x0, #(3 << 20)
+    msr cpacr_el1, x0
 
     eret // return to EL1
 
 
-default_handler:
-	save_all
-	bl exception_handler
-	load_all
-	eret
+not_impl:
+    save_all
+    bl _handler_not_impl
+    load_all
+    eret
+
+_syn_handler:
+    save_all
+    bl syn_handler
+    load_all
+    eret
 
 
 .align 11
 .global exception_vector_table
 exception_vector_table:
 
-  b default_handler
-  .align 7
-  b default_handler
-  .align 7
-  b default_handler
-  .align 7
-  b default_handler
-  .align 7
+    // Exception from current EL with SP_EL0
+    b not_impl   //  Synchronous
+    .align 7
+    b not_impl   //  IRQ
+    .align 7
+    b not_impl   //  FIQ
+    .align 7
+    b not_impl   //  SError
+    .align 7
 
-  b default_handler
-  .align 7
-  b default_handler
-  .align 7
-  b default_handler
-  .align 7
-  b default_handler
-  .align 7
+    // Exception from current EL with SP_ELx
+    b not_impl   //  Synchronous
+    .align 7
+    b not_impl   //  IRQ
+    .align 7
+    b not_impl   //  FIQ
+    .align 7
+    b not_impl   //  SError
+    .align 7
 
-  b default_handler
-  .align 7
-  b default_handler
-  .align 7
-  b default_handler
-  .align 7
-  b default_handler
-  .align 7
+    // Exception from lower EL/aarch64
+    b _syn_handler   // Synchronous
+    .align 7
+    b not_impl   //  IRQ
+    .align 7
+    b not_impl   //  FIQ
+    .align 7
+    b not_impl   //  SError
+    .align 7
 
-  b default_handler
-  .align 7
-  b default_handler
-  .align 7
-  b default_handler
-  .align 7
-  b default_handler
-  .align 7
+    // Exception from lower EL/aarch32
+    b not_impl   //  Synchronous
+    .align 7
+    b not_impl   //  IRQ
+    .align 7
+    b not_impl   //  FIQ
+    .align 7
+    b not_impl   //  SError
+    .align 7

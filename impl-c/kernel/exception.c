@@ -12,7 +12,15 @@ void dumpState() {
   uart_printf("ESR: %x\n", esr);
   uart_printf("--------------------\n");
 }
-void exception_handler() {
+
+void syn_handler() {
+  uart_println("Syn Exception");
   dumpState();
-  uart_println("exception handle!!");
+}
+
+void _handler_not_impl() {
+  uart_println("Unknown Exception!!");
+  dumpState();
+  while (1) {
+  }
 }
