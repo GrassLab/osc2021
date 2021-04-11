@@ -34,4 +34,5 @@ kernel8.img: kernel8.elf
 	$(OBJCOPY) $(OBJCOPYFLAGS) $(BUILD_DIR)/kernel8.elf $(BUILD_DIR)/kernel8.img
 
 run:
-	$(QEMU) -M raspi3 -kernel $(BUILD_DIR)/kernel8.img -display none -serial null -serial stdio
+	$(QEMU) -M raspi3 -kernel $(BUILD_DIR)/kernel8.img -display none -serial null -serial stdio \
+		-initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb

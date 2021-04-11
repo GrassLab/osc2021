@@ -18,6 +18,7 @@ void cmd_help() {
   print_s("dtb\t\tparse and print the flattened devicetree\n");
   print_s("buddy\t\ttest buddy system\n");
   print_s("dma\t\ttest dynamic memory allocator\n");
+  print_s("user\t\tload and run a user program in the initramfs\n");
 }
 
 void cmd_hello() { print_s("Hello World!\n"); }
@@ -36,6 +37,17 @@ void cmd_dtb_print(int all) { dtb_print(all); }
 void cmd_buddy_test() { buddy_test(); }
 
 void cmd_dma_test() { dma_test(); }
+
+void cmd_load_user_program() {
+  uint64_t spsr_el1 = 0x3c0; // EL0t with interrupt disabled
+  uint64_t target_addr = 0x30000000;
+  uint64_t target_sp = 0x31000000;
+  cpio_load_user_program("user_program.img", target_addr);
+  asm volatile("msr spsr_el1, %0" : : "r"(spsr_el1));
+  asm volatile("msr elr_el1, %0" : : "r"(target_addr));
+  asm volatile("msr sp_el0, %0" : : "r"(target_sp));
+  asm volatile("eret");
+}
 
 void clear_buffer() {
   buffer_pos = 0;
@@ -85,6 +97,8 @@ void run_shell() {
       cmd_buddy_test();
     } else if (strcmp(buffer, "dma") == 0) {
       cmd_dma_test();
+    } else if (strcmp(buffer, "user") == 0) {
+      cmd_load_user_program();
     }
   }
 }

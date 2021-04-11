@@ -15,6 +15,9 @@ master:
     //ldr x1, =0x9000000
     //str x0, [x1]
 
+    bl from_el2_to_el1
+    bl set_exception_vector_table
+
     // clear bss segment
     ldr x0, =__bss_start
     ldr x1, =__bss_size
@@ -32,6 +35,19 @@ clear_bss_done:
 
     bl main                 // jump to kernel main (c code)
     b hang_loop             // jump to endless loop if main returns (for fail-safe)
+
+from_el2_to_el1:
+    mov x0, (1 << 31)       // EL1 uses aarch64
+    msr hcr_el2, x0
+    mov x0, 0x3c5           // EL1h with interrupt disabled
+    msr spsr_el2, x0
+    msr elr_el2, lr
+    eret                    // return to EL1
+
+set_exception_vector_table:
+    adr x0, exception_vector_table
+    msr vbar_el1, x0
+    ret
 
 hang_loop:
     wfe

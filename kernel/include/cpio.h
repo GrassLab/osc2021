@@ -1,5 +1,7 @@
 #pragma once
 
+#include "utils.h"
+
 #define RAMFS_ADDR 0x8000000
 #define CPIO_MAGIC "070701"
 #define CPIO_END "TRAILER!!!"
@@ -23,3 +25,4 @@ typedef struct {
 
 void cpio_ls();
 void cpio_cat(char *filename);
+void cpio_load_user_program(char *target_program, uint64_t target_addr);

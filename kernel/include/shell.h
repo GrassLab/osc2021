@@ -16,6 +16,7 @@ void cmd_cat(char *pathname);
 void cmd_dtb_print(int all);
 void cmd_buddy_test();
 void cmd_dma_test();
+void cmd_load_user_program();
 void clear_buffer();
 void receive_cmd();
 void run_shell();
