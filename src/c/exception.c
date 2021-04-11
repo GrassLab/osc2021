@@ -24,10 +24,6 @@ void svc_router(unsigned long spsr, unsigned long elr, unsigned long esr)
         printf("disable core timer\n");
         core_timer_disable();
         break;
-    
-    case 3:
-        printf("System Call in program.elf!\n");
-        break;
 
     default: 
         break;
@@ -43,8 +39,8 @@ void print_time_stamp(unsigned long cntpct, unsigned long cntfrq)
     return;
 }
 
-void print_invalid_entry_message(unsigned long n)
+void print_invalid_entry_message()
 {
-    printf("invalid exception %d!\n", n);
+    printf("invalid exception!\n");
     return;
 }

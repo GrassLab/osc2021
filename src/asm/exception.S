@@ -45,23 +45,23 @@
 exception_vector_table:
     
     // Current EL with SP0
-    b invalid_handler_0     // Synchronous
+    b invalid_handler       // Synchronous
     .align 7
-    b invalid_handler_0     // IRQ
+    b invalid_handler       // IRQ
     .align 7
-    b invalid_handler_0     // FIQ
+    b invalid_handler       // FIQ
     .align 7
-    b invalid_handler_0     // SError
+    b invalid_handler       // SError
     
     // Current EL with SPx
     .align 7
-    b invalid_handler_1     // Synchronous
+    b invalid_handler       // Synchronous
     .align 7
-    b invalid_handler_1     // IRQ
+    b invalid_handler       // IRQ
     .align 7
-    b invalid_handler_4     // FIQ
+    b invalid_handler       // FIQ
     .align 7
-    b invalid_handler_1     // SError
+    b invalid_handler       // SError
     
     // Lower EL using AArch64
     .align 7
@@ -69,19 +69,19 @@ exception_vector_table:
     .align 7
     b core_timer_handler    // IRQ
     .align 7 
-    b invalid_handler_2     // FIQ
+    b invalid_handler       // FIQ
     .align 7 
-    b invalid_handler_2     // SError
+    b invalid_handler       // SError
 
     // Lower EL using AArch32
     .align 7
-    b invalid_handler_3     // Synchronous
+    b invalid_handler       // Synchronous
     .align 7
-    b invalid_handler_3     // IRQ
+    b invalid_handler       // IRQ
     .align 7
-    b invalid_handler_3     // FIQ
+    b invalid_handler       // FIQ
     .align 7
-    b invalid_handler_3     // SError
+    b invalid_handler       // SError
 
 svc_handler:
     save_regs
@@ -115,41 +115,9 @@ core_timer_handler:
 invalid_hang:
 	b invalid_hang
 
-invalid_handler_0:
+invalid_handler:
     save_regs
-    mov x0, 0
     bl  print_invalid_entry_message
     b   invalid_hang
 
-invalid_handler_1:
-    save_regs
-    mov x0, 1
-    bl  print_invalid_entry_message
-    b   invalid_hang
-
-invalid_handler_2:
-    save_regs
-    mov x0, 2
-    bl  print_invalid_entry_message
-    b   invalid_hang
-
-invalid_handler_3:
-    save_regs
-    mov x0, 3
-    bl  print_invalid_entry_message
-    b   invalid_hang
-
-invalid_handler_4:
-    save_regs
-    mov x0, 4
-    bl  print_invalid_entry_message
-    // b   invalid_hang
-
-    ldr x0, =shell_start
-    msr elr_el1, x0
-    eret
-
-.global svc_0
-svc_0:
-    svc 0
 
