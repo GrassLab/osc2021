@@ -27,6 +27,8 @@ int main()
     // say hello
     printf(init_logo);
 
+    
+
     // start shell
     shell_start();
 

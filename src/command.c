@@ -3,6 +3,7 @@
 #include "shell.h"
 #include "cpio.h"
 #include "printf.h"
+#include "utils.h"
 
 void input_buffer_overflow_message ( char cmd[] )
 {
@@ -23,7 +24,8 @@ void command_help ()
     uart_puts("\treboot:\t\treset rpi3.\n");
     uart_puts("\tls:\t\tPrint cpio file list.\n");
     uart_puts("\tcat {filename}:\tPrint content in {filename} \n");
-    uart_puts("\tma:\tSystem of memory allcator \n");
+    uart_puts("\tma:\t\tSystem of memory allcator \n");
+    uart_puts("\tcurrentEL:\tPiint current exception level");
     uart_puts("\n");
 }
 
@@ -86,4 +88,10 @@ void command_getCpioFile(void *initramfs_addr, char *buf)
     } else {
         printf("'%s' file  not exist!\n", buf);
     }
+}
+
+void command_current_el()
+{
+    int el = get_el();
+    printf("Current Exception Level: %d \r\n", el);
 }
