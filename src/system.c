@@ -24,7 +24,11 @@ struct cmd cmd_list[] = {
     {.input = "clear", .description = "clean screen", .callback=sys_clear}
 };
 
-
+void show_el1_status_info(int spsr_el1, int elr_el1, int esr_el1){
+    uart_puts("spsr_el1: ");    uart_printhex(spsr_el1); uart_puts("\r\n");
+    uart_puts("elr_el1: ");    uart_printhex(elr_el1);   uart_puts("\r\n");
+    uart_puts("esr_el1: ");    uart_printhex(esr_el1);   uart_puts("\r\n");
+}
 void __lab3(char* args){
     DEBUG = 1;
     buddy_test2();
@@ -139,20 +143,14 @@ void sys_load_user_program(char* args){
         char *pathname = (char*)((char*)cpio_addr + 110);
         if(strcmp("TRAILER!!!", pathname) == 0) break;
         if(strcmp("user_program.img", pathname) == 0){
-            // uart_puts_bySize((char*)((char*)cpio_addr + 110 + size_info.name_size + size_info.name_padding), size_info.file_size);
-            // uart_puts("\r\n");
             char* context_addr = (char*)cpio_addr + 110 + size_info.name_size + size_info.name_padding;
-            // char* ptr = malloc(size_info.file_size);
-            uart_printint(size_info.file_size);
             char *ptr = (char*)USER_PROGRAM_ADDR;
             for(int i = 0; i < size_info.file_size; ++i){
                 *(ptr + i) = *(context_addr + i);
-                // uart_printhex(*(ptr + i));
-                // uart_puts("\r\n");
             }
             core_timer_enable();
             _load_user_program((void*)ptr, (void*)0x80000);
-
+            //uart_printint(get_el());
             return;
         }
         now_ptr += size_info.offset;

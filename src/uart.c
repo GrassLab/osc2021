@@ -1,4 +1,5 @@
 #include "gpio.h"
+#include "uart.h"
 
 #define AUX_MU_IO_REG ((volatile unsigned int*)(MMIO_BASE + 0x00215040))
 #define AUX_MU_IER_REG ((volatile unsigned int*)(MMIO_BASE + 0x00215044))
@@ -12,12 +13,15 @@
 #define AUX_MU_STAT_REG ((volatile unsigned int*)(MMIO_BASE + 0x00215064))
 #define AUX_MU_BAUD ((volatile unsigned int*)(MMIO_BASE + 0x00215068))
 #define AUXENB ((volatile unsigned int*)(MMIO_BASE + 0x00215004))
+int uart_interrupt_flag, cmd_flag;
+int uart_buffer_idx, read_buffer_idx, cmd_idx;
+char UART_BUFFER[UART_BUFFER_SIZE], CMD_BUFFER[UART_BUFFER_SIZE];
 
 void uart_init(){
     register unsigned int reg;
     *AUXENB |= 1;
     *AUX_MU_CNTL_REG = 0;
-    *AUX_MU_IER_REG = 0;
+    *AUX_MU_IER_REG = 0x00; // disable interrupt
     *AUX_MU_LCR_REG = 3;
     *AUX_MU_MCR_REG = 0;
     *AUX_MU_BAUD = 270;
@@ -34,8 +38,79 @@ void uart_init(){
     while(reg--) { asm volatile("nop");}
     *GPPUDCLK0 = 0;
     *AUX_MU_CNTL_REG = 3;
-
+    cmd_flag = uart_interrupt_flag = 0;
+    cmd_idx = read_buffer_idx = uart_buffer_idx = 0;
+    
 }
+void enable_uart_interrupt(){
+    // *AUX_MU_IER_REG = 0x03;
+    put32(ENB_IRQS1, AUX_IRQ);
+    return;
+}
+void uart_send_string(char* str){
+    for(int i = 0; str[i] != '\0'; ++i){
+        UART_BUFFER[uart_buffer_idx++] = str[i];
+        if(uart_buffer_idx == UART_BUFFER_SIZE)
+            uart_buffer_idx = 0;
+    }
+    if(uart_interrupt_flag == 0){
+        *AUX_MU_IER_REG = 0x03; // enable interrupt
+        uart_interrupt_flag = 1;
+    }
+}
+void uart_irq(){
+    unsigned int id = *AUX_MU_IIR_REG;
+    //uart_printhex(id);
+    char c;
+    disable_irq();
+    if((id & 0x06) == 0x04){ // write
+        //uart_puts("456\r\n");
+        if(uart_interrupt_flag == 0){
+            *AUX_MU_IER_REG = 0x03; // enable interrupt
+            uart_interrupt_flag = 1;
+        }
+        
+        while((*AUX_MU_LSR_REG)&0x01){
+            c = (char)(*AUX_MU_IO_REG);
+            if(c == '\r'){
+                // cmd
+                CMD_BUFFER[cmd_idx++] = '\0';
+                cmd_flag = 1;
+                cmd_idx = 0;
+                // uart
+                UART_BUFFER[uart_buffer_idx++] = c;
+                if(uart_buffer_idx == UART_BUFFER_SIZE) uart_buffer_idx = 0;
+                UART_BUFFER[uart_buffer_idx++] = '\n';
+            }
+            else{
+                UART_BUFFER[uart_buffer_idx++] = c;
+                CMD_BUFFER[cmd_idx++] = c;
+            }
+            if(uart_buffer_idx == UART_BUFFER_SIZE) uart_buffer_idx = 0;
+        }
+        
+        //enable_irq();
+    }
+    if((id & 0x06) == 0x02){ // read
+        
+        //disable_irq();
+        while((*AUX_MU_LSR_REG)&0x20){
+            if(read_buffer_idx == uart_buffer_idx){
+                //uart_puts("123\r\n");
+                *AUX_MU_IER_REG = 0x01; // disable interrupt
+                uart_interrupt_flag = 0;
+                return;
+            }
+            c = UART_BUFFER[read_buffer_idx++];
+            *AUX_MU_IO_REG = c;
+            if(read_buffer_idx == UART_BUFFER_SIZE)
+                read_buffer_idx = 0;
+        }
+        //enable_irq();
+    }
+    return;
+}
+
 void uart_send(unsigned int c){
     do {
     	asm volatile("nop");

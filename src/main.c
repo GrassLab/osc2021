@@ -7,10 +7,11 @@
 
 void main(void){
     DEBUG = 0;
+    
     uart_init();
     buddy_init();
     dynamic_allocator_init();
-    
+    // core_timer_enable();
     // while(uart_get() == '\0');
     shell();    
 }

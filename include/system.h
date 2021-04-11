@@ -49,7 +49,7 @@ void cancel_reset();
 void sys_list(char *);
 void sys_cat(char *);
 void sys_load_user_program(char *);
-void sys_clear(char*);
+void sys_clear(char *);
 void extract_header(struct cpio_newc_header *, struct cpio_size_info *);
 unsigned long long int hex2int(char *, int);
 void *__memset(void *, int, int);

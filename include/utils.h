@@ -6,6 +6,10 @@
 #define uint64_t unsigned long long int
 #define uint8_t unsigned char
 
+extern unsigned int get32(unsigned long);
+extern void put32(unsigned long, unsigned int);
+extern void handle_irq();
+
 struct fdt_header
 {
     uint32_t address;
