@@ -1,4 +1,5 @@
 #include "cfg.h"
+#include "exec.h"
 #include "mm.h"
 #include "mm/startup.h"
 #include "shell.h"
@@ -7,6 +8,12 @@
 
 extern unsigned char __kernel_start, __kernel_end;
 
+void svc_test() {
+  for (int i = 0; i < 3; i++) {
+    asm volatile("svc 0 \n");
+  }
+}
+
 int main() {
   uart_init();
   uart_println("uart initialized");
@@ -14,6 +21,8 @@ int main() {
 #ifdef CFG_RUN_TEST
   run_tests();
 #endif
+
+  _exec_usr(&svc_test, (void *)0x60000, 0x3c0);
 
   startup_init();
 
