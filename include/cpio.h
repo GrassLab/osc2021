@@ -17,7 +17,7 @@
 #define CPIO_FOOTER_MAGIC "TRAILER!!!"
 #define CPIO_ALIGNMENT 4
 
-#define INITRAMFS_ADDR 0x20000000
+#define INITRAMFS_ADDR 0x8000000
 
 #ifndef NULL
 #define NULL ((void *)0)
