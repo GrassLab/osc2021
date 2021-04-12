@@ -6,6 +6,7 @@
 #include "io.h"
 #include "mini_uart.h"
 #include "string.h"
+#include "timer.h"
 
 void cmd_help() {
   print_s("Command\t\tDescription\n");
@@ -39,10 +40,11 @@ void cmd_buddy_test() { buddy_test(); }
 void cmd_dma_test() { dma_test(); }
 
 void cmd_load_user_program() {
-  uint64_t spsr_el1 = 0x3c0; // EL0t with interrupt disabled
+  uint64_t spsr_el1 = 0x0; // EL0t with interrupt enabled
   uint64_t target_addr = 0x30000000;
   uint64_t target_sp = 0x31000000;
   cpio_load_user_program("user_program.img", target_addr);
+  core_timer_enable();
   asm volatile("msr spsr_el1, %0" : : "r"(spsr_el1));
   asm volatile("msr elr_el1, %0" : : "r"(target_addr));
   asm volatile("msr sp_el0, %0" : : "r"(target_sp));

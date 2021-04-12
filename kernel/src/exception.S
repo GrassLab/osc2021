@@ -45,7 +45,7 @@
 exception_vector_table:
     b _exception_handler    // branch to a handler function.
     .align 7                // entry size is 0x80, .align will pad 0
-    b _exception_handler
+    b _irq_handler
     .align 7
     b _exception_handler
     .align 7
@@ -54,7 +54,7 @@ exception_vector_table:
 
     b _exception_handler
     .align 7
-    b _exception_handler
+    b _irq_handler
     .align 7
     b _exception_handler
     .align 7
@@ -63,7 +63,7 @@ exception_vector_table:
 
     b _exception_handler
     .align 7
-    b _exception_handler
+    b _irq_handler
     .align 7
     b _exception_handler
     .align 7
@@ -72,7 +72,7 @@ exception_vector_table:
 
     b _exception_handler
     .align 7
-    b _exception_handler
+    b _irq_handler
     .align 7
     b _exception_handler
     .align 7
@@ -82,5 +82,11 @@ exception_vector_table:
 _exception_handler:
     save_reg
     bl exception_handler // c code
+    load_reg
+    eret
+
+_irq_handler:
+    save_reg
+    bl core_timer_handler // c code
     load_reg
     eret
