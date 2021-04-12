@@ -37,18 +37,25 @@ void shell() {
       //   print_n(read_buf, read_len);
       // }
       // close(&f);
-      void *file = get_cpio_file(cmd_buf + 4);
-      if (file != NULL) {
-        print((char *)file);
+      void *cpio_file = get_cpio_file(cmd_buf + 4);
+      if (cpio_file != NULL) {
+        unsigned long file_size = get_file_size(cpio_file);
+        void *file_data = get_file_data(cpio_file);
+        print_n((char *)file_data, file_size);
       } else {
         print("file not found\n");
       }
     } else if (!strcmp_n(cmd_buf, "exec ", 4)) {
-      void *usr_prog = get_cpio_file(cmd_buf + 5);
-      if (usr_prog != NULL) {
-        void *usr_sp = kmalloc(PAGE_SIZE * 2);
-        exec_usr(usr_prog, usr_sp, 0);
-        kfree(usr_sp);
+      void *cpio_file = get_cpio_file(cmd_buf + 5);
+      if (cpio_file != NULL) {
+        unsigned long file_size = get_file_size(cpio_file);
+        void *file_data = get_file_data(cpio_file);
+        void *usr_prog = kmalloc(pad(file_size, 4096));
+        void *usr_stack = kmalloc(PAGE_SIZE * 2);
+        memcpy(usr_prog, file_data, file_size);
+        exec_usr(usr_prog, usr_stack, 0);
+        kfree(usr_stack);
+        kfree(usr_prog);
       } else {
         print("program not found\n");
       }
@@ -72,7 +79,7 @@ void kernel() {
   reserve_mem((void *)(&kn_start), (&kn_end - &kn_start));  // kernel
   reserve_mem((void *)0x3f000000, 0x1000000);               // MMIO
   reserve_cpio();
-  
+
   init_kmalloc();
 
   enable_interrupt();

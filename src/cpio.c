@@ -29,15 +29,15 @@ typedef struct cpio_newc_header {
 void *get_cpio_file(char *name) {
   cpio_newc_header *cpio_itr = (cpio_newc_header *)initramfs;
   while (strcmp_n(cpio_itr->c_magic, "070701", 6) == 0) {
-    unsigned long filesize = atol_n(cpio_itr->c_filesize, 8, 16);
-    unsigned long namesize = atol_n(cpio_itr->c_namesize, 8, 16);
     unsigned long mode = atol_n(cpio_itr->c_mode, 8, 16);
     if (mode == 0 && strcmp(cpio_itr->data, "TRAILER!!!") == 0) {
       return NULL;
     }
     if (strcmp(name, cpio_itr->data) == 0) {
-      return &(cpio_itr->data[2 + pad(namesize - 2, 4)]);
+      return (void *)cpio_itr;
     }
+    unsigned long filesize = atol_n(cpio_itr->c_filesize, 8, 16);
+    unsigned long namesize = atol_n(cpio_itr->c_namesize, 8, 16);
     cpio_itr = (cpio_newc_header *)&(
         cpio_itr->data[2 + pad(namesize - 2, 4) + pad(filesize, 4)]);
   }
@@ -59,4 +59,14 @@ void reserve_cpio() {
     cpio_itr = (cpio_newc_header *)&(
         cpio_itr->data[2 + pad(namesize - 2, 4) + pad(filesize, 4)]);
   }
+}
+
+unsigned long get_file_size(void *cpio_file) {
+  return atol_n(((cpio_newc_header *)cpio_file)->c_filesize, 8, 16);
+}
+
+void *get_file_data(void *cpio_file) {
+  unsigned long namesize =
+      atol_n(((cpio_newc_header *)cpio_file)->c_namesize, 8, 16);
+  return &(((cpio_newc_header *)cpio_file)->data[2 + pad(namesize - 2, 4)]);
 }

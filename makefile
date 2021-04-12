@@ -29,7 +29,7 @@ KN = kernel8
 
 UDIR = usr
 
-.PHONY: clean all USR
+.PHONY: clean USR
 
 all: $(BDIR) $(BL).img $(KN).elf USR $(INITRAMFS)
 
@@ -49,7 +49,7 @@ $(BDIR)/%.asmo: $(SDIR)/%.S
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(BDIR)/*.asmo $(BDIR)/*.o *.elf $(BL).img initramfs.cpio
+	rm -f $(BDIR)/*.asmo $(BDIR)/*.o *.elf $(BL).img $(INITRAMFS) $(UDIR)/*.o $(UDIR)/*.elf $(UDIR)/*.img
 
 run: all
 	qemu-system-aarch64 -M raspi3 -kernel $(BL).img -initrd $(INITRAMFS) \
@@ -73,7 +73,10 @@ $(MOUNT_DIR):
 $(ROOTFS):
 	mkdir $(ROOTFS)
 
-$(INITRAMFS): $(ROOTFS)
+$(INITRAMFS): $(UDIR)/*
+	rm -rf $(ROOTFS)
+	cp -r $(UDIR) $(ROOTFS)
+	
 	cd $(ROOTFS) && \
 	find . | cpio -o -H newc > ../$(INITRAMFS) && \
 	cd ..
@@ -88,5 +91,3 @@ $(BDIR):
 
 USR: $(UDIR)
 	$(MAKE) -C $(UDIR)
-	rm -rf $(ROOTFS)
-	cp -r $(UDIR) $(ROOTFS)
