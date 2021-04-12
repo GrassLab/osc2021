@@ -163,6 +163,7 @@ size_t uart_async_read(char* buf, size_t size) {
     //uart_send(c);
     count++;
   }
-  buf[count] = '\0';
+  if(count < size)
+    buf[count] = '\0';
   return count;
 }
