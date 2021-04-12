@@ -51,6 +51,7 @@ void command_controller(char *cmd) {
     else if (!strcmp("meminfo -u"      , cmd))     { command_meminfo(2); }
     else if (!strcmp("kmalloc"         , cmd))     { command_kmalloc(); }
     else if (!strcmp("kfree"           , cmd))     { command_kfree(); }
+    else if (!strcmp("test"            , cmd))     { command_test(); }
     else    { command_not_found(); }
 }
 
@@ -68,6 +69,7 @@ void command_help() {
     uart_puts("  meminfo\t:\tlist memory info.\n");
     uart_puts("  kmalloc\t:\tmalloc memory for kernel.\n");
     uart_puts("  kfree\t:\tfree memory for kernel.\n");
+    uart_puts("  test\t\t:\ttesting kmalloc and kfree.\n");
     uart_puts("========================================\n");
 }
 
@@ -291,6 +293,20 @@ void command_kfree() {
     else
         uart_puts("[debug] error!\n");
 
+}
+
+void command_test() {
+    for(int i = 0; i < 32; i++) {
+        uint64_t *adr = kmalloc(128);
+
+        uart_puts("[");
+        uart_puti(i, 10);
+        uart_puts("] ");
+
+        uart_puts("allocated at: 0x");
+        uart_puti((uint64_t)adr, 16);
+        uart_puts("\n");
+    }
 }
 
 void command_not_found() {

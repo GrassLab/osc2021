@@ -19,6 +19,7 @@ void command_freei();
 void command_meminfo(int mode);
 void command_kmalloc();
 void command_kfree();
+void command_test();
 
 void command_not_found();
 

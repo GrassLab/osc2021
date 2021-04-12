@@ -41,12 +41,12 @@ static int address_to_frame_array_index(uint64_t address) {
 
 static int init_allocated_frame(uint64_t address, unsigned int object_size) {
 	for(int i = 0; i < (FRAME_SIZE / object_size); i++) {
-        uint64_t *t = (uint64_t *)address + (i * object_size);
+        uint64_t *t = (uint64_t *)(address + (i * object_size));
         *t = address + ((i + 1) * object_size);
     }
 
-    uint64_t *t = (uint64_t *)address + FRAME_SIZE - object_size;
-    *t = 0;
+    uint64_t *t2 = (uint64_t *)(address + FRAME_SIZE - object_size);
+    *t2 = (uint64_t)NULL;
 
     return 0;
 }
@@ -67,6 +67,10 @@ uint64_t *kmalloc(unsigned int size) {
 		return NULL;
 
 	int cache_index = required_size_to_cache_index(size);
+
+    uart_puts("[debug] slab_allocator[cache_index].free_head: 0x");
+    uart_puti((uint64_t)slab_allocator[cache_index].free_head, 16);
+    uart_puts("\n");
 
 	if(slab_allocator[cache_index].free_head == NULL) {
         uart_puts("[debug] allocating space with new frame for kmalloc.\n");
@@ -97,7 +101,7 @@ uint64_t *kmalloc(unsigned int size) {
 
 		// Updating freelist
 		uint64_t adr = (uint64_t)slab_allocator[cache_index].free_head;
-        slab_allocator[cache_index].free_head = (uint64_t *)(adr + size);
+        slab_allocator[cache_index].free_head = (uint64_t *)*(slab_allocator[cache_index].free_head);
 
 		// Updating allocated_object_in_frame array
 		int frame_array_index = address_to_frame_array_index(adr);
@@ -114,7 +118,7 @@ int kfree(uint64_t address) {
 	uint64_t *t = slab_allocator[cache_index].free_head;
 	*t = address;
 
-    t = address;
+    t = (uint64_t *)address;
 	*t = tmp;
 
 	// Updating allocated_object_in_frame array
