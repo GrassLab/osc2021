@@ -123,3 +123,4 @@ void uart_puti(int val, int base) {
     itoa(val, output_buffer, base);
     uart_puts(output_buffer);
 }
+

@@ -5,6 +5,7 @@
 #include "cpio.h"
 #include "type.h"
 #include "buddy.h"
+#include "slab.h"
 
 void shell_welcome_message() {
     uart_puts(" _   _      _ _       \n");
@@ -48,6 +49,7 @@ void command_controller(char *cmd) {
     else if (!strcmp("meminfo"         , cmd))     { command_meminfo(1); }
     else if (!strcmp("meminfo -a"      , cmd))     { command_meminfo(1); }
     else if (!strcmp("meminfo -u"      , cmd))     { command_meminfo(2); }
+    else if (!strcmp("kmalloc"         , cmd))     { command_kmalloc(); }
     else    { command_not_found(); }
 }
 
@@ -63,6 +65,7 @@ void command_help() {
     uart_puts("  freez\t\t:\tfree memory by size.\n");
     uart_puts("  freei\t\t:\tfree memory by index.\n");
     uart_puts("  meminfo\t:\tlist memory info.\n");
+    uart_puts("  kmalloc\t:\tmalloc memory for kernel.\n");
     uart_puts("========================================\n");
 }
 
@@ -232,6 +235,32 @@ void command_meminfo(int mode) {
         print_used_memory_with_uart();
     else
         print_available_memory_with_uart();
+}
+
+void command_kmalloc() {
+    char input_buffer[32] = { 0 };
+
+    uart_puts("Enter size in bytes to kmalloc: ");
+
+    int i = 0;
+    while(1) {
+        char c = uart_getc();
+        uart_send(c);
+        if(c == '\n') {
+            input_buffer[i] = 0x00;
+            break;
+        } else {
+            input_buffer[i] = c;
+            i++;
+        }
+    }
+
+    int size_to_allocate = atoi(input_buffer);
+    uint64_t *adr = kmalloc(size_to_allocate);
+
+    uart_puts("allocated at: 0x");
+    uart_puti((uint64_t)adr, 16);
+    uart_puts("\n");
 }
 
 void command_not_found() {
