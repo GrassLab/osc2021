@@ -10,11 +10,10 @@ void cpio_exec(char *path)
 {
     CPIO_NEWC_HEADER *targetAddr = cpio_find_addr((CPIO_NEWC_HEADER *)RAMFS_ADDR ,path);
     if (targetAddr == 0) {
-        puts("could not find the file. \r\n");
+        printf("could not find the file. \r\n");
     } else {
         int filesize = cpio_attr_value(targetAddr, C_FILESIZE);
         char *content_addr = (char *)cpio_content_addr(targetAddr);
-        printf("%d\n", filesize);
 
         void *dest_addr = NULL;
         alloc_page(&dest_addr, 17); // FIXIT: hardcoded
@@ -36,7 +35,7 @@ void cpio_read(char *path)
     // start from root address
     CPIO_NEWC_HEADER *targetAddr = cpio_find_addr((CPIO_NEWC_HEADER *)RAMFS_ADDR ,path);
     if (targetAddr == 0) {
-        puts("could not find the file. \r\n");
+        printf("could not find the file. \r\n");
     } else {
         char *content_addr = (char *)cpio_content_addr(targetAddr);
         
@@ -44,7 +43,7 @@ void cpio_read(char *path)
             putchar(*content_addr);
         }
 
-        puts("\r\n");
+        printf("\r\n");
     }
 }
 

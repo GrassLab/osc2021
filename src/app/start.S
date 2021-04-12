@@ -9,6 +9,10 @@ _start:
     // sp_el0 is set before start
     bl       app
 
+    // issue an exception to return to el1
+    svc 0
+    
+
 clear:
     // clear bss memory
     str     xzr, [x0], #8
