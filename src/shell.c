@@ -11,24 +11,22 @@ void shell_welcome(){
     uart_puts("------------------------\r\n");
 }
 void shell(){
-    sync_call_uart();
-    shell_welcome();
-    while(uart_get() == '\0');
-    
-    // uart_send_string("hi\r\n");
+    enable_uart_interrupt();
+    core_timer_enable();
+    enable_irq();
+    uart_send_string("=== Welcome ===\r\n");
     uart_send_string("$ ");
-    // char *buf_ptr = input_buffer;
-    // __memset(buf_ptr, '\0', INPUT_SIZE);
     while(1){
         if(cmd_flag){
-            // uart_send_string("hi\r\n");
-            // uart_puts(CMD_BUFFER);
             system_command(CMD_BUFFER);
             cmd_flag = 0;
             uart_send_string("$ ");
         }
-        // uart_send_string("xx\r\n");
     }
+    // shell_welcome();
+    // while(uart_get() == '\0');
+    // char *buf_ptr = input_buffer;
+    // __memset(buf_ptr, '\0', INPUT_SIZE);
     // char c;
     // while(1){
     //     c = uart_get();

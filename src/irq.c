@@ -5,9 +5,9 @@ void handle_sync_el1(unsigned long esr_el1, unsigned long elr_el1){
     unsigned int imm_value = (*addr & 0x000fffff) >> 5; 
     
     if(imm_value & 0x03){
-        //uart_puts("gg123\r\n");
-        enable_uart_interrupt();
-        enable_irq();
+        uart_puts("gg123\r\n");
+        // enable_uart_interrupt();
+        // enable_irq();
     }
     return;
 }
@@ -15,12 +15,14 @@ void handle_el1_irq(){
     unsigned int irq_sig2 = get32(IRQ_PENDING_1);
     unsigned int irq_sig1 = get32(CORE0_INTERRUPT_SOURCE);
     if(irq_sig2 & AUX_IRQ){
+        // uart_puts("???\r\n");
         uart_irq();
         enable_irq();
     }
-    if(irq_sig1 == 2){
-        uart_puts("core time123\r\n");
-        core_timer_irq();
+    if(irq_sig1 == 2){ // CNTPNIRQ
+        // uart_puts("core time123\r\n");
+        el1_timer_irq();
+        enable_irq();
     }
     return;
 }
@@ -34,15 +36,21 @@ void handle_el0_irq(){
     }
     if(irq_sig1 == 2){
         // uart_puts("core time\r\n");
-        core_timer_irq();
+        el0_timer_irq();
         enable_irq();
     }
     // else disable_irq();
     return;
 }
-void core_timer_irq(){
-    
-    core_timer_handler();
-    core_timer_disable();
+void el1_timer_irq(){
+    // core_timer_disable();
+    // core_timer_handler();
+    unsigned int second = get_current_timer_cnt() / TIME_FREQ;
+    uart_printint(second);
+    uart_puts("\r\n");
+    asm volatile ("msr cntp_tval_el0, %0" :: "r" (2 * TIME_FREQ));
     return;
+}
+void el0_timer_irq(){
+    core_timer_disable();
 }

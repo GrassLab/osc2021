@@ -17,7 +17,7 @@ core_timer_enable:
     msr cntp_tval_el0, x0 // set expired time
     mov x0, 2
     ldr x1, =CORE0_TIMER_IRQ_CTRL
-    str x0, [x1] // unmask timer interrupt
+    str w0, [x1] // unmask timer interrupt
     ret
 
 .globl core_timer_disable
@@ -32,9 +32,13 @@ core_timer_disable:
 .globl core_timer_handler
 core_timer_handler:
     mrs x0, cntpct_el0
-    //print_el x0
+    // print_el x0
     mrs x0, cntfrq_el0
     add x0, x0, x0       // 2 seconds
     msr cntp_tval_el0, x0
     ret
-    
+
+.globl get_current_timer_cnt
+get_current_timer_cnt:
+    mrs x0, cntpct_el0
+    ret

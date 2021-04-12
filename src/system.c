@@ -20,8 +20,10 @@ struct cmd cmd_list[] = {
     {.input = "cat", .description="show content of file", .callback = sys_cat},
     {.input = "dtb_init", .description="init device by calling driver", .callback = dtb_init},
     {.input = "lab3", .description="lab3", .callback=__lab3},
-    {.input = "run", .description="execute user program in el0", .callback = sys_load_user_program},
-    {.input = "clear", .description = "clean screen", .callback=sys_clear}
+    {.input = "lab4", .description="execute user program in el0", .callback = sys_load_user_program},
+    {.input = "clear", .description = "clean screen", .callback=sys_clear}, 
+    {.input = "setTimeout", .description = "regist callback function", .callback=sys_setTimeout},
+    {.input = "DT", .description = "disable time core", .callback=sys_disable_timer}
 };
 
 void show_el1_status_info(int spsr_el1, int elr_el1, int esr_el1){
@@ -35,6 +37,20 @@ void __lab3(char* args){
     DEBUG = 2;
     DMA_test2();
     DEBUG = 0;
+}
+void sys_disable_timer(char* args){
+    core_timer_disable();
+}
+void sys_setTimeout(char* args){
+    int second = 0, last_idx = 0;
+    for(int i = 0; args[i] != '\0'; ++i){
+        if(args[i] >= '0' && args[i] <= '9') second = second * 10 + args[i] - '0';
+        else second = 0;
+        if(args[i] == ' ') last_idx = i;
+    }
+    args[last_idx] = '\0';
+    core_timer_enable();
+    asm volatile ("msr cntp_tval_el0, %0" :: "r" (second * TIME_FREQ));
 }
 void sys_clear(char* args){
     uart_puts("\033c");

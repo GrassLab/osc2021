@@ -5,6 +5,8 @@
 #include "dynamic_allocator.h"
 #include "uart.h"
 #include "entry.h"
+#include "timer.h"
+
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC ((volatile unsigned int *)(0x3F10001c))
 #define PM_RSTS ((volatile unsigned int *)(0x3F100020))
@@ -48,6 +50,8 @@ void reset(int);
 void cancel_reset();
 void sys_list(char *);
 void sys_cat(char *);
+void sys_setTimeout(char *);
+void sys_disable_timer(char *);
 void sys_load_user_program(char *);
 void sys_clear(char *);
 void extract_header(struct cpio_newc_header *, struct cpio_size_info *);

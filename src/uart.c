@@ -43,7 +43,6 @@ void uart_init(){
     
 }
 void enable_uart_interrupt(){
-    // *AUX_MU_IER_REG = 0x03;
     put32(ENB_IRQS1, AUX_IRQ);
     return;
 }
@@ -88,12 +87,8 @@ void uart_irq(){
             }
             if(uart_buffer_idx == UART_BUFFER_SIZE) uart_buffer_idx = 0;
         }
-        
-        //enable_irq();
     }
-    if((id & 0x06) == 0x02){ // read
-        
-        //disable_irq();
+    if((id & 0x06) == 0x02){ 
         while((*AUX_MU_LSR_REG)&0x20){
             if(read_buffer_idx == uart_buffer_idx){
                 //uart_puts("123\r\n");
