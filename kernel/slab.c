@@ -110,16 +110,19 @@ uint64_t *kmalloc(unsigned int size) {
 int kfree(uint64_t address) {
 	int cache_index = address_to_cache_index(address);
 
-    uint64_t tmp = *(slab_allocator[cache_index].free_head);
+    uint64_t tmp = (uint64_t)slab_allocator[cache_index].free_head;
 	uint64_t *t = slab_allocator[cache_index].free_head;
 	*t = address;
-	address = tmp;
+
+    t = address;
+	*t = tmp;
 
 	// Updating allocated_object_in_frame array
 	int frame_array_index = address_to_frame_array_index(address);
 	allocated_object_in_frame[frame_array_index]--;
 
 	if(allocated_object_in_frame[frame_array_index] == 0) {
+        slab_allocator[cache_index].free_head = NULL;
 		frames_belong_to_cache[frame_array_index] = -1;
 		return free_frame_by_index(frame_array_index);
 	}

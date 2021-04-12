@@ -50,6 +50,7 @@ void command_controller(char *cmd) {
     else if (!strcmp("meminfo -a"      , cmd))     { command_meminfo(1); }
     else if (!strcmp("meminfo -u"      , cmd))     { command_meminfo(2); }
     else if (!strcmp("kmalloc"         , cmd))     { command_kmalloc(); }
+    else if (!strcmp("kfree"           , cmd))     { command_kfree(); }
     else    { command_not_found(); }
 }
 
@@ -66,6 +67,7 @@ void command_help() {
     uart_puts("  freei\t\t:\tfree memory by index.\n");
     uart_puts("  meminfo\t:\tlist memory info.\n");
     uart_puts("  kmalloc\t:\tmalloc memory for kernel.\n");
+    uart_puts("  kfree\t:\tfree memory for kernel.\n");
     uart_puts("========================================\n");
 }
 
@@ -261,6 +263,34 @@ void command_kmalloc() {
     uart_puts("allocated at: 0x");
     uart_puti((uint64_t)adr, 16);
     uart_puts("\n");
+}
+
+void command_kfree() {
+    char input_buffer[32] = { 0 };
+
+    uart_puts("Enter address in hex (without 0x) to kfree: ");
+
+    int i = 0;
+    while(1) {
+        char c = uart_getc();
+        uart_send(c);
+        if(c == '\n') {
+            input_buffer[i] = 0x00;
+            break;
+        } else {
+            input_buffer[i] = c;
+            i++;
+        }
+    }
+
+    int address_to_free = hextoi(input_buffer);
+    
+    int res = kfree(address_to_free);
+    if(res == 0)
+        uart_puts("[debug] successfully freed memory.\n");
+    else
+        uart_puts("[debug] error!\n");
+
 }
 
 void command_not_found() {

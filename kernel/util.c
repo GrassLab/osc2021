@@ -76,6 +76,20 @@ int atoi(const char *str) {
     return res;
 }
 
+int hextoi(const char *str) {
+    int res = 0;
+
+    for(int i = 0; str[i] != '\0'; i++) {
+        if(str[i] >= 97 && str[i] <= 102)
+            res = res * 16 + str[i] - 'a' + 10;
+        else
+            res = res * 16 + str[i] - '0';
+    }
+
+    return res;
+}
+
+
 void print_memory_with_uart(void *address, int size) {
     int printed = 0;
     unsigned char *current = address; 
