@@ -13,14 +13,13 @@ void kernel()
     printf("***********************************\r\n");
     printf("Welcome!\r\n");
     printf("***********************************\r\n");
-    cpio_exec("app");
     
-    // char command[MAX_COMMAND_SIZE];
-    // while (1)
-    // {
-    //     printf("# ");
-    //     get(command, MAX_COMMAND_SIZE);
-    //     exec_command(command);
-    // }
+    char command[MAX_COMMAND_SIZE];
+    while (1)
+    {
+        printf("# ");
+        get(command, MAX_COMMAND_SIZE);
+        exec_command(command);
+    }
 }
 

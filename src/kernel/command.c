@@ -88,7 +88,7 @@ void exec_command(char *input)
         mem_stat();
     } else if (strcmp(input, "load") == 0) {
         // load app
-        cpio_read("app");
+        cpio_exec("app");
 
     } else {
         puts("Try another command\r\n");
