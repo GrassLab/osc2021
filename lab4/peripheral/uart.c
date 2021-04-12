@@ -159,9 +159,10 @@ size_t uart_async_read(char* buf, size_t size) {
   char c;
   while(!circular_queue_is_empty(&uart_read_buffer) && count < size) {
     c = circular_queue_pop(&uart_read_buffer);
-    
-    uart_send(c);
+    buf[count] = c;
+    //uart_send(c);
     count++;
   }
+  buf[count] = '\0';
   return count;
 }

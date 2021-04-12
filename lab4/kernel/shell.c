@@ -118,6 +118,7 @@ void do_command(char* command) {
   }
   else if(strncmp(command, "asyncr", 7) == 0) {
     int count = uart_async_read(command, SHELL_COMMNAD_SIZE);
+    printf("%s", command);
     printf("read %d bytes\n", count);
   }
   else {
