@@ -13,6 +13,6 @@ typedef signed short int int16_t;
 typedef unsigned char uint8_t;
 typedef signed char int8_t;
 
-uint8_t hex_to_int64(char*);
-uint64_t hex_to_int8(char);
+uint64_t hex_to_int64(char*);
+uint8_t hex_to_int8(char);
 #endif
