@@ -25,7 +25,7 @@ void command_help ()
     uart_puts("\tls:\t\tPrint cpio file list.\n");
     uart_puts("\tcat {filename}:\tPrint content in {filename} \n");
     uart_puts("\tma:\t\tSystem of memory allcator \n");
-    uart_puts("\tcurrentEL:\tPiint current exception level");
+    uart_puts("\tcurrentEL:\tPiint current exception level(You can't use it in EL0)");
     uart_puts("\n");
 }
 
@@ -90,8 +90,41 @@ void command_getCpioFile(void *initramfs_addr, char *buf)
     }
 }
 
+void command_cpio_svc() 
+{
+    unsigned long fileSize;
+    char *result = cpio_get_file((void *) INITRAMFS_ADDR, "test_svc.elf", &fileSize);
+
+    char *program_address = result + 120;
+    printf("cpio starting addres0x{%x}\n", result);
+    printf("program starting address: 0x{%x}\n", program_address);
+
+    // Jump to user program. And before jump to user program we should do following thing
+    // 1. set EL0 stack pointer before jump into user program(user mode)
+    // 2. set spsr_el1 to disable all intterupt and use user stack
+    // 3. set elr_el1 with starting address of user program
+    // Note: 
+    // 1. In ARM, mov instrcution  can only encode an immediate constant that can be 
+    // represented as an 8-bit immediate value, shifted by any even power of two.
+    // 2. we hardcode starting address of user porgram, maybe there are other better metholds
+    asm volatile(
+        "mov x0, 0x3c0        \n \
+         msr spsr_el1, x0     \n \
+         mov x0, 0x8000000    \n \
+         add x0, x0, 0x28c    \n \
+         msr elr_el1, x0      \n \
+         ldr x1, =0x40000     \n \
+         msr sp_el0, x1       \n \
+         eret");
+
+    printf("end cpio_svc\n");
+}
+
+
 void command_current_el()
 {
     int el = get_el();
     printf("Current Exception Level: %d \r\n", el);
 }
+
+

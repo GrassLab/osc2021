@@ -11,4 +11,5 @@ void command_reboot ();
 void command_cpio_ls(void *);
 void command_getCpioFile(void *, char *);
 void command_current_el();
+void command_cpio_svc();
 #endif
