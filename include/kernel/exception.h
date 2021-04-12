@@ -1,0 +1,1 @@
+void exec_in_el0(void *addr);

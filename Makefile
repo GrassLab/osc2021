@@ -1,5 +1,6 @@
 ARMGNU = aarch64-linux-gnu
-FLAGS = -Wall -nostdlib -ffreestanding -Werror
+FLAGS = -Wall -nostdlib -ffreestanding -Werror -ggdb3 -O0
+# FLAGS = -Wall -nostdlib -ffreestanding -Werror
 INCLUDES = -Iinclude/bootloader -Iinclude/kernel -Iinclude/lib
 
 BUILD_DIR= build
@@ -16,11 +17,20 @@ all: kernel8.img bootloader.img assets
 
 $(OBJS_DIR)/%_c.o: $(SRC_DIR)/%.c
 	@mkdir -p $(@D)
+ifndef DEBUG
 	$(ARMGNU)-gcc $(FLAGS) $(INCLUDES) -c $< -o $@
+else
+	$(ARMGNU)-gcc $(FLAGS) $(INCLUDES) -D EMU -c $< -o $@
+endif
+
 
 $(OBJS_DIR)/%_s.o: $(SRC_DIR)/%.S
 	@mkdir -p $(@D)
+ifndef DEBUG
 	$(ARMGNU)-gcc $(FLAGS) $(INCLUDES) -c $< -o $@
+else 
+	$(ARMGNU)-gcc $(FLAGS) $(INCLUDES) -D EMU -c $< -o $@
+endif
 
 kernel8.img: $(filter $(OBJS_DIR)/kernel/%.o $(OBJS_DIR)/lib/%.o, $(OBJ_FILES)) $(SRC_DIR)/kernel/linker.ld
 	@mkdir -p $(BUILD_DIR)
@@ -45,3 +55,10 @@ clean:
 #TODO: set emu tag when compiling debuging code
 run:
 	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/bootloader.img -initrd $(BUILD_DIR)/initramfs.cpio -serial null -serial pty -display none
+
+	
+debug: clean kernel8.img bootloader.img assets
+
+
+run-debug:
+	qemu-system-aarch64 -s -S -M raspi3 -kernel $(BUILD_DIR)/kernel8.img -initrd $(BUILD_DIR)/initramfs.cpio -serial null -serial stdio -display none

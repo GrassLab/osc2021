@@ -1,6 +1,35 @@
 #include "cpio.h"
 #include "string.h"
 #include "mini_uart.h"
+#include "exception.h"
+#include "pf_alloc.h"
+#include "io.h"
+#include "def.h"
+
+void cpio_exec(char *path)
+{
+    CPIO_NEWC_HEADER *targetAddr = cpio_find_addr((CPIO_NEWC_HEADER *)RAMFS_ADDR ,path);
+    if (targetAddr == 0) {
+        puts("could not find the file. \r\n");
+    } else {
+        int filesize = cpio_attr_value(targetAddr, C_FILESIZE);
+        char *content_addr = (char *)cpio_content_addr(targetAddr);
+        printf("%d\n", filesize);
+
+        void *dest_addr = NULL;
+        alloc_page(&dest_addr, 17); // FIXIT: hardcoded
+
+        
+        char *dest_tmp = (char *)dest_addr;
+
+        // move file
+        for (int i = 0; i < filesize; i++, content_addr++, dest_tmp++) {
+            *dest_tmp = *content_addr;
+        }
+
+        exec_in_el0(dest_addr);
+    }
+}
 
 void cpio_read(char *path)
 {
@@ -9,18 +38,10 @@ void cpio_read(char *path)
     if (targetAddr == 0) {
         puts("could not find the file. \r\n");
     } else {
-        char *tmp = (char *)(targetAddr + 1);
-
-        // print target name
-        int namesize = cpio_attr_value(targetAddr, C_NAMESIZE) - 1;
-        tmp += namesize;
-        while (((tmp - (char *)targetAddr) % 4) != 0) {
-            *tmp = '\0';
-            tmp++;
-        }
-
-        for (int i = 0; i < cpio_attr_value(targetAddr, C_FILESIZE); i++, tmp++) {
-            putchar(*tmp);
+        char *content_addr = (char *)cpio_content_addr(targetAddr);
+        
+        for (int i = 0; i < cpio_attr_value(targetAddr, C_FILESIZE); i++, content_addr++) {
+            putchar(*content_addr);
         }
 
         puts("\r\n");
@@ -93,4 +114,17 @@ int cpio_attr_value(CPIO_NEWC_HEADER *pRoot, CPIO_ATTR attr)
     }
 
     return hextoi(vStr);
+}
+
+void * cpio_content_addr(CPIO_NEWC_HEADER *targetAddr)
+{
+    char *tmp = (char *)(targetAddr + 1);
+    int namesize = cpio_attr_value(targetAddr, C_NAMESIZE) - 1;
+    tmp += namesize;
+    while (((tmp - (char *)targetAddr) % 4) != 0) {
+        *tmp = '\0';
+        tmp++;
+    }
+
+    return tmp;
 }
