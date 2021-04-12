@@ -89,11 +89,14 @@ exception_handler:
   restore_context
   eret
 
-
 irq_handler:
+  //disable interrupt
+  //msr DAIFSet, 0xf
   store_context
-  bl core_timer_handler
+  bl irq_routing
   restore_context
+  //enable interrupt
+  //msr DAIFClr, 0xf
   eret
 
 

@@ -4,6 +4,8 @@
 #include <types.h>
 
 #define BOOTLOADER_OFFSET 0x10000
+#define SHELL_COMMNAD_SIZE 0x100
+
 void shell();
 void do_command(char* command);
 void loadimg();

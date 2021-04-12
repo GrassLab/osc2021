@@ -44,7 +44,7 @@ _from_el1_to_el0:
   sub  x0, x0, #0x1000
   msr  sp_el0, x0
   #store Pstate to spsr_el1
-  mov  x0, #0
+  mov  x0, #0x3c0
   msr  spsr_el1, x0
   bl core_timer_enable
   #disable exception of access SIMD register in EL1
@@ -55,6 +55,8 @@ _from_el1_to_el0:
   #ldr  x0, = _load_main
   #msr  elr_el1, x0
   #eret
+  #enable interrupt
+  #msr DAIFClr, 0xf
 _load_main:
   mov  x0, x3
   bl main

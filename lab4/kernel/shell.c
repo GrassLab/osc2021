@@ -8,10 +8,11 @@
 #include <dynamic.h>
 #include <exception.h>
 #include <printf.h>
+
 void shell() {
   uart_puts("*****************************Hello World*****************************\r\n");
   uart_puts("% ");
-  char command[256];
+  char command[SHELL_COMMNAD_SIZE];
   memset(command, strlen(command), '\0');
   int i = 0;
   while(1) {
@@ -56,6 +57,8 @@ void do_command(char* command) {
     printf("svc: trigger interrupt\n");
     printf("run: run user program in el0\n");
     printf("el12el0: from el1 to el0\n");
+    printf("asyncw: asynchronous write\n");
+    printf("asyncr: asynchronous read\n");
   }
   else if(strncmp(command, "hello", 6) == 0) {
     printf("Hello World!\n");
@@ -102,13 +105,20 @@ void do_command(char* command) {
     void* addr = cpio_get_file_address("user_program.elf", 15);
     printf("addr: %x\n", addr);
     //from el1 to el0 and jump to user_program
-    asm volatile("mov  x0, #0x3c0\n" "msr  spsr_el1, x0\n");
+    asm volatile("mov x0, #0x3c0\n" "msr spsr_el1, x0\n");
     asm volatile("mov x0, %0\n" "msr elr_el1, x0\n" "eret\n"::"r"(addr + 0x40));
   }
   else if(strncmp(command, "el12el0", 8) == 0) {
     //from el1 to el0
-    asm volatile("mov  x0, #0\n" "msr  spsr_el1, x0\n");
+    asm volatile("mov x0, #0\n" "msr spsr_el1, x0\n");
     asm volatile("mov x0, %0\n" "msr elr_el1, x0\n" "eret\n"::"r"((void*)shell));
+  }
+  else if(strncmp(command, "asyncw", 6) == 0) {
+    uart_async_write(command + 6, strlen(command) - 6);
+  }
+  else if(strncmp(command, "asyncr", 7) == 0) {
+    int count = uart_async_read(command, SHELL_COMMNAD_SIZE);
+    printf("read %d bytes\n", count);
   }
   else {
     printf("unknown command\n");

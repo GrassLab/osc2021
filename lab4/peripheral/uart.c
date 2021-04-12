@@ -1,5 +1,6 @@
 #include "uart.h"
-
+#include <interrupt.h>
+#include <string.h>
 void uart_init() {
 
   register unsigned int r;
@@ -23,6 +24,12 @@ void uart_init() {
   *AUX_MU_IIR_REG = 6;
   *AUX_MU_BAUD_REG = 270;
   *AUX_MU_CNTL_REG = 3;
+  
+  //routing interrupt to core 0
+  *GPU_INTERRUPT_ROUTING = 0;
+  
+  //*AUX_MU_IER_REG = 3;
+  *UART_IRQ1_ENABLE = (1 << 29);
 }
 
 /**
@@ -115,3 +122,46 @@ void putc( void* p, char c) {
   uart_send(c);
 }
 
+void uart_tx_interrupt_enable() {
+  *AUX_MU_IER_REG |= 2;
+}
+
+void uart_rx_interrupt_enable() {
+  *AUX_MU_IER_REG |= 1;
+}
+
+void uart_tx_interrupt_disable() {
+  *AUX_MU_IER_REG &= ~2;
+}
+
+void uart_rx_interrupt_disable() {
+  //*UART_IRQ1_DISABLE = (1 << 29);
+  *AUX_MU_IER_REG &= ~1;
+}
+
+size_t uart_async_write(char* buf, size_t count) {
+  //write to write buffer
+  for(int i = 0; i < count; i++) {
+    if(buf[i] == '\n') 
+      circular_queue_push(&uart_write_buffer, '\r');
+    circular_queue_push(&uart_write_buffer, buf[i]);
+  }
+  //enable tx interrupt
+  uart_tx_interrupt_enable();
+  return count;
+}
+
+size_t uart_async_read(char* buf, size_t size) {
+  size_t count;
+  uart_rx_interrupt_enable();
+  while((*AUX_MU_IER_REG) & 1);
+  count = 0;
+  char c;
+  while(!circular_queue_is_empty(&uart_read_buffer) && count < size) {
+    c = circular_queue_pop(&uart_read_buffer);
+    
+    uart_send(c);
+    count++;
+  }
+  return count;
+}
