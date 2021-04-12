@@ -20,6 +20,7 @@ timer_pending *tp_list = NULL;
 unsigned long timer_frq;
 
 void core_timer_enable() {
+  disable_interrupt();
   tp_list = kmalloc(sizeof(timer_pending));
   tp_list->callback = NULL;
   tp_list->exp_time = 0xffffffffffffffff;
@@ -34,20 +35,18 @@ void core_timer_enable() {
       "mrs %0, cntfrq_el0;"
       : "=r"(timer_frq));
 
-  log_hex("core timer frequency", timer_frq, LOG_DEBUG);
+  enable_interrupt();
+  log_hex("core timer frequency", timer_frq, LOG_PRINT);
 
   *CORE0_TIMER_IRQ_CTRL = 2;  // nCNTPNSIRQ IRQ control enable
 }
 
-void add_timer(double time, void *callback, void *data) {
-  unsigned long exp_time;
-  asm volatile("mrs %0, cntpct_el0;" : "=r"(exp_time));
-  // exp time using cntp cval instead of tval
-  exp_time = exp_time + ((unsigned long)(time * timer_frq));
+void _add_timer(unsigned long exp_time, void *callback, void *data) {
   timer_pending *new_tp = kmalloc(sizeof(timer_pending));
   new_tp->exp_time = exp_time;
   new_tp->callback = callback;
   new_tp->data = data;
+  disable_interrupt();
   if (exp_time < tp_list->exp_time) {
     new_tp->next = tp_list;
     tp_list = new_tp;
@@ -60,14 +59,22 @@ void add_timer(double time, void *callback, void *data) {
     new_tp->next = tp_itr->next;
     tp_itr->next = new_tp;
   }
+  enable_interrupt();
 }
 
-void print_time(void *data) {
-  add_timer(2, &print_time, NULL);
-  unsigned long cnt;
-  asm volatile("mrs %0, cntpct_el0;" : "=r"(cnt));
-  unsigned long time = cnt / timer_frq;
+void add_timer(double time, void *callback, void *data) {
+  unsigned long exp_time;
+  asm volatile("mrs %0, cntpct_el0;" : "=r"(exp_time));
+  // exp time using cntp cval instead of tval
+  exp_time = exp_time + ((unsigned long)(time * timer_frq));
+  _add_timer(exp_time, callback, data);
+}
+
+void print_time(unsigned long tc) {
+  unsigned long time = tc / timer_frq;
   log_hex("up time", time, LOG_PRINT);
+  tc = tc + timer_frq * 2;
+  _add_timer(tc, &print_time, (void *)tc);
 }
 
 void exec_pending_timer() {
@@ -93,4 +100,10 @@ void exec_pending_timer() {
 void core_timer_handler() {
   *CORE0_TIMER_IRQ_CTRL = 0;
   add_task(&exec_pending_timer, NULL, 0);
+}
+
+unsigned long get_timer_cnt() {
+  unsigned long cnt;
+  asm volatile("mrs %0, cntpct_el0;" : "=r"(cnt));
+  return cnt;
 }

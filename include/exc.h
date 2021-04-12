@@ -18,7 +18,17 @@ void get_interrupt();
 // disable int and set int stat to 0
 void ret_interrupt();
 
-// use at the end of interrupt handler
+// use with interrupt disabled
 void add_task(void *task, void *data, unsigned long priority);
+
+#define ENABLE_IRQ_1 ((volatile unsigned int *)0x3f00b210)
+#define ENABLE_IRQ_2 ((volatile unsigned int *)0x3f00b214)
+#define ENABLE_BASIC_IRQ ((volatile unsigned int *)0x3f00b218)
+#define DISABLE_IRQ_1 ((volatile unsigned int *)0x3f00b21c)
+#define DISABLE_IRQ_2 ((volatile unsigned int *)0x3f00b220)
+#define DISABLE_BASIC_IRQ ((volatile unsigned int *)0x3f00b224)
+#define IRQ_PENDING_1 ((volatile unsigned int *)0x3f00b204)
+#define IRQ_PENDING_2 ((volatile unsigned int *)0x3f00b208)
+#define IRQ_BASIC_PENDING ((volatile unsigned int *)0x3f00b200)
 
 #endif

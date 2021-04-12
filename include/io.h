@@ -1,6 +1,8 @@
 #ifndef IO_H
 #define IO_H
 
+#include "uart.h"
+
 #define LOG_DEBUG 0
 #define LOG_ERROR 1
 #define LOG_PRINT 2
@@ -19,5 +21,9 @@ void log_hex(const char *msg, unsigned long num, int flag);
 void print(const char *s);
 void print_n(const char *s, unsigned long len);
 void print_hex(unsigned long num);
+
+void init_nonblock_io();
+
+void uart_handler();
 
 #endif

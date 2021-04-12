@@ -31,9 +31,10 @@ void irq_handler(void *el1_elr, void *el0_sp, unsigned long el1_spsr,
                  saved_reg *el1_sp) {
   get_interrupt();
   log("IRQ\n", LOG_DEBUG);
-  unsigned int int_src = *CORE_INT_SRC_0;
-  if ((int_src & CNTPNSIRQ_INT) != 0) {
+  if ((*CORE_INT_SRC_0 & CNTPNSIRQ_INT) != 0) {
     core_timer_handler();
+  } else if((*IRQ_PENDING_1 & (1 << 29)) != 0) {
+    uart_handler();
   }
   ret_interrupt();
   switch_exec(el1_elr, el0_sp, el1_spsr, (void *)el1_sp);

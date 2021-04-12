@@ -1,2 +1,2 @@
 all: 
-	echo make usr
+	echo tt > tt

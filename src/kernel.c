@@ -1,3 +1,4 @@
+#include "cpio.h"
 #include "exc.h"
 #include "gpio.h"
 #include "io.h"
@@ -36,16 +37,25 @@ void shell() {
       //   print_n(read_buf, read_len);
       // }
       // close(&f);
+      void *file = get_cpio_file(cmd_buf + 4);
+      if (file != NULL) {
+        print((char *)file);
+      } else {
+        print("file not found\n");
+      }
+    } else if (!strcmp_n(cmd_buf, "exec ", 4)) {
+      void *usr_prog = get_cpio_file(cmd_buf + 5);
+      if (usr_prog != NULL) {
+        void *usr_sp = kmalloc(PAGE_SIZE * 2);
+        exec_usr(usr_prog, usr_sp, 0);
+        kfree(usr_sp);
+      } else {
+        print("program not found\n");
+      }
     } else if (strcmp(cmd_buf, "")) {
       print("command not found: ");
       puts(cmd_buf);
     }
-  }
-}
-
-void svc_test() {
-  for (int i = 0; i < 5; i++) {
-    asm volatile("svc 0;");
   }
 }
 
@@ -61,22 +71,34 @@ void kernel() {
   reserve_mem((void *)0x60000, 0x20000);                    // stack
   reserve_mem((void *)(&kn_start), (&kn_end - &kn_start));  // kernel
   reserve_mem((void *)0x3f000000, 0x1000000);               // MMIO
-
+  reserve_cpio();
+  
   init_kmalloc();
 
   enable_interrupt();
 
   core_timer_enable();
-  add_timer(2, &print_time, NULL);
+
+  unsigned long elapse = get_timer_cnt();
+  print("abcdefghijklmnop\n");
+  elapse = get_timer_cnt() - elapse;
+  log_hex("block elapse", elapse, LOG_PRINT);
+
+  init_nonblock_io();
+
+  elapse = get_timer_cnt();
+  print("abcdefghijklmnop\n");
+  elapse = get_timer_cnt() - elapse;
+  log_hex("non block elapse", elapse, LOG_PRINT);
+
+  unsigned long tc = get_timer_cnt();
+  tc = tc + timer_frq * 2;
+  _add_timer(tc, &print_time, (void *)tc);
 
   add_timer(3, &print, (void *)"3\n");
   add_timer(2, &print, (void *)"2\n");
   add_timer(1, &print, (void *)"1\n");
   add_timer(5, &print, (void *)"5\n");
-
-  void *usr_sp = kmalloc(PAGE_SIZE);
-
-  exec_usr(&svc_test, usr_sp, 0x0);
 
   // // init_rootfs(new_ramfs());
   // // dentry root;

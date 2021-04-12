@@ -1,20 +1,5 @@
 #include "uart.h"
 
-#include "gpio.h"
-
-#define AUX_ENABLE ((volatile unsigned int *)(MMIO_BASE + 0x00215004))
-#define AUX_MU_IO ((volatile unsigned int *)(MMIO_BASE + 0x00215040))
-#define AUX_MU_IER ((volatile unsigned int *)(MMIO_BASE + 0x00215044))
-#define AUX_MU_IIR ((volatile unsigned int *)(MMIO_BASE + 0x00215048))
-#define AUX_MU_LCR ((volatile unsigned int *)(MMIO_BASE + 0x0021504C))
-#define AUX_MU_MCR ((volatile unsigned int *)(MMIO_BASE + 0x00215050))
-#define AUX_MU_LSR ((volatile unsigned int *)(MMIO_BASE + 0x00215054))
-#define AUX_MU_MSR ((volatile unsigned int *)(MMIO_BASE + 0x00215058))
-#define AUX_MU_SCRATCH ((volatile unsigned int *)(MMIO_BASE + 0x0021505C))
-#define AUX_MU_CNTL ((volatile unsigned int *)(MMIO_BASE + 0x00215060))
-#define AUX_MU_STAT ((volatile unsigned int *)(MMIO_BASE + 0x00215064))
-#define AUX_MU_BAUD ((volatile unsigned int *)(MMIO_BASE + 0x00215068))
-
 void uart_init() {
   register unsigned int r;
 
@@ -24,7 +9,7 @@ void uart_init() {
   *AUX_MU_LCR = 3;     // data size 8 bits
   *AUX_MU_MCR = 0;     // no auto flow control
   *AUX_MU_IER = 0;     // disable interrupt - enable bit
-  *AUX_MU_IIR = 0xc6;  // disable interrupts - clear FIFO
+  *AUX_MU_IIR = 0x6;   // disable interrupts - clear FIFO
   *AUX_MU_BAUD = 270;  // 115200 baud
 
   /* map UART1 to GPIO pins */

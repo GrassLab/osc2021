@@ -46,15 +46,17 @@ void ret_interrupt() {
 
 void exec_usr(void *addr, void *sp, unsigned long pstate) {
   disable_interrupt();
+  unsigned long stat = interrupt_status;
   _exec_usr(addr, sp, pstate);
+  interrupt_status = stat;
   enable_interrupt();
 }
 
 void exec_task() {
   while (task_list != NULL && task_list->status == TASK_WAIT) {
     task_list->status = TASK_RUN;
-    enable_interrupt();
     task_pending *tp = task_list;
+    enable_interrupt();
     ((void (*)(void *))(tp->task))(tp->data);
     disable_interrupt();
     task_list = task_list->next;

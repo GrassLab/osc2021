@@ -88,3 +88,5 @@ $(BDIR):
 
 USR: $(UDIR)
 	$(MAKE) -C $(UDIR)
+	rm -rf $(ROOTFS)
+	cp -r $(UDIR) $(ROOTFS)
