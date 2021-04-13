@@ -6,7 +6,7 @@ int printf(const char *format, ...) {
     va_list arg;
     int done = 0;
     va_start (arg, format);
-    char buffer[20];
+    char buffer[1024];
     memset(buffer, 0, sizeof(char) * 20);
     const char *ptr = format;
     while(*ptr) {
@@ -17,6 +17,11 @@ int printf(const char *format, ...) {
                     break;
                 case 'd':
                     itoa(va_arg(arg, int), buffer, 10);
+                    puts(buffer);
+                    memset(buffer, 0, sizeof(char) * 20);
+                    break;
+                case 'b':
+                    itoa(va_arg(arg, int), buffer, 2);
                     puts(buffer);
                     memset(buffer, 0, sizeof(char) * 20);
                     break;

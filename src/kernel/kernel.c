@@ -23,3 +23,8 @@ void kernel()
     }
 }
 
+
+void print_num(long int a, long int b, long int c)
+{
+    printf("spsr_el1: %b, elr_el1: %b, esr_el1 %b\n", a, b, c);
+}
