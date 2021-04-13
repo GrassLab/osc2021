@@ -123,6 +123,42 @@ char uart_getc()
 }
 
 /**
+ * Read a whole line
+ */
+void uart_getline(char *buffer)
+{
+    char c;
+    int counter = 0;
+
+    while (1)
+    {
+        c = uart_getc();
+        // delete
+        if ((c == 127) && counter > 0)
+        {
+            counter--;
+            uart_puts("\b \b");
+        }
+        // new line
+        else if ((c == 10) || (c == 13))
+        {
+            buffer[counter] = '\0';
+            uart_send(c);
+            break;
+        }
+        // regular input
+        else if (counter < 100)
+        {
+            buffer[counter] = c;
+            counter++;
+            uart_send(c);
+        }
+    }
+
+    return;
+}
+
+/**
  * Display a string
  */
 void uart_puts(char *s)

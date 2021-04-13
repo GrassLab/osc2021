@@ -58,6 +58,11 @@ void uart_send(unsigned int c);
 char uart_getc();
 
 /**
+ * Read a whole line
+ */
+void uart_getline(char *buffer);
+
+/**
  * Display a string
  */
 void uart_puts(char *s);

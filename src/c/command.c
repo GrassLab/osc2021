@@ -54,35 +54,9 @@ void command_cpio()
     case '2':
     {
         char file_name[100];
-        char c;
-        int counter = 0;
 
         printf("# ");
-
-        while (1)
-        {
-            c = uart_getc();
-            // delete
-            if ((c == 127) && counter > 0)
-            {
-                counter--;
-                printf("\b \b");
-            }
-            // new line
-            else if ((c == 10) || (c == 13))
-            {
-                file_name[counter] = '\0';
-                uart_send(c);
-                break;
-            }
-            // regular input
-            else if (counter < 100)
-            {
-                file_name[counter] = c;
-                counter++;
-                uart_send(c);
-            }
-        }
+        uart_getline(file_name);
 
         cpio_find_file(file_name);
     }
@@ -91,36 +65,10 @@ void command_cpio()
 
     case '3':
     {
-        char file_name[100];
-        char c;
-        int counter = 0;
-
         printf("# ");
 
-        while (1)
-        {
-            c = uart_getc();
-            // delete
-            if ((c == 127) && counter > 0)
-            {
-                counter--;
-                printf("\b \b");
-            }
-            // new line
-            else if ((c == 10) || (c == 13))
-            {
-                file_name[counter] = '\0';
-                printf("%c", c);
-                break;
-            }
-            // regular input
-            else if (counter < 100)
-            {
-                file_name[counter] = c;
-                counter++;
-                printf("%c", c);
-            }
-        }
+        char file_name[100];
+        uart_getline(file_name);
 
         cpio_run_executable(file_name);
     }
