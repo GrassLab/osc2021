@@ -90,8 +90,8 @@ void command_reboot() {
 void command_cpio_info() {
     struct cpio_info info;
     
-    uart_puts("CPIO_ARCHIVE_LOCATION: ");
-    uart_puti((uint64_t)CPIO_ARCHIVE_LOCATION, 10);
+    uart_puts("CPIO_ARCHIVE_LOCATION: 0x");
+    uart_puti((uint64_t)CPIO_ARCHIVE_LOCATION, 16);
     uart_puts("\n");
 
 
@@ -296,17 +296,7 @@ void command_kfree() {
 }
 
 void command_test() {
-    for(int i = 0; i < 32; i++) {
-        uint64_t *adr = kmalloc(128);
-
-        uart_puts("[");
-        uart_puti(i, 10);
-        uart_puts("] ");
-
-        uart_puts("allocated at: 0x");
-        uart_puti((uint64_t)adr, 16);
-        uart_puts("\n");
-    }
+    print_memory_with_uart((uint64_t *)CPIO_ARCHIVE_LOCATION, 64);
 }
 
 void command_not_found() {

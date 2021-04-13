@@ -69,8 +69,6 @@ int cpio_info(void *archive, struct cpio_info *info) {
     int error;
     unsigned long size, current_path_sz;
 
-    uart_puts("[debug] Cpio Info\n");
-
     if (info == NULL) return 1;
     info->file_count = 0;
     info->max_path_sz = 0;
@@ -79,14 +77,12 @@ int cpio_info(void *archive, struct cpio_info *info) {
     while (1) {
         error = cpio_parse_header(header, &current_filename, &size,
                 &result, &next);
-        if (error == -1) {
-            uart_puts("[debug] Fail to parse header\n");
+
+        if (error == -1) 
             return error;
-        } else if (error == 1) {
-            uart_puts("[debug] EOF\n");
-            /* EOF */
+        else if (error == 1) 
             return 0;
-        }
+    
         info->file_count++;
         header = next;
 
