@@ -33,7 +33,7 @@ void general_exception_handler(unsigned long arg, unsigned long type, unsigned l
     case 4:
     case 8:
     case 12:
-      sync_handler(arg, type, esr);
+      sync_handler(arg, type, esr, elr);
       break;
     case 1:
     case 5:
@@ -46,12 +46,28 @@ void general_exception_handler(unsigned long arg, unsigned long type, unsigned l
 }
 
 
-void sync_handler(unsigned long arg, unsigned long type, unsigned long esr){
+void sync_handler(unsigned long arg, unsigned long type, unsigned long esr, unsigned long elr){
   char ct[20];
+  uart_puts("Enter SYNC handler\n");
+  uart_puts("[EXCEPTION] TYPE = ");
+  int_to_str(type, ct);
+  uart_puts(ct);
+  uart_puts("\t");
+  uart_puts("Desc : ");
+  uart_puts(vector_table_desc[type]);
+
+  uart_puts("\n[EXCEPTION] ESR = ");
+  int_to_hex(esr, ct);
+  uart_puts(ct);
+  uart_puts("\t");
+  uart_puts("ELR = ");
+  int_to_hex(elr, ct);
+  uart_puts(ct);
+  uart_puts("\n");
   uart_puts("[SYNC] EC = ");
   int ec = (esr >> 26) & 0b111111;
   int iss = esr & 0x1FFFFFF;
-  int_to_hex(esr, ct);
+  int_to_hex(ec, ct);
   uart_puts(ct);
   uart_puts(", ISS = ");
   int_to_hex(iss, ct);

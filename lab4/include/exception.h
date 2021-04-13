@@ -38,7 +38,8 @@ void general_exception_handler(
 void sync_handler(
       unsigned long arg, 
       unsigned long type, 
-      unsigned long esr 
+      unsigned long esr, 
+      unsigned long elr
     );
 
 void svc_handler(
