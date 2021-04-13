@@ -6,6 +6,7 @@
 #include "device_tree.h"
 #include "allocator.h"
 #include "str_tool.h"
+#include "exception.h"
 
 #define MAX_INPUT 100
 
@@ -25,11 +26,15 @@ struct CMD command[] = {
     {.name="ls", .help="list all the file", .func=shell_ls},
     {.name="pdtinfo", .help="print Device Tree Info", .func=print_dt_info},
     {.name="parsedt", .help="parse Device Tree", .func=parse_dt},
-    {.name="memory", .help="do some memory operation", .func=shell_memory}
+    {.name="memory", .help="do some memory operation", .func=shell_memory},
+    {.name="state", .help="dump the value of SPSR, ELR and ESR", .func=shell_dump},
+    {.name="run", .help="execute a subprogram", .func=shell_run},
+    {.name="getEL", .help="get current Exception Level", .func=shell_getel}
 };
 
 char input_buffer[MAX_INPUT+1];
 int input_tail_idx = 0;
+char *input_argv;
 
 void buffer_clear(){
     input_tail_idx = 0;
@@ -40,6 +45,17 @@ void init_shell(){
     uart_puts("Welcome to my simple shell\r\n");
     uart_puts("ヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノヽ(✿ﾟ▽ﾟ)ノ\r\n");
     buffer_clear();
+}
+
+void split_arg(){   //only one args accepted
+    int input_len = strlen(input_buffer);
+    for(int i=0; i<input_len; i++){
+        if(input_buffer[i] == ' '){
+            input_argv = &input_buffer[i+1];
+            input_buffer[i] = 0;
+            break;
+        }
+    }
 }
 
 void execute_command(char *input_cmd){
@@ -134,6 +150,7 @@ void simple_shell(){
     while(1){
         print_input_prompt();
         get_input();
+        split_arg();
         execute_command(input_buffer);
         buffer_clear();
     }
@@ -176,7 +193,7 @@ void shell_ls(){
     cpio_newc_header* cpio_ptr;
     uint64_t name_size, file_size;
     char *file_name;
-    char *file_content;
+    //char *file_content;
 
     while(1){
         cpio_ptr = (cpio_newc_header*)cur_addr;
@@ -188,17 +205,17 @@ void shell_ls(){
         if(!strcmp(file_name, "TRAILER!!!"))
             break;            
 
-        file_content = file_name + name_size;
+        //file_content = file_name + name_size;
 
         uart_puts("File Name: ");
         uart_puts(file_name);
         uart_puts("\r\n");
 
-        for(uint64_t i=0; i<file_size; i++){
+        /*for(uint64_t i=0; i<file_size; i++){
             if(file_content[i] == '\n')
                 uart_putc('\r');
             uart_putc(file_content[i]);
-        }
+        }*/
 
         uart_puts("\r\n");
         uart_puts("File Size: ");
@@ -274,4 +291,60 @@ void shell_memory(){
             break;
         }
     }
+}
+
+void shell_dump(){
+    dumpstate();
+    return;
+}
+
+
+
+void relocate_program(unsigned char *addr_start, unsigned char *addr_end){
+    unsigned char *target_addr = (unsigned char*)0x70000;
+    while(addr_start != addr_end){
+        *target_addr = *addr_start;
+        addr_start += 1;
+        target_addr += 1;
+    }
+}
+
+
+void shell_run(){
+    char *targetFileName = input_argv;  //splited in previous session
+
+    uint64_t cur_addr = 0x8000000;
+    cpio_newc_header* cpio_ptr;
+    uint64_t name_size, file_size;
+    char *file_name;
+    char *file_content;
+
+    while(1){
+        cpio_ptr = (cpio_newc_header*)cur_addr;
+        name_size = hex_to_int64(cpio_ptr->c_namesize);
+        file_size = hex_to_int64(cpio_ptr->c_filesize);
+
+        cur_addr += sizeof(cpio_newc_header);
+        file_name = (char*)cur_addr;
+        if(!strcmp(file_name, "TRAILER!!!"))
+            break;            
+
+        cur_addr = (uint64_t)((cur_addr + name_size + 3) & (~3));
+        file_content = (char *)cur_addr;
+        cur_addr = (uint64_t)((cur_addr + file_size + 3) & (~3));
+
+        if(!strcmp(file_name, targetFileName)){ //tries to match the filename
+            relocate_program((unsigned char*)file_content, (unsigned char*)cur_addr);
+            run_program();
+            break;
+        }
+    }
+    if(strcmp(file_name, targetFileName)){
+        uart_puts("ERROR: No Such File Or Directory!\r\n");
+    }
+}
+
+void shell_getel(){
+    int _EL = get_el();
+    printf("Current EL is %d\r\n",_EL);
 }

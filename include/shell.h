@@ -24,4 +24,9 @@ void shell_boot_uart();
 void shell_ls();
 void shell_memory();
 
+void shell_dump();
+void shell_run();
+void split_arg();
+void relocate_program();
+void shell_getel();
 #endif

@@ -358,7 +358,7 @@ uint64_t _new_chunk(uint64_t need_size){
 
 uint64_t kmalloc(uint64_t need_size){
     if(need_size < 256)
-        return _new_chunk(need_size);       //if less than one block, then only ask for ckunk
+        return _new_chunk(need_size);       //if less than 256k, then only ask for ckunk
 
     need_size /= 0x1000;
     int32_t need_size_power = _cal_bit_len(need_size);
