@@ -20,7 +20,7 @@ void shell(){
         if(cmd_flag){
             system_command(CMD_BUFFER);
             cmd_flag = 0;
-            uart_send_string("$ ");
+            uart_puts("$ ");
         }
     }
     // shell_welcome();

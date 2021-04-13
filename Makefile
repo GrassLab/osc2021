@@ -27,6 +27,7 @@ kernel8.img: $(OBJS)
 	aarch64-linux-gnu-objcopy -O binary kernel8.elf kernel8.img
 
 clean:
+	-rm $(BUILD_DIR)*.o
 	-rm $(SRC_DIR)*.o
 	-rm kernel8.elf kernel8.img
 

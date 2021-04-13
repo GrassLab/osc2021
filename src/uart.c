@@ -61,9 +61,9 @@ void uart_irq(){
     unsigned int id = *AUX_MU_IIR_REG;
     //uart_printhex(id);
     char c;
-    disable_irq();
+    // disable_irq();
     if((id & 0x06) == 0x04){ // write
-        //uart_puts("456\r\n");
+       // uart_puts("456\r\n");
         if(uart_interrupt_flag == 0){
             *AUX_MU_IER_REG = 0x03; // enable interrupt
             uart_interrupt_flag = 1;

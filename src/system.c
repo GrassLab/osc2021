@@ -49,8 +49,7 @@ void sys_setTimeout(char* args){
         if(args[i] == ' ') last_idx = i;
     }
     args[last_idx] = '\0';
-    core_timer_enable();
-    asm volatile ("msr cntp_tval_el0, %0" :: "r" (second * TIME_FREQ));
+    add_timer(timer_print_msg, args, second);
 }
 void sys_clear(char* args){
     uart_puts("\033c");

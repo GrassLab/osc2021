@@ -42,3 +42,9 @@ el0_timer_handler:
 get_current_timer_cnt:
     mrs x0, cntpct_el0
     ret
+
+.globl get_timer_freq
+get_timer_freq:
+    mrs x0, cntfrq_el0
+    ret
+

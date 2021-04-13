@@ -7,6 +7,7 @@
 
 void main(void){
     DEBUG = 0;
+    init_timer_queue();
     uart_init();
     buddy_init();
     dynamic_allocator_init();

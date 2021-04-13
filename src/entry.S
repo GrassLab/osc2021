@@ -108,7 +108,7 @@ sync_el1_handler:
     save_all
     mrs x0, esr_el1
     mrs x1, elr_el1
-    b handle_sync_el1
+    bl handle_sync_el1
     load_all
     eret
 
@@ -123,7 +123,6 @@ irq_el0_aarch64:
     bl handle_el0_irq
     load_all
     eret
-    //b core_timer_handler
 
 sync_el0_aarch64:
     save_all
