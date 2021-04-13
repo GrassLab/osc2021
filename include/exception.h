@@ -1,4 +1,4 @@
 #ifndef _EXCEPTION_H
 #define _EXCEPTION_H
-void exception_handler();
+void lowerSync64_handler();
 #endif

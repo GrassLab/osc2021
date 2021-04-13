@@ -104,5 +104,9 @@ debug:
 	-initrd $(RAMFS) \
 	-dtb bcm2710-rpi-3-b-plus.dtb
 
+run_usb:
+	python3 script/send_file.py -s kernel8.img
+	screen /dev/ttyUSB0 115200
+
 clean:
 	rm -rf $(RES_DIR)/* *.img *.cpio *.elf program/*.elf program/*.img

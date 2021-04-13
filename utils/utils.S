@@ -16,9 +16,10 @@ delay:
 
 .globl run_program
 run_program:
-    mov     x0, 0x3c0
+    //mov     x0, 0x3c0
+    mov     x0, 0x340
     msr     spsr_el1, x0
-    ldr     x0, =0x70000     // the target address of program
+    ldr     x0, =0x2000000     // the target address of program
     msr     elr_el1, x0
     msr     sp_el0, x0
     eret

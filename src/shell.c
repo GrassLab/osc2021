@@ -196,7 +196,7 @@ void shell_reboot(){
 }
 
 void relocate_program(unsigned char *addr_start, unsigned char *addr_end){
-    unsigned char *target_addr = (unsigned char*)0x70000;
+    unsigned char *target_addr = (unsigned char*)0x2000000;
     while(addr_start != addr_end){
         *target_addr = *addr_start;
         addr_start += 1;
