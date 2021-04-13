@@ -330,8 +330,7 @@ void _irq_entry() {
   if ((*(uint32_t *)IRQ_PENDING_1) & AUX_IRQ) {
     disable_uart_interrupt();
     // uart_puts("irq handler1\r\n");
-    if (((*(uint32_t *)AUX_MU_IIR) & 0x06) == 0x02)
-      ;  //_uart_irq_puts(send_buff);
+    if (((*(uint32_t *)AUX_MU_IIR) & 0x06) == 0x02) _uart_irq_puts(send_buff);
     if (((*(uint32_t *)AUX_MU_IIR) & 0x06) == 0x04) _uart_irq_getc();
     enable_uart_interrupt();
   }
