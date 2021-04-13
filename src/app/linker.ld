@@ -13,8 +13,6 @@ SECTIONS
         *(.data)
     }
     . = ALIGN(8);
-    bss_begin = .;
     .bss : { *(.bss) }
     .= ALIGN(8);
-    bss_end = .;
 }

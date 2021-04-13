@@ -1,14 +1,16 @@
 #include <stdarg.h>
 #include "string.h"
 #include "mini_uart.h"
+#define BUFFERSIZE (1024)
 
 int printf(const char *format, ...) {
     va_list arg;
     int done = 0;
     va_start (arg, format);
-    char buffer[1024];
-    memset(buffer, 0, sizeof(char) * 20);
+    char buffer[BUFFERSIZE];
+    memset(buffer, 0, sizeof(char) * BUFFERSIZE);
     const char *ptr = format;
+
     while(*ptr) {
         if (*ptr == '%') {
             switch (*(++ptr)) {
@@ -18,12 +20,12 @@ int printf(const char *format, ...) {
                 case 'd':
                     itoa(va_arg(arg, int), buffer, 10);
                     puts(buffer);
-                    memset(buffer, 0, sizeof(char) * 20);
+                    memset(buffer, 0, sizeof(char) * BUFFERSIZE);
                     break;
                 case 'b':
                     itoa(va_arg(arg, int), buffer, 2);
                     puts(buffer);
-                    memset(buffer, 0, sizeof(char) * 20);
+                    memset(buffer, 0, sizeof(char) * BUFFERSIZE);
                     break;
                 default:
                     break;
