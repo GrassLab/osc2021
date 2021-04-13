@@ -22,7 +22,7 @@ int main() {
   run_tests();
 #endif
 
-  _exec_usr(&svc_test, (void *)0x60000, 0x3c0);
+  // _exec_usr(&svc_test, (void *)0x60000, 0x3c0);
 
   startup_init();
 

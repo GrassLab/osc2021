@@ -4,6 +4,7 @@
 #include "cpio.h"
 #include "string.h"
 #include "uart.h"
+#include <stdint.h>
 
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC ((volatile unsigned int *)0x3F10001c)
@@ -12,6 +13,7 @@
 void cmdHello();
 void cmdLs();
 void cmdHelp();
+void cmdLoadUser();
 void cmdReboot();
 
 typedef struct {
@@ -27,6 +29,9 @@ int curInputSize = 0;
 Cmd cmdList[] = {
     {.name = "hello", .help = "Greeting", .func = cmdHello},
     {.name = "ls", .help = "list files", .func = cmdLs},
+    {.name = "load_user",
+     .help = "load and run user program",
+     .func = cmdLoadUser},
     {.name = "help", .help = "Show avalible commands", .func = cmdHelp},
     {.name = "reboot", .help = "Reboot device", .func = cmdReboot},
 };
@@ -49,6 +54,31 @@ void cmdReboot() {
   uart_println("reboot");
   *PM_RSTC = PM_PASSWORD | 0x20;
   *PM_WDOG = PM_PASSWORD | 100; // reboot after 100 watchdog ticks
+}
+
+void cmdLoadUser() {
+  uart_println("load user program");
+  unsigned long size;
+  unsigned char *load_addr = (unsigned char *)0x20000000;
+  uint8_t *file =
+      (uint8_t *)cpioGetFile((void *)RAMFS_ADDR, "./user_program.o", &size);
+  if (file == NULL) {
+    uart_println("Cannot found `user_program.o` under rootfs");
+    return;
+  }
+  if (CFG_LOG_ENABLE) {
+    uart_println("  [fetchFile] file addr:%x , size:%d", file, size);
+  }
+  for (unsigned long i = 0; i < size; i++) {
+    load_addr[i] = file[i];
+  }
+  uart_println("start user app");
+  // change exception level
+  asm volatile("mov x0, 0x3c0  \n");
+  asm volatile("msr spsr_el1, x0  \n");
+  asm volatile("msr elr_el1, %0   \n" ::"r"(load_addr));
+  asm volatile("msr sp_el0, %0    \n" ::"r"(load_addr));
+  asm volatile("eret              \n");
 }
 
 void _cursorMoveLeft() {
