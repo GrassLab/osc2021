@@ -92,8 +92,8 @@ svc_handler:
     bl  svc_router
     load_regs
 
-    ldr x0, =shell_start
-    msr elr_el1, x0
+    // ldr x0, =shell_start
+    // msr elr_el1, x0
     eret
 
 .global core_timer_handler

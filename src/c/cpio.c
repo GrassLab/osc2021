@@ -183,12 +183,13 @@ void cpio_run_executable(char executable_name[])
     }
 
     asm volatile(
-        "mov x0, 0x340      \n\t"
-        "msr spsr_el1, x0   \n\t"
-        "mov x0, 0x10A0000  \n\t"
-        "add x0, x0, 0x78   \n\t"
-        "msr elr_el1, x0    \n\t"
-        "mov x0, 0x60000    \n\t"
-        "msr sp_el0, x0     \n\t"
-        "eret               \n\t");
+        "mov x0, 0x340          \n\t"
+        "msr spsr_el1, x0       \n\t"
+        "mov x0, 0x10A0000      \n\t"
+        "add x0, x0, 0x78       \n\t"
+        "msr elr_el1, x0        \n\t"
+        "mov x0, 0x60000        \n\t"
+        "msr sp_el0, x0         \n\t"
+        "ldr lr, =shell_start   \n\t"
+        "eret                   \n\t");
 }
