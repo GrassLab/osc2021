@@ -29,7 +29,7 @@ unsigned long hexToDex(char *s){
         if(s[i] >= '0' && s[i] <= '9'){
             r = r* 16 + s[i]-'0';
         }else{
-            r = r * 16 + s[i]-'a'+10;
+            r = r * 16 + s[i]-'A'+10;
         }
     }
     return r;
@@ -84,13 +84,43 @@ void getName(char* target){
     uart_puts("Please enter file name: ");
     read_input(target);
 }
+
+void loadprog(char* pathname, int addr){
+    cpio_t *file_addr = findFile((cpio_t*)0x8000000, pathname);
+    if(!file_addr){
+        uart_puts("file not found\n");
+        return;
+    }
+
+    unsigned long psize=hexToDex(file_addr->namesize),dsize=hexToDex(file_addr->filesize);
+    unsigned long HPP = sizeof(cpio_t) + psize;
+    Align_4(&HPP);
+    Align_4(&dsize);
+
+    char *data = (char*)((char*)file_addr + HPP);
+    unsigned char *target = (unsigned char*)addr;
+    while(dsize--){
+        *target = *data;
+        target++;
+        data++;
+    }
+
+    asm volatile("mov x0, 0x3c0  \n");
+    asm volatile("msr spsr_el1, x0   \n");
+    asm volatile("msr elr_el1, %0    \n"::"r"(addr));
+    asm volatile("msr sp_el0, %0    \n"::"r"(addr));
+    //asm volatile("mov x0, #(3<<20)   \n");
+    // asm volatile("msr cpacr_el0, x0    \n");
+    asm volatile("eret    \n");
+}
+
 /**
  * List the contents of an archive
  */
 void cpio()
 {
     uart_puts("Size\t\tFilename\n");
-    cpio_t* addr = (cpio_t*)0x20000000;
+    cpio_t* addr = (cpio_t*)0x8000000;
     // iterate on archive's contents
     // if it's a cpio archive. Cpio also has a trailer entry
     while(compString((char*)(addr+1),"TRAILER!!!")!=0) {
@@ -110,7 +140,7 @@ void cpio()
         addr=(cpio_t*)(data+dsize);
     }
 
-    addr = (cpio_t*)0x20000000;
+    addr = (cpio_t*)0x8000000;
     char target[100];
     getName(target);
     cpio_t* entry = findFile(addr,target);

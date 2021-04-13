@@ -4,9 +4,10 @@ CFLAGS:=-nostdinc -nostdlib -nostartfiles
 LIB = ./lib
 CPIO:=initramfs.cpio
 all: $(KERNEL).img
+//all: test.img
 
-$(KERNEL).img:start.o rd.o main.o lib/uart.o  lib/shell.o lib/stringUtils.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o
-	aarch64-linux-gnu-ld  -T $(LINKER) -o $(KERNEL).elf start.o rd.o main.o lib/uart.o lib/stringUtils.o  lib/shell.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o
+$(KERNEL).img:start.o main.o rd.o  lib/uart.o  lib/shell.o lib/stringUtils.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o lib/exception/exception.o
+	aarch64-linux-gnu-ld  -T $(LINKER) -o $(KERNEL).elf start.o rd.o main.o  lib/uart.o lib/stringUtils.o  lib/shell.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o lib/exception/exception.o
 	aarch64-linux-gnu-objcopy -O binary $(KERNEL).elf $@
 
 cpio:
@@ -22,6 +23,8 @@ rd.o:$(CPIO)
 %.o:%.s
 	aarch64-linux-gnu-gcc $(CFLAGS) -o $@ -c $<
 $(LIB)/%.o:$(LIB)/%.c
+	aarch64-linux-gnu-gcc $(CFLAGS) -o $@ -c $<
+$(LIB)/exception/%.o:$(LIB)/exception/%.s
 	aarch64-linux-gnu-gcc $(CFLAGS) -o $@ -c $<
 
 

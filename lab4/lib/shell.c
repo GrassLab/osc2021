@@ -11,7 +11,7 @@
 
 
 
-static char* commanlist[] = {"help" , "hello", "reboot", "loadimg", "find","my_alloc","my_free", "mem_status_dump","dy_mem_status_dump" };
+static char* commanlist[] = {"help" , "hello", "reboot", "loadimg", "find","my_alloc","my_free", "mem_status_dump","dy_mem_status_dump", "loadprog" };
 
 void read_input(char *buffer){
     int size = 0;
@@ -111,6 +111,15 @@ static void parse_input(char *buffer){
         mem_status_dump();
     }else if(compString("dy_mem_status_dump",buffer) == 0){
         dy_mem_status_dump();
+    }else if(compString("loadprog", buffer) == 0){
+        char filename[MAX_BUF_SIZE];
+        char addr[MAX_BUF_SIZE];
+        uart_puts("Please enter file's path\n");
+        read_input(filename);
+        uart_puts("Please enter address(hex):\n");
+        read_input(addr);
+        int addr_hex = getHexFromString(addr);
+        loadprog(filename, addr_hex);
     }else{
         uart_puts("No Such Command\n");
     }

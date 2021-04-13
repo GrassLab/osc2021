@@ -10,7 +10,7 @@ void main()
     uart_init();
     //memory allocator init
     mem_init();
-    mem_status_dump();
+    //mem_status_dump();
     uart_puts("Hello World!\n");
     // echo everything back
     int el = get_el();
