@@ -24,7 +24,7 @@ void do_jump(char *new_addr) {
   unsigned int kernel_size, i = 0;
 
   /* get kernel size */
-  do buff[i] = uart_getc();
+  do buff[i] = _uart_getc();
   while (buff[i++]);
 
   kernel_size = atoi(buff);
@@ -34,7 +34,7 @@ void do_jump(char *new_addr) {
 
   /* get kernel */
   for (i = 0; i < kernel_size; i++) {
-    new_addr[i] = uart_getc();
+    new_addr[i] = _uart_getc();
     uart_puts("\r");
     uart_puts(itoa(i + 1, buff));
     uart_puts(" / ");
@@ -148,9 +148,9 @@ void shell() {
   }
 }
 void main() {
-  uart_init();  // set up serial console
-  while (uart_getc() == '\0')
+  uart_init(0);  // set up serial console
+  while (_uart_getc() == '\0')
     ;
-  uart_getc();
+  _uart_getc();
   shell();
 }

@@ -1,5 +1,5 @@
 #include "kernel.h"
-
+void shell();
 /*  do_funcs */
 void do_reset(int tick) {         // reboot after watchdog timer expire
   *PM_RSTC = PM_PASSWORD | 0x20;  // full reset
@@ -11,6 +11,7 @@ void do_help() {
   uart_puts("ls: list file\r\n");
   uart_puts("cat: print file context\r\n");
   uart_puts("clear: clean screen\r\n");
+  uart_puts("timer: set time out and print\r\n");
 }
 void do_except(char *buff) {
   uart_puts("No command: ");
@@ -66,17 +67,22 @@ void do_run(char *buff) {
     return;
   }
   /* get cpio context size */
-  print_h(_get_el());
-  char *process_location = (char *)malloc(context_size);
-  // print_h(process_location);
+  char *process_location = (char *)malloc(context_size + 4 * MB);
   for (int i = 0; i < context_size; i++) process_location[i] = context[i];
-  _run_el0(process_location, process_location + context_size);
-  // print_h(context_size);
-  print_h(_get_el());
-  // _branch(process_location);
+  add_timer(0x0, 10);
+  add_timer(0x0, 1);
+  add_timer(0x0, 5);
+  add_timer(0x0, 2);
+  add_timer(0x0, 3);
+  _run_el0(process_location, process_location + context_size + 4 * MB);
   free(process_location);
 }
-
+void do_timeOut(char *buff) {
+  int k = 0;
+  while (buff[k] != '\0') k++;
+  uint64_t after = atoi(&buff[++k]);
+  add_timer(0x0, after);
+}
 void shell() {
   char buff[buff_size];
   /* say hello */
@@ -108,16 +114,26 @@ void shell() {
       // buddy_test4();
       // dma_test1();
       // dma_test2();
+    } else if (strcmp(buff, "lab")) {
+      // uart_asyn_puts(
+      //     "00000000001111111111222222222233333333334444444444555555555566666666"
+      //     "66\r\n");
+      // uart_asyn_puts("aaaa\r\n");
+      // uart_asyn_puts("aaaa\r\n");
+      uart_asyn_puts("aaaa\r\n");
+    } else if (strcmp(buff, "timer")) {
+      do_timeOut(buff);
     } else
       do_except(buff);
   }
 }
 
 void main() {
-  uart_init();  // set up serial console
+  uart_init(1);  // set up serial console
   buddy_init((char *)BUDDY_START);
   dma_init();
+  timer_init();
+  irq_init();
   do_clear();
-  _core_timer_enable(2);
   shell();
 }

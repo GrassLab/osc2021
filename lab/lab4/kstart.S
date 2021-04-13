@@ -43,11 +43,37 @@ _from_el2_to_el1:
     msr elr_el2, lr
     eret // return to EL1
 
-
 .align 11 // vector table should be aligned to 0x800
 .global _exception_vector_table 
 _exception_vector_table:
   b _exception_handler // branch to a handler function.
+  .align 7 // entry size is 0x80, .align will pad 0
+  b _exception_handler // branch to a handler function.
+  .align 7 // entry size is 0x80, .align will pad 0
+  b _exception_handler // branch to a handler function.
+  .align 7 // entry size is 0x80, .align will pad 0
+	b _exception_handler // branch to a handler function.
+  .align 7 // entry size is 0x80, .align will pad 0
+
+	b _exception_handler // branch to a handler function.
+  .align 7 // entry size is 0x80, .align will pad 0
+  b _irq_handler // branch to a handler function.
+  .align 7 // entry size is 0x80, .align will pad 0
+  b _exception_handler // branch to a handler function.
+  .align 7 // entry size is 0x80, .align will pad 0
+	b _exception_handler // branch to a handler function.
+  .align 7 // entry size is 0x80, .align will pad 0
+
+	b _exception_handler // branch to a handler function.
+  .align 7 // entry size is 0x80, .align will pad 0
+  b _core_timer_handler // branch to a handler function.
+  .align 7 // entry size is 0x80, .align will pad 0
+  b _exception_handler // branch to a handler function.
+  .align 7 // entry size is 0x80, .align will pad 0
+	b _exception_handler // branch to a handler function.
+  .align 7 // entry size is 0x80, .align will pad 0
+
+	b _exception_handler // branch to a handler function.
   .align 7 // entry size is 0x80, .align will pad 0
   b _exception_handler // branch to a handler function.
   .align 7 // entry size is 0x80, .align will pad 0
@@ -110,7 +136,92 @@ _exception_handler:
     bl _exception_entry
     load_all
     eret
+.extern print_h
 
+.macro print_reg register
+	save_all
+	mov x0, \register
+	bl print_h
+	load_all
+.endm
 _exception_entry:
-		ret
+	mrs x0, elr_el1
+	print_reg x0
+	ret
+	mrs x0, spsr_el1
+	print_reg x0
+	mrs x0, esr_el1
+	print_reg x0
 
+
+#define CORE0_TIMER_IRQ_CTRL 0x40000040
+.global _core_timer_enable
+_core_timer_enable:
+	mrs x0, cntfrq_el0
+	msr cntp_tval_el0, x0 // set expired time
+	mov x0, 1
+	msr cntp_ctl_el0, x0 // enable
+	mov x0, 2
+	ldr x1, =CORE0_TIMER_IRQ_CTRL
+	str w0, [x1] // unmask timer interrupt
+    ret
+
+
+.global _el0_timer_enable
+_el0_timer_enable:
+	mov x0, 1
+	msr cntp_ctl_el0, x0 // enable
+	ldr x1, =CORE0_TIMER_IRQ_CTRL
+	mov x0, 2
+	str w0, [x1] // unmask timer interrupt
+  ret
+
+.globl _el0_timer_disable
+_el0_timer_disable:
+    mov x0, 0
+    msr cntp_ctl_el0, x0
+    mov x0, 0
+    ldr x1, =CORE0_TIMER_IRQ_CTRL
+    str x0, [x1]          // disable timer interrupt
+    ret
+
+.globl _timer_add
+_timer_add:
+	// mrs x1, cntfrq_el0
+	// mul x0, x0, x1
+    msr cntp_tval_el0, x0
+    ret
+
+.extern _timer_handler
+_core_timer_handler:
+    mrs x0, cntpct_el0
+    print_reg x0
+	mrs x0, cntfrq_el0
+    print_reg x0
+
+	save_all
+	bl _el0_timer_disable
+	bl _timer_handler
+	load_all
+	eret
+
+
+
+.globl _el1_irq_enable // enable interrupt
+_el1_irq_enable:
+	msr DAIFClr, 0xf
+	ret
+
+.globl _el1_irq_disable // disable interrupt
+_el1_irq_disable:
+	msr DAIFSet, 0xf
+	ret
+
+.extern _irq_entry
+_irq_handler:
+	save_all
+	bl _el1_irq_disable
+	bl _irq_entry
+	load_all
+	
+	eret
