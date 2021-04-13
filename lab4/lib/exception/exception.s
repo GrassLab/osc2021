@@ -1,8 +1,9 @@
 .section ".data"
 
-_exception_ret_addr: .asciz "Exception return address "
-_exception_class: .asciz "Exception class (EC) "
-_exception_iss: .asciz "Instruction specific syndrom (ISS) "
+_exception_ret_addr: .asciz "Exception return address: "
+_exception_class: .asciz "Exception class (EC): "
+_exception_iss: .asciz "Instruction specific syndrom (ISS): "
+_exception_spsr: .asciz "SPSR: "
 
 .section ".text"
 
@@ -119,9 +120,16 @@ _exception_handler:
     mov x0, #10
     bl uart_send
 
+    ldr x0, =_exception_spsr
+    bl uart_puts
+    mrs x0, SPSR_EL1
+    bl sendHexUART
+    mov x0, #10
+    bl uart_send
+
     mrs x0, ESR_EL1
     and x0, x0, #0x1ffffff
-    cmp x0, #1  // 1 for exc, 2 for irq
+    cmp x0, #0  // 0 for exc, 2 for irq
     b.eq leave
 
    // bl enable_irq
