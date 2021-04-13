@@ -87,13 +87,13 @@ struct page *block_allocation(int order)
 
             list_add_tail(&bottom->list, &free_buddy_list[current_order]);
 
-            printf("[block_allocation] redundant block(page: %d, order: %d) freed\n",
-                   bottom->page_number, bottom->order);
+            // printf("[block_allocation] redundant block(page: %d, order: %d) freed\n",
+                //    bottom->page_number, bottom->order);
         }
 
-        printf("[block_allocation] block(page: %d, order: %d) allocated\n",
-               temp_block->page_number, temp_block->order);
-        printf("[block_allocation] done\n\n");
+        // printf("[block_allocation] block(page: %d, order: %d) allocated\n",
+            //    temp_block->page_number, temp_block->order);
+        // printf("[block_allocation] done\n\n");
 
         return temp_block;
     }
@@ -113,8 +113,8 @@ void block_free(struct page *block)
         return;
     }
 
-    printf("[block_free] block(page: %d, order: %d) to be freed\n",
-           block->page_number, block->order);
+    // printf("[block_free] block(page: %d, order: %d) to be freed\n",
+        //    block->page_number, block->order);
 
     block->used = 0;
     // remember to clean the point to the allocator !!!
@@ -139,8 +139,8 @@ void block_free(struct page *block)
             bottom = block;
         }
 
-        printf("[block_free] block(page: %d, order: %d) and block(page: %d, order: %d) merged\n",
-               top->page_number, top->order, bottom->page_number, bottom->order);
+        // printf("[block_free] block(page: %d, order: %d) and block(page: %d, order: %d) merged\n",
+            //    top->page_number, top->order, bottom->page_number, bottom->order);
 
         bottom->order = -1;
         top->order++;
@@ -214,8 +214,8 @@ void *object_allocation(int token)
 
     int index = (object - current_page->start_address) / allocator->object_size;
 
-    printf("[object_allocation] object(page: %d, size: %d, index: %d) allocated\n", current_page->page_number, allocator->object_size, index);
-    printf("[object_allocation] done\n\n");
+    // printf("[object_allocation] object(page: %d, size: %d, index: %d) allocated\n", current_page->page_number, allocator->object_size, index);
+    // printf("[object_allocation] done\n\n");
 
     return object;
 }
@@ -228,7 +228,7 @@ void object_free(void *object)
     // for example, if we have 16384 + 4096 * 14 + 32 * 5 as our address, then we get 5 with the following operation
     int index = (((long)(object - MEMORY_START) & ((1 << PAGE_SHIFT) - 1)) / allocator->object_size);
 
-    printf("[object_free] object(page: %d, size: %d, index: %d) to be freed\n", page->page_number, allocator->object_size, index);
+    // printf("[object_free] object(page: %d, size: %d, index: %d) to be freed\n", page->page_number, allocator->object_size, index);
 
     // we are freeing the []
     if (object > page->first_free)
@@ -237,7 +237,7 @@ void object_free(void *object)
         // the object is between the first hole and the second hole
         if (object < (page->start_address + *(int *)page->first_free))
         {
-            printf("[object_free] status 1\n\n");
+            // printf("[object_free] status 1\n\n");
 
             *(int *)object = *(int *)page->first_free;
             *(int *)page->first_free = object - page->start_address;
@@ -247,7 +247,7 @@ void object_free(void *object)
         // so we need to iterate over the list to find the last hole in front of the object
         else
         {
-            printf("[object_free] status 2\n\n");
+            // printf("[object_free] status 2\n\n");
 
             void *traversal = page->first_free;
             while ((page->start_address + (*(int *)traversal)) < object)
@@ -261,7 +261,7 @@ void object_free(void *object)
     // the object is in front of the first hole
     else
     {
-        printf("[object_free] status 3\n\n");
+        // printf("[object_free] status 3\n\n");
         
         *(int *)object = page->first_free - page->start_address;
         page->first_free = object;
@@ -311,7 +311,7 @@ void *km_allocation(int size)
             if (size <= (1 << i))
             {
                 address = object_allocation(i - MIN_OBJECT_ORDER);
-                printf("--------------------\n\n");
+                // printf("--------------------\n\n");
                 return address;
             }
         }
@@ -323,7 +323,7 @@ void *km_allocation(int size)
             if (size <= (1 << (i + PAGE_SHIFT)))
             {
                 address = block_allocation(i)->start_address;
-                printf("--------------------\n\n");
+                // printf("--------------------\n\n");
                 return address;
             }
         }

@@ -1,4 +1,5 @@
 #include "printf.h"
+#include "timer.h"
 
 void svc_router(unsigned long spsr, unsigned long elr, unsigned long esr)
 {
@@ -25,17 +26,14 @@ void svc_router(unsigned long spsr, unsigned long elr, unsigned long esr)
         core_timer_disable();
         break;
 
+    case 3:
+        set_timeout();
+        break;
+
     default: 
         break;
     }
 
-    return;
-}
-
-void print_time_stamp(unsigned long cntpct, unsigned long cntfrq)
-{
-    int timestamp = cntpct / cntfrq;
-    printf("timestamp: %d\n", timestamp);
     return;
 }
 

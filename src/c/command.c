@@ -2,6 +2,7 @@
 #include "string.h"
 #include "cpio.h"
 #include "printf.h"
+#include "mm.h"
 
 void input_buffer_overflow_message(char cmd[])
 {
@@ -22,6 +23,7 @@ void command_help()
     printf("\tcpio:\t\tread initramfs.cpio on the SD card.\n");
     printf("\ttimer_on:\tturn on the core timer.\n");
     printf("\ttimer_off:\tturn off the core timer.\n");
+    printf("\tset_timeout:\tset a user timeout.\n");
     printf("\n");
 }
 
@@ -88,6 +90,11 @@ void command_timer_on()
 void command_timer_off()
 {
     asm volatile("svc 2");
+}
+
+void command_set_timeout()
+{
+    asm volatile("svc 3");
 }
 
 void command_not_found(char *s)

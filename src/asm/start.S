@@ -45,6 +45,15 @@ clear_loop:
     sub     w2, w2, 1
     cbnz    w2, clear_loop
 
+    mov x0, 0x340
+    msr spsr_el1, x0
+    ldr x0, =pseudo_main
+    msr elr_el1, x0
+    mov x0, 0x60000
+    msr sp_el0, x0
+
+    eret
+
 pseudo_main:
     bl      main
     b       hang_on

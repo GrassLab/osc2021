@@ -56,32 +56,51 @@ void itoa(int x, char str[], int d)
     reverse(str);
 }
 
-// // https://www.geeksforgeeks.org/convert-floating-point-number-string/
-// void ftoa(float n, char *res, int afterpoint)
-// {
-//     // Extract integer part
-//     int ipart = (int)n;
+// https://www.geeksforgeeks.org/convert-floating-point-number-string/
+void ftoa(float n, char *res, int afterpoint)
+{
+    // Extract integer part
+    int ipart = (int)n;
 
-//     // Extract floating part
-//     float fpart = n - (float)ipart;
+    // Extract floating part
+    float fpart = n - (float)ipart;
 
-//     // convert integer part to string
-//     itoa(ipart, res, 0);
-//     int i = strlen(res);
+    // convert integer part to string
+    itoa(ipart, res, 0);
+    int i = strlen(res);
 
-//     // check for display option after point
-//     if (afterpoint != 0)
-//     {
-//         res[i] = '.'; // add dot
+    // check for display option after point
+    if (afterpoint != 0)
+    {
+        res[i] = '.'; // add dot
 
-//         // Get the value of fraction part upto given no.
-//         // of points after dot. The third parameter
-//         // is needed to handle cases like 233.007
-//         fpart = fpart * pow(10, afterpoint);
+        // Get the value of fraction part upto given no.
+        // of points after dot. The third parameter
+        // is needed to handle cases like 233.007
+        fpart = fpart * pow(10, afterpoint);
 
-//         itoa((int)fpart, res + i + 1, afterpoint);
-//     }
-// }
+        itoa((int)fpart, res + i + 1, afterpoint);
+    }
+}
+
+// https://www.geeksforgeeks.org/write-your-own-atoi/
+int atoi(char *s)
+{
+    // Initialize result
+    int value = 0;
+
+    // Iterate through all characters
+    // of input string and update result
+    // take ASCII character of corosponding digit and
+    // subtract the code from '0' to get numerical
+    // value and multiply res by 10 to shuffle
+    // digits left to update running total
+    for (int i = 0; s[i] != '\0'; i++)
+        value = value * 10 + s[i] - '0';
+
+    // return result.
+    return value;
+}
 
 void reverse(char *s)
 {
@@ -94,4 +113,13 @@ void reverse(char *s)
         s[strlen(s) - i - 1] = s[0];
         s[0] = temp;
     }
+}
+
+void strcpy(char *source, char *target)
+{
+    int length = strlen(source);
+
+    for (int i = 0; i < length; i++)
+        target[i] = source[i];
+    target[length] = '\0';
 }

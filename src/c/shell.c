@@ -75,6 +75,8 @@ void command_controller(enum SPECIAL_CHARACTER input_parse, char c, char buffer[
                 command_timer_on();
             else if (!strcmp(buffer, "timer_off"))
                 command_timer_off();
+            else if (!strcmp(buffer, "set_timeout"))
+                command_set_timeout();
             else
                 command_not_found(buffer);
         }
