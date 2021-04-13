@@ -15,7 +15,7 @@
 #define MAX_OBJECT_SIZE         (1 << MAX_OBJECT_ORDER)
 #define MAX_ALLOCATOR_NUMBER    MAX_OBJECT_ORDER - MIN_OBJECT_ORDER + 1
 
-static void* NULL = 0;
+#define NULL ((void *)0)
 
 #include "list.h"
 

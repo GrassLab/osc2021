@@ -4,7 +4,14 @@
 #include "uart.h"
 #include "string.h"
 
-void set_timeout()
+struct list_head user_timer_list;
+
+void init_user_timer()
+{
+    list_init_head(&user_timer_list);
+}
+
+void set_new_timeout()
 {
     char second_string[10];
     printf("time: ");
@@ -15,11 +22,54 @@ void set_timeout()
     printf("message: ");
     uart_getline(message);
 
-    struct user_timer *timer_object = km_allocation(sizeof(struct user_timer));
+    struct user_timer *new_timer = km_allocation(sizeof(struct user_timer));
 
-    timer_object->newest_system_time = 0;
-    timer_object->trigger_time = second;
-    strcpy(message, timer_object->message);
+    new_timer->trigger_time = second;
+    strcpy(message, new_timer->message);
+    unsigned int frequency;
+    unsigned int time_stamp;
+    asm volatile(
+        "mrs %0, cntpct_el0 \n\t"
+        "mrs %1, cntfrq_el0 \n\t"
+        : "=r"(time_stamp), "=r"(frequency)
+        :);
+    unsigned int system_time = time_stamp / frequency;
+    new_timer->newest_system_time = system_time;
+
+    if (list_empty(&user_timer_list))
+    {
+        /*
+        TODO: Set the core timer directly if there is no previously set one.
+        */
+    }
+    else
+    {
+        for (struct list_head *object = user_timer_list.next; object != NULL; object = object->next)
+        {
+            struct user_timer *temp = (struct user_timer *)object;
+            temp->trigger_time -= system_time - temp->newest_system_time;
+            temp->newest_system_time = system_time;
+        }
+
+        struct user_timer *front = (struct user_timer *)user_timer_list.next;
+        if (new_timer->trigger_time < front->trigger_time)
+        {
+
+            list_crop(&front->list, &front->list);
+            km_free(front);
+            list_add_head(&new_timer->list, &user_timer_list);
+            /*
+            TODO: Re-set the core timer to the newly created one. 
+            */
+        }
+        else
+        {
+            /*
+            TODO:   Insert the newly created timer into the list,
+                    then set the core timer to the first one in the list.
+            */
+        }
+    }
 }
 
 void print_time_stamp(unsigned long cntpct, unsigned long cntfrq)

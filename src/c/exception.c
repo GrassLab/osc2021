@@ -27,7 +27,7 @@ void svc_router(unsigned long spsr, unsigned long elr, unsigned long esr)
         break;
 
     case 3:
-        set_timeout();
+        set_new_timeout();
         break;
 
     default: 

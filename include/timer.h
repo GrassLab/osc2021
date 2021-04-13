@@ -10,5 +10,7 @@ struct user_timer
     char message[50];
 };
 
-void set_timeout();
+void init_user_timer();
+void set_new_timeout();
+
 void print_time_stamp(unsigned long cntpct, unsigned long cntfrq);
