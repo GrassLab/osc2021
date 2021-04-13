@@ -22,7 +22,7 @@ clear_loop:
     cbz     w2, master
     str     xzr, [x1], #8
     sub     w2, w2, #1
-    cbnz    w2, clear_loop        // Whether bss section is not all set to zero
+    cbnz    w2, clear_loop          // Whether bss section is not all set to zero
 
 master:  
     // cpu id == 0, is primary CPU 
@@ -33,12 +33,12 @@ master:
     msr     hcr_el2, x0
 
     ldr	    x0, =SPSR_EL2_VALUE      // set processor restore state after calling eret
-	msr	    spsr_el2, x0
+    msr	    spsr_el2, x0
 
-	adr	    x0, el1_entry		     // eret return address
-	msr	    elr_el2, x0
+    adr	    x0, el1_entry		     // eret return address
+    msr	    elr_el2, x0
 
-	eret		                     // from el2 to el1
+    eret		                     // from el2 to el1
 
 el1_entry:
     ldr     x1, =CPACR_EL1_VALUE     // Make el0, el1 can use Floating point and Advanced SIMD
@@ -54,7 +54,7 @@ el1_entry:
     //msr     spsr_el1, x0
 
     ldr	    x0, =0x3c5                // set processor restore state after calling eret
-	msr	    spsr_el1, x0              // kernel should be running in EL1
+    msr	    spsr_el1, x0              // kernel should be running in EL1
 
     ldr     x1, =0x40000              // set EL0 stack pointer
     msr     sp_el0, x1
