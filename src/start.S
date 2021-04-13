@@ -3,7 +3,6 @@
 .section ".text.boot"
 
 .global _start
-
 _start:
     // read cpu id, stop slave cores
     mrs     x1, mpidr_el1
