@@ -253,8 +253,8 @@ void printDmaPool(dma *list) {
   timer &  time's functions
 */
 #define FREQ_EL0 0x03B9ACA0
-extern void _el0_timer_enable();
-extern void _el0_timer_disable();
+extern void _timer_enable();
+extern void _timer_disable();
 extern void _timer_add(uint64_t);
 typedef struct timer_list {
   uint64_t after;
@@ -275,7 +275,7 @@ void timer_init() {
   current = 0;
   _update_current();
   _timer_add((uint64_t)10000 * FREQ_EL0);
-  _el0_timer_enable();
+  _timer_enable();
 }
 void _update_afters() {
   uint64_t delta = _update_current();
@@ -305,14 +305,14 @@ void add_timer(void *return_addr, uint64_t after) {
   _timer_add(timer_head->after);
 }
 void _timer_handler() {
-  uart_puts("\r\ntimer handler\r\n");
+  uart_puts("timer handler\r\n");
   if (timer_head->return_addr != 0)
     asm volatile("msr ELR_EL1, %0;" ::"r"(timer_head->return_addr));
   timer_list *ptr = timer_head;
   timer_head = timer_head->next;
   free((void *)ptr);
   if (timer_head != 0) {
-    _el0_timer_enable();
+    _timer_enable();
     _update_afters();
     _timer_add(timer_head->after);
   } else
@@ -328,9 +328,13 @@ void irq_init() { _el1_irq_enable(); }
 void _irq_entry() {
   // uart_puts("irq handler\r\n");
   if ((*(uint32_t *)IRQ_PENDING_1) & AUX_IRQ) {
-    if (((*(uint32_t *)AUX_MU_IIR) & 0x06) == 0x02) _uart_irq_puts(send_buff);
+    disable_uart_interrupt();
+    // uart_puts("irq handler1\r\n");
+    if (((*(uint32_t *)AUX_MU_IIR) & 0x06) == 0x02)
+      ;  //_uart_irq_puts(send_buff);
     if (((*(uint32_t *)AUX_MU_IIR) & 0x06) == 0x04) _uart_irq_getc();
-    }
+    enable_uart_interrupt();
+  }
   if ((*(uint32_t *)CORE0_INTERRUPT_SOURCE) == 2) {
     // uart_puts("irq handler2\r\n");
     _timer_handler();

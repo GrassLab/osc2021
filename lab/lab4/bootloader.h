@@ -1,5 +1,3 @@
-#ifndef _BOOT
-#define _BOOT
 #include "uart.h"
 #include "utils.h"
 
@@ -85,5 +83,3 @@ int dtb_getNode(char **fp, char **name, char **value, int *len, char **type,
     return 0;
   return deep;
 }
-
-#endif /*_BOOT */

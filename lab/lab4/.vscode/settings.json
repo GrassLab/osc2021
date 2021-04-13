@@ -7,7 +7,6 @@
     "string_view": "cpp",
     "initializer_list": "cpp",
     "utility": "cpp",
-    "memory": "cpp",
-    "uart.h": "c"
+    "memory": "cpp"
   }
 }

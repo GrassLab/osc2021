@@ -2,14 +2,14 @@
 #include "uart.h"
 
 #include "gpio.h"
-// char get_buff[buff_size], send_buff[buff_size];
-void uart_init(unsigned int in) {
+
+void uart_init() {
   /* initialize UART */
   *AUX_ENABLE |= 1;    // enable UART1, AUX mini uart
   *AUX_MU_CNTL = 0;    // Disable enable RX & TX operation
   *AUX_MU_LCR = 3;     // used to set data bit length (8 bit = 3)
   *AUX_MU_MCR = 0;     // disable auto flow control
-  *AUX_MU_IER = 0x0;   // disable interrupts
+  *AUX_MU_IER = 0;     // disable interrupts
   *AUX_MU_IIR = 0xc6;  // identify TX or RX interrup
   *AUX_MU_BAUD = 270;  // 115200 baud
 
@@ -28,15 +28,16 @@ void uart_init(unsigned int in) {
   while (r--) asm volatile("nop");
   *GPPUDCLK0 = 0;    // flush GPIO setup
   *AUX_MU_CNTL = 3;  // enable TX, RX
-  if ((interupt = in)) enable_uart_interrupt();
+  if (INTERUPT) _uart_interrupt_init();
 }
-void enable_uart_interrupt(unsigned int interupt) {
+void enable_uart_interrupt() { *(unsigned int *)ENB_IRQS1 |= AUX_IRQ; }
+void disable_uart_interrupt() { *(unsigned int *)DSB_IRQS1 |= AUX_IRQ; }
+void _uart_interrupt_init() {
   *AUX_MU_IER |= 0x1;  // 0x1
-  *(unsigned int*)ENB_IRQS1 |= AUX_IRQ;
+  enable_uart_interrupt();
   get_top = get_buttom = 0;
 }
-void disable_uart_interrupt() { *(unsigned int*)ENB_IRQS1 |= AUX_IRQ; }
-void uart_asyn_puts(char* str) {
+void uart_asyn_puts(char *str) {
   int i = 0;
   for (int j = 0; str[j] != '\0'; ++i, ++j) {
     send_buff[i] = str[j];
@@ -61,7 +62,6 @@ char uart_asyn_getc() {
   if (get_top >= buff_size) get_top = 0;
   return get_buff[get_top++];
 }
-
 /* Send a character */
 void uart_send(unsigned int c) {
   /* wait until we can send */
@@ -84,12 +84,14 @@ char _uart_getc() {
   return (char)(*AUX_MU_IO);  // read it and return
 }
 
-char uart_getc() {
-  if (!interupt) return _uart_getc();
-  return uart_asyn_getc();
-}
-
 /* Display a string */
-void uart_puts(char* s) {
-  while (*s) uart_send(*s++);  // convert newline to carrige return + newline
+void uart_puts(char *s) {
+  if (!INTERUPT)
+    while (*s) uart_send(*s++);  // convert newline to carrige return + newline
+  else
+    uart_asyn_puts(s);
+}
+char uart_getc() {
+  if (!INTERUPT) return _uart_getc();
+  return uart_asyn_getc();
 }

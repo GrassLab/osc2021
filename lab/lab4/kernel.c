@@ -11,7 +11,6 @@ void do_help() {
   uart_puts("ls: list file\r\n");
   uart_puts("cat: print file context\r\n");
   uart_puts("clear: clean screen\r\n");
-  uart_puts("timer: set time out and print\r\n");
 }
 void do_except(char *buff) {
   uart_puts("No command: ");
@@ -109,19 +108,7 @@ void shell() {
       do_clear();
     else if (strcmp(buff, "run"))
       do_run(buff);
-    else if (strcmp(buff, "lab3")) {
-      // buddy_test1();
-      // buddy_test4();
-      // dma_test1();
-      // dma_test2();
-    } else if (strcmp(buff, "lab")) {
-      // uart_asyn_puts(
-      //     "00000000001111111111222222222233333333334444444444555555555566666666"
-      //     "66\r\n");
-      // uart_asyn_puts("aaaa\r\n");
-      // uart_asyn_puts("aaaa\r\n");
-      uart_asyn_puts("aaaa\r\n");
-    } else if (strcmp(buff, "timer")) {
+    else if (strcmp(buff, "timer")) {
       do_timeOut(buff);
     } else
       do_except(buff);
@@ -129,7 +116,7 @@ void shell() {
 }
 
 void main() {
-  uart_init(1);  // set up serial console
+  uart_init();  // set up serial console
   buddy_init((char *)BUDDY_START);
   dma_init();
   timer_init();

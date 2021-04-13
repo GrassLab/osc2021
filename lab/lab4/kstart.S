@@ -43,6 +43,7 @@ _from_el2_to_el1:
     msr elr_el2, lr
     eret // return to EL1
 
+
 .align 11 // vector table should be aligned to 0x800
 .global _exception_vector_table 
 _exception_vector_table:
@@ -147,11 +148,11 @@ _exception_handler:
 _exception_entry:
 	mrs x0, elr_el1
 	print_reg x0
+	ret
 	mrs x0, spsr_el1
 	print_reg x0
 	mrs x0, esr_el1
 	print_reg x0
-	ret
 
 
 #define CORE0_TIMER_IRQ_CTRL 0x40000040
@@ -167,17 +168,17 @@ _core_timer_enable:
     ret
 
 
-.global _el0_timer_enable
-_el0_timer_enable:
+.global _timer_enable
+_timer_enable:
 	mov x0, 1
 	msr cntp_ctl_el0, x0 // enable
 	ldr x1, =CORE0_TIMER_IRQ_CTRL
 	mov x0, 2
 	str w0, [x1] // unmask timer interrupt
-  ret
+    ret
 
-.globl _el0_timer_disable
-_el0_timer_disable:
+.globl _timer_disable
+_timer_disable:
     mov x0, 0
     msr cntp_ctl_el0, x0
     mov x0, 0
@@ -200,11 +201,10 @@ _core_timer_handler:
     print_reg x0
 
 	save_all
-	bl _el0_timer_disable
+	bl _timer_disable
 	bl _timer_handler
 	load_all
 	eret
-
 
 
 .globl _el1_irq_enable // enable interrupt
