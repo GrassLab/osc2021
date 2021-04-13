@@ -3,6 +3,10 @@
 timer_event timer_event_queue[20];
 
 void init_timer_queue(){
+    for(int i = 0; i < 20; ++i)
+        timer_event_queue[i] = {.registerTime=-1, .exectime=-1, .msg[0]='\0', .next=nullptr};
+}
+void add_timer(void (*)(char *)func, int duration){
 
 }
 void timer_print_msg(char* msg){

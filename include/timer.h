@@ -14,7 +14,8 @@ void el0_timer_irq();
 
 typedef struct timer_event {
     unsigned int registerTime, execTime;
-    char msg[20];
+    char args[20];
+    void(*callback)(char*);
     struct timer_event* next;
 } timer_event;
 
