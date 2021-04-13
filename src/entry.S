@@ -119,9 +119,10 @@ irq_el1_handler:
     eret
 
 irq_el0_aarch64:
-    //save_all
-    b handle_el0_irq
-    //load_all
+    save_all
+    bl handle_el0_irq
+    load_all
+    eret
     //b core_timer_handler
 
 sync_el0_aarch64:

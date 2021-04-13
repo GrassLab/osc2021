@@ -12,7 +12,7 @@ void shell_welcome(){
 }
 void shell(){
     enable_uart_interrupt();
-    core_timer_enable();
+    // core_timer_enable();
     enable_irq();
     uart_send_string("=== Welcome ===\r\n");
     uart_send_string("$ ");

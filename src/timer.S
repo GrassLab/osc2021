@@ -29,14 +29,14 @@ core_timer_disable:
     str x0, [x1]          // disable timer interrupt
     ret
 
-.globl core_timer_handler
-core_timer_handler:
+.globl el0_timer_handler
+el0_timer_handler:
     mrs x0, cntpct_el0
-    // print_el x0
+    print_el x0
     mrs x0, cntfrq_el0
     add x0, x0, x0       // 2 seconds
     msr cntp_tval_el0, x0
-    ret
+    eret
 
 .globl get_current_timer_cnt
 get_current_timer_cnt:

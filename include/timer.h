@@ -9,6 +9,8 @@ extern unsigned int get_current_timer_cnt();
 void add_timer(void (*)(char *));
 void timer_print_msg(char *);
 void init_timer_queue();
+void el1_timer_irq();
+void el0_timer_irq();
 
 typedef struct timer_event {
     unsigned int registerTime, execTime;

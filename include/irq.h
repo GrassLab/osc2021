@@ -10,12 +10,12 @@ extern void core_timer_handler();
 extern void enable_irq();
 extern void disable_irq();
 extern void sync_call_uart();
+extern void el0_timer_handler();
 
 void handle_sync_el1(unsigned long, unsigned long);
 void handle_el1_irq();
 void handle_el0_irq();
-void el1_timer_irq();
-void el0_timer_irq();
+
 #define IRQ_PENDING_1 (MMIO_BASE + 0x0000B204)
 #define ENB_IRQS1 (MMIO_BASE + 0x0000B210)
 #define DISABLE_IRQS1 (MMIO_BASE + 0x0000B21C)
