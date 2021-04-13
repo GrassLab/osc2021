@@ -69,9 +69,18 @@ void sync_svc_handler(unsigned long spsr, unsigned long elr, unsigned long esr)
 
 void irq_exc_router()
 {
-	printf("Core timer interrupt!\n");
-	core_timer_handler();
-	print_timestamp();
+	// Identify IRQ source (check p16 in QA7_rev3.4)
+    unsigned int src = *CORE0_IRQ_SRC;
+    printf("In IRQ exception router\n");
+    printf("IRQ source: 0x%x\n", src);
+
+    if (src & (1<<1)) {
+        printf("Core timer interrupt!\n");
+        core_timer_handler();
+        print_timestamp();
+    } else {
+        printf("Unknown IRQ source\n");
+    }
 }
 
 void print_timestamp()
