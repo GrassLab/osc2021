@@ -105,14 +105,18 @@ exception_vector_table:
     exception_entry default_exception_handler    
 
 sync_el1_handler:
-    //save_all
+    save_all
     mrs x0, esr_el1
     mrs x1, elr_el1
     b handle_sync_el1
-    //load_all
+    load_all
+    eret
 
 irq_el1_handler:
-    b handle_el1_irq
+    save_all
+    bl handle_el1_irq
+    load_all
+    eret
 
 irq_el0_aarch64:
     //save_all
