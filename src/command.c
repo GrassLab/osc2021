@@ -25,7 +25,9 @@ void command_help ()
     uart_puts("\tls:\t\tPrint cpio file list.\n");
     uart_puts("\tcat {filename}:\tPrint content in {filename} \n");
     uart_puts("\tma:\t\tSystem of memory allcator \n");
-    uart_puts("\tcurrentEL:\tPiint current exception level(You can't use it in EL0)");
+    uart_puts("\tcurrentEL:\tPiint current exception level(You can't use it in EL0)\n");
+    uart_puts("\tcoreTimerOn:\tEnable core0 timer interrupt \n");
+    uart_puts("\tcoreTimerOff:\tDisable core0 timer interrupt \n");
     uart_puts("\n");
 }
 
@@ -99,7 +101,9 @@ void command_cpio_svc()
     printf("cpio starting addres0x{%x}\n", result);
     printf("program starting address: 0x{%x}\n", program_address);
 
-    // Jump to user program. And before jump to user program we should do following thing
+    printf("Return to Kernel Shell (EL1)\n"); // Jump to EL1 will It will be done in sync_exc_handler
+
+    // Jump to user program in initramfs.cpio. And before jump to user program we should do following thing
     // 1. set EL0 stack pointer before jump into user program(user mode)
     // 2. set spsr_el1 to disable all intterupt and use user stack
     // 3. set elr_el1 with starting address of user program
@@ -117,7 +121,7 @@ void command_cpio_svc()
          msr sp_el0, x1       \n \
          eret");
 
-    printf("end cpio_svc\n");
+    printf("Error!, End cpio_svc \n"); // For failsafe, should not execute it
 }
 
 
@@ -125,6 +129,16 @@ void command_current_el()
 {
     int el = get_el();
     printf("Current Exception Level: %d \r\n", el);
+}
+
+void commnad_coreTimeOn()
+{
+    asm volatile("svc #2");
+}
+
+void commnad_coreTimerOff()
+{
+    asm volatile("svc #3");
 }
 
 

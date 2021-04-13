@@ -77,8 +77,10 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
             else if ( !strcmp(buffer, "ls"          ) ) command_cpio_ls((void *) INITRAMFS_ADDR);
             else if ( !strncmp(buffer, "cat ", 3    ) ) command_getCpioFile((void *) INITRAMFS_ADDR, buffer + 4);
             else if ( !strcmp(buffer, "ma"          ) ) mm_init();
-            else if ( !strcmp(buffer, "cpio_svc"    ) ) command_cpio_svc();
+            else if ( !strcmp(buffer, "cpio_svc"    ) ) command_cpio_svc(); // eret jump to cpio assemlby file(user program), and svc return to kernel
             else if ( !strcmp(buffer, "currentEL"   ) ) command_current_el();
+            else if ( !strcmp(buffer, "coreTimerOn" ) ) commnad_coreTimeOn();
+            else if ( !strcmp(buffer, "coreTimerOff") ) commnad_coreTimerOff();
             else                                        command_not_found(buffer);
         }
             
