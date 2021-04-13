@@ -18,8 +18,26 @@ void print_state(){
     uart_puts("\r\n");
 }
 
-void exception_handler(){
+void lowerSync64_handler(){
     print_state();
+}
+
+void lowerIRQ64_handler(){
+    asm volatile("mrs x0, cntfrq_el0 \n");
+    asm volatile("add x0, x0, x0 \n");
+    asm volatile("msr cntp_tval_el0, x0 \n");
+    
+    uint64_t cntpct, cntfrq;
+    asm volatile("mrs %0, cntpct_el0 \n":"=r"(cntpct):);
+    asm volatile("mrs %0, cntfrq_el0 \n":"=r"(cntfrq):);
+
+    uint64_t tmp = cntpct*10/cntfrq;
+    uart_puts("\r\n------------\r\n");
+    uart_puts("Time: ");
+    uart_puts(itoa(tmp/10, 10));
+    uart_puts(".");
+    uart_puts(itoa(tmp%10, 10));
+    uart_puts("\r\n------------\r\n");
 }
 
 void non_implement_handler(){
