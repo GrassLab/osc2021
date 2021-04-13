@@ -1,6 +1,10 @@
 # define ESR_EC_SVC 0b010101
 
 # define SVC_ISS_NOPE 0
+# define SVC_ISS_GET_TIMER_VALUE 1
+# define SVC_ISS_GET_TIMER_MS 2
+# define SVC_ISS_TIMER_ENABLE 3
+# define SVC_ISS_TIMER_DISABLE 4
 
 
 char vector_table_desc[16][30] = {
@@ -42,3 +46,5 @@ void svc_handler(
       unsigned long type, 
       int iss
     );
+
+void irq_handler();

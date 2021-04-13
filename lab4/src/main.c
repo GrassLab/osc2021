@@ -7,9 +7,11 @@
 # include "shell.h"
 # include "mem.h"
 # include "bitset.h"
+# include "timer.h"
 
 
 int main(){
+  //core_timer_init();
   uart_init();
   uart_puts("Buddy system init\n");
   buddy_init();

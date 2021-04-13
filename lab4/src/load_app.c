@@ -16,9 +16,8 @@ __attribute__((section(".exec.app"))) void load_app(void* load_addr, unsigned lo
 
   int (*app_start)(void) = (int (*)()) &_exec_app_img;
   int r = app_start();
-  char ct[20];
-  int_to_str(r, ct);
-  uart_puts(ct);
-  uart_puts("\n");
-
+  //char ct[20];
+  //int_to_str(r, ct);
+  //uart_puts(ct);
+  //uart_puts("\n");
 }

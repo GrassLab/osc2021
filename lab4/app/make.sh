@@ -1,4 +1,3 @@
-aarch64-linux-gnu-gcc -c uart.c -o uart.o
 aarch64-linux-gnu-gcc -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles -c app.S -o app.o
 aarch64-linux-gnu-ld app.o  -T linker.ld -o app.elf
 aarch64-linux-gnu-objcopy -O binary app.elf app_asm.img

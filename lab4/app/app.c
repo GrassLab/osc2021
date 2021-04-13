@@ -39,7 +39,7 @@ __attribute__((section(".text.uart"))) char uart_read() {
     /* convert carrige return to newline */
     return (r == '\r') ? '\n' : r;
 }
-__attribute__((section(".text.app"))) int app(){
+__attribute__((section(".text.app"))) void app(){
   //uart_puts(meg);
   char ca[4];
   ca[0] = 'H';
@@ -47,7 +47,7 @@ __attribute__((section(".text.app"))) int app(){
   ca[2] = '\n';
   ca[3] = '\0';
   uart_puts(ca);
-  char r = uart_read();
+  //char r = uart_read();
   //uart_puts(meg);
-  return (int)r;
+  //return (int)r;
 }

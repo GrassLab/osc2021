@@ -5,7 +5,7 @@
 
 // SPSR_EL2, Saved Program Status Register (EL2)
 
-# define SPSR_EL2_MASK       (0b0000 << 6)
+# define SPSR_EL2_MASK       (0b1111 << 6)
 # define SPSR_EL2_EL1h       (0b0101 << 0)
 # define SPSR_EL2_VALUE      (SPSR_EL2_MASK | SPSR_EL2_EL1h)
 
@@ -14,3 +14,4 @@
 # define SPSR_EL1_MASK       (0b0000 << 6)
 # define SPSR_EL1_EL0        (0b0000 << 0)
 # define SPSR_EL1_VALUE      (SPSR_EL1_MASK | SPSR_EL1_EL0)
+
