@@ -109,6 +109,12 @@ _syn_handler:
     load_all
     eret
 
+_irq_handler:
+    save_all
+    bl irq_handler
+    load_all
+    eret
+
 
 .align 11
 .global exception_vector_table
@@ -137,7 +143,7 @@ exception_vector_table:
     // Exception from lower EL/aarch64
     b _syn_handler   // Synchronous
     .align 7
-    b not_impl   //  IRQ
+    b _irq_handler   //  IRQ
     .align 7
     b not_impl   //  FIQ
     .align 7
