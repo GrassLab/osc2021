@@ -147,11 +147,11 @@ _exception_handler:
 _exception_entry:
 	mrs x0, elr_el1
 	print_reg x0
-	ret
 	mrs x0, spsr_el1
 	print_reg x0
 	mrs x0, esr_el1
 	print_reg x0
+	ret
 
 
 #define CORE0_TIMER_IRQ_CTRL 0x40000040
@@ -223,5 +223,4 @@ _irq_handler:
 	bl _el1_irq_disable
 	bl _irq_entry
 	load_all
-	
 	eret

@@ -42,11 +42,11 @@ void uart_asyn_puts(char* str) {
     send_buff[i] = str[j];
     if (i >= buff_size - 1) {
       i = -1;
-      *AUX_MU_IER |= 0x02;  // enable puts interrupt
+      *AUX_MU_IER |= 0x02;  // puts interrupt
     }
   }
   send_buff[i] = '\0';
-  *AUX_MU_IER |= 0x02;  // enable puts interrupt
+  *AUX_MU_IER |= 0x02;  // puts interrupt
 }
 void _uart_irq_puts() {
   for (int i = 0; i < buff_size && send_buff[i]; ++i) uart_send(send_buff[i]);

@@ -330,11 +330,11 @@ void _irq_entry() {
   if ((*(uint32_t *)IRQ_PENDING_1) & AUX_IRQ) {
     if (((*(uint32_t *)AUX_MU_IIR) & 0x06) == 0x02) _uart_irq_puts(send_buff);
     if (((*(uint32_t *)AUX_MU_IIR) & 0x06) == 0x04) _uart_irq_getc();
-    _el1_irq_enable();
-  }
+    }
   if ((*(uint32_t *)CORE0_INTERRUPT_SOURCE) == 2) {
     // uart_puts("irq handler2\r\n");
     _timer_handler();
   }
+  _el1_irq_enable();
   return;
 }

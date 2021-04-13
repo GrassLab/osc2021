@@ -30,7 +30,7 @@ void uart_puts(char *s);
 char get_buff[buff_size], send_buff[buff_size];
 unsigned long long int get_top, get_buttom, interupt, dummy_pos[5];
 void uart_asyn_puts(char *);
-void uart_irq_send(unsigned int);
+char uart_asyn_getc();
 void _uart_irq_getc();
 void _uart_irq_puts();
 char _uart_getc();
