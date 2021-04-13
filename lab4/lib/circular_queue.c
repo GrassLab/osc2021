@@ -13,7 +13,7 @@ void circular_queue_push(struct circular_queue *q, char c) {
   if(circular_queue_is_full(q))
     return;
   q->buffer[q->rear] = c;
- /* char ch[2];
+  /* char ch[2];
   ch[0] = c;
   ch[1] = '\0';
   printf("push: %s\n", ch);*/
@@ -36,10 +36,10 @@ char circular_queue_pop(struct circular_queue *q) {
 void circular_queue_status(struct circular_queue *q) {
   printf("front: %d\n", q->front);
   printf("rear: %d\n", q->rear);
-  int i;
-  i  = q->front;
+  //int i;
+  /*i  = q->front;
   while(i % CIRCULAR_QUEUE_BUFFER_SIZE != q->rear) {
     printf("%d: %c\n", i, q->buffer[i]);
     i++;
-  }
+  }*/
 }

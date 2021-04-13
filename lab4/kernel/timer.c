@@ -2,6 +2,8 @@
 #include <types.h>
 #include <uart.h>
 #include <printf.h>
+#include <dynamic.h>
+
 void get_core_time() {
   size_t count, freq;
   float time;
@@ -12,8 +14,22 @@ void get_core_time() {
 }
 
 void core_time_interrupt_handler() {
+  struct core_timer_callback *q = null;
+  core_timer_queue_update();
+  core_timer_queue_status();
+  while(1) {
+    q = core_timer_queue_pop();
+    if(q != null) {
+      printf("core timer interrupt: %d\n", q->timeout);
+      dynamic_free(q);
+    }
+    else
+      break;
+  }
   //set next time out
-   asm volatile("mrs x0, cntfrq_el0\n" "lsl x0, x0, #1\n" "msr cntp_tval_el0, x0\n");
+  asm volatile("mrs x0, cntfrq_el0\n" "lsl x0, x0, #1\n" "msr cntp_tval_el0, x0\n");
   //output now time
   get_core_time();
 }
+
+ 

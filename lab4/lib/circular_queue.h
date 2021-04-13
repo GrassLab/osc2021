@@ -1,7 +1,7 @@
 #ifndef _CIRCULAR_QUEUE_H_
 #define _CIRCULAR_QUEUE_H_
 
-#define CIRCULAR_QUEUE_BUFFER_SIZE 0x200
+#define CIRCULAR_QUEUE_BUFFER_SIZE 0x100
 struct circular_queue {
   int front;
   int rear;

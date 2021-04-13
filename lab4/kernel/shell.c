@@ -8,6 +8,7 @@
 #include <dynamic.h>
 #include <exception.h>
 #include <printf.h>
+#include <timer.h>
 
 void shell() {
   uart_puts("*****************************Hello World*****************************\r\n");
@@ -121,6 +122,9 @@ void do_command(char* command) {
     printf("%s", command);
     printf("read %d bytes\n", count);
   }
+  else if(strncmp(command, "settimeout", 10) == 0) {
+    core_timer_queue_push(null, strtol(command + 10, 0, 10));
+  }
   else {
     printf("unknown command\n");
   }	
@@ -149,7 +153,7 @@ void loadimg() {
   uart_hex(img_size);
   uart_puts("\n");
   //check bootloader, and image is overlap 
-  size_t img_end = load_address + img_size;
+  size_t img_end = load_address + img_size + img_size % 16;
   size_t relocated_readimg_jump = (size_t)&readimg_jump;
   if(img_end > (size_t) &_start_bootloader) {
     uart_puts("image overlapped to bootloader.\n");
