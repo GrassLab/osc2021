@@ -94,6 +94,21 @@ void command_timer_off()
 
 void command_set_timeout()
 {
+    char second_string[10];
+    printf("time: ");
+    uart_getline(second_string);
+    int second = atoi(second_string);
+
+    char message[100];
+    printf("message: ");
+    uart_getline(message);
+
+    asm volatile(
+        "mov x10, %0    \n\t"
+        "mov x11, %1    \n\t"
+        :
+        : "r"(&second), "r"(message));
+
     asm volatile("svc 3");
 }
 

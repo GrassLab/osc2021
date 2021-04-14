@@ -13,19 +13,19 @@ void init_user_timer()
 
 void set_new_timeout()
 {
-    char second_string[10];
-    printf("time: ");
-    uart_getline(second_string);
-    int second = atoi(second_string);
+    int *second;
+    char *message;
 
-    char message[100];
-    printf("message: ");
-    uart_getline(message);
+    asm volatile(
+        "mov %0, x10 \n\t"
+        "mov %1, x11 \n\t"
+        : "=r"(second), "=r"(message)
+        :);
 
     struct user_timer *new_timer = km_allocation(sizeof(struct user_timer));
-
-    new_timer->trigger_time = second;
+    new_timer->trigger_time = *second;
     strcpy(message, new_timer->message);
+
     unsigned long frequency;
     unsigned long timestamp;
     asm volatile(
@@ -53,7 +53,7 @@ void set_new_timeout()
     else
     {
         // update the system time for each timer in the list
-        for (struct user_timer *temp = (struct user_timer *)user_timer_list.next; temp != &user_timer_list; temp = (struct user_timer *)temp->list.next)
+        for (struct user_timer *temp = (struct user_timer *)user_timer_list.next; &temp->list != &user_timer_list; temp = (struct user_timer *)temp->list.next)
         {
             temp->trigger_time -= system_time - temp->newest_system_time;
             temp->newest_system_time = system_time;
@@ -83,11 +83,18 @@ void set_new_timeout()
         {
             struct user_timer *current = front;
             struct user_timer *next = (struct user_timer *)current->list.next;
-            while ((next != &user_timer_list) && (next->trigger_time < new_timer->trigger_time))
+
+            int entered = 0;
+            while ((&next->list != &user_timer_list) && (next->trigger_time < new_timer->trigger_time))
             {
+                entered = 1;
                 next = (struct user_timer *)current->list.next;
                 current = next;
             }
+            // if the above loop is entered, go one step back
+            if (entered)
+                current = current->list.prev;
+
             __list_add(&new_timer->list, &current->list, current->list.next);
         }
     }
@@ -114,7 +121,7 @@ void handle_due_timeout()
             :);
         unsigned long system_time = timestamp / frequency;
 
-        for (struct user_timer *temp = (struct user_timer *)user_timer_list.next; temp != &user_timer_list; temp = (struct user_timer *)temp->list.next)
+        for (struct user_timer *temp = (struct user_timer *)user_timer_list.next; &temp->list != &user_timer_list; temp = (struct user_timer *)temp->list.next)
         {
             temp->trigger_time -= system_time - temp->newest_system_time;
             temp->newest_system_time = system_time;
