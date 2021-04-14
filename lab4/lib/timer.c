@@ -22,5 +22,5 @@ void core_timer_handler() {
     write_sysreg(cntp_tval_el0, frq * 2);
 
     unsigned long cnt = read_sysreg(cntpct_el0);
-    printf("[%d.000000] Timer interrupt\n", cnt/frq);
+    printf("[%d.000000] Timer interrupt\n\r", cnt/frq);
 }

@@ -26,19 +26,19 @@ void sync_handler(struct pt_regs *regs) {
         break;
 
     case ESR_ELx_EC_DABT_LOW:
-        printf("Data abort exception");
+        puts("Data abort exception");
         panic();
 
     case ESR_ELx_EC_IABT_LOW:
-        printf("Instruction abort exception");
+        puts("Instruction abort exception");
         panic();
 
     case ESR_ELx_EC_BRK_LOW:
-        printf("Breakpoint exception");
+        puts("Breakpoint exception");
         panic();
 
     default:
-        printf("Unknown exception: EC=0x%x, ISS=0x%x\n", ec, iss);
+        printf("Unknown exception: EC=0x%x, ISS=0x%x\n\r", ec, iss);
         panic();
     }
 }
@@ -48,7 +48,7 @@ void svc_handler(struct pt_regs *regs) {
     unsigned long elr = read_sysreg(elr_el1);
     unsigned long esr = read_sysreg(esr_el1);
 
-    printf("spsr_el1: 0x%lx, elr_el1: 0x%lx, esr_el1: 0x%lx\n", spsr, elr, esr);
+    printf("spsr_el1: 0x%lx, elr_el1: 0x%lx, esr_el1: 0x%lx\n\r", spsr, elr, esr);
 }
 
 void segv_handler() {
