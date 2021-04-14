@@ -19,10 +19,3 @@ I add another command to run the code in qemu.
 I follow the instruction in lab0, loading bootcode.bin, fixup.dat and start.elf into SD card, and also put our kernel8.img into Rpi3. Then, we can start the board to check the result.
 
 ## Architecture
-* linker.ld: linker script of this homework.
-* boot.S: bootloader, clear bss and setup stack pointer and jump to kernel function.
-* mm.S: defines memzero function.
-* kernel.c: our kernel function, I call simple shell here.
-* shell.c: Where I implement the simple shell.
-* utils.S: defines put32, get32 function and delay function that is used in UART initialization.
-* mini_uart.c: initialization function, uart_getc, uart_putc and uart_puts are defined here.
