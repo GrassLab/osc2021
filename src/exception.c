@@ -53,12 +53,12 @@ void sync_svc_handler(unsigned long spsr, unsigned long elr, unsigned long esr)
 {
 	int ISS = esr & 0xFFFFFF;
 	switch (ISS) {
-		case 1:
+        case 1:
             printf("[cpio svc]\n");
 			break;
-		case 2:
-			core_timer_enable();
-			printf("[Core timer] interrupt enabled\n");
+        case 2:
+            core_timer_enable();
+            printf("[Core timer] interrupt enabled\n");
 			break;
 		case 3:
 			core_timer_disable();

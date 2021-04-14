@@ -47,10 +47,10 @@ char read_transmit_asynchronous_procoessing(char buffer[], int * buffer_counter)
         if (uart_read_idx > 0)
         {
             /** 
-             * read one char from read buffer
-             * Should it be a crtical section?
-             * For example:
-             *  ToDo
+             * Read one char at the front of read buffer
+             * Should it be a crtical section? 
+             * Because the variables in this critical section may be modified in uart IRQ hanlder at the same time
+             
              */
             //printf("buffer_counter = %d, uart_read_idx = %d\n", *buffer_counter, uart_read_idx);
             disable_irq(); // critical section
@@ -59,10 +59,9 @@ char read_transmit_asynchronous_procoessing(char buffer[], int * buffer_counter)
             enable_irq(); // End critical section
 
             /** 
-             * Write to transmit buffer
-             * Should it be a crtical section?
-             * For example:
-             *  ToDo
+             * Write to the tail end of transmit buffer
+             * Also, it should be ciritical section. Because it's shared variables in shell.c and uart.c
+             * 
              */
             disable_irq(); // critical section 
             UART_TRANSMIT_BUFFER[uart_transmit_idx] = input_char;
@@ -75,10 +74,10 @@ char read_transmit_asynchronous_procoessing(char buffer[], int * buffer_counter)
         }
 
         // ToDo : 
-        // Busy Waiting for print all chars remaining in transmit buffer
-        // to avoid concurrency(race condition) problem. Because it's possible when doing printf() function
-        // then transmit exception occur causing race condiion?? (Maybe not)
-        // (It's possible? Maybe not. But processor is too strong, so it's difficult to check that)
+        // Busy Waiting for printing all chars remaining in transmit buffer to avoid concurrency(race condition) problem. 
+        // Because it's possible when doing printf() function then transmit exception occur causing 
+        // race condiion?? 
+        // (It's race condition possible happen? Maybe not. But processor is too strong, so it's difficult to check that)
         // For safe problem in future, we still add busy waitng code 
         while (uart_transmit_idx != 0);
     }
