@@ -153,7 +153,7 @@ void block_free(struct page *block)
 
     // stop merge
     list_add_tail(&block->list, &free_buddy_list[block->order]);
-    printf("[block_free] done\n\n");
+    // printf("[block_free] done\n\n");
 }
 
 void *object_allocation(int token)
@@ -297,7 +297,7 @@ void object_free(void *object)
     //     }
     // }
 
-    printf("[object_free] done\n\n");
+    // printf("[object_free] done\n\n");
 }
 
 void *km_allocation(int size)
@@ -343,7 +343,7 @@ void km_free(void *address)
     else
         block_free(page);
 
-    printf("--------------------\n\n");
+    // printf("--------------------\n\n");
 }
 
 int find_buddy(int page_number, int order)

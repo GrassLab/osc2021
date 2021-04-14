@@ -68,7 +68,7 @@ exception_vector_table:
     .align 7
     b svc_handler           // Synchronous
     .align 7
-    b core_timer_handler    // IRQ
+    b user_timer_handler    // IRQ
     .align 7 
     b invalid_handler       // FIQ
     .align 7 
@@ -96,18 +96,26 @@ svc_handler:
     // msr elr_el1, x0
     eret
 
-.global core_timer_handler
 core_timer_handler:
     save_regs
     mrs x0, cntpct_el0
     mrs x1, cntfrq_el0
-    bl  print_time_stamp
+    bl  print_timestamp
     load_regs
 
     mrs x0, cntfrq_el0
     mov x1, 5
     mul x0, x0, x1
     msr cntp_tval_el0, x0
+
+    ldr x0, =shell_start
+    msr elr_el1, x0
+    eret
+
+user_timer_handler:
+    save_regs
+    bl handle_due_timeout
+    load_regs
 
     ldr x0, =shell_start
     msr elr_el1, x0

@@ -12,5 +12,6 @@ struct user_timer
 
 void init_user_timer();
 void set_new_timeout();
+void handle_due_timeout();
 
 void print_time_stamp(unsigned long cntpct, unsigned long cntfrq);
