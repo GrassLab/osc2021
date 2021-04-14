@@ -43,50 +43,56 @@
 .align 11 // vector table should be aligned to 0x800
 .global exception_vector_table
 exception_vector_table:
-    b _exception_handler    // branch to a handler function.
-    .align 7                // entry size is 0x80, .align will pad 0
-    b _irq_handler
+    b _default_handler    // branch to a handler function.
+    .align 7              // entry size is 0x80, .align will pad 0
+    b _default_handler
     .align 7
-    b _exception_handler
+    b _default_handler
     .align 7
-    b _exception_handler
-    .align 7
-
-    b _exception_handler
-    .align 7
-    b _irq_handler
-    .align 7
-    b _exception_handler
-    .align 7
-    b _exception_handler
+    b _default_handler
     .align 7
 
-    b _exception_handler
+    b _sync_handler
     .align 7
     b _irq_handler
     .align 7
-    b _exception_handler
+    b _default_handler
     .align 7
-    b _exception_handler
+    b _default_handler
     .align 7
 
-    b _exception_handler
+    b _sync_handler
     .align 7
     b _irq_handler
     .align 7
-    b _exception_handler
+    b _default_handler
     .align 7
-    b _exception_handler
+    b _default_handler
     .align 7
 
-_exception_handler:
+    b _default_handler
+    .align 7
+    b _default_handler
+    .align 7
+    b _default_handler
+    .align 7
+    b _default_handler
+    .align 7
+
+_sync_handler:
     save_reg
-    bl exception_handler // c code
+    bl sync_handler // exception.c
     load_reg
     eret
 
 _irq_handler:
     save_reg
-    bl core_timer_handler // c code
+    bl irq_handler // exception.c
+    load_reg
+    eret
+
+_default_handler:
+    save_reg
+    bl default_handler // exception.c
     load_reg
     eret

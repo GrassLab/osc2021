@@ -3,6 +3,7 @@
 #include "alloc.h"
 #include "cpio.h"
 #include "dtb.h"
+#include "exception.h"
 #include "io.h"
 #include "mini_uart.h"
 #include "string.h"
@@ -40,7 +41,7 @@ void cmd_buddy_test() { buddy_test(); }
 void cmd_dma_test() { dma_test(); }
 
 void cmd_load_user_program() {
-  uint64_t spsr_el1 = 0x0; // EL0t with interrupt enabled
+  uint64_t spsr_el1 = 0x0;  // EL0t with interrupt enabled
   uint64_t target_addr = 0x30000000;
   uint64_t target_sp = 0x31000000;
   cpio_load_user_program("user_program.img", target_addr);
@@ -60,7 +61,7 @@ void clear_buffer() {
 
 void receive_cmd() {
   while (1) {
-    char c = uart_getc();
+    char c = uart_async_getc();
     if (c == '\0') continue;  // to avoid weird character
     if (c == '\n') {          // '\r' is replaced with '\n'
       print_s("\r\n");
@@ -73,6 +74,8 @@ void receive_cmd() {
 }
 
 void run_shell() {
+  enable_interrupt();
+
   print_s("************************************\n");
   print_s("** Operating System Capstone 2021 **\n");
   print_s("************************************\n");
@@ -101,6 +104,10 @@ void run_shell() {
       cmd_dma_test();
     } else if (strcmp(buffer, "user") == 0) {
       cmd_load_user_program();
+    } else if (strcmp(buffer, "timer") == 0) {
+      core_timer_enable();
+    } else if (strcmp(buffer, "puts") == 0) {
+      uart_async_puts("async puts\n");
     }
   }
 }
