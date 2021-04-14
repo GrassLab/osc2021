@@ -40,7 +40,7 @@ void command_cpio()
     printf("\t2:\t\tSearch for a specific file.\n");
     printf("\t3:\t\tRun an executable.\n");
     printf("\n");
-    printf("# ");
+    printf("option: ");
 
     char choice = uart_getc();
     printf("%c", choice);
@@ -57,7 +57,7 @@ void command_cpio()
     {
         char file_name[100];
 
-        printf("# ");
+        printf("file name: ");
         uart_getline(file_name);
 
         cpio_find_file(file_name);
@@ -67,9 +67,9 @@ void command_cpio()
 
     case '3':
     {
-        printf("# ");
-
         char file_name[100];
+
+        printf("file name: ");
         uart_getline(file_name);
 
         cpio_run_executable(file_name);

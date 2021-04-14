@@ -56,9 +56,9 @@ exception_vector_table:
     
     // Current EL with SPx
     .align 7
-    b invalid_handler       // Synchronous
+    b svc_handler           // Synchronous
     .align 7
-    b invalid_handler       // IRQ
+    b core_timer_handler    // IRQ
     .align 7
     b invalid_handler       // FIQ
     .align 7
@@ -68,7 +68,7 @@ exception_vector_table:
     .align 7
     b svc_handler           // Synchronous
     .align 7
-    b user_timer_handler    // IRQ
+    b invalid_handler       // IRQ
     .align 7 
     b invalid_handler       // FIQ
     .align 7 
@@ -86,39 +86,16 @@ exception_vector_table:
 
 svc_handler:
     save_regs
+
     mrs x0, spsr_el1
     mrs x1, elr_el1
     mrs x2, esr_el1
     bl  svc_router
+
+    ldr x0, =0x345
+    msr spsr_el1, x0
+    
     load_regs
-
-    // ldr x0, =shell_start
-    // msr elr_el1, x0
-    eret
-
-core_timer_handler:
-    save_regs
-    mrs x0, cntpct_el0
-    mrs x1, cntfrq_el0
-    bl  print_timestamp
-    load_regs
-
-    mrs x0, cntfrq_el0
-    mov x1, 5
-    mul x0, x0, x1
-    msr cntp_tval_el0, x0
-
-    ldr x0, =shell_start
-    msr elr_el1, x0
-    eret
-
-user_timer_handler:
-    save_regs
-    bl handle_due_timeout
-    load_regs
-
-    ldr x0, =shell_start
-    msr elr_el1, x0
     eret
 
 invalid_hang:
