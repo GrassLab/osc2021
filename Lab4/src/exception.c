@@ -14,7 +14,7 @@ void dumpState() {
 }
 
 void exception_handler() {
-  uart_println("Syn Exception");
+  uart_printf("Syn Exception\n");
   dumpState();
 }
 

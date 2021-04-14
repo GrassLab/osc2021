@@ -24,5 +24,5 @@ struct cpio_newc_header {
 
 void cpio_list_file(const char *cpio_buf);
 const char *cpio_get_content(const char *path, const char *cpio_buf);
-void cpio_load_program(char *target, uint64_t target_addr, void *cpiobuf)
+
 #endif

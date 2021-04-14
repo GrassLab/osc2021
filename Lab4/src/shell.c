@@ -2,7 +2,7 @@
 #include "uart.h"
 #include "utli.h"
 #include "cpio.h"
-#include "load.h"
+
 extern char cpio_buf[];
 enum ANSI_ESC {
     Unknown,
@@ -115,8 +115,7 @@ void shell_controller(char* cmd) {
     else if (!strcmp(cmd, "help")) {
         uart_printf("help: print all available commands\n");
         uart_printf("hello: print Hello World!\n");
-        uart_printf("ls: get now file\n");
-        uart_printf("load: load user program and excute in EL0\n");
+        //uart_printf("timestamp: get current timestamp\n");
         uart_printf("reboot: reboot pi\n");
     }
     else if (!strcmp(cmd, "hello")) {
@@ -128,8 +127,7 @@ void shell_controller(char* cmd) {
             ls(cpio_buf);
         }
         else{
-            int size = 0;
-            const char *content = cpio_content(&cmd[3], cpio_buf, size);
+            const char *content = cpio_content(&cmd[3], cpio_buf);
             if(content){
                 uart_printf("%s\n", content);
             }
@@ -139,7 +137,7 @@ void shell_controller(char* cmd) {
         }
     }
     else if(!strcmp(cmd, "load")){
-        load();
+        load(cpio_buf);
     }
     else if (!strcmp(cmd, "reboot")) {
         uart_printf("Rebooting...");

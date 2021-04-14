@@ -40,7 +40,7 @@
 
 
 
-s.section ".text.boot"
+.section ".text.boot"
 
 .global _start
 
@@ -53,9 +53,10 @@ _start:
     //boot
     wfe 
     b 1b
+
 2:
-	b1 from_el2_to_el1
-	ldr x0, =exception_vector_table
+	bl from_el2_to_el1
+	ldr x0, =exception_table
 	msr vbar_el1, x0 
 
 
@@ -79,11 +80,11 @@ _start:
 
 from_el2_to_el1:
 	
-	move x0, (1 << 31)
+	mov x0, (1 << 31)
 	msr hcr_el2, x0
 	mov x0, 0x3c5
 	msr spsr_el2, lr 
-
+	msr elr_el2, x30
 	//執行 floating point 相關的指令時 就會進到 Synchronous Exception要清 CPACR_EL1.FPEN
 	
 	mov x0, #(3 << 20)
