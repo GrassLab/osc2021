@@ -16,6 +16,7 @@ memzero: //clear the bss
 2:
     ldr x0, = __stack_top // load _start address to x0
     mov sp, x0 //set stack
+    bl from_el2_to_el1
     bl main //jump to main.c
 
 1:

@@ -5,7 +5,6 @@
 #include "string.h"
 void test();
 void main() {
-     
     print_welcome(1);
     char input[20];
     char tmp_string[20];
@@ -30,18 +29,15 @@ void main() {
                 cancel_reset();
             }
         }
-        else if(!strcmp(input, "initramfs")) {
-            from_el2_to_el1();
+        else if(!strcmp(input, "initramfs")) {            
             boot_from_initramfs();
         }
-        else if(!strcmp(input, "xcpt")) {
-            from_el2_to_el1();
+        else if(!strcmp(input, "xcpt")) {            
             from_el1_to_el0(0x3c0);
             xcpt_test();
         }
-        else if(!strcmp(input, "time")) {
+        else if(!strcmp(input, "time")) {                        
             core_timer_enable();
-            from_el2_to_el1();
             from_el1_to_el0(0x0);            
         }
         else if(!strcmp(input, "loadimg")) {
