@@ -17,6 +17,7 @@ void cmd_dtb_print(int all);
 void cmd_buddy_test();
 void cmd_dma_test();
 void cmd_load_user_program();
+void cmd_set_timeout(char *args);
 void clear_buffer();
 void receive_cmd();
 void run_shell();

@@ -54,7 +54,7 @@ exception_vector_table:
 
     b _sync_handler
     .align 7
-    b _irq_handler
+    b _irq_handler_currentEL_ELx
     .align 7
     b _default_handler
     .align 7
@@ -63,7 +63,7 @@ exception_vector_table:
 
     b _sync_handler
     .align 7
-    b _irq_handler
+    b _irq_handler_lowerEL_64
     .align 7
     b _default_handler
     .align 7
@@ -85,9 +85,15 @@ _sync_handler:
     load_reg
     eret
 
-_irq_handler:
+_irq_handler_currentEL_ELx:
     save_reg
-    bl irq_handler // exception.c
+    bl irq_handler_currentEL_ELx // exception.c
+    load_reg
+    eret
+
+_irq_handler_lowerEL_64:
+    save_reg
+    bl irq_handler_lowerEL_64 // exception.c
     load_reg
     eret
 

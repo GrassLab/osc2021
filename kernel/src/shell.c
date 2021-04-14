@@ -3,7 +3,6 @@
 #include "alloc.h"
 #include "cpio.h"
 #include "dtb.h"
-#include "exception.h"
 #include "io.h"
 #include "mini_uart.h"
 #include "string.h"
@@ -21,6 +20,8 @@ void cmd_help() {
   print_s("buddy\t\ttest buddy system\n");
   print_s("dma\t\ttest dynamic memory allocator\n");
   print_s("user\t\tload and run a user program in the initramfs\n");
+  print_s("puts\t\tasynchronous puts\n");
+  print_s("setTimeout [MESSAGE] [SECONDS]\t\tprints MESSAGE after SECONDS\n");
 }
 
 void cmd_hello() { print_s("Hello World!\n"); }
@@ -52,6 +53,20 @@ void cmd_load_user_program() {
   asm volatile("eret");
 }
 
+void cmd_set_timeout(char *args) {
+  uint32_t duration = 0;
+  for (int i = 0; args[i]; i++) {
+    if (args[i] == ' ') {
+      for (int j = i + 1; args[j]; j++) {
+        duration = duration * 10 + (args[j] - '0');
+      }
+      args[i] = '\0';
+      break;
+    }
+  }
+  add_timer(timer_callback, args, duration);
+}
+
 void clear_buffer() {
   buffer_pos = 0;
   for (int i = 0; i < MAX_BUFFER_SIZE; i++) {
@@ -74,8 +89,6 @@ void receive_cmd() {
 }
 
 void run_shell() {
-  enable_interrupt();
-
   print_s("************************************\n");
   print_s("** Operating System Capstone 2021 **\n");
   print_s("************************************\n");
@@ -108,6 +121,8 @@ void run_shell() {
       core_timer_enable();
     } else if (strcmp(buffer, "puts") == 0) {
       uart_async_puts("async puts\n");
+    } else if (strncmp(buffer, "setTimeout", 10) == 0) {
+      cmd_set_timeout(&buffer[11]);
     }
   }
 }

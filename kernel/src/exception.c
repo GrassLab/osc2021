@@ -27,14 +27,28 @@ void sync_handler() {
   print_s("\n");
 }
 
-void irq_handler() {
+void irq_handler_currentEL_ELx() {
   disable_interrupt();
   uint32_t is_uart = (*IRQ_PENDING_1 & AUX_IRQ);
+  uint32_t is_core_timer = (*CORE0_INTERRUPT_SOURCE & 0x2);
 
   if (is_uart) {
     uart_handler();
-  } else {
-    core_timer_handler();
+  } else if (is_core_timer) {
+    core_timer_handler_currentEL_ELx();
+  }
+  enable_interrupt();
+}
+
+void irq_handler_lowerEL_64() {
+  disable_interrupt();
+  uint32_t is_uart = (*IRQ_PENDING_1 & AUX_IRQ);
+  uint32_t is_core_timer = (*CORE0_INTERRUPT_SOURCE & 0x2);
+
+  if (is_uart) {
+    uart_handler();
+  } else if (is_core_timer) {
+    core_timer_handler_lowerEL_64();
   }
   enable_interrupt();
 }
