@@ -105,12 +105,13 @@ void loadprog(char* pathname, int addr){
         data++;
     }
 
-    asm volatile("mov x0, 0x3c0  \n");
+    asm volatile("mov x0, 0x340  \n");
     asm volatile("msr spsr_el1, x0   \n");
     asm volatile("msr elr_el1, %0    \n"::"r"(addr));
     asm volatile("msr sp_el0, %0    \n"::"r"(addr));
     //asm volatile("mov x0, #(3<<20)   \n");
     // asm volatile("msr cpacr_el0, x0    \n");
+    core_timer_enable();
     asm volatile("eret    \n");
 }
 

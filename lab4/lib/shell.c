@@ -43,7 +43,7 @@ static void hello(){
 
 static void help(){
     uart_puts("Available Commands:\n");
-    for(int i =0 ; i < 9 ; ++i){
+    for(int i =0 ; i < 10 ; ++i){
         uart_puts(commanlist[i]);
         uart_puts("\t");
     }

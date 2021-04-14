@@ -6,8 +6,8 @@ CPIO:=initramfs.cpio
 all: $(KERNEL).img
 //all: test.img
 
-$(KERNEL).img:start.o main.o rd.o  lib/uart.o  lib/shell.o lib/stringUtils.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o lib/exception/exception.o
-	aarch64-linux-gnu-ld  -T $(LINKER) -o $(KERNEL).elf start.o rd.o main.o  lib/uart.o lib/stringUtils.o  lib/shell.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o lib/exception/exception.o
+$(KERNEL).img:start.o main.o rd.o  lib/uart.o  lib/shell.o lib/stringUtils.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o lib/exception/except.o lib/exception/exception.o lib/interrupt.o lib/irq.o
+	aarch64-linux-gnu-ld  -T $(LINKER) -o $(KERNEL).elf start.o rd.o main.o  lib/uart.o lib/stringUtils.o  lib/shell.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o lib/exception/except.o lib/exception/exception.o lib/interrupt.o lib/irq.o
 	aarch64-linux-gnu-objcopy -O binary $(KERNEL).elf $@
 
 cpio:
