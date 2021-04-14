@@ -212,7 +212,7 @@ void *object_allocation(int token)
         allocator->current_page = NULL;
     }
 
-    int index = (object - current_page->start_address) / allocator->object_size;
+    // int index = (object - current_page->start_address) / allocator->object_size;
 
     // printf("[object_allocation] object(page: %d, size: %d, index: %d) allocated\n", current_page->page_number, allocator->object_size, index);
     // printf("[object_allocation] done\n\n");
@@ -226,7 +226,7 @@ void object_free(void *object)
     struct page *page = &bookkeep[page_number];
     struct object_allocator *allocator = page->allocator;
     // for example, if we have 16384 + 4096 * 14 + 32 * 5 as our address, then we get 5 with the following operation
-    int index = (((long)(object - MEMORY_START) & ((1 << PAGE_SHIFT) - 1)) / allocator->object_size);
+    // int index = (((long)(object - MEMORY_START) & ((1 << PAGE_SHIFT) - 1)) / allocator->object_size);
 
     // printf("[object_free] object(page: %d, size: %d, index: %d) to be freed\n", page->page_number, allocator->object_size, index);
 

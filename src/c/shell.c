@@ -1,6 +1,7 @@
 #include "shell.h"
 #include "string.h"
 #include "command.h"
+#include "uart.h"
 #include "printf.h"
 
 void shell_start()

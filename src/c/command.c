@@ -44,7 +44,7 @@ void command_cpio()
 
     char choice = uart_getc();
     printf("%c", choice);
-    char new_line = uart_getc();
+    uart_getc();
     printf("\n");
 
     switch (choice)
