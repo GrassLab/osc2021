@@ -41,10 +41,10 @@ size_t dtb_begin;
 
 #define DISPLAY_DEVICE_NAME 1
 #define DISPLAY_DEVICE_PROPERTY 2
-size_t dtb_address;
+void* dtb_address;
 
-void devicetree_parse(size_t address, int mode, char* dev_name);
-uint32_t bytes_to_uint32_t(size_t address);
-size_t get_dtb_address();
-void set_dtb_address(size_t address);
+void devicetree_parse(void* address, int mode, char* dev_name);
+uint32_t bytes_to_uint32_t(void* address);
+void* get_dtb_address();
+void set_dtb_address(void* address);
 #endif

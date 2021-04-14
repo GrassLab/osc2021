@@ -8,10 +8,10 @@
 #include <buddy.h>
 #include <dynamic.h>
 #include <printf.h>
-void main(size_t dtb_address) {
+void main(void* dtb_address) {
   uart_init();
   devicetree_parse(dtb_address, DISPLAY_DEVICE_NAME, null);
-  cpio_parse_newc_header(CPIO_ADDRESS);
+  cpio_parse_newc_header((void *)CPIO_ADDRESS);
   buddy_init();
   dynamic_init();
   shell();

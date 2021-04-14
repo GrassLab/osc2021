@@ -1,6 +1,7 @@
 #include "cpio.h"
+#include <string.h>
 
-void cpio_parse_newc_header(size_t address) {
+void cpio_parse_newc_header(void* address) {
   int i = 0;
   char buf[9];
   uint32_t name_size, file_size;
@@ -86,3 +87,22 @@ void* cpio_get_file_address(char* pathname, uint32_t size) {
   return null;
 }
 
+void* cpio_get_metadata(char* pathname, uint32_t size) {
+  for(int i = 0; i < cpio_file_list_size; i++) {
+    if(strncmp((char *)cpio_file_list[i].name_address, pathname, size) == 0) {
+      return (void* )&cpio_file_list[i];
+    }
+  }
+  return null;
+}
+void* cpio_load_program(char* filename, size_t size, void* address) {
+  struct cpio_metadata *metadata;
+
+  metadata = (struct cpio_metadata *)cpio_get_metadata(filename, size);
+  //check overlap
+  if(metadata == null)
+    return null;
+  //move program to specific address
+  memcpy((char *)address, (char *)metadata->file_address, metadata->file_size);
+  return address;
+}

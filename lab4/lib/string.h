@@ -9,5 +9,4 @@ void memset(char* buf, size_t size, char c);
 long strtol(const char *__restrict nptr, char **__restrict endptr, int base);
 void* memcpy (void *dest, const void *src, size_t len);
 int printf (const char *format, ...);
-
 #endif

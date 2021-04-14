@@ -1,6 +1,6 @@
 #include "devicetree.h"
 
-void devicetree_parse(size_t address, int mode, char* dev_name) {
+void devicetree_parse(void* address, int mode, char* dev_name) {
   /*uart_puts("load_address: \n");
   uart_hex(address);
   uart_puts("\n");*/
@@ -24,7 +24,7 @@ void devicetree_parse(size_t address, int mode, char* dev_name) {
   address += off_dt_struct;
  
   uint32_t property_len, property_name_offset;
-  size_t name_address = 0;
+  void* name_address = 0;
   //parse structure block
   while(1) {
     uint32_t token = bytes_to_uint32_t(address);
@@ -41,8 +41,8 @@ void devicetree_parse(size_t address, int mode, char* dev_name) {
         }
         address += strlen((char *)address);
         /* padding */
-         if(address % 4 != 0)
-           address += 4 - (address % 4);
+         if((size_t)address % 4 != 0)
+           address += 4 - ((size_t)address % 4);
         break;
       case FDT_END_NODE:
         //uart_puts("Node end\n");
@@ -67,8 +67,8 @@ void devicetree_parse(size_t address, int mode, char* dev_name) {
         //strncpy(, (char *)address, property_len);
         address += property_len;
         /* padding */
-        if(address % 4 != 0)
-          address += 4 - (address % 4);
+        if((size_t)address % 4 != 0)
+          address += 4 - ((size_t)address % 4);
         break;
       case FDT_NOP:
         //do nothing
@@ -82,7 +82,7 @@ void devicetree_parse(size_t address, int mode, char* dev_name) {
   }
 }
 
-uint32_t bytes_to_uint32_t(size_t address) {
+uint32_t bytes_to_uint32_t(void* address) {
   uint32_t n = *(uint8_t *)(address) << 24 |
     *(uint8_t *)(address + 1) << 16 |
     *(uint8_t *)(address + 2) << 8 |
@@ -90,10 +90,10 @@ uint32_t bytes_to_uint32_t(size_t address) {
   return n;
 }
 
-size_t get_dtb_address() {
+void* get_dtb_address() {
     return dtb_address;
 }
 
-void set_dtb_address(size_t address) {
+void set_dtb_address(void* address) {
   dtb_address = address;
 }

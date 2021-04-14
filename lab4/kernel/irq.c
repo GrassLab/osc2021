@@ -8,7 +8,7 @@
 void irq_routing() {
   //printf("CORE0_INTERRUPT_SOURCE: %d\n", *CORE0_INTERRUPT_SOURCE);
   if(*CORE0_INTERRUPT_SOURCE & 0x2) {
-    //nCNTHPIRQ core0_interrupt source 2
+    //nCNTHPIRQ core 0 interrupt source 2
     // core timer interrupt handler
     core_time_interrupt_handler();
   }

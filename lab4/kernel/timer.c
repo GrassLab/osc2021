@@ -16,20 +16,30 @@ void get_core_time() {
 void core_time_interrupt_handler() {
   struct core_timer_callback *q = null;
   core_timer_queue_update();
-  core_timer_queue_status();
+  //core_timer_queue_status();
   while(1) {
-    q = core_timer_queue_pop();
+    q = (struct core_timer_callback *)core_timer_queue_pop();
     if(q != null) {
       printf("core timer interrupt: %d\n", q->timeout);
+      ((void (*)(char*, size_t))(q->callback))(q->buf, q->size);
       dynamic_free(q);
     }
     else
       break;
   }
-  //set next time out
-  asm volatile("mrs x0, cntfrq_el0\n" "lsl x0, x0, #1\n" "msr cntp_tval_el0, x0\n");
+  //set next time out      
+  //"lsl x0, x0, #1\n" 
+  asm volatile("mrs x0, cntfrq_el0\n" "msr cntp_tval_el0, x0\n");
   //output now time
-  get_core_time();
+  odd_flag = ~odd_flag;
+  /*if(odd_flag == 0)
+    get_core_time();*/
 }
 
+void core_timer_print_message_callback(char *message, size_t size) {
+  //print message
+  printf("message: %s\n", message);
+  //print current time
+  get_core_time();
+}
  

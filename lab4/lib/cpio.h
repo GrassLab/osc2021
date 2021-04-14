@@ -28,10 +28,10 @@
 
 //cpio metadata for pathname address, s__attribute__((aligned(0x10)))ize, and file content address, size
 struct cpio_metadata {
-    size_t header_address;
-    size_t name_address;
+    void* header_address;
+    void* name_address;
     uint32_t name_size;
-    size_t file_address;
+    void* file_address;
     uint32_t file_size;
 };
 //structure array for cpio metadata
@@ -39,8 +39,9 @@ struct cpio_metadata cpio_file_list[CPIO_FILE_LIST_SIZE];
 //structure array size
 uint32_t cpio_file_list_size;
 
-void cpio_parse_newc_header(size_t address);
+void cpio_parse_newc_header(void* address);
 void cpio_get_file_content(char* pathname, uint32_t size);
 void cpio_get_all_pathname();
 void* cpio_get_file_address(char* pathname, uint32_t size);
+void* cpio_load_program(char* filename, size_t size, void* address);
 #endif

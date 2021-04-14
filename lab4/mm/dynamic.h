@@ -36,5 +36,5 @@ void dynamic_status();
 void dynamic_top_chunk_free();
 int dynamic_remove_chunk(void* address, size_t size);
 int dynamic_request_new_page();
-void* dynamic_unsorted_bin_malloc(size_t size);
+void* dynamic_unsorted_bin_malloc(int idx);
 #endif

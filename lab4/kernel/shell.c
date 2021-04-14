@@ -55,12 +55,13 @@ void do_command(char* command) {
     printf("bfree [address]: buddy free.\n");
     printf("dmalloc [size]: dynamic malloc.\n");
     printf("dfree [address]: dynamic free.\n");
-    printf("svc: trigger interrupt\n");
-    printf("run: run user program in el0\n");
-    printf("el12el0: from el1 to el0\n");
-    printf("asyncw: asynchronous write\n");
-    printf("asyncr: asynchronous read\n");
-  }
+    printf("svc: trigger exception.\n");
+    printf("run [address]: run user program in el0.\n");
+    printf("el12el0: from el1 to el0.\n");
+    printf("asyncw [input]: asynchronous write.\n");
+    printf("asyncr: asynchronous read.\n");
+    printf("settimeout [message] [timeout]: set time out and print message.\n");
+  } 
   else if(strncmp(command, "hello", 6) == 0) {
     printf("Hello World!\n");
   }
@@ -102,12 +103,15 @@ void do_command(char* command) {
   else if(strncmp(command, "svc", 4) == 0) {
     asm volatile("svc #1");
   }
-  else if(strncmp(command, "run", 4) == 0) {
-    void* addr = cpio_get_file_address("user_program.elf", 15);
-    printf("addr: %x\n", addr);
-    //from el1 to el0 and jump to user_program
-    asm volatile("mov x0, #0x3c0\n" "msr spsr_el1, x0\n");
-    asm volatile("mov x0, %0\n" "msr elr_el1, x0\n" "eret\n"::"r"(addr + 0x40));
+  else if(strncmp(command, "run", 3) == 0) {
+    void* addr;
+    addr = cpio_load_program("user_program.elf", 16, (void *)strtol(command + 4, 0, 16));
+    if(addr != null) {
+      printf("addr: %x\n", addr);
+      //from el1 to el0 and jump to user_program
+      asm volatile("mov x0, #0x3c0\n" "msr spsr_el1, x0\n");
+      asm volatile("mov x0, %0\n" "msr elr_el1, x0\n" "eret\n"::"r"(addr + 0x40));
+    }
   }
   else if(strncmp(command, "el12el0", 8) == 0) {
     //from el1 to el0
@@ -115,7 +119,7 @@ void do_command(char* command) {
     asm volatile("mov x0, %0\n" "msr elr_el1, x0\n" "eret\n"::"r"((void*)shell));
   }
   else if(strncmp(command, "asyncw", 6) == 0) {
-    uart_async_write(command + 6, strlen(command) - 6);
+    uart_async_write(command + 7, strlen(command) - 6);
   }
   else if(strncmp(command, "asyncr", 7) == 0) {
     int count = uart_async_read(command, SHELL_COMMNAD_SIZE);
@@ -123,7 +127,15 @@ void do_command(char* command) {
     printf("read %d bytes\n", count);
   }
   else if(strncmp(command, "settimeout", 10) == 0) {
-    core_timer_queue_push(null, strtol(command + 10, 0, 10));
+    int i;
+    for(i = 11; i < strlen(command); i++) {
+      if(command[i] == ' ') {
+        command[i] = '\0';
+        i++;
+        break;
+      }
+    }
+    core_timer_queue_push((void* )core_timer_print_message_callback, strtol(command + i, 0, 10), command + 11, strlen(command + 11));
   }
   else {
     printf("unknown command\n");
@@ -131,7 +143,7 @@ void do_command(char* command) {
 }
 
 void loadimg() {
-  size_t load_address;
+  void* load_address;
   char buf[9]; 
   size_t img_size;
   //count bootloader size
@@ -141,9 +153,9 @@ void loadimg() {
   //read load address
   uart_puts("Input the address to load image(0x): ");
   uart_readline(buf, 8);
-  load_address = strtol(buf, 0, 16);
+  load_address = (void* )strtol(buf, 0, 16);
   uart_puts("\nLoad image at: 0x");
-  uart_hex(load_address);
+  uart_hex((size_t)load_address);
   //read size
   uart_puts("\nInput the image size(0x): ");
   uart_read(buf, 8);
@@ -153,19 +165,19 @@ void loadimg() {
   uart_hex(img_size);
   uart_puts("\n");
   //check bootloader, and image is overlap 
-  size_t img_end = load_address + img_size + img_size % 16;
-  size_t relocated_readimg_jump = (size_t)&readimg_jump;
-  if(img_end > (size_t) &_start_bootloader) {
+  void* img_end = load_address + img_size;
+  void* relocated_readimg_jump = (void* )readimg_jump;
+  if((size_t) img_end > (size_t) &_start_bootloader) {
     uart_puts("image overlapped to bootloader.\n");
-    size_t relocated_bootloader = img_end + BOOTLOADER_OFFSET;
+    void* relocated_bootloader = img_end + BOOTLOADER_OFFSET;
+    uart_puts("relocated rest of bootloader to address: ");
+    uart_hex((size_t)relocated_bootloader);
+    uart_puts("\n");
     //relocate bootloader
     memcpy((char *)relocated_bootloader, &_start_bootloader, _bootloader_size);
-    //jump to rest of code 
-    relocated_readimg_jump = relocated_bootloader + ((size_t)&readimg_jump - (size_t)&_start_bootloader);
+    
     //relocated readimg_jump address
-    uart_puts("relocated rest of bootloader to address: ");
-    uart_hex(relocated_readimg_jump);
-    uart_puts("\n");
+    relocated_readimg_jump = relocated_bootloader + ((size_t)readimg_jump - (size_t)&_start_bootloader);
   }
   //jump to readimg_jump
   asm volatile ("mov x0, %0\n" "mov x1, %1\n" "mov sp, %2\n" "mov x2, %3\n" "blr %4\n"::
@@ -176,7 +188,7 @@ void loadimg() {
 	"r" (relocated_readimg_jump): "x0", "x1", "x2");
 }
 //read kernel img, and jump 
-void readimg_jump(size_t load_address, size_t img_size, size_t dtb_address) {
+void readimg_jump(void* load_address, size_t img_size, size_t dtb_address) {
   uart_read((char* )load_address, img_size);
   asm volatile ("mov x0, %0\n" "mov sp, %1\n" "blr %2\n"::
   "r" (dtb_address),

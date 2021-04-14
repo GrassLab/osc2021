@@ -1,6 +1,7 @@
 #include <timer.h>
 #include <dynamic.h>
 #include <printf.h>
+#include <string.h>
 
 int core_timer_queue_is_due(struct core_timer_callback *q) {
   if(q != null)
@@ -9,13 +10,14 @@ int core_timer_queue_is_due(struct core_timer_callback *q) {
     return 0;
 }
 
-void core_timer_queue_push(void* callback, size_t timeout) {
+void core_timer_queue_push(void* callback, size_t timeout, char *message, size_t size) {
   struct core_timer_callback *q = (struct core_timer_callback *)dynamic_malloc(sizeof(struct core_timer_callback));
   q->callback = callback;
   q->timeout = timeout; 
   q->argc = 0;
   q->argv = null;
-  
+  q->size = size;
+  strncpy(q->buf, message, size);
   q->next = _core_timer_queue;
    _core_timer_queue = q;
   //printf("push %d\n", q->timeout);
@@ -39,11 +41,13 @@ void* core_timer_queue_pop() {
 
 void core_timer_queue_status() {
   struct core_timer_callback *q = _core_timer_queue;
-  while(q != null) {
-    printf("timeout: %d -> ", q->timeout);   
-    q = q->next;
+  if(q != null) {
+    while(q != null) {
+      printf("timeout: %d -> ", q->timeout);   
+      q = q->next;
+    }
+    printf("null\n");
   }
-  printf("null\n");
 }
 
 void core_timer_queue_sorted(struct core_timer_callback *q) {
@@ -61,6 +65,8 @@ void core_timer_queue_sorted(struct core_timer_callback *q) {
           prev_ptr->next = next_ptr;
         else 
           _core_timer_queue = next_ptr;
+
+        ptr = next_ptr;
       }
     }
     prev_ptr = ptr;
