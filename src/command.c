@@ -101,18 +101,17 @@ void command_cpio_svc()
     printf("cpio starting addres0x{%x}\n", result);
     printf("program starting address: 0x{%x}\n", program_address);
 
-    printf("Return to Kernel Shell (EL1)\n"); // Jump to EL1 will It will be done in sync_exc_handler
 
     // Jump to user program in initramfs.cpio. And before jump to user program we should do following thing
     // 1. set EL0 stack pointer before jump into user program(user mode)
-    // 2. set spsr_el1 to disable all intterupt and use user stack
+    // 2. set spsr_el1 to enable irq interrupt and use user stack
     // 3. set elr_el1 with starting address of user program
     // Note: 
     // 1. In ARM, mov instrcution  can only encode an immediate constant that can be 
     // represented as an 8-bit immediate value, shifted by any even power of two.
     // 2. we hardcode starting address of user porgram, maybe there are other better metholds
     asm volatile(
-        "mov x0, 0x3c0        \n \
+        "mov x0, 0x340        \n \
          msr spsr_el1, x0     \n \
          mov x0, 0x8000000    \n \
          add x0, x0, 0x28c    \n \
@@ -131,7 +130,7 @@ void command_current_el()
     printf("Current Exception Level: %d \r\n", el);
 }
 
-void commnad_coreTimeOn()
+void commnad_coreTimerOn()
 {
     asm volatile("svc #2");
 }

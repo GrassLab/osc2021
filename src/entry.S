@@ -137,7 +137,6 @@ sync_exc_handler:
 	mrs	x1, elr_el1
 	mrs	x2, esr_el1 
 	bl sync_exc_router
-	kernel_exit
 
 	
 	/* TODO: should set EL1 in sper_el1? */
@@ -148,10 +147,9 @@ sync_exc_handler:
 	orr x0, x0, x1
 	msr spsr_el1, x0
 
-	// return to shell
-	ldr x0, =shell_start // return to shell
-	msr elr_el1, x0
-	eret
+    kernel_exit // restore saved process state
+
+	eret // return to original program counter that exception occur
 
 irq_exc_handler:
 	kernel_entry

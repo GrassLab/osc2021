@@ -2,6 +2,7 @@
 #include "entry.h"
 #include "timer.h"
 #include "exception.h"
+#include "uart.h"
 
 const char *entry_error_messages[] = {
 	"SYNC_INVALID_EL1t",
@@ -53,14 +54,13 @@ void sync_svc_handler(unsigned long spsr, unsigned long elr, unsigned long esr)
 	int ISS = esr & 0xFFFFFF;
 	switch (ISS) {
 		case 1:
+            printf("[cpio svc]\n");
 			break;
 		case 2:
-			enable_irq_persist(); // enable irq in spsr_el1 and curernt proccessor state(pstate.i)
 			core_timer_enable();
 			printf("[Core timer] interrupt enabled\n");
 			break;
 		case 3:
-			disable_irq_persist(); // disable irq in spsr_el1 and curernt proccessor state(pstate.i)
 			core_timer_disable();
 			printf("[Core timer] interrupt disabled\n");
 			break;
@@ -71,10 +71,18 @@ void irq_exc_router()
 {
 	// Identify IRQ source (check p16 in QA7_rev3.4)
     unsigned int src = *CORE0_IRQ_SRC;
-    printf("In IRQ exception router\n");
-    printf("IRQ source: 0x%x\n", src);
+    unsigned int irq_basic1_pending  = *IRQ_PENDING_1;
+    // printf("In IRQ exception router\n");
+    // printf("Core IRQ source: 0x%x\n", src);
+    // printf("irq_basic1_pending: 0x%x\n", irq_basic1_pending);
 
-    if (src & (1<<1)) {
+    // irq_basic1_pending
+    if (irq_basic1_pending & AUX_IRQ) {
+        //printf("irq_basic1_pending\n");
+        uart_irq_handler();
+    }
+    // ARM Core Timer Interrupt
+    else if (src & (1<<1)) {
         printf("Core timer interrupt!\n");
         core_timer_handler();
         print_timestamp();
@@ -95,4 +103,15 @@ void print_timestamp()
     unsigned long int timestamp = cnt_tpct / cnt_freq;
     printf("timestamp: %u\n", timestamp);
     return;
+}
+
+void print_pstate_interrupt_mask_bits()
+{
+    unsigned int DAIF_bits = 0;
+    asm volatile(
+        "mrs %0, DAIF  \n\t"
+        : "=r" (DAIF_bits)
+    );
+
+    printf("DAIF Bits: 0x{%x}\n", DAIF_bits);
 }
