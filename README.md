@@ -6,28 +6,30 @@
 | --- | ----------- | --- | --- |
 |`0616325`| `cclin0816` | `林重均` | benjamin.cclin@gmail.com |
 
-## How to build
+
+## How to use
 
 ```
-make
+make [run / debug / burn / genfs / clean]
 ```
 
-## How to run
-
-```
-make run
-```
-
-## How to burn it into pi3
-
-```
-make burn
-```
-
-## Architecture
-
-**WIP**
+* run - run w/ qemu
+* debug - debug w/ qemu
+* burn - burn to sd card (default /dev/sdb1 change makefile to modify)
+* genfs - manually regenerate initramfs.cpio with rootfs folder
+* clean - clear repo
 
 ## Directory structure
-
-**WIP**
+```
+osc2021/
+├─ LICENSE ........ license
+├─ README.md ...... this thing
+├─ bl_linker.ld ... linker script for bootloader.elf
+├─ config.txt ..... config for raspi
+├─ kn_linker.ld ... linker script for kernel8.elf
+├─ makefile ....... make script
+├─ script.py ...... script to interactive w/ shell on raspi
+├─ include/ ....... include header files
+├─ rootfs/ ........ rootfs for initramfs.cpio
+└─ src/ ........... source files
+  ```

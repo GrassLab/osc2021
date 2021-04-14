@@ -1,8 +1,5 @@
 #include "uart.h"
 
-#include "bl_util.h"
-#include "gpio.h"
-
 void uart_init() {
   register unsigned int r;
 
@@ -12,7 +9,7 @@ void uart_init() {
   *AUX_MU_LCR = 3;     // data size 8 bits
   *AUX_MU_MCR = 0;     // no auto flow control
   *AUX_MU_IER = 0;     // disable interrupt - enable bit
-  *AUX_MU_IIR = 0xc6;  // disable interrupts - clear FIFO
+  *AUX_MU_IIR = 0x6;   // disable interrupts - clear FIFO
   *AUX_MU_BAUD = 270;  // 115200 baud
 
   /* map UART1 to GPIO pins */
@@ -28,19 +25,54 @@ void uart_init() {
   *AUX_MU_CNTL = 3;  // enable Tx Rx
 }
 
-unsigned int uart_get_raw() {
+unsigned char uart_recv_c() {
   while ((*AUX_MU_LSR & 0x1) == 0)
     ;
-  return (*AUX_MU_IO);
+  return (unsigned char)(*AUX_MU_IO);
 }
 
-void uart_put_raw(unsigned int data) {
+void uart_send_c(unsigned char data) {
   while ((*AUX_MU_LSR & 0x20) == 0)
     ;
-  *AUX_MU_IO = data;
+  *AUX_MU_IO = (unsigned int)data;
 }
 
 void flush() {
   while ((*AUX_MU_STAT & (1 << 9)) == 0)
     ;
+}
+
+unsigned int uart_recv_i() {
+  unsigned int data;
+  unsigned char *itr = (unsigned char *)&data;
+  for (int i = 0; i < 4; i++) {
+    *itr++ = uart_recv_c();
+  }
+  return data;
+}
+
+// blocking uart recv unsigned long
+unsigned long uart_recv_l() {
+  unsigned long data;
+  unsigned char *itr = (unsigned char *)&data;
+  for (int i = 0; i < 8; i++) {
+    *itr++ = uart_recv_c();
+  }
+  return data;
+}
+
+// blocking uart send unsigned int
+void uart_send_i(unsigned int data) {
+  unsigned char *itr = (unsigned char *)&data;
+  for (int i = 0; i < 4; i++) {
+    uart_send_c(*itr++);
+  }
+}
+
+// blocking uart send unsigned long
+void uart_send_l(unsigned long data) {
+  unsigned char *itr = (unsigned char *)&data;
+  for (int i = 0; i < 8; i++) {
+    uart_send_c(*itr++);
+  }
 }

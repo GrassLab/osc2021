@@ -1,7 +1,11 @@
+#include "cpio.h"
+#include "exc.h"
+#include "gpio.h"
 #include "io.h"
 #include "mem.h"
 #include "ramfs.h"
 #include "reset.h"
+#include "timer.h"
 #include "util.h"
 #include "vfs.h"
 
@@ -33,6 +37,28 @@ void shell() {
       //   print_n(read_buf, read_len);
       // }
       // close(&f);
+      void *cpio_file = get_cpio_file(cmd_buf + 4);
+      if (cpio_file != NULL) {
+        unsigned long file_size = get_file_size(cpio_file);
+        void *file_data = get_file_data(cpio_file);
+        print_n((char *)file_data, file_size);
+      } else {
+        print("file not found\n");
+      }
+    } else if (!strcmp_n(cmd_buf, "exec ", 4)) {
+      void *cpio_file = get_cpio_file(cmd_buf + 5);
+      if (cpio_file != NULL) {
+        unsigned long file_size = get_file_size(cpio_file);
+        void *file_data = get_file_data(cpio_file);
+        void *usr_prog = kmalloc(pad(file_size, 4096));
+        void *usr_stack = kmalloc(PAGE_SIZE * 2);
+        memcpy(usr_prog, file_data, file_size);
+        exec_usr(usr_prog, usr_stack, 0);
+        kfree(usr_stack);
+        kfree(usr_prog);
+      } else {
+        print("program not found\n");
+      }
     } else if (strcmp(cmd_buf, "")) {
       print("command not found: ");
       puts(cmd_buf);
@@ -41,64 +67,53 @@ void shell() {
 }
 
 void kernel() {
-  puts("Lab 3:");
+  // void *dtb_addr = *(void **)(0x20000);
+
+  el2_to_el1_preserve_sp();
+  set_el1_evt();
+
+  puts("Lab 4:");
 
   reserve_mem((void *)0x0, 0x1000);                         // spin table
   reserve_mem((void *)0x60000, 0x20000);                    // stack
   reserve_mem((void *)(&kn_start), (&kn_end - &kn_start));  // kernel
-  reserve_mem((void *)(&kn_end), mem_size / PAGE_SIZE);     // buddy system
   reserve_mem((void *)0x3f000000, 0x1000000);               // MMIO
+  reserve_cpio();
 
-  init_buddy((char *)(&kn_end));
-  init_slab();
+  init_kmalloc();
 
+  enable_interrupt();
 
-log_buddy();
-  void *addr = alloc_page(PAGE_SIZE * 2);
-  addr = alloc_page(PAGE_SIZE * 2);
-  addr = alloc_page(PAGE_SIZE * 4);
-  addr = alloc_page(PAGE_SIZE * 8);
-  addr = alloc_page(PAGE_SIZE * 8);
-  addr = alloc_page(PAGE_SIZE * 16);
-  addr = alloc_page(PAGE_SIZE * 16);
-  addr = alloc_page(PAGE_SIZE * 32);
-  addr = alloc_page(PAGE_SIZE * 32);
-  addr = alloc_page(PAGE_SIZE * 32);
+  core_timer_enable();
 
-addr = alloc_page(PAGE_SIZE);
+  unsigned long elapse = get_timer_cnt();
+  print("abcdefghijklmnop\n");
+  elapse = get_timer_cnt() - elapse;
+  log_hex("block elapse", elapse, LOG_PRINT);
 
-  free_page(addr);
+  init_nonblock_io();
 
-  // log("20\n");
-  // for(int i = 0; i < 126; i++) {
-  //   kmalloc(0x20);
-  // }
-  // log("30\n");
-  // void *m[83];
-  // for(int i = 0; i < 83; i++) {
-  //   m[i] = kmalloc(0x30);
-  // }
-  // for(int i = 0; i < 83; i++) {
-  //   kfree(m[i]);
-  // }
-  // for(int i = 0; i < 83; i++) {
-  //   m[i] = kmalloc(0x30);
-  // }
-  // log("40\n");
-  // for(int i = 0; i < 64; i++) {
-  //   kmalloc(0x40);
-  // }
-  // kmalloc(0x40);
+  elapse = get_timer_cnt();
+  print("abcdefghijklmnop\n");
+  elapse = get_timer_cnt() - elapse;
+  log_hex("non block elapse", elapse, LOG_PRINT);
 
-  // check_slab();
+  unsigned long tc = get_timer_cnt();
+  tc = tc + timer_frq * 2;
+  _add_timer(tc, &print_time, (void *)tc);
 
-  // init_rootfs(new_ramfs());
-  // dentry root;
-  // init_dentry(&root);
+  add_timer(3, &print, (void *)"3\n");
+  add_timer(2, &print, (void *)"2\n");
+  add_timer(1, &print, (void *)"1\n");
+  add_timer(5, &print, (void *)"5\n");
 
-  // opendir("/", &root);
-  // parse_initramfs(&root);
-  // closedir(&root);
+  // // init_rootfs(new_ramfs());
+  // // dentry root;
+  // // init_dentry(&root);
+
+  // // opendir("/", &root);
+  // // parse_initramfs(&root);
+  // // closedir(&root);
 
   shell();
 }
