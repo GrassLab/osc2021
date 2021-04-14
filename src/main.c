@@ -2,14 +2,16 @@
 #include "uart.h"
 #include "mystring.h"
 #include "shell.h"
+#include "mbox.h"
 
 #define CMDSIZE 128
 
 void main() {
     char cmd[CMDSIZE] = { 0 };
     int cmd_idx=0;
+    mbox_arm_memory();
     uart_init();
-    allocator_init();
+    mm_init();
     uart_putstr("\r\n");
     uart_putstr("# ");
     while(1) {

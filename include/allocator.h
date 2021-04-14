@@ -1,26 +1,44 @@
 #ifndef ALLOCATOR_H
 #define ALLOCATOR_H
 
-#define MEM_BASE 0x10000000
-#define MEM_MAX_ADDR 0x20000000
-#define MEM_INFO_BASE 0x20000000
 #define PAGE_SIZE 0x1000
+#define MAX_BUDDY_ORDER 9 // 2^0 ~ 2^8
 
 enum page_status {
     AVAIL,
     USED,
 };
 
-struct PageInfo {
-    unsigned long size;
+struct list_head {
+    struct list_head *next, *prev;
+};
+
+struct buddy_head {
+    unsigned long nr_free;
+    struct list_head head;
+};
+
+struct page_t {
+    struct list_head list;
+    int order;
+    unsigned long idx;
     enum page_status status;
 };
 
 
-void allocator_init();
+void mm_init();
 void *kmalloc(unsigned long size);
 void kfree(void *ptr);
-void buddy_merge();
-unsigned long find_buddy(unsigned long offset, unsigned long size);
+
+void buddy_init();
+void buddy_push(struct buddy_head *buddy, struct list_head *element);
+void *buddy_alloc(int order);
+void buddy_free(void *mem_addr);
+void buddy_remove(struct buddy_head *buddy, struct list_head *element);
+struct page_t *buddy_pop(struct buddy_head *buddy, int order);
+struct page_t *find_buddy(unsigned long offset, int order);
+
+void page_init();
+void mm_init();
 
 #endif
