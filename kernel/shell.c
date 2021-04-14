@@ -296,10 +296,16 @@ void command_kfree() {
 }
 
 void command_test() {
+    uint64_t *ptrs[32];
+
+    uart_puts("----------------------------------------\n");
+    uart_puts("(test) Allocating 32 objects with 128 bytes\n");
+
     for(int i = 0; i < 32; i++) {
         uint64_t *adr = kmalloc(128);
+        ptrs[i] = adr;
 
-        uart_puts("[");
+        uart_puts("(test) object [");
         uart_puti(i, 10);
         uart_puts("] ");
 
@@ -307,6 +313,33 @@ void command_test() {
         uart_puti((uint64_t)adr, 16);
         uart_puts("\n");
     }
+
+    uart_puts("----------------------------------------\n");
+    uart_puts("(test) Allocating 1 object in new frame\n");
+
+    uint64_t *adr = kmalloc(128);
+
+    uart_puts("(test) object allocated at: 0x");
+    uart_puti((uint64_t)adr, 16);
+    uart_puts("\n");
+
+    uart_puts("----------------------------------------\n");
+    uart_puts("(test) Free 32 objects\n");
+
+    for(int i = 0; i < 32; i++) {
+        uart_puts("(test) Releasing: 0x");
+        uart_puti((uint64_t)ptrs[i], 16);
+        uart_puts("\n");
+
+        kfree((uint64_t)ptrs[i]);
+    }
+
+    uart_puts("----------------------------------------\n");
+    uart_puts("(test) Free 1 object at 0x");
+    uart_puti((uint64_t)adr, 16);
+    uart_puts("\n");
+
+    kfree((uint64_t)adr);    
 }
 
 void command_not_found() {
