@@ -43,10 +43,10 @@ int putln(const char *str) {
 }
 
 // 0 as same, 1 as different, -1 as error
-int strcmp(const char *a, const char *b) {
-  int cnt = 0;
-  while (a[cnt] != '\0' && b[cnt] != '\0') {
-    if (a[cnt] != b[cnt]) {
+int strcmp(const char *str1, const char *str2) {
+  long cnt = 0;
+  while (str1[cnt] != '\0' && str2[cnt] != '\0') {
+    if (str1[cnt] != str2[cnt]) {
       return 1;
     }
     if (cnt >= 1000) {
@@ -54,7 +54,29 @@ int strcmp(const char *a, const char *b) {
     }
     cnt++;
   }
-  if (a[cnt] == '\0' && b[cnt] == '\0') {
+  if (str1[cnt] == '\0' && str2[cnt] == '\0') {
+    return 0;
+  }
+  return 1;
+}
+
+// 0 as same, 1 as different, -1 as error
+int strncmp(const char *str1, const char *str2, unsigned long num) {
+  long cnt = 0;
+  while (str1[cnt] != '\0' && str2[cnt] != '\0' && cnt < num) {
+    if (str1[cnt] != str2[cnt]) {
+      return 1;
+    }
+    if (cnt >= 1000) {
+      return -1;
+    }
+    cnt++;
+  }
+  if (cnt >= num) {
+    return 0;
+  }
+  // if cnt >= num
+  if (str1[cnt] == '\0' && str2[cnt] == '\0') {
     return 0;
   }
   return 1;

@@ -6,7 +6,7 @@ ENV         ?= release # default set to release mode, use `ENV=debug make` to ch
 CC          = clang
 CFLAGS      = -mcpu=cortex-a53 --target=aarch64-rpi3-elf -Wall -nostdinc -nostdlib
 ifeq ($(ENV), debug)
-	CFLAGS+=-g -O0
+	CFLAGS+=-g -O0 -D_QEMU
 endif
 
 LD          = ld.lld

@@ -3,7 +3,11 @@
 #include "util.h"
 
 #define GETS_BUFF_LEN 0xff
+#ifdef _QEMU
+#define KERNEL_ADDR 0x90000
+#else
 #define KERNEL_ADDR 0x80000
+#endif // _QEMU
 
 int help() {
   puts("Commands:\n\r");

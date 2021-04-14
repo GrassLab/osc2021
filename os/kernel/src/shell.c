@@ -1,28 +1,29 @@
 #include "shell.h"
+#include "cpio.h"
 #include "mmio.h"
 #include "util.h"
 
 #define GETS_BUFF_LEN 0xff
 
-int help() {
+int cmd_help() {
   putln("Commands:");
   putln("\thelp:\tGet informations.");
   putln("\thello:\tSay hello to OS.");
   putln("\treboot:\tReboot OS from SD Card.");
+  putln("\tls:\tList all pathname in CPIO.");
+  putln("\tcat:\tShow file content. You should enter file path later.");
   return 0;
 }
 
-int hello() {
+int cmd_hello() {
   putln("Hello World!");
   return 0;
 }
 
-int reboot() {
+int cmd_reboot() {
   reset(1);
   return 0;
 }
-
-int load_kernel() { return 0; }
 
 int _clear() {
   putln("");
@@ -35,15 +36,30 @@ int _test() {
   return 0;
 }
 
+int cmd_ls() {
+  initramfs_ls();
+  return 0;
+}
+
+int cmd_cat() {
+  puts("File to show: ");
+  char pathname[GETS_BUFF_LEN];
+  gets(pathname);
+  initramfs_cat(pathname);
+  return 0;
+}
+
 int cmd(const char *buff) {
   if (!strcmp(buff, "help")) {
-    return help();
+    return cmd_help();
   } else if (!strcmp(buff, "hello")) {
-    return hello();
+    return cmd_hello();
   } else if (!strcmp(buff, "reboot")) {
-    return reboot();
-  } else if (!strcmp(buff, "load")) {
-    return load_kernel();
+    return cmd_reboot();
+  } else if (!strcmp(buff, "ls")) {
+    return cmd_ls();
+  } else if (!strcmp(buff, "cat")) {
+    return cmd_cat();
   } else if (!strcmp(buff, "test")) {
     return _test();
   } else if (!strcmp(buff, "")) {

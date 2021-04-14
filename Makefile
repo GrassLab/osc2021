@@ -7,6 +7,8 @@ BOOTLOADER  = bootloader
 OS          = os
 BOOT_IMG    = bootloader.img
 OS_IMG      = kernel8.img
+RAMFS_FILE  = initramfs.cpio
+BOOT_CONFIG = config.txt
 
 .PHONY: all clean install
 
@@ -29,9 +31,10 @@ clean:
 
 install:
 #cp ./setup/* $(SD_MEDIA)
-	cp ./setup/config.txt $(SD_MEDIA)
+	cp ./setup/$(BOOT_CONFIG) $(SD_MEDIA)
+	cp ./setup/$(RAMFS_FILE) $(SD_MEDIA)
 	cp $(BOOT_IMG) $(SD_MEDIA)
 
 uninstall:
-	rm $(SD_MEDIA)/config.txt
+	rm $(SD_MEDIA)/$(BOOT_CONFIG) $(SD_MEDIA)/$(RAMFS_FILE)
 	cp ./setup/kernel8.img $(SD_MEDIA)

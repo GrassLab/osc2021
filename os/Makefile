@@ -17,7 +17,11 @@ IMAGE       = kernel8.img
 ELF_FILE    = kernel8.elf
 OBJ_FILES   = boot/boot.o $(KERNEL_OBJ) #$(addprefix $(KERNEL_ROOT)/, $(KERNEL_OBJ))
 
+ifeq ($(ENV), debug)
+LINKER_SCRIPT=linker_qemu.lds
+else
 LINKER_SCRIPT=linker.lds
+endif
 
 .PHONY: all clean img elf obj install
 

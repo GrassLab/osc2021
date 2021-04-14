@@ -16,7 +16,11 @@ OBJ_FILES   = $(LIB_PATH)/boot.o \
               $(LIB_PATH)/bootloader.o \
               $(patsubst $(SRC_PATH)/%, $(LIB_PATH)/%, ${SRC_C:.c=.o})
 
+ifeq ($(ENV), debug)
+LINKER_SCRIPT=linker_qemu.lds
+else
 LINKER_SCRIPT=linker.lds
+endif
 
 .PHONY: all clean img elf obj install
 
