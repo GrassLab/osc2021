@@ -34,7 +34,8 @@ void set_new_timeout()
         : "=r"(timestamp), "=r"(frequency)
         :);
     unsigned long system_time = timestamp / frequency;
-    new_timer->newest_system_time = system_time;
+    new_timer->current_system_time = system_time;
+    new_timer->execution_time = system_time;
 
     // if there is no previously set timer, then set it directly 
     if (list_empty(&user_timer_list))
@@ -55,8 +56,8 @@ void set_new_timeout()
         // update the system time for each timer in the list
         for (struct user_timer *temp = (struct user_timer *)user_timer_list.next; &temp->list != &user_timer_list; temp = (struct user_timer *)temp->list.next)
         {
-            temp->trigger_time -= system_time - temp->newest_system_time;
-            temp->newest_system_time = system_time;
+            temp->trigger_time -= system_time - temp->current_system_time;
+            temp->current_system_time = system_time;
         }
 
         struct user_timer *front = (struct user_timer *)user_timer_list.next;
@@ -104,27 +105,27 @@ void set_new_timeout()
 
 void handle_due_timeout()
 {
+    unsigned long frequency;
+    unsigned long timestamp;
+    asm volatile(
+        "mrs %0, cntpct_el0 \n\t"
+        "mrs %1, cntfrq_el0 \n\t"
+        : "=r"(timestamp), "=r"(frequency)
+        :);
+    unsigned long system_time = timestamp / frequency;
+
     struct user_timer *front = (struct user_timer *)user_timer_list.next;
-    printf("user timer due: %s\n", front->message);
+    printf("user timer due! message: %s, current time: %d, execution time: %d\n", front->message, system_time, front->execution_time);
 
     list_crop(&front->list, &front->list);
     km_free(front);
 
     if (!list_empty(&user_timer_list))
     {
-        unsigned long frequency;
-        unsigned long timestamp;
-        asm volatile(
-            "mrs %0, cntpct_el0 \n\t"
-            "mrs %1, cntfrq_el0 \n\t"
-            : "=r"(timestamp), "=r"(frequency)
-            :);
-        unsigned long system_time = timestamp / frequency;
-
         for (struct user_timer *temp = (struct user_timer *)user_timer_list.next; &temp->list != &user_timer_list; temp = (struct user_timer *)temp->list.next)
         {
-            temp->trigger_time -= system_time - temp->newest_system_time;
-            temp->newest_system_time = system_time;
+            temp->trigger_time -= system_time - temp->current_system_time;
+            temp->current_system_time = system_time;
         }
 
         front = (struct user_timer *)user_timer_list.next;

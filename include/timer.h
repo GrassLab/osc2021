@@ -4,7 +4,8 @@ struct user_timer
 {
     struct list_head list;
 
-    unsigned long newest_system_time;
+    unsigned long execution_time;
+    unsigned long current_system_time;
     unsigned int trigger_time;
 
     char message[50];
