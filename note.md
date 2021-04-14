@@ -23,3 +23,7 @@ If a program wants to increase its EL level, participation of the software that 
     * These two registers are used to ensure that we can sucessfully return to program after interrupt handler
 
 > eret: exception return
+
+## vector table
+Specify the function entry reacting to corresponding exception. The starting address of vector table is 0x800, which is saved in system register VBAR_ELx.
+

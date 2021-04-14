@@ -68,6 +68,14 @@ master:
 	ldr x0, =exception_table
 	msr VBAR_EL1, x0        //VBAR_EL1 stores the vector table.
 
+	mov     x0, 1
+    msr     cntp_ctl_el0, x0    // enable
+    mrs     x0, cntfrq_el0
+    msr     cntp_tval_el0, x0   // set expired time
+    mov     x0, 2
+    ldr     x1, =0x40000040
+    str     w0, [x1]            // unmask timer interrupt
+
     // Jump to C code
     mov     sp, #LOW_MEMORY
     bl      kernel_start
@@ -108,9 +116,9 @@ exception_table:
 	b TODO
 
 	.align 7    //0x400 (here's for svm0 in requirement2)
-	b TODO
+	b lowerSynchronous
 	.align 7    //0x480 
-	b TODO
+	b lowerIRQ
 	.align 7    //0x500
 	b TODO
 	.align 7    //0x580
@@ -125,8 +133,20 @@ exception_table:
 	.align 7    //0x780 
 	b TODO
 
-TODO:
+lowerSynchronous:
 	save_regs
 	bl exception_handler
+	load_regs
+	eret
+
+lowerIRQ:
+	save_regs
+	bl interrupt_handler
+	load_regs
+	eret
+
+TODO:
+	save_regs
+    bl exception_handler
 	load_regs
 	eret

@@ -3,5 +3,6 @@
 #ifndef __ASSEMBLER__
 void dumpstate();
 void exception_handler();
+void interrupt_handler();
 #endif
 #endif
