@@ -3,10 +3,10 @@
 .globl _start
 _start:
   // disable multi core
-  //mrs   x0, mpidr_el1
-  //and   x0, x0, #3
-  //cbnz  x0, _hang
-  // Set stack pointer to #LOW_MEMORY (0xffffffff)
+  mrs   x0, mpidr_el1
+  and   x0, x0, #3
+  cbnz  x0, _hang
+  // Set stack pointer before code session
   ldr   x0, =_start
   mov   sp, x0
   // Set bss as zero
@@ -14,7 +14,7 @@ _start:
   ldr   x1, =__bss_end
   bl    _bss_clear
   // Jump to kernel
-  bl    kernel
+  bl    bootloader
 _hang:
   b     _hang
 

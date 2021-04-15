@@ -88,7 +88,6 @@
 #define PM_RSTC 0x3F10001c
 #define PM_WDOG 0x3F100024
 
-
 void uart_init();
 char uart_getc();
 void uart_setc(char);
