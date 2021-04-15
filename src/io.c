@@ -116,9 +116,6 @@ void kprintf (char *format, ...) {
 }
 
 void print_el1_reg () {
-    kprintf("spsr_el1: %x\n", get_spsr_el1());
-    kprintf("elr_el1: %x\n", get_elr_el1());
-    kprintf("esr_el1: %x\n\n", get_esr_el1());
 }
 
 void kprint_time () {

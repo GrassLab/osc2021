@@ -81,7 +81,7 @@ void parse_command (char *b) {
     }
     /* TODO: delete */
     else if (!strcmp(b, "test")) {
-        from_el1_to_el0();
+        cpio_load_file_interface("./user-process");
     }
     else if (!strcmp(b, "malloc_bins")) {
         show_malloc_bins();

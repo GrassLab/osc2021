@@ -5,7 +5,7 @@
 #include "bootloader.h"
 #include "uart.h"
 #include "cpio.h"
-#include "exception.h"
+#include "entry.h"
 
 CPIO_HEADER *cpio_base_address = 0x0;
 CPIO_index *cpio_index_head = NULL;

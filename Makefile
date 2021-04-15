@@ -35,7 +35,7 @@ CPIO := initramfs.cpio
 QEMU_CPIO := -initrd $(CPIO)
 
 # flattened devicetree (dtb)
-DTB := bcm2710-rpi-3-b-plus.dtb
+DTB := config/bcm2710-rpi-3-b-plus.dtb
 QEMU_DTB := -dtb $(DTB)
 
 all:  $(BOOTLOADER).img $(TARGET).img $(APP_DIR)/$(APP) $(CPIO)
