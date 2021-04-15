@@ -25,10 +25,6 @@ _start:
     cbnz   w2, 3b
 
 4:
-    // disable MMU
-    //ldr    x1, =SCTLR_VALUE_MMU_DISABLED
-    //msr    sctlr_el1, x1
-
     // EL1 users aarch64
     ldr    x1, =HCR_EL2_VALUE
     msr    hcr_el2, x1
@@ -36,9 +32,6 @@ _start:
     // set EL2's SPSR
     ldr    x1, =SPSR_EL2_VALUE
     msr    spsr_el2, x1
-
-    //mov x0, #(3 << 20)
-    //msr cpacr_el1, x0
 
     adr     x1, vector_table
     msr     vbar_el2, x1
@@ -75,12 +68,3 @@ el0_start:
     bl      main
     b       1b
 
-core_timer_enable:
-  mov x0, 1
-  msr cntp_ctl_el0, x0 // enable
-  mrs x0, cntfrq_el0
-  msr cntp_tval_el0, x0 // set expired time
-  mov x0, 2
-  ldr x1, =CORE0_TIMER_IRQ_CTRL
-  str w0, [x1] // unmask timer interrupt
-  ret

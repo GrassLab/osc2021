@@ -57,6 +57,9 @@ void invoke_cmd(char *cmd){
     else if (str_cmp(argv[1], "dma") == 1){
       show_file("help/dma");
     }
+    else if (str_cmp(argv[1], "timer") == 1){
+      show_file("help/timer");
+    }
     else{
       show_file("help/default");
     }

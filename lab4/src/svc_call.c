@@ -13,8 +13,6 @@ void svc_init(){
 }
 
 void svc_get_core_timer_value(unsigned long long* r){
-  //unsigned int a;
-  //asm volatile("mov %0, x0" : "=r"(a));
   asm volatile("svc #1");
   char ct[20];
   int_to_hex(*r, ct);
