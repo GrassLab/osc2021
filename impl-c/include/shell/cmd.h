@@ -7,3 +7,6 @@ typedef struct {
 } Cmd;
 
 Cmd *getCmd(char *name);
+
+// Only used for running tests
+void test_shell_cmd();

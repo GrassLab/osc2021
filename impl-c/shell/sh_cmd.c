@@ -1,8 +1,10 @@
 #include "shell/cmd.h"
 
+#include "bool.h"
 #include "cfg.h"
 #include "cpio.h"
 #include "string.h"
+#include "test.h"
 #include "timer.h"
 #include "uart.h"
 
@@ -105,4 +107,31 @@ void cmdLoadUser() {
   asm volatile("str w0, [x1]          \n");
 
   asm volatile("eret              \n");
+}
+
+#ifdef CFG_RUN_SHELL_CMD_TEST
+bool test_cmd_get() {
+  char *bfr1 = "help";
+  Cmd *c;
+  c = getCmd(bfr1);
+  assert(c->func == cmdHelp);
+  return true;
+}
+
+bool test_cmd_get_null() {
+  char *bfr1 = "help ";
+  assert(getCmd(bfr1) == NULL);
+
+  char *bfr2 = "";
+  assert(getCmd(bfr2) == NULL);
+  return true;
+}
+
+#endif
+
+void test_shell_cmd() {
+#ifdef CFG_RUN_SHELL_CMD_TEST
+  unittest(test_cmd_get, "shell", "cmd get1");
+  unittest(test_cmd_get_null, "shell", "cmd get2");
+#endif
 }
