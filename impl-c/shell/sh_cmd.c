@@ -44,7 +44,15 @@ void cmdHello() { uart_println("Hello!!"); }
 void cmdHelp() {
   uart_println("available commands:");
   Cmd *end = cmdList + sizeof(cmdList) / sizeof(Cmd);
-  const int minIndent = 10;
+
+  // Determine the indent length
+  int mx_cmd_len = 0, tmp = 0;
+  for (Cmd *c = cmdList; c != end; c++) {
+    tmp = strlen(c->name);
+    mx_cmd_len = tmp > mx_cmd_len ? tmp : mx_cmd_len;
+  }
+  int minIndent = mx_cmd_len + 2;
+
   for (Cmd *c = cmdList; c != end; c++) {
     uart_printf("  %s", c->name);
     for (int i = minIndent - strlen(c->name); i > 0; i--) {
