@@ -91,9 +91,9 @@ void set_new_timeout()
 
         struct user_timer *front = (struct user_timer *)user_timer_list.next;
         // overwrite cntp_tval_el0 if the trigger time of the new timer is less than that of the current one
+
         if (new_timer->trigger_time < front->trigger_time)
         {
-
             list_crop(&front->list, &front->list);
             km_free(front);
             list_add_head(&new_timer->list, &user_timer_list);
