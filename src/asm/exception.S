@@ -1,3 +1,5 @@
+#include "sys_regs.h"
+
 // save general registers to stack
 .macro save_regs
     sub sp, sp, 32 * 8
@@ -92,9 +94,9 @@ svc_handler:
     mrs x2, esr_el1
     bl  svc_router
 
-    ldr x0, =0x345
+    ldr x0, =SPSR_EL1_VALUE 
     msr spsr_el1, x0
-    
+
     load_regs
     eret
 

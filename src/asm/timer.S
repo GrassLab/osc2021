@@ -85,25 +85,23 @@ core_timer_handler:
     mul x0, x0, x1
     msr cntp_tval_el0, x0
 
+/*
     ldr x0, =shell_start
     msr elr_el1, x0
+*/
 
-    ldr x0, =0x345
-    msr spsr_el1, x0
-    
     load_regs
     eret
 
 .global user_timer_handler
 user_timer_handler:
     save_regs
-    bl handle_due_timeout
+    bl  handle_due_timeout
 
+/*
     ldr x0, =shell_start
     msr elr_el1, x0
-    
-    ldr x0, =0x345
-    msr spsr_el1, x0
+*/
 
     load_regs
     eret
