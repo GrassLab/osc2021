@@ -6,7 +6,7 @@ _start:
     sub     x1, x1, x0
     bl      clear
     
-    bl      set_exception_vector_table
+    bl      set_el1_exception_vector_table
     bl      from_el2_to_el1
     // EL1 start here
 

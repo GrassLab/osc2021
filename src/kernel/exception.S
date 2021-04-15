@@ -1,12 +1,14 @@
+#define CORE0_IRQ_SOURCE 0x40000060
+
 .global exec_in_el0
-.global exception_vector_table
-.global set_exception_vector_table
+.global el1_exception_vector_table
+.global set_el1_exception_vector_table
 
 .align 11 // vector table should be aligned to 0x800
-exception_vector_table:
+el1_exception_vector_table:
     b exception_handler // branch to a handler function.
     .align 7 // entry size is 0x80, .align will pad 0
-    b exception_handler
+    b irq_handler
     .align 7
     b exception_handler
     .align 7
@@ -15,7 +17,7 @@ exception_vector_table:
 
     b exception_handler
     .align 7
-    b exception_handler
+    b irq_handler
     .align 7
     b exception_handler
     .align 7
@@ -24,7 +26,7 @@ exception_vector_table:
 
     b exception_handler
     .align 7
-    b exception_handler
+    b irq_handler
     .align 7
     b exception_handler
     .align 7
@@ -82,8 +84,8 @@ exception_vector_table:
     add sp, sp, 32 * 8
 .endm
 
-set_exception_vector_table:
-    adr   x0, exception_vector_table
+set_el1_exception_vector_table:
+    adr   x0, el1_exception_vector_table
     msr   vbar_el1, x0
     ret   lr
 
@@ -98,13 +100,22 @@ exception_handler:
     
     eret
 
+irq_handler:
+    save_all
+    ldr   x0, = CORE0_IRQ_SOURCE
+    bl    irq_parser
+    load_all
+    eret
+
+
 exec_in_el0:
     msr   elr_el1, x0
-    mov   x1, 0x3c0
+    mov   x1, 0
     msr   spsr_el1, x1 
 
     // set sp of el0
     add   x2, x0, 0x10000
     msr   sp_el0, x2 
     
+    bl    core_timer_enable
     eret

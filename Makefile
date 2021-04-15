@@ -1,3 +1,5 @@
+DEBUG = 1
+
 ARMGNU = aarch64-linux-gnu
 FLAGS = -Wall -nostdlib -ffreestanding -Werror -ggdb3 -O0
 # FLAGS = -Wall -nostdlib -ffreestanding -Werror
@@ -17,19 +19,19 @@ all: kernel8.img bootloader.img app assets
 
 $(OBJS_DIR)/%_c.o: $(SRC_DIR)/%.c
 	@mkdir -p $(@D)
-ifndef DEBUG
-	$(ARMGNU)-gcc $(FLAGS) $(INCLUDES) -c $< -o $@
-else
+ifeq ($(DEBUG), 1)
 	$(ARMGNU)-gcc $(FLAGS) $(INCLUDES) -D EMU -c $< -o $@
+else
+	$(ARMGNU)-gcc $(FLAGS) $(INCLUDES) -c $< -o $@
 endif
 
 
 $(OBJS_DIR)/%_s.o: $(SRC_DIR)/%.S
 	@mkdir -p $(@D)
-ifndef DEBUG
-	$(ARMGNU)-gcc $(FLAGS) $(INCLUDES) -c $< -o $@
-else 
+ifeq ($(DEBUG), 1)
 	$(ARMGNU)-gcc $(FLAGS) $(INCLUDES) -D EMU -c $< -o $@
+else 
+	$(ARMGNU)-gcc $(FLAGS) $(INCLUDES) -c $< -o $@
 endif
 
 kernel8.img: $(filter $(OBJS_DIR)/kernel/%.o $(OBJS_DIR)/lib/%.o, $(OBJ_FILES)) $(SRC_DIR)/kernel/linker.ld

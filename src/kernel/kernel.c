@@ -2,8 +2,8 @@
 #include "command.h"
 #include "io.h"
 #include "pf_alloc.h"
-
 #include "cpio.h"
+#include "timer.h"
 
 void kernel()
 {
