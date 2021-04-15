@@ -1,4 +1,6 @@
+#define CORE0_TIMER_IRQ_CTRL 0x40000040
 .section ".text"
+
 
 .global core_timer_enable
 
@@ -9,7 +11,7 @@ core_timer_enable:
   add x0, x0, x0
   msr cntp_tval_el0, x0 // set expired time
   mov x0, 2
-  ldr x1, =0x40000040 
+  ldr x1, =CORE0_TIMER_IRQ_CTRL 
   str w0, [x1] // unmask timer interrupt
   ret
 

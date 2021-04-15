@@ -41,9 +41,6 @@ _exception_vector_table:
     b _exception_handler
     .align 7
 
-hang:
-    wfe
-    b hang
 
 .macro _kernel_entry
 sub sp, sp, #256 // size of all registers x0-x30 (31 * 16)

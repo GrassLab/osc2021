@@ -2,7 +2,7 @@
 #include "include/shell.h"
 #include "include/initrd.h"
 #include "include/memAlloc.h"
-
+#include "include/utils.h"
 
 void main()
 {

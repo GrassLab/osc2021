@@ -16,9 +16,9 @@ static int used = 0;
 static chunk_info chunk16[CHUNK16_NUM];
 static chunk_info chunk32[CHUNK32_NUM];
 static chunk_info chunk64[CHUNK64_NUM];
-static int addr16;
-static int addr32;
-static int addr64;
+static unsigned long addr16;
+static unsigned long addr32;
+static unsigned long addr64;
 
 // enum chunk_size : long {
 //    cs_16 = 0,
@@ -41,11 +41,11 @@ void list_node_init() {
   used++;
 }
 
-int check_list(int index) {
+bool check_list(int index) {
   if (list_node_arr[index].next == &list_node_arr[index]) {
     return false;
   } else {
-    int address = list_node_arr[index].next->start_addr;
+    unsigned long address = list_node_arr[index].next->start_addr;
     return address;
   }
 }
@@ -157,9 +157,9 @@ void split_node(int exp) {
   used++;
 }
 
-int find_space(int exp) {
+unsigned long find_space(int exp) {
 
-  int address = check_list(exp - 12);
+  unsigned long address = check_list(exp - 12);
   if (address == 0) {
     uart_printf("Currently no desired size frame, need to split\n");
     return NULL;
@@ -178,11 +178,11 @@ void *my_alloc(int size) {
     while ((1 << exp) < size) {
       ++exp;
     }
-    int dy_addr = dy_alloc(1 << exp);
+    unsigned long dy_addr = (unsigned long)dy_alloc(1 << exp);
     if (dy_addr != 0) {
       uart_printf("%x\n", dy_addr);
       dy_allocated = 1;
-      return dy_addr;
+      return (void *)dy_addr;
     }
   }
 
@@ -193,7 +193,7 @@ void *my_alloc(int size) {
       ++exp;
     }
 
-    int address = find_space(exp);
+    unsigned long address = find_space(exp);
 
     int done = 0;
     while (!check_list(exp - 12)) {
@@ -215,23 +215,23 @@ void *my_alloc(int size) {
       frame_size--;
     }
     list_node_pop(exp - 12);
-    return address;
+    return (void *)address;
   }
 }
 
-void my_free(void *addr) {
+void my_free(int addr) {
 
-  if ((int)addr >= addr16 && (int)addr < (addr16 + PAGE_SIZE)) {
-    chunk16[((int)addr - addr16) >> 4].onused = 0;
+  if (addr >= addr16 && addr < (addr16 + PAGE_SIZE)) {
+    chunk16[(addr - addr16) >> 4].onused = 0;
     uart_printf("Size 2^%d at address 0x%x has been freed\n",4, addr);
     return;
-  } else if ((int)addr >= addr32 && (int)addr < (addr32 + PAGE_SIZE)) {
-    chunk32[((int)addr - addr32) >> 5].onused = 0;
+  } else if (addr >= addr32 && addr < (addr32 + PAGE_SIZE)) {
+    chunk32[(addr - addr32) >> 5].onused = 0;
     uart_printf("Size 2^%d at address 0x%x has been freed\n",5, addr);
     return;
-  } else if ((int)addr >= addr64 && (int)addr < (addr64 + PAGE_SIZE)) {
+  } else if (addr >= addr64 && addr < (addr64 + PAGE_SIZE)) {
     uart_printf("Size 2^%d at address 0x%x has been freed\n",6, addr);
-    chunk64[((int)addr - addr64) >> 6].onused = 0;
+    chunk64[(addr - addr64) >> 6].onused = 0;
     return;
   }
   int page_no = ((int)addr - MEM_START) >> 12;
@@ -296,21 +296,21 @@ void *dy_alloc(int size) {
     for (int i = 0; i < CHUNK16_NUM; ++i) {
       if (chunk16[i].onused == 0) {
         chunk16[i].onused = 1;
-        return addr16 + (i << 4);
+        return (void *)(addr16 + (i << 4));
       }
     }
   } else if (size == 32) {
     for (int i = 0; i < CHUNK32_NUM; ++i) {
       if (chunk32[i].onused == 0) {
         chunk32[i].onused = 1;
-        return addr32 + (i << 5);
+        return (void *)(addr32 + (i << 5));
       }
     }
   } else if (size == 64) {
     for (int i = 0; i < CHUNK64_NUM; ++i) {
       if (chunk64[i].onused == 0) {
         chunk64[i].onused = 1;
-        return addr64 + (i << 6);
+        return (void *)(addr64 + (i << 6));
       }
     }
   }
@@ -318,7 +318,6 @@ void *dy_alloc(int size) {
 }
 
 int mem_init() {
-
   list_node_init();
 
   for (int i = 0; i < PAGE_NUM; ++i) {
@@ -326,9 +325,9 @@ int mem_init() {
     page_arr[i].buddy = -1;
     page_arr[i].exp = -1;
   }
-  addr16 = my_alloc(4096);
-  addr32 = my_alloc(4096);
-  addr64 = my_alloc(4096);
+  addr16 = (unsigned long)my_alloc(4096);
+  addr32 = (unsigned long)my_alloc(4096);
+  addr64 = (unsigned long)my_alloc(4096);
   for (int i = 0; i < CHUNK16_NUM; ++i) {
     chunk16[i].onused = 0;
   }
