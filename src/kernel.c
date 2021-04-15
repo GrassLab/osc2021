@@ -11,6 +11,12 @@
 
 extern unsigned char kn_start, kn_end;
 
+void print_proxy(char *s) {
+  print(s);
+  putc('\n');
+  kfree(s);
+}
+
 void shell() {
   // dentry dir;
   // init_dentry(&dir);
@@ -45,7 +51,7 @@ void shell() {
       } else {
         print("file not found\n");
       }
-    } else if (!strcmp_n(cmd_buf, "exec ", 4)) {
+    } else if (!strcmp_n(cmd_buf, "exec ", 5)) {
       void *cpio_file = get_cpio_file(cmd_buf + 5);
       if (cpio_file != NULL) {
         unsigned long file_size = get_file_size(cpio_file);
@@ -59,6 +65,9 @@ void shell() {
       } else {
         print("program not found\n");
       }
+    } else if (!strcmp_n(cmd_buf, "setTimeout ", 11)) {
+      char *timeout = split_str(cmd_buf + 11);
+      add_timer((double)(atol(timeout)), &print_proxy, new_str(cmd_buf + 11));
     } else if (strcmp(cmd_buf, "")) {
       print("command not found: ");
       puts(cmd_buf);
@@ -101,6 +110,11 @@ void kernel() {
   unsigned long tc = get_timer_cnt();
   tc = tc + timer_frq * 2;
   _add_timer(tc, &print_time, (void *)tc);
+
+  disable_interrupt();
+  add_task(&wait_clock, (void *)100000000, 2);
+  enable_interrupt();
+  log("fin stall\n", LOG_PRINT);
 
   add_timer(3, &print, (void *)"3\n");
   add_timer(2, &print, (void *)"2\n");

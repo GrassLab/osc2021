@@ -72,8 +72,8 @@ long atoi_n(const char *s, size_t len, size_t base) {
 size_t atol(const char *s) { return atol_n(s, 23, 10); }
 
 size_t atol_n(const char *s, size_t len, size_t base) {
-  if(base == 16) {
-    if(strcmp_n(s, "0x", 2) == 0) {
+  if (base == 16) {
+    if (strcmp_n(s, "0x", 2) == 0) {
       s += 2;
     }
   }
@@ -96,9 +96,22 @@ size_t atol_n(const char *s, size_t len, size_t base) {
   return num;
 }
 
-// char *new_str(char *src) {
-//   size_t len = strlen(src);
-//   char *str = (char *)kmalloc(len + 1);
-//   strcpy(str, src);
-//   return str;
-// }
+char *new_str(char *src) {
+  size_t len = strlen(src);
+  char *str = (char *)kmalloc(len + 1);
+  strcpy(str, src);
+  return str;
+}
+
+char *split_str(char *s) {
+  char *right = NULL;
+  while (*s) {
+    if (*s == ' ') {
+      right = s + 1;
+      *s = 0;
+      break;
+    }
+    s++;
+  }
+  return right;
+}

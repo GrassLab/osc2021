@@ -19,7 +19,8 @@ long atoi_n(const char *s, size_t len, size_t base);
 size_t atol(const char *s);
 size_t atol_n(const char *s, size_t len, size_t base);
 
-// char *new_str(char *src);
+char *new_str(char *src);
+char *split_str(char *str);
 
 // circular double linked list
 typedef struct cdl_list {
