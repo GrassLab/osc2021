@@ -8,11 +8,13 @@
 # include "mem.h"
 # include "bitset.h"
 # include "timer.h"
+# include "svc_call.h"
 
 
 int main(){
   //core_timer_init();
   uart_init();
+  svc_init();
   uart_puts("Buddy system init\n");
   buddy_init();
   buddy_dma_init();

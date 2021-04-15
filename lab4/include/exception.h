@@ -3,8 +3,9 @@
 # define SVC_ISS_NOPE 0
 # define SVC_ISS_GET_TIMER_VALUE 1
 # define SVC_ISS_GET_TIMER_MS 2
-# define SVC_ISS_TIMER_ENABLE 3
-# define SVC_ISS_TIMER_DISABLE 4
+# define SVC_ISS_PRINT_SYSTEM_TIME_ENABLE 3
+# define SVC_ISS_PRINT_SYSTEM_TIME_DISABLE 4
+# define SVC_ISS_SET_ONE_SHOT_TIMER  5
 
 
 char vector_table_desc[16][30] = {

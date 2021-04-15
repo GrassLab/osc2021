@@ -7,6 +7,7 @@
 # include "buddy.h"
 # include "mem.h"
 # include "timer.h"
+# include "svc_call.h"
 
 char *argv[SHELL_MAX_ARGC];
 
@@ -14,18 +15,6 @@ inline bool is_blank(char c){
   return (c == ' ') || (c == '\n') || (c == '\t');
 }
 
-void shell_get_core_timer_value(unsigned long long* r){
-  //unsigned int a;
-  //asm volatile("mov %0, x0" : "=r"(a));
-  asm volatile("svc #1");
-  char ct[20];
-  int_to_hex(*r, ct);
-}
-void shell_get_core_timer_ms(unsigned long long* r){
-  asm volatile("svc #2");
-  char ct[20];
-  int_to_hex(*r, ct);
-}
 
 char* break_char(char *c){
   char *r = c;
@@ -126,10 +115,16 @@ void invoke_cmd(char *cmd){
   else if (str_cmp(argv[0], "svc") == 1){
     asm volatile("svc #10");
   }
+  else if (str_cmp(argv[0], "setTimeout") == 1){
+    if (argc == 3){
+      unsigned int sec = str_to_int(argv[2]);
+      svc_set_timeout(argv[1], sec);
+    }
+  }
   else if (str_cmp(argv[0], "timer") == 1){
     if (str_cmp(argv[1], "value")){
       unsigned long long pct = 10;
-      shell_get_core_timer_value(&pct);
+      svc_get_core_timer_value(&pct);
       char ct[0];
       int_to_str(pct, ct);
       uart_puts("Timer value = ");
@@ -138,8 +133,8 @@ void invoke_cmd(char *cmd){
     }
     else if (str_cmp(argv[1], "sec")){
       unsigned long long pct = 101;
-      shell_get_core_timer_ms(&pct);
-      print_timer(pct);
+      svc_get_core_timer_ms(&pct);
+      print_timer(pct, "System time = ");
     }
     else if (str_cmp(argv[1], "enable")){
       asm volatile("svc #3");

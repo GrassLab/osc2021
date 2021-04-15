@@ -94,11 +94,14 @@ void svc_handler(unsigned long arg, unsigned long type, int iss){
     case SVC_ISS_GET_TIMER_MS:
       get_core_timer_ms((unsigned long long *)arg);
       break;
-    case SVC_ISS_TIMER_ENABLE:
-      core_timer_enable();
+    case SVC_ISS_PRINT_SYSTEM_TIME_ENABLE:
+      print_system_time_enable();
       break;
-    case SVC_ISS_TIMER_DISABLE:
-      core_timer_disable();
+    case SVC_ISS_PRINT_SYSTEM_TIME_DISABLE:
+      print_system_time_disable();
+      break;
+    case SVC_ISS_SET_ONE_SHOT_TIMER:
+      set_one_shot_timer((struct one_shot_timer *)arg);
       break;
     default:
       //asm volatile("svc #5");

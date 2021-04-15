@@ -26,8 +26,8 @@ _start:
 
 4:
     // disable MMU
-    ldr    x1, =SCTLR_VALUE_MMU_DISABLED
-    msr    sctlr_el1, x1
+    //ldr    x1, =SCTLR_VALUE_MMU_DISABLED
+    //msr    sctlr_el1, x1
 
     // EL1 users aarch64
     ldr    x1, =HCR_EL2_VALUE
@@ -37,8 +37,8 @@ _start:
     ldr    x1, =SPSR_EL2_VALUE
     msr    spsr_el2, x1
 
-    mov x0, #(3 << 20)
-    msr cpacr_el1, x0
+    //mov x0, #(3 << 20)
+    //msr cpacr_el1, x0
 
     adr     x1, vector_table
     msr     vbar_el2, x1
