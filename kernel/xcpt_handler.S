@@ -46,6 +46,12 @@ exception_handler:
     load_all
     eret
 
+core_timer_handler:
+    save_all
+    bl dumpTimer
+    load_all
+    eret
+
 .align 11 // vector table should be aligned to 0x800
 .global exception_vector_table
 exception_vector_table:
@@ -69,7 +75,7 @@ exception_vector_table:
 
     b exception_handler
     .align 7
-    b exception_handler
+    b core_timer_handler
     .align 7
     b exception_handler
     .align 7

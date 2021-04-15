@@ -84,8 +84,8 @@ void load_user_program() {
     uart_puts("Please enter file name: ");
     uart_read_line(target, 1);
     uart_send('\r');
-    //volatile unsigned char *cpio_address = (unsigned char *) 0x20000000;
-    volatile unsigned char *cpio_address = (unsigned char *) 0x8000000;
+    volatile unsigned char *cpio_address = (unsigned char *) 0x20000000;
+    //volatile unsigned char *cpio_address = (unsigned char *) 0x8000000;
     volatile unsigned char *prog_addr = (unsigned char *) 0x100000;
     
     int i = 0;

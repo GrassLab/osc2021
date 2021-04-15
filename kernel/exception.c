@@ -18,3 +18,18 @@ void dumpState() {
     uart_puts("\n");
     uart_puts("---------------------\n");
 }
+
+void dumpTimer() {
+    asm volatile("mrs x0, cntfrq_el0 \n");
+    asm volatile("add x0, x0, x0 \n");
+    asm volatile("msr cntp_tval_el0, x0 \n");
+    unsigned long cntpct, cntfrq, tmp;
+    asm volatile("mrs %0, cntpct_el0 \n":"=r"(cntpct):);
+    asm volatile("mrs %0, cntfrq_el0 \n":"=r"(cntfrq):);
+    tmp = cntpct/cntfrq;
+    uart_puts("-----Timer-----\n");
+    uart_puts("Time Elapsed: ");
+    uart_puts_int(tmp);
+    uart_puts("\n");
+    uart_puts("---------------\n");
+}

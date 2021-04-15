@@ -78,6 +78,10 @@ void main() {
         else if(!strcmp(input, "load")) {
             load_user_program();
         }
+        else if(!strcmp(input, "timer")) {
+            core_timer_enable();
+            from_el1_to_el0();
+        }
         else {
             uart_puts("Error: ");
             uart_puts(input);
