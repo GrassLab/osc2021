@@ -58,7 +58,7 @@ exception_vector_table:
     
     // Current EL with SPx
     .align 7
-    b svc_handler           // Synchronous
+    b svc_handler_EL1       // Synchronous
     .align 7
     b fixed_timer_handler   // IRQ
     .align 7
@@ -68,7 +68,7 @@ exception_vector_table:
     
     // Lower EL using AArch64
     .align 7
-    b svc_handler           // Synchronous
+    b svc_handler_EL0       // Synchronous
     .align 7
     b invalid_handler       // IRQ
     .align 7 
@@ -86,7 +86,7 @@ exception_vector_table:
     .align 7
     b invalid_handler       // SError
 
-svc_handler:
+svc_handler_EL1:
     save_regs
 
     mrs x0, spsr_el1
@@ -94,7 +94,21 @@ svc_handler:
     mrs x2, esr_el1
     bl  svc_router
 
-    ldr x0, =SPSR_EL1_VALUE 
+    ldr x0, =0x345
+    msr spsr_el1, x0
+
+    load_regs
+    eret
+
+svc_handler_EL0:
+    save_regs
+
+    mrs x0, spsr_el1
+    mrs x1, elr_el1
+    mrs x2, esr_el1
+    bl  svc_router
+
+    ldr x0, =0x340
     msr spsr_el1, x0
 
     load_regs
@@ -108,4 +122,6 @@ invalid_handler:
     bl  print_invalid_entry_message
     b   invalid_hang
 
-
+.global return_to_el1
+return_to_el1:
+    svc 4
