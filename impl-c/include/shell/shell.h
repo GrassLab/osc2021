@@ -23,3 +23,4 @@ enum KeyboardInput {
 void shellPrintPrompt();
 void shellInputLine();
 void shellProcessCommand();
+void shellInit();

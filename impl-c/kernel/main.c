@@ -1,11 +1,18 @@
 #include "cfg.h"
+#include "exec.h"
 #include "mm.h"
 #include "mm/startup.h"
-#include "shell.h"
+#include "shell/shell.h"
 #include "test.h"
 #include "uart.h"
 
 extern unsigned char __kernel_start, __kernel_end;
+
+void svc_test() {
+  for (int i = 0; i < 3; i++) {
+    asm volatile("svc 0 \n");
+  }
+}
 
 int main() {
   uart_init();
@@ -14,6 +21,8 @@ int main() {
 #ifdef CFG_RUN_TEST
   run_tests();
 #endif
+
+  // _exec_usr(&svc_test, (void *)0x60000, 0x3c0);
 
   startup_init();
 
@@ -26,8 +35,9 @@ int main() {
   // System
   startup_reserve((void *)0x3f000000, 0x1000000); // MMIO
 
+  uart_println("Initializing memory allocator...");
   KAllocManager_init();
-  KAllocManager_run_example();
+  // KAllocManager_run_example();
   // KAllocManager_show_status();
 
   uart_println("-------------------------------");
@@ -35,6 +45,7 @@ int main() {
   uart_println("-------------------------------");
   uart_println(" input filename to see file content");
 
+  shellInit();
   while (1) {
     shellPrintPrompt();
     shellInputLine();
