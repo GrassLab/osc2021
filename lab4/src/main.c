@@ -15,13 +15,13 @@ int main(){
   //core_timer_init();
   uart_init();
   svc_init();
-  uart_puts("Buddy system init\n");
+  uart_puts((char *) "Buddy system init\n");
   buddy_init();
   buddy_dma_init();
   mem_init();
-  uart_puts("Hi!\n");
-  uart_puts("Welcome to Eric's system ~\n");
-  uart_puts("(Lab4)\n");
+  uart_puts((char *) "Hi!\n");
+  uart_puts((char *) "Welcome to Eric's system ~\n");
+  uart_puts((char *) "(Lab4)\n");
   uart_flush();
 
   char cmd[1000];
@@ -31,7 +31,7 @@ int main(){
   //char get_c[10];
 
   while(1){
-    uart_puts("\r> ");
+    uart_puts((char *) "\r> ");
     uart_puts(cmd);
     char c = uart_read();
 
@@ -41,7 +41,7 @@ int main(){
     //uart_puts("\n");
 
     if (c == '\n'){
-      uart_puts("\n");
+      uart_puts((char *) "\n");
       cmd[cmd_end] = '\0';
       invoke_cmd(cmd);
       cmd_end = 0;
@@ -50,7 +50,7 @@ int main(){
     else if ((int)c == 127 || (int)c == 8){
       cmd_end--;
       cmd[cmd_end] = '\0';
-      uart_puts("\b \b");
+      uart_puts((char *) "\b \b");
     }
     else{
       cmd[cmd_end] = c;

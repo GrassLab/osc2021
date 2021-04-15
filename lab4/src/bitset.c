@@ -84,7 +84,7 @@ void bitset_show(int *p, int len){
     ct[0] = ((pt >> (t%INTBITS)) % 2)?'1':'0';
     uart_puts(ct);
     if ((t+1)%4 == 0){
-      uart_puts(" ");
+      uart_puts((char *) " ");
     }
     if ((t+1)%INTBITS == 0){
       p++;

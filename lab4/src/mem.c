@@ -39,27 +39,26 @@ void mem_init(){
 }
 
 void mem_ll_show(){
-  uart_puts("Memory Status\n");
-  uart_puts("address          bytes  pages\n");
-  uart_puts("===============================\n");
+  uart_puts((char *) "Memory Status\n");
+  uart_puts((char *) "address          bytes  pages\n");
+  uart_puts((char *) "===============================\n");
   struct mem_node *ite = mem_inuse;
   while(ite){
     char ct[30];
     int_to_hex(ite->addr, ct);
     uart_puts(ct);
-    uart_puts(" \t ");
+    uart_puts((char *) " \t ");
     int_to_str(ite->bytes, ct);
     uart_puts(ct);
-    uart_puts(" \t ");
+    uart_puts((char *) " \t ");
     int_to_str(ite->page_need, ct);
     uart_puts(ct);
-    uart_puts("\n");
+    uart_puts((char *) "\n");
     ite = ite->next;
   }
 }
 
 void mem_add_new_node(int mbytes, int page_need, unsigned long long r){
-  char ct[20];
   struct mem_node *new_node = ll_pop_front<struct mem_node>(&mem_unuse);
   new_node->addr = r;
   new_node->bytes = mbytes;
@@ -89,12 +88,12 @@ void* malloc(int mbytes){
     page_need = mbytes/BUDDY_PAGE_SIZE;
     page_need = (mbytes%BUDDY_PAGE_SIZE) ? page_need+1 : page_need ;
     int_to_str(mbytes, ct);
-    uart_puts("Alloc memory size ");
+    uart_puts((char *) "Alloc memory size ");
     uart_puts(ct);
-    uart_puts(", need page ");
+    uart_puts((char *) ", need page ");
     int_to_str(page_need, ct);
     uart_puts(ct);
-    uart_puts(", at order ");
+    uart_puts((char *) ", at order ");
     int page_need_o = page_need-1;
     //cal order
     int order = 0;
@@ -104,7 +103,7 @@ void* malloc(int mbytes){
     }
     int_to_str(order, ct);
     uart_puts(ct);
-    uart_puts("\n");
+    uart_puts((char *) "\n");
     //call buddy
     r = (void *)buddy_alloc(mbytes, order, 0);
   }
@@ -134,10 +133,10 @@ void free(void* addr){
     ll_push_front<struct mem_node>(&mem_unuse, target);
   }
   else{
-    uart_puts("Memory addr <");
+    uart_puts((char *) "Memory addr <");
     char ct[20];
     int_to_hex((unsigned long long)addr, ct);
     uart_puts(ct);
-    uart_puts("> not found\n");
+    uart_puts((char *) "> not found\n");
   }
 }

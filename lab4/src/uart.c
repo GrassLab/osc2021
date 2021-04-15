@@ -105,8 +105,9 @@ void uart_puts_n(char *s, int len){
     }
 }
 
+char flush_r;
 void uart_flush(){
   while ( *AUX_MU_LSR & 0x01 ){
-    char r = *AUX_MU_IO;
+    flush_r = *AUX_MU_IO;
   }
 }

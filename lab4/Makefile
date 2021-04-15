@@ -20,8 +20,8 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.S $(BUILD_DIR)
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-kernel8.img: link.ld $(OBJS) $(OBJS_ASM)
-	$(LD) -nostdlib -nostartfiles $(OBJS) $(OBJS_ASM) -T link.ld -o kernel8.elf
+kernel8.img: $(OBJS) $(OBJS_ASM)
+	$(LD) -nostdlib -nostartfiles $(OBJS) $(OBJS_ASM) -M -T link.ld -o kernel8.elf
 	$(OBJCPY) -O binary kernel8.elf kernel8.img
 
 clean:

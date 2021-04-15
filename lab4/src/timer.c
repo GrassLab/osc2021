@@ -16,17 +16,17 @@ void print_timer(unsigned long long ms, char *comment){
   char ct[20];
   int_to_str(ms/1000, ct);
   uart_puts(ct);
-  uart_puts(".");
+  uart_puts((char *) ".");
   unsigned int demical= ms%1000;
   for (int i=0; i<1; i++){
     if (demical/100 == 0){
-      uart_puts("0");
+      uart_puts((char *) "0");
     }
     else{
       break;
     }
     if (demical/10 == 0){
-      uart_puts("0");
+      uart_puts((char *) "0");
     }
     else{
       break;
@@ -34,7 +34,7 @@ void print_timer(unsigned long long ms, char *comment){
   }
   int_to_str(ms%1000, ct);
   uart_puts(ct);
-  uart_puts(" s\n");
+  uart_puts((char *) " s\n");
 }
 
 extern "C"
@@ -101,7 +101,7 @@ inline void core_timer_enable(){
 
 inline void core_timer_disable(){
   // disable timer interrupt
-  *((unsigned int *)CORE0_TIMER_IRQ_CTRL) &= !(1 << 1);
+  *((unsigned int *)CORE0_TIMER_IRQ_CTRL) &= ~(1 << 1);
 }
 
 void print_system_time_enable(){
@@ -124,11 +124,11 @@ void core_timer_interrupt_handler(){
     invoke_func(token);
   }
   else{
-    uart_puts("\n");
-    print_timer(reg_cval/(core_timer_freq/1000), "Command executed time = ");
+    uart_puts((char *) "\n");
+    print_timer(reg_cval/(core_timer_freq/1000), (char *) "Command executed time = ");
     unsigned long long cur_ms;
     get_core_timer_ms(&cur_ms);
-    print_timer(cur_ms, "Current time = ");
+    print_timer(cur_ms, (char *) "Current time = ");
     invoke_func(token);
   }
 }
@@ -151,7 +151,7 @@ void print_system_timer_cb(int token){
   if (print_system_time_flag){
     register unsigned long long ms;
     get_core_timer_ms(&ms);
-    print_timer(ms, "System time = ");
+    print_timer(ms, (char *) "System time = ");
     set_next_pst_tval();
   }
 }

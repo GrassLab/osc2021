@@ -73,7 +73,7 @@ void int_to_hex(unsigned long n, char *s){
 }
 
 unsigned long hex_to_uint(char *s, int l){
-  unsigned long r;
+  unsigned long r = 0;
   for (int i=0; i<l; i++){
     if (s[i] >= 'a') s[i] = s[i] -(char)32;
     if (s[i] >= 'A') r = r*16+( (unsigned long)s[i] - 55);

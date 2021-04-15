@@ -5,7 +5,6 @@
 # include "timer.h"
 
 void general_exception_handler(unsigned long arg, unsigned long type, unsigned long esr, unsigned long elr){
-  char ct[20];
   switch(type){
     case 0:
     case 4:
@@ -26,34 +25,34 @@ void general_exception_handler(unsigned long arg, unsigned long type, unsigned l
 
 void sync_handler(unsigned long arg, unsigned long type, unsigned long esr, unsigned long elr){
   char ct[20];
-  uart_puts("Enter SYNC handler\n");
-  uart_puts("[EXCEPTION] TYPE = ");
+  uart_puts((char *) "Enter SYNC handler\n");
+  uart_puts((char *) "[EXCEPTION] TYPE = ");
   int_to_str(type, ct);
   uart_puts(ct);
-  uart_puts("\t");
-  uart_puts("Desc : ");
+  uart_puts((char *) "\t");
+  uart_puts((char *) "Desc : ");
   uart_puts(vector_table_desc[type]);
 
-  uart_puts("\n[EXCEPTION] ESR = ");
+  uart_puts((char *) "\n[EXCEPTION] ESR = ");
   int_to_hex(esr, ct);
   uart_puts(ct);
-  uart_puts("\t");
-  uart_puts("ELR = ");
+  uart_puts((char *) "\t");
+  uart_puts((char *) "ELR = ");
   int_to_hex(elr, ct);
   uart_puts(ct);
-  uart_puts("\n");
-  uart_puts("[SYNC] EC = ");
+  uart_puts((char *) "\n");
+  uart_puts((char *) "[SYNC] EC = ");
   int ec = (esr >> 26) & 0b111111;
   int iss = esr & 0x1FFFFFF;
   int_to_hex(ec, ct);
   uart_puts(ct);
-  uart_puts(", ISS = ");
+  uart_puts((char *) ", ISS = ");
   int_to_hex(iss, ct);
   uart_puts(ct);
-  uart_puts("\n");
+  uart_puts((char *) "\n");
   // check if SVC
   if (ec == ESR_EC_SVC){
-    uart_puts("[SYNC] Call SVC handler\n");
+    uart_puts((char *) "[SYNC] Call SVC handler\n");
     svc_handler(arg, type, iss);
     return ;
   }
@@ -64,7 +63,7 @@ void svc_handler(unsigned long arg, unsigned long type, int iss){
   char ct[20];
   switch(iss){
     case SVC_ISS_NOPE:
-      uart_puts("[SVC] inside SVC handler\n");
+      uart_puts((char *) "[SVC] inside SVC handler\n");
       break;
     case SVC_ISS_GET_TIMER_VALUE:
       get_core_timer_value((unsigned long long *)arg);
@@ -82,17 +81,17 @@ void svc_handler(unsigned long arg, unsigned long type, int iss){
       set_one_shot_timer((struct one_shot_timer *)arg);
       break;
     default:
-      uart_puts("[SVC] unknown SVC number : ");
+      uart_puts((char *) "[SVC] unknown SVC number : ");
       int_to_hex(iss, ct);
       uart_puts(ct);
-      uart_puts("\n");
+      uart_puts((char *) "\n");
       break;
   }
-  uart_puts("return\n");
+  uart_puts((char *) "return\n");
 }
 
 void irq_handler(){
-  unsigned int irq_basic_pending = *((unsigned int *) IRQ_BASIC_PENDING);
+  //unsigned int irq_basic_pending = *((unsigned int *) IRQ_BASIC_PENDING);
   unsigned int core0_intr_src = *((unsigned int *) CORE0_INTR_SRC);
   if (core0_intr_src & (1 << 1)){
     core_timer_interrupt_handler();
