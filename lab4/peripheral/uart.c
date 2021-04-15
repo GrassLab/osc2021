@@ -96,7 +96,6 @@ size_t uart_readline(char* buf, size_t count) {
     if(c =='\n' || c == '\r') {
       uart_send('\r');
       uart_send('\n');
-      i++;
       break;
     } 
     uart_send(c);

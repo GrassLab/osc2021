@@ -65,46 +65,38 @@ void* dynamic_malloc(size_t size) {
 
 void* dynamic_find_free_chunk(int idx) {
   void* chunk;
-  struct dynamic_chunk* split_chunk;
-  int size, split_size, find_idx, split_idx;
+  //struct dynamic_chunk* split_chunk;
+  //int size, split_size, find_idx, split_idx;
   chunk = null;
-  find_idx = idx;
-  while(find_idx < DYNAMIC_BIN_MAX) {
-    if(dynamic_system.bins[find_idx] != null) {
-      /*uart_puts("find free chunk in ");
-      uart_hex((find_idx + 1) * DYNAMIC_BIN_MIN_SLOT);
-      uart_puts(".\n");*/
-      //find free chunk
-      chunk = dynamic_system.bins[find_idx];
-      dynamic_system.bins[find_idx] = dynamic_system.bins[find_idx]->next;
-      //set chunk header
-      size = (find_idx + 1) * DYNAMIC_BIN_MIN_SLOT;
-      ((struct dynamic_chunk *)chunk)->size = size + 1; //inuse bit
-      ((struct dynamic_chunk *)chunk)->next = null; 
-      if(find_idx > idx) {
-        split_idx = (find_idx - idx) - 1 - 2; //exclude header offset
-        split_size = (split_idx + 1) * DYNAMIC_BIN_MIN_SLOT;
-        //check rest of chunk is enough to be a new chunk
-        if(split_size >= DYNAMIC_BIN_MIN_SLOT * 2) {
-          //split chunk 
-          size = (idx + 1) * DYNAMIC_BIN_MIN_SLOT;
-          ((struct dynamic_chunk *)chunk)->size = size + 1; //inuse bit
-          
-          split_chunk = (void *)chunk + size + DYNAMIC_CHUNK_HEADER_OFFSET;
-          split_chunk->size = split_size;
-          split_chunk->prev_size = size;
-          //put into bin list
-          split_chunk->next = dynamic_system.bins[split_idx];
-          dynamic_system.bins[split_idx] = split_chunk;
-          /*uart_puts("split free chunk to size ");
-          uart_hex(split_chunk->size);
-          uart_puts(".\n");*/
-        }
-      }
-      return chunk;
-    }
-    find_idx++;
+  //while(find_idx < DYNAMIC_BIN_MAX) {
+  if(dynamic_system.bins[idx] != null) {
+    //find free chunk
+    chunk = dynamic_system.bins[idx];
+    dynamic_system.bins[idx] = dynamic_system.bins[idx]->next;
+    //set chunk header
+    ((struct dynamic_chunk *)chunk)->size = (idx + 1) * DYNAMIC_BIN_MIN_SLOT + 1; //inuse bit
+    ((struct dynamic_chunk *)chunk)->next = null; 
+    /*if(find_idx > idx) {
+      split_idx = (find_idx - idx) - 1 - 2; //exclude header offset
+      split_size = (split_idx + 1) * DYNAMIC_BIN_MIN_SLOT;
+      //check rest of chunk is enough to be a new chunk
+      if(split_size >= DYNAMIC_BIN_MIN_SLOT * 2) {
+        //split chunk 
+        size = (idx + 1) * DYNAMIC_BIN_MIN_SLOT;
+        ((struct dynamic_chunk *)chunk)->size = size + 1; //inuse bit
+        
+        split_chunk = (void *)chunk + size + DYNAMIC_CHUNK_HEADER_OFFSET;
+        split_chunk->size = split_size;
+        split_chunk->prev_size = size;
+        //put into bin list
+        split_chunk->next = dynamic_system.bins[split_idx];
+        dynamic_system.bins[split_idx] = split_chunk;
+      }*/
+    //}
+    //return chunk;
   }
+  //find_idx++;
+  //}
   return chunk;
 }
 
@@ -117,7 +109,7 @@ void* dynamic_top_chunk_malloc(int idx) {
   chunk_size = (idx + 1) * DYNAMIC_BIN_MIN_SLOT;
   dynamic_system.top_chunk->size = chunk_size + 1; //inuse bit
   dynamic_system.top_chunk = (void *)chunk + chunk_size + DYNAMIC_CHUNK_HEADER_OFFSET;
-  dynamic_system.top_chunk->size = top_chunk_size - chunk_size - DYNAMIC_CHUNK_HEADER_OFFSET * 2;
+  dynamic_system.top_chunk->size = top_chunk_size - chunk_size - DYNAMIC_CHUNK_HEADER_OFFSET;
   dynamic_system.top_chunk->next = null;
   dynamic_system.top_chunk->prev_size = chunk_size;
   return chunk;
@@ -170,7 +162,7 @@ void dynamic_free(void* address) {
         return;
       }
       else {
-       // uart_puts("next chunk is freed.\n");
+        uart_puts("next chunk is freed.\n");
         if(dynamic_remove_chunk(next_chunk, next_chunk->size) == -1) {
           uart_puts("not found chunk.\n");
           return;
@@ -227,13 +219,13 @@ void dynamic_status() {
     chunk = chunk->next;
   }
   uart_puts("null\n");
-  /*uart_puts("top chunk info: \n");
+  uart_puts("top chunk info: \n");
   uart_puts("address: ");
   uart_hex((size_t)dynamic_system.top_chunk);
   uart_puts("\n");
   uart_puts("size: ");
   uart_hex(dynamic_system.top_chunk->size);
-  uart_puts("\n");*/
+  uart_puts("\n");
 }
 
 void dynamic_top_chunk_free() {

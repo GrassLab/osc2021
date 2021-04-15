@@ -55,10 +55,6 @@ _from_el1_to_el0:
   #ldr  x0, = _load_main
   #msr  elr_el1, x0
   #eret
-  #enable interrupt
-  #msr DAIFClr, 0xf
-  // disable interrupt
-  msr DAIFSet, 0xf
 _load_main:
   mov  x0, x3
   bl main

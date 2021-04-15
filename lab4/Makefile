@@ -1,5 +1,5 @@
 CC = aarch64-linux-gnu-gcc
-CFLAGS = -Wall -ggdb -Og -nostdlib -nostartfiles -ffreestanding -Iinclude -Ilib -Iperipheral -Ikernel -Irootfs -Imm
+CFLAGS = -Wall -ggdb -Og -nostdlib -nostartfiles -ffreestanding -Iinclude -Ilib -Iperipheral -Ikernel -Irootfs -Imm -Itest
 LD = aarch64-linux-gnu-ld
 LDFLAGS = -T kernel/linker.ld
 OBJCOPY = aarch64-linux-gnu-objcopy

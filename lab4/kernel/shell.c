@@ -9,6 +9,7 @@
 #include <exception.h>
 #include <printf.h>
 #include <timer.h>
+#include <dynamic_test.h>
 
 void shell() {
   uart_puts("*****************************Hello World*****************************\r\n");
@@ -61,6 +62,7 @@ void do_command(char* command) {
     printf("asyncw [input]: asynchronous write.\n");
     printf("asyncr: asynchronous read.\n");
     printf("settimeout [message] [timeout]: set time out and print message.\n");
+    printf("dynamictest: dynamic malloc testing.\n");
   } 
   else if(strncmp(command, "hello", 6) == 0) {
     printf("Hello World!\n");
@@ -136,6 +138,9 @@ void do_command(char* command) {
       }
     }
     core_timer_queue_push((void* )core_timer_print_message_callback, strtol(command + i, 0, 10), command + 11, strlen(command + 11));
+  }
+  else if(strncmp(command, "dynamictest", 12) == 0) {
+    test_dynamic_main();
   }
   else {
     printf("unknown command\n");
