@@ -133,3 +133,15 @@ void uart_puts_h(unsigned int x)
         uart_send(n);
     }
 }
+
+void uart_puts_i(int x)
+{
+    if (x < 0)
+    {
+        uart_puts("-");
+        x = -x;
+    }
+
+    if (x >= 10) uart_puts_i(x / 10);
+    uart_send(x % 10 + '0');
+}

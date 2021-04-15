@@ -47,11 +47,24 @@ void Cpioexe(char arg[])
     }
 
     // from el1 to el0
-    asm volatile("mov x0,       0x3c0\n"); // save current processor's state(PSTATE) in 'SPSR_ELx'
-    asm volatile("msr spsr_el1, x0   \n");
-    asm volatile("msr elr_el1,  %0   \n"::"r"(address_user_program)); // save exception return address
-    asm volatile("msr sp_el0,   %0   \n"::"r"(address_user_program)); // set user program's stack pointer to proper position by setting 'sp_el0'
+    asm volatile("mov x0,       0x3c0"); // save current processor's state(PSTATE) in 'SPSR_ELx'
+    asm volatile("msr spsr_el1, x0   ");
+    asm volatile("msr elr_el1,  %0   "::"r"(address_user_program)); // save exception return address
+    asm volatile("msr sp_el0,   %0   "::"r"(address_user_program)); // set user program's stack pointer to proper position by setting 'sp_el0'
     
+    // enable timer
+    asm volatile("mov x0,             1");
+    asm volatile("msr cntp_ctl_el0,  x0");
+    asm volatile("mrs x0,    cntfrq_el0");
+    asm volatile("add x0, x0, x0       ");
+    asm volatile("msr cntp_tval_el0, x0");
+    asm volatile("mov x0,             2");
+    asm volatile("ldr x1,   =0x40000040");
+    asm volatile("str w0,          [x1]");
+
+    asm volatile("mov x0,        0x0"); // enable interrupt
+    asm volatile("msr spsr_el1,   x0");
+
     asm volatile("eret"); // return user code
 }
 

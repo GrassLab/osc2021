@@ -56,9 +56,9 @@ void main()
     char *start_address = (char *)0x80000;
     for (int i = 0; i < kernel_size; ++i)
     {
-	char c = uart_mygetc();
+	    char c = uart_mygetc();
 
-	*(start_address + i) = c;
+	    *(start_address + i) = c;
     }
 
     goto *start_address;

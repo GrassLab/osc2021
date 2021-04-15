@@ -52,5 +52,6 @@ char uart_getc();
 char uart_mygetc();
 void uart_puts(char *s);
 void uart_puts_h(unsigned int x);
+void uart_puts_i(int x);
 
 #endif

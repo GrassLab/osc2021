@@ -1,5 +1,6 @@
 #include "exception.h"
 #include "uart.h"
+#include "time.h"
 
 void log_state()
 {
@@ -23,21 +24,20 @@ void log_state()
 
 void handle_synchronous()
 {
-    log_state();
-
     uart_puts("Synchronous exception\n");
+    log_state();
 }
 
 void handle_irq()
 {
+    uart_puts("IRQ exception\n");
     log_state();
 
-    uart_puts("IRQ exception\n");
+    timer_handler();
 }
 
 void handle_unknown_exception()
 {
-    log_state();
-
     uart_puts("Error: Unknown exception!\n");
+    log_state();
 }
