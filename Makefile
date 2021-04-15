@@ -52,6 +52,14 @@ run:
 		-serial stdio\
 		-initrd archive/initramfs.cpio\
 		
+asm:
+	qemu-system-aarch64 -M raspi3\
+		-kernel $(BUILD_DIR)/$(IMG)\
+		-display none\
+		-d in_asm\
+		-serial null\
+		-serial stdio\
+		-initrd archive/initramfs.cpio\
 
 gdb:
 	$(GDB) $(GDBFLAGS)

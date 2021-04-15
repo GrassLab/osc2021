@@ -43,7 +43,7 @@ void loadimg() {
     // read kernel image then save to 0x80000
     volatile unsigned char *new_address = (unsigned char *)0x80000;
     for(int i = 0; i < kernel_size; i++) {
-        unsigned char c = uart_getc();
+        unsigned char c = uart_getc_boot();
         new_address[i] = c;
     }
     
