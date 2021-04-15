@@ -133,12 +133,12 @@ void _shellUpdatePrompt() {
 
 void shellPrintPrompt() { uart_puts("\r>"); }
 
-void shellInit() { bfr_init(&bfr, bfr_data, MX_CMD_BFRSIZE); }
+void shellInit() { InputBuffer_init(&bfr, bfr_data, MX_CMD_BFRSIZE); }
 void shellInputLine() {
   enum KeyboardInput c;
   AnsiEscType termCtrl;
   bool flagExit = false;
-  bfr_clear(&bfr);
+  bfr.clear(&bfr);
 
   while (!flagExit) {
     flagExit = false;
@@ -148,22 +148,22 @@ void shellInputLine() {
       termCtrl = decode_escape_sequence();
       switch (termCtrl) {
       case CursorForward:
-        bfr_cursor_mov_right(&bfr);
+        bfr.cursor_mov_right(&bfr);
         break;
       case CursorBackward:
-        bfr_cursor_mov_left(&bfr);
+        bfr.cursor_mov_left(&bfr);
         break;
       case Unknown:
         break;
       }
       break;
     case KI_PRINTABLE_START ... KI_PRINTABLE_END:
-      bfr_push(&bfr, c);
+      bfr.push(&bfr, c);
       uart_send(c);
       break;
     case KI_BackSpace:
     case KI_Delete:
-      bfr_pop(&bfr);
+      bfr.pop(&bfr);
       break;
     case KI_CarrageReturn:
     case KI_LineFeed:
