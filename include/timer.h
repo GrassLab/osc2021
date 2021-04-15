@@ -18,3 +18,6 @@ void print_timestamp(unsigned long cntpct, unsigned long cntfrq);
 void init_user_timer();
 void set_new_timeout();
 void handle_due_timeout();
+
+void core_timer_enable();
+void core_timer_disable();
