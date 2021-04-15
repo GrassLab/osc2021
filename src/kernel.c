@@ -98,14 +98,14 @@ void kernel() {
   unsigned long elapse = get_timer_cnt();
   print("abcdefghijklmnop\n");
   elapse = get_timer_cnt() - elapse;
-  log_hex("block elapse", elapse, LOG_PRINT);
+  log_hex("sync io elapse", elapse, LOG_PRINT);
 
   init_nonblock_io();
 
   elapse = get_timer_cnt();
   print("abcdefghijklmnop\n");
   elapse = get_timer_cnt() - elapse;
-  log_hex("non block elapse", elapse, LOG_PRINT);
+  log_hex("async io elapse", elapse, LOG_PRINT);
 
   unsigned long tc = get_timer_cnt();
   tc = tc + timer_frq * 2;
