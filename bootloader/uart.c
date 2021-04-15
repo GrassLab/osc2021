@@ -25,6 +25,7 @@
  */
 
 #include "uart.h"
+#include "string.h"
 
 /**
  * Set baud rate and characteristics (115200 8N1) and map to GPIO
@@ -94,5 +95,41 @@ void uart_puts(char *s) {
         if(*s=='\n')
             uart_send('\r');
         uart_send(*s++);
+    }
+}
+
+void uart_send_int ( int c, int field_length, int base )
+{
+    char buffer[20];
+
+    switch ( base )
+    {
+        case 10:
+            itoa ( c, buffer, field_length );
+            break;
+        case 16:
+            itohex_str ( c, sizeof ( int ), buffer );
+            break;
+    }
+
+    uart_puts ( buffer );
+}
+
+void uart_send_float ( float f, int field_length )
+{
+    char buffer[20];
+    ftoa ( f, buffer, 6 );
+    uart_puts ( buffer );
+}
+
+void uart_puts_h(unsigned int x)
+{
+    uart_puts("0x");
+
+    for (int c = 28; c >= 0; c -= 4)
+    {
+        int n = (x >> c) & 0xF;
+        n += n > 9 ? 'A' - 10 : '0';
+        uart_send(n);
     }
 }

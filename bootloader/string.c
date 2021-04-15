@@ -37,10 +37,37 @@ int strlen ( char * s )
     return i;
 }
 
+int isdigit(const char c)
+{
+    if (c >= '0' && c <= '9') return 1;
+    else return 0;
+}
+
+int atoi(const char *c)
+{
+    int value = 0;
+    int sign = 1;
+    if( *c == '+' || *c == '-' )
+    {
+        if( *c == '-' ) sign = -1;
+        c++;
+    }
+    while (isdigit(*c))
+    {
+        value *= 10;
+        value += (int) (*c-'0');
+        c++;
+    }
+    return (value * sign);
+}
+
 // https://www.geeksforgeeks.org/convert-floating-point-number-string/
 void itoa (int x, char str[], int d) 
 { 
     int i = 0; 
+
+    if (x == 0) str[i++] = '0';
+
     while (x) { 
         str[i++] = (x % 10) + '0'; 
         x = x / 10; 
@@ -80,6 +107,33 @@ void ftoa(float n, char* res, int afterpoint)
         itoa((int)fpart, res + i + 1, afterpoint); 
     } 
 } 
+
+void itohex_str ( long long int d, int size, char * s )
+{
+    int i = 0;
+    unsigned int n;
+    int c;
+
+    c = size * 8;
+    s[0] = '0';
+    s[1] = 'x';
+
+    for( c = c - 4, i = 2; c >= 0; c -= 4, i++)
+    {
+        // get highest tetrad
+        n = ( d >> c ) & 0xF;
+
+        // 0-9 => '0'-'9', 10-15 => 'A'-'F'
+        if ( n > 9 && n < 16 )
+            n += ('A' - 10);
+        else
+            n += '0';
+       
+        s[i] = n;
+    }
+
+    s[i] = '\0';
+}
 
 void reverse ( char * s )
 {
