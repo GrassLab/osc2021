@@ -11,8 +11,10 @@ struct user_timer
     char message[50];
 };
 
+void timer_router(unsigned long cntpct, unsigned long cntfrq);
+
+void print_timestamp(unsigned long cntpct, unsigned long cntfrq);
+
 void init_user_timer();
 void set_new_timeout();
 void handle_due_timeout();
-
-void print_time_stamp(unsigned long cntpct, unsigned long cntfrq);

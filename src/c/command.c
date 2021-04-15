@@ -4,6 +4,8 @@
 #include "printf.h"
 #include "mm.h"
 
+int user_timer = 0;
+
 void input_buffer_overflow_message(char cmd[])
 {
     printf("Follow command: \"");
@@ -94,6 +96,8 @@ void command_timer_off()
 
 void command_set_timeout()
 {
+    user_timer = 1;
+    
     char second_string[10];
     printf("time: ");
     uart_getline(second_string);

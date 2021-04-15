@@ -73,35 +73,13 @@ core_timer_disable:
     str x0, [x2]                    // enable timer interrupt
     ret
 
-.global fixed_timer_handler
-fixed_timer_handler:
+.global timer_handler
+timer_handler:
     save_regs
+
     mrs x0, cntpct_el0
     mrs x1, cntfrq_el0
-    bl  print_timestamp
-
-    mrs x0, cntfrq_el0
-    mov x1, 5
-    mul x0, x0, x1
-    msr cntp_tval_el0, x0
-
-/*
-    ldr x0, =shell_start
-    msr elr_el1, x0
-*/
-
-    load_regs
-    eret
-
-.global user_timer_handler
-user_timer_handler:
-    save_regs
-    bl  handle_due_timeout
-
-/*
-    ldr x0, =shell_start
-    msr elr_el1, x0
-*/
-
+    bl  timer_router
+    
     load_regs
     eret

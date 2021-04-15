@@ -2,6 +2,8 @@
     "files.associations": {
         "memory.h": "c",
         "cpio.h": "c",
-        "uart.h": "c"
+        "uart.h": "c",
+        "string.h": "c",
+        "timer.h": "c"
     }
 }

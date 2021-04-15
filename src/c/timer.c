@@ -5,6 +5,32 @@
 #include "string.h"
 
 struct list_head user_timer_list;
+extern int user_timer;
+
+void timer_router(unsigned long cntpct, unsigned long cntfrq)
+{
+    if (user_timer)
+        handle_due_timeout();
+    else
+    {
+        print_timestamp(cntpct, cntfrq);
+        asm volatile(
+            "mrs x0, cntfrq_el0     \n\t"
+            "mov x1, 5              \n\t"
+            "mul x0, x0, x1         \n\t"
+            "msr cntp_tval_el0, x0  \n\t"
+        );
+    }
+
+    return;
+}
+
+void print_timestamp(unsigned long cntpct, unsigned long cntfrq)
+{
+    int timestamp = cntpct / cntfrq;
+    printf("timestamp: %d\n", timestamp);
+    return;
+}
 
 void init_user_timer()
 {
@@ -94,7 +120,7 @@ void set_new_timeout()
             }
             // if the above loop is entered, go one step back
             if (entered)
-                current = current->list.prev;
+                current = (struct user_timer *)current->list.prev;
 
             __list_add(&new_timer->list, &current->list, current->list.next);
         }
@@ -135,14 +161,10 @@ void handle_due_timeout()
             : "r"(frequency * front->trigger_time));
     }
     else
+    {
+        user_timer = 0;
         core_timer_disable();
+    }
 
-    return;
-}
-
-void print_timestamp(unsigned long cntpct, unsigned long cntfrq)
-{
-    int timestamp = cntpct / cntfrq;
-    printf("timestamp: %d\n", timestamp);
     return;
 }
