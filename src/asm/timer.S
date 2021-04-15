@@ -73,8 +73,8 @@ core_timer_disable:
     str x0, [x2]                    // enable timer interrupt
     ret
 
-.global core_timer_handler
-core_timer_handler:
+.global fixed_timer_handler
+fixed_timer_handler:
     save_regs
     mrs x0, cntpct_el0
     mrs x1, cntfrq_el0

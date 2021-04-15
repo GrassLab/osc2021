@@ -60,7 +60,7 @@ exception_vector_table:
     .align 7
     b svc_handler           // Synchronous
     .align 7
-    b core_timer_handler    // IRQ
+    b fixed_timer_handler   // IRQ
     .align 7
     b invalid_handler       // FIQ
     .align 7
