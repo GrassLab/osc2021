@@ -1,10 +1,5 @@
 .section ".data"
 
-_exception_ret_addr: .asciz "Exception return address: "
-_exception_class: .asciz "Exception class (EC): "
-_exception_iss: .asciz "Instruction specific syndrom (ISS): "
-_exception_spsr: .asciz "SPSR: "
-
 .section ".text"
 
 .align 11 // aligned to 0x800 (2^11)

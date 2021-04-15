@@ -3,15 +3,17 @@
 
 void _timer_handler(void){
 
+	unsigned long cntpct,cntfrq;
+    int cnt;
+
     asm volatile("mrs x0, cntfrq_el0	\n");
 	asm volatile("add x0, x0, x0		\n");
 	asm volatile("msr cntp_tval_el0, x0	\n");
-	unsigned long cntpct,cntfrq,tmp;
 	asm volatile("mrs %0, cntpct_el0	\n":"=r"(cntpct):);
 	asm volatile("mrs %0, cntfrq_el0	\n":"=r"(cntfrq):);
 
-	tmp=cntpct*10/cntfrq;
+	cnt=cntpct/cntfrq;
 	uart_printf("--------------------\n");
-	uart_printf("Time Elapsed: %d.%ds\n",tmp/10,tmp%10);
+	uart_printf("Time Elapsed: %ds\n",cnt);
 	uart_printf("--------------------\n");
 }
