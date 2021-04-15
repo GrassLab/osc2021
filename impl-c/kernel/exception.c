@@ -1,10 +1,6 @@
 #include "timer.h"
 #include "uart.h"
-static inline void wait_slow_down() {
-  for (long i = 0; i < 1000000; i++) {
-    ;
-  }
-}
+
 void dumpState() {
   unsigned long esr, elr, spsr;
   asm volatile("mrs %0, esr_el1 \n" : "=r"(esr) :);
@@ -28,8 +24,6 @@ void irq_handler() {
   uart_println("Time Elapsed: %d.%ds", tmp / 10, tmp % 10);
   uart_println("--------------------");
   timer_el0_set_timeout();
-  uart_println("Busy waiting for demo...");
-  wait_slow_down();
 }
 
 void _handler_not_impl() {
