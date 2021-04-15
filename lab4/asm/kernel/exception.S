@@ -84,19 +84,23 @@ _set_exception_vector_table:
   ret
 
 exception_handler:
+  //disable interrupt
+  msr DAIFSet, 0xf
   store_context
   bl exception_level_info
   restore_context
+  //enable interrupt
+  msr DAIFClr, 0xf
   eret
 
 irq_handler:
   //disable interrupt
-  //msr DAIFSet, 0xf
+  msr DAIFSet, 0xf
   store_context
   bl irq_routing
   restore_context
   //enable interrupt
-  //msr DAIFClr, 0xf
+  msr DAIFClr, 0xf
   eret
 
 
