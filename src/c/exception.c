@@ -30,6 +30,16 @@ void svc_router(unsigned long spsr, unsigned long elr, unsigned long esr)
         set_new_timeout();
         break;
 
+    case 4:
+        asm volatile(
+            "ldr x0, = 0x345        \n\t" 
+            "msr spsr_el1, x0       \n\t"
+            "ldr x0, = shell_start  \n\t"
+            "msr elr_el1, x0        \n\t"
+            "eret                   \n\t"
+        );
+        break;
+
     default: 
         break;
     }

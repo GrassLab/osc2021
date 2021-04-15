@@ -190,6 +190,6 @@ void cpio_run_executable(char executable_name[])
         "msr elr_el1, x0        \n\t"
         "mov x0, 0x60000        \n\t"
         "msr sp_el0, x0         \n\t"
-        "ldr lr, =shell_start   \n\t"
+        "ldr lr, =return_to_el1 \n\t"
         "eret                   \n\t");
 }
