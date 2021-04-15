@@ -3,6 +3,7 @@
 #include "cfg.h"
 #include "cpio.h"
 #include "string.h"
+#include "timer.h"
 #include "uart.h"
 #include <stdint.h>
 
@@ -73,6 +74,7 @@ void cmdLoadUser() {
     load_addr[i] = file[i];
   }
   uart_println("start user app");
+
   // change exception level
   // asm volatile("mov x0, 0x3c0  \n"); // disable timer interrupt, enable svn
   asm volatile("mov x0, 0x340  \n"); // enable core timer interrupt
@@ -80,12 +82,11 @@ void cmdLoadUser() {
   asm volatile("msr elr_el1, %0   \n" ::"r"(load_addr));
   asm volatile("msr sp_el0, %0    \n" ::"r"(load_addr));
 
-  // enable the core timer’s interrupt
-  asm volatile("mov x0, 1             \n");
-  asm volatile("msr cntp_ctl_el0, x0  \n");
-  asm volatile("mrs x0, cntfrq_el0    \n");
-  asm volatile("add x0, x0, x0        \n");
-  asm volatile("msr cntp_tval_el0, x0 \n");
+  // enable the core timer’s interrupt in el0
+  timer_el0_enable();
+  timer_el0_set_timeout();
+
+  // unmask timer interrupt
   asm volatile("mov x0, 2             \n");
   asm volatile("ldr x1, =0x40000040   \n");
   asm volatile("str w0, [x1]          \n");
