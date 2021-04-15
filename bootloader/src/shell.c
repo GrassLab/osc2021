@@ -50,12 +50,6 @@ int _clear() {
   return 0;
 }
 
-int _test() {
-  puts("123456");
-  uart_setc(12);
-  return 0;
-}
-
 int cmd(const char *buff) {
   if (!strcmp(buff, "help")) {
     return help();
