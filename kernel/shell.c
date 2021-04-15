@@ -314,6 +314,9 @@ void command_test() {
         uart_puts("\n");
     }
 
+    /* waiting */
+    uart_getc();
+
     uart_puts("----------------------------------------\n");
     uart_puts("(test) Allocating 1 object in new frame\n");
 
@@ -322,6 +325,9 @@ void command_test() {
     uart_puts("(test) object allocated at: 0x");
     uart_puti((uint64_t)adr, 16);
     uart_puts("\n");
+
+    /* waiting */
+    uart_getc();
 
     uart_puts("----------------------------------------\n");
     uart_puts("(test) Free 32 objects\n");
@@ -333,6 +339,9 @@ void command_test() {
 
         kfree((uint64_t)ptrs[i]);
     }
+
+    /* waiting */
+    uart_getc();
 
     uart_puts("----------------------------------------\n");
     uart_puts("(test) Free 1 object at 0x");
