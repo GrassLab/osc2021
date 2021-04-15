@@ -1,4 +1,8 @@
 #include "gpio.h"
+#include "uart.h"
+#include "dtb.h"
+#include "string.h"
+#include "util.h"
 
 #define AUX_ENABLE  ((volatile unsigned int*)(MMIO_BASE + 0x00215004))
 #define AUX_MU_IO   ((volatile unsigned int*)(MMIO_BASE + 0x00215040))
@@ -10,8 +14,7 @@
 #define AUX_MU_CNTL ((volatile unsigned int*)(MMIO_BASE + 0x00215060))
 #define AUX_MU_BAUD ((volatile unsigned int*)(MMIO_BASE + 0x00215068))
 
-void uart_init()
-{
+void uart_init() {
     *AUX_ENABLE |= 1;
     *AUX_MU_CNTL = 0;
     *AUX_MU_IER = 0;
@@ -29,19 +32,17 @@ void uart_init()
     *GPPUDCLK0 = 0;
     
     *AUX_MU_CNTL = 3;
+    uart_get_char();
 }
 
-char uart_get_char()
-{
+char uart_get_char() {
     char c;
     while ( !(*AUX_MU_LSR&0x01) );
     c = (char)(*AUX_MU_IO);
-    if ( c == '\r') { c = '\n'; }
     return c;
 }
 
-int uart_get_int()
-{
+int uart_get_int() {
     unsigned int num;
     num = uart_get_char()<<24;
     num |= uart_get_char()<<16;
@@ -50,8 +51,7 @@ int uart_get_int()
     return num;
 }
 
-void uart_send(unsigned int c)
-{
+void uart_send(unsigned int c) {
     if(c == 10)
         uart_send('\r');
     
@@ -59,15 +59,65 @@ void uart_send(unsigned int c)
     *AUX_MU_IO = c;
 }
 
-void uart_put_str(char *s)
-{
+void uart_put_str(char *s) {
     while(*s)
         uart_send(*s++);
 }
 
-void uart_put_int(int num)
-{
+void uart_put_int(int num) {
     if(num/10)
 		uart_put_int(num/10);
     uart_send((num%10) + '0');
+}
+
+void uart_put_addr(unsigned long addr)
+{
+    uart_put_str("0x");
+    for(int i = 15;i >= 0; i--)
+    {
+        int num = (addr >> (i * 4)) & 0xf;
+        num += '0';
+        if(num > '9')
+            num += 'a' - ('9' + 1);
+        uart_send(num);
+    }
+}
+
+int uart_probe(fdt_header *header, unsigned long node_addr, int depth) {
+    unsigned long str_block_addr = (unsigned long)header + big_to_little_32(header->off_dt_strings);
+    unsigned int *token_addr = (unsigned int *)node_addr;
+
+    if (strstr(((ftd_node_header *)node_addr)->name, "serial", 6) && depth == 2) {
+        token_addr = find_next_token(token_addr);
+        do {
+            switch (big_to_little_32(*token_addr)) {
+                case FDT_PROP: {
+                    fdt_node_prop *prop = (fdt_node_prop *)token_addr;
+                    
+                    if (strcmp((char *)(str_block_addr + big_to_little_32(prop->nameoff)), "compatible")) {
+                        
+                        int len = big_to_little_32(prop->len);
+                        char *str = (char *)(prop + 1);
+                        for (int i = 0; i < len;) {
+                            if (strstr(&str[i], "uart", 4)) {
+                                uart_init();
+                                uart_put_str("uart_init\n");
+                                return 0;
+                            }
+                            while (str[i++]);
+                        }
+                    }
+                    break;
+                }
+
+                case FDT_BEGIN_NODE:
+                case FDT_END:
+                    return 0;
+                
+                default:
+                    break;
+            }
+        } while((token_addr = find_next_token(token_addr)));
+    }
+    return 0;
 }

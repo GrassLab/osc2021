@@ -3,6 +3,8 @@
 .global _start
 
 _start:
+    adr x5, DTB_HEADER
+    str x0, [x5]
     b 3f
 4:  wfe
     b 4b
@@ -23,3 +25,8 @@ _start:
 1:
     bl main
     b 4b
+
+.global DTB_HEADER
+
+.data
+    DTB_HEADER: .dword  0

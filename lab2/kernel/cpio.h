@@ -4,8 +4,7 @@
 void list();
 void cat(char *pathname);
 
-typedef struct
-{
+typedef struct {
     char c_magic[6];
 	char c_ino[8];
     char c_mode[8];

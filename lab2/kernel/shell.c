@@ -11,8 +11,7 @@
 #define BUFFER_SIZE         50
 #define COMMAND_LIST_LEN    (sizeof(command_list) / sizeof(struct Command))
 
-struct Command
-{
+struct Command {
     char *name;
     void (*func)();
     char *description;
@@ -25,11 +24,9 @@ struct Command
 };
 
 
-void help()
-{
+void help() {
     uart_put_str("command list :\n");
-    for(int i = 0; i < COMMAND_LIST_LEN; i++)
-    {
+    for(int i = 0; i < COMMAND_LIST_LEN; i++) {
         uart_put_str(command_list[i].name);
         uart_put_str("\t: ");
         uart_put_str(command_list[i].description);
@@ -38,26 +35,22 @@ void help()
     return;
 }
 
-void hello()
-{
+void hello() {
     uart_put_str("Hello World!\n");
     return;
 }
 
-void reset()
-{
+void reset() {
     uart_put_str("reboot...\n");
     *PM_RSTC = PM_PASSWORD | 0x20;
     *PM_WDOG = PM_PASSWORD | 1000;
-    return;
+    while(1);
 }
 
 // return char *args and *command is command's name
-char *split_command_args(char *command)
-{
+char *split_command_args(char *command) {
     char *str;
-    while(*command != ' ')
-    {
+    while(*command != ' ') {
         if(*command == '\0')
             return "";
         command++;
@@ -79,45 +72,36 @@ char *split_command_args(char *command)
     return str;
 }
 
-void do_command(char *command)
-{
+void do_command(char *command) {
     char *command_args = split_command_args(command);
-    for(int i = 0; i < COMMAND_LIST_LEN; i++)
-    {
-        if(strcmp(command, command_list[i].name))
-        {
+    for(int i = 0; i < COMMAND_LIST_LEN; i++) {
+        if(strcmp(command, command_list[i].name)) {
             command_list[i].func(command_args);
             return;
         }
     }
 
-    if(strcmp(command, ""))
-    {
+    if(strcmp(command, "")) {
         return;
     }
-    else
-    {
+    else {
         uart_put_str("command not found.\n");
         return;
     }
 }
 
-void get_command()
-{
+void get_command() {
     char command_buffer[50] = "";
     int command_counter = 0;
-    while(1)
-    {
+    while(1) {
         command_buffer[command_counter++] = uart_get_char();
         uart_put_str(&command_buffer[command_counter - 1]);
-        if(command_buffer[command_counter - 1] == '\n')
-        {
+        if(command_buffer[command_counter - 1] == '\n') {
             command_buffer[command_counter - 1] = '\0';
             do_command(command_buffer);
             return;
         }
-        if(command_counter > 49)
-        {
+        if(command_counter > 49) {
             for(int i = 0 ; i < command_counter ; i++) {
                 command_buffer[i] = '\0';
             }
@@ -127,10 +111,8 @@ void get_command()
     }
 }
 
-void shell()
-{
-    while(1)
-    {
+void shell() {
+    while(1) {
         uart_put_str("pi@rpi3 ~> ");
         get_command();
     }
