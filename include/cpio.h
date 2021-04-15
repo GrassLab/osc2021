@@ -15,5 +15,9 @@ struct cpio_newc_header
 void cpio_parse_header(char **address, char *file_name, char *file_content);
 void cpio_ls();
 void cpio_find_file(char file_name_to_find[]);
+<<<<<<< HEAD
+=======
+void cpio_run_executable(char executable_name[]);
+>>>>>>> de7a622e18bcb8ba0576355526bc99984106c5aa
 
 #endif
