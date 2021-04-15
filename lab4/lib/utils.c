@@ -123,8 +123,10 @@ int ls(char input[20], int readcontent)
 }
 
 void print_regs(unsigned long regs, int index){
-    if(index == 0)
+    if(index == 0){
+        uart_puts("\n");
         uart_puts("spsr_el1: ");
+    }
     else if(index == 1)
         uart_puts("elr_el1:  ");
     else if(index == 2)

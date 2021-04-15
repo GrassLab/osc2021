@@ -23,7 +23,7 @@ void strrev(unsigned char str[]){
 	}
 }
 
-void dec_hex(int number, unsigned char *hexadecimal){
+void dec_hex(unsigned long number, unsigned char *hexadecimal){
 	char HEX_VALUES[] = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 	for(int i=0;i<20;i++)
 		hexadecimal[i] = 0;
