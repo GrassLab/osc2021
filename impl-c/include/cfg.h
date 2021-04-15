@@ -11,6 +11,10 @@
 /**
  *  TEST
  * */
-// #define CFG_RUN_TEST
-// memory management
+#define CFG_RUN_TEST
+
+// Shell
+#define CFG_RUN_SHELL_BUFFER_TEST
+
+// Memory management
 // #define CFG_RUN_STATUP_ALLOC_TEST

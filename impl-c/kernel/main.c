@@ -2,7 +2,7 @@
 #include "exec.h"
 #include "mm.h"
 #include "mm/startup.h"
-#include "shell.h"
+#include "shell/shell.h"
 #include "test.h"
 #include "uart.h"
 
@@ -37,7 +37,7 @@ int main() {
 
   uart_println("Initializing memory allocator...");
   KAllocManager_init();
-  KAllocManager_run_example();
+  // KAllocManager_run_example();
   // KAllocManager_show_status();
 
   uart_println("-------------------------------");
@@ -45,6 +45,7 @@ int main() {
   uart_println("-------------------------------");
   uart_println(" input filename to see file content");
 
+  shellInit();
   while (1) {
     shellPrintPrompt();
     shellInputLine();

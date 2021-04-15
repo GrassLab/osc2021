@@ -1,10 +1,13 @@
-#include "shell.h"
+#include "shell/buffer.h"
+#include "shell/shell.h"
+
 #include "bool.h"
 #include "cfg.h"
 #include "cpio.h"
 #include "string.h"
 #include "timer.h"
 #include "uart.h"
+
 #include <stdint.h>
 
 #define PM_PASSWORD 0x5a000000
@@ -23,9 +26,9 @@ typedef struct {
   void (*func)(void);
 } Cmd;
 
-char buffer[MX_CMD_BFRSIZE + 1] = {0};
-int bfrWriteHead = 0;
-int curInputSize = 0;
+struct InputBuffer bfr;
+
+char bfr_data[MX_CMD_BFRSIZE + 1] = {0};
 
 Cmd cmdList[] = {
     {.name = "hello", .help = "Greeting", .func = cmdHello},
@@ -94,51 +97,6 @@ void cmdLoadUser() {
   asm volatile("eret              \n");
 }
 
-void _cursorMoveLeft() {
-  if (bfrWriteHead > 0) {
-    bfrWriteHead--;
-  }
-}
-
-void _cursorMoveRight() {
-  if (bfrWriteHead < curInputSize) {
-    bfrWriteHead++;
-  }
-}
-
-void _bfrPush(char c) {
-  if (curInputSize >= MX_CMD_BFRSIZE)
-    // buffer is full
-    return;
-
-  if (bfrWriteHead <= curInputSize) {
-    // insert in middle: right shift buffer first
-    for (int i = curInputSize; i > bfrWriteHead; i--) {
-      buffer[i] = buffer[i - 1];
-    }
-    buffer[bfrWriteHead++] = c;
-    curInputSize++;
-    buffer[curInputSize] = 0;
-  }
-}
-
-void _bfrPop() {
-  if (bfrWriteHead > 0) {
-    bfrWriteHead--;
-    // left shift the whole buffer
-    for (int i = bfrWriteHead; i < curInputSize; i++) {
-      buffer[i] = buffer[i + 1];
-    }
-    buffer[curInputSize--] = 0;
-  }
-}
-
-void _bfrClear() {
-  curInputSize = 0;
-  bfrWriteHead = 0;
-  buffer[0] = 0;
-}
-
 AnsiEscType decode_escape_sequence() {
   char c = uart_getc();
   if (c == '[') {
@@ -161,7 +119,7 @@ void _shellUpdatePrompt() {
 
   // Rebuild buffer
   shellPrintPrompt();
-  uart_puts(buffer);
+  uart_puts(bfr_data);
 
   // User might delete 1 character, here we paint a blank space to "delete it"
   // on the screen
@@ -169,17 +127,18 @@ void _shellUpdatePrompt() {
 
   // Restore cursor on the screen
   uart_puts("\r\e[");
-  uart_puts(itoa(bfrWriteHead + 1, 10));
+  uart_puts(itoa(bfr.write_head + 1, 10));
   uart_puts("C");
 }
 
 void shellPrintPrompt() { uart_puts("\r>"); }
 
+void shellInit() { bfr_init(&bfr, bfr_data, MX_CMD_BFRSIZE); }
 void shellInputLine() {
   enum KeyboardInput c;
   AnsiEscType termCtrl;
   bool flagExit = false;
-  _bfrClear();
+  bfr_clear(&bfr);
 
   while (!flagExit) {
     flagExit = false;
@@ -189,30 +148,29 @@ void shellInputLine() {
       termCtrl = decode_escape_sequence();
       switch (termCtrl) {
       case CursorForward:
-        _cursorMoveRight();
+        bfr_cursor_mov_right(&bfr);
         break;
       case CursorBackward:
-        _cursorMoveLeft();
+        bfr_cursor_mov_left(&bfr);
         break;
       case Unknown:
         break;
       }
       break;
     case KI_PRINTABLE_START ... KI_PRINTABLE_END:
-      _bfrPush(c);
+      bfr_push(&bfr, c);
       uart_send(c);
       break;
     case KI_BackSpace:
     case KI_Delete:
-      _bfrPop();
+      bfr_pop(&bfr);
       break;
     case KI_CarrageReturn:
     case KI_LineFeed:
       flagExit = true;
-      buffer[curInputSize] = 0;
       uart_puts("\r\n");
       if (CFG_LOG_ENABLE) {
-        uart_println("buffer: '%s'", buffer);
+        uart_println("buffer: '%s'", bfr_data);
       }
       break;
     default:
@@ -224,7 +182,7 @@ void shellInputLine() {
 
 int _tryFetchFile() {
   unsigned long size;
-  uint8_t *file = (uint8_t *)cpioGetFile((void *)RAMFS_ADDR, buffer, &size);
+  uint8_t *file = (uint8_t *)cpioGetFile((void *)RAMFS_ADDR, bfr_data, &size);
   if (file != NULL) {
     if (CFG_LOG_ENABLE) {
       uart_println("  [fetchFile] file addr:%x , size:%d", file, size);
@@ -246,7 +204,7 @@ int _tryFetchFile() {
 void shellProcessCommand() {
   Cmd *end = cmdList + sizeof(cmdList) / sizeof(Cmd);
   for (Cmd *c = cmdList; c != end; c++) {
-    if (!strcmp(c->name, buffer)) {
+    if (!strcmp(c->name, bfr_data)) {
       c->func();
       return;
     }
