@@ -32,9 +32,12 @@ void print_timestamp(unsigned long cntpct, unsigned long cntfrq)
     return;
 }
 
-void init_user_timer()
+void init_timer()
 {
     list_init_head(&user_timer_list);
+    asm volatile(
+        "msr daifclr, 2     \n\t"
+    );
 }
 
 void set_new_timeout()

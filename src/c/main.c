@@ -7,9 +7,9 @@
 int main()
 {
     init_uart();
-    init_memory();
-    init_user_timer();
     init_printf(0, putc);
+    init_memory();
+    init_timer();
 
     printf("Hello World!\n\n");
     shell_start();

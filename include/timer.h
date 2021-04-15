@@ -15,7 +15,7 @@ void timer_router(unsigned long cntpct, unsigned long cntfrq);
 
 void print_timestamp(unsigned long cntpct, unsigned long cntfrq);
 
-void init_user_timer();
+void init_timer();
 void set_new_timeout();
 void handle_due_timeout();
 
