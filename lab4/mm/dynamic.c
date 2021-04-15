@@ -49,7 +49,7 @@ void* dynamic_malloc(size_t size) {
     //uart_puts("allocate from top chunk.\n");
     chunk = dynamic_top_chunk_malloc(bin_idx);
   }
-  dynamic_status();
+  //dynamic_status();
   if(chunk != null) {
     /*uart_puts("allocated address: ");
     uart_hex((size_t)chunk);
@@ -134,12 +134,12 @@ void dynamic_free(void* address) {
   chunk = address;
   chunk->size -= 1; //inuse bit
   merged_idx = chunk->size / DYNAMIC_BIN_MIN_SLOT - 1;
-  uart_puts("free size ");
+  /*uart_puts("free size ");
   uart_hex(chunk->size);
   uart_puts("\n");
   uart_puts("prev size ");
   uart_hex(chunk->prev_size);
-  uart_puts("\n");
+  uart_puts("\n");*/
   if(chunk->size >= 0x20 && chunk->size <= DYNAMIC_BIN_MAX * DYNAMIC_BIN_MIN_SLOT) {
     prev_chunk = (void*)chunk - chunk->prev_size - DYNAMIC_CHUNK_HEADER_OFFSET;
     next_chunk = (void*)chunk + chunk->size + DYNAMIC_CHUNK_HEADER_OFFSET;
@@ -161,7 +161,7 @@ void dynamic_free(void* address) {
       //next chunk is free
       if(next_chunk == dynamic_system.top_chunk) {
         //is top chunk
-        uart_puts("next chunk is top chunk.\n");
+        //uart_puts("next chunk is top chunk.\n");
         //update top chunk
         chunk->size = chunk->size + dynamic_system.top_chunk->size + DYNAMIC_CHUNK_HEADER_OFFSET;
         chunk->next = null;
@@ -170,7 +170,7 @@ void dynamic_free(void* address) {
         return;
       }
       else {
-        uart_puts("next chunk is freed.\n");
+       // uart_puts("next chunk is freed.\n");
         if(dynamic_remove_chunk(next_chunk, next_chunk->size) == -1) {
           uart_puts("not found chunk.\n");
           return;
@@ -196,7 +196,7 @@ void dynamic_free(void* address) {
       //uart_puts("put chunk into unsorted bin.\n");
     }
   }
-  dynamic_status();  
+  //dynamic_status();  
 }
 
 void dynamic_status() {
@@ -378,6 +378,6 @@ void* dynamic_unsorted_bin_malloc(int idx) {
     prev_chunk = chunk;
     chunk = chunk->next;
   }
-  uart_puts("no free chunk found in insorted bin.\n");
+  //uart_puts("no free chunk found in insorted bin.\n");
   return null;
 }

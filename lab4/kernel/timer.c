@@ -20,7 +20,6 @@ void core_time_interrupt_handler() {
   while(1) {
     q = (struct core_timer_callback *)core_timer_queue_pop();
     if(q != null) {
-      printf("core timer interrupt: %d\n", q->timeout);
       ((void (*)(char*, size_t))(q->callback))(q->buf, q->size);
       dynamic_free(q);
     }
@@ -32,8 +31,8 @@ void core_time_interrupt_handler() {
   asm volatile("mrs x0, cntfrq_el0\n" "msr cntp_tval_el0, x0\n");
   //output now time
   odd_flag = ~odd_flag;
-  /*if(odd_flag == 0)
-    get_core_time();*/
+  if(odd_flag == 0)
+    get_core_time();
 }
 
 void core_timer_print_message_callback(char *message, size_t size) {

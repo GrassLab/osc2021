@@ -3,7 +3,7 @@
 
 #include <types.h>
 
-#define BOOTLOADER_OFFSET 0x10000
+#define BOOTLOADER_OFFSET 0x1000
 #define SHELL_COMMNAD_SIZE 0x100
 
 void shell();

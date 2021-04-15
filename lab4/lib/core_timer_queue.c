@@ -20,8 +20,6 @@ void core_timer_queue_push(void* callback, size_t timeout, char *message, size_t
   strncpy(q->buf, message, size);
   q->next = _core_timer_queue;
    _core_timer_queue = q;
-  //printf("push %d\n", q->timeout);
-  core_timer_queue_status();
   core_timer_queue_sorted(_core_timer_queue);
   
 }
