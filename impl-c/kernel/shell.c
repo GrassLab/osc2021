@@ -62,7 +62,7 @@ void cmdLoadUser() {
   unsigned long size;
   unsigned char *load_addr = (unsigned char *)0x20000000;
   uint8_t *file =
-      (uint8_t *)cpioGetFile((void *)RAMFS_ADDR, "./user_program.o", &size);
+      (uint8_t *)cpioGetFile((void *)RAMFS_ADDR, "./user_program", &size);
   if (file == NULL) {
     uart_println("Cannot found `user_program.o` under rootfs");
     return;
