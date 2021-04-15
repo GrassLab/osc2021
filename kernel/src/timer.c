@@ -15,16 +15,16 @@ void core_timer_enable() {
   asm volatile("mrs x0, cntfrq_el0");
   asm volatile("msr cntp_tval_el0, x0");  // set expired time
   asm volatile("mov x0, 2");
-  asm volatile("ldr x1, =0x40000040");
-  asm volatile("str w0, [x1]");  // unmask timer interrupt
+  asm volatile("ldr x1, =0x40000040");  // CORE0_TIMER_IRQ_CTRL
+  asm volatile("str w0, [x1]");         // unmask timer interrupt
 }
 
 void core_timer_disable() {
   asm volatile("mov x0, 0");
   asm volatile("msr cntp_ctl_el0, x0");  // disable
   asm volatile("mov x0, 0");
-  asm volatile("ldr x1, =0x40000040");
-  asm volatile("str w0, [x1]");  // unmask timer interrupt
+  asm volatile("ldr x1, =0x40000040");  // CORE0_TIMER_IRQ_CTRL
+  asm volatile("str w0, [x1]");         // unmask timer interrupt
 }
 
 void core_timer_handler_lowerEL_64() {  // required 2

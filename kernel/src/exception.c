@@ -29,8 +29,9 @@ void sync_handler() {
 
 void irq_handler_currentEL_ELx() {
   disable_interrupt();
-  uint32_t is_uart = (*IRQ_PENDING_1 & AUX_IRQ);
-  uint32_t is_core_timer = (*CORE0_INTERRUPT_SOURCE & 0x2);
+  uint32_t is_uart =
+      (*CORE0_IRQ_SOURCE & GPU_IRQ) && (*IRQ_PENDING_1 & AUX_IRQ);
+  uint32_t is_core_timer = (*CORE0_IRQ_SOURCE & CNTPNS_IRQ);
 
   if (is_uart) {
     uart_handler();
@@ -42,8 +43,9 @@ void irq_handler_currentEL_ELx() {
 
 void irq_handler_lowerEL_64() {
   disable_interrupt();
-  uint32_t is_uart = (*IRQ_PENDING_1 & AUX_IRQ);
-  uint32_t is_core_timer = (*CORE0_INTERRUPT_SOURCE & 0x2);
+  uint32_t is_uart =
+      (*CORE0_IRQ_SOURCE & GPU_IRQ) && (*IRQ_PENDING_1 & AUX_IRQ);
+  uint32_t is_core_timer = (*CORE0_IRQ_SOURCE & CNTPNS_IRQ);
 
   if (is_uart) {
     uart_handler();

@@ -117,8 +117,6 @@ void run_shell() {
       cmd_dma_test();
     } else if (strncmp(buffer, "run", 3) == 0) {
       cmd_load_user_program(&buffer[4]);
-    } else if (strcmp(buffer, "timer") == 0) {
-      core_timer_enable();
     } else if (strcmp(buffer, "puts") == 0) {
       uart_async_puts("async puts\n");
     } else if (strncmp(buffer, "setTimeout", 10) == 0) {
