@@ -51,3 +51,8 @@ $
 ```
 $ help
 ```
+
+## ttyUSB permission
+```
+$ sudo usermod -aG dialout $USER
+```

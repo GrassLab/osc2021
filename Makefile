@@ -4,14 +4,6 @@ LINKER := aarch64-linux-gnu-ld
 OBJCOPY := aarch64-linux-gnu-objcopy
 QEMU := qemu-system-aarch64
 
-# include
-INC_DIR := include
-INC_BUILD := build/include
-INC_C_SRC := $(wildcard $(INC_DIR)/*.c)
-INC_C_OBJ := $(patsubst %.c, $(INC_BUILD)/%.o, $(notdir $(INC_C_SRC)))
-INC_ASM_SRC := $(wildcard $(INC_DIR)/*.S)
-INC_ASM_OBJ := $(patsubst %.S, $(INC_BUILD)/%.o, $(notdir $(INC_ASM_SRC)))
-
 # kernel
 DIR := src
 BUILD_DIR := build
@@ -30,8 +22,11 @@ BOOTLOADER := bootloader
 #TEST_IMG := $(BOOTLOADER).img
 TEST_IMG := $(TARGET).img
 UART := UART_MINI # UART_MINI or UART_PL011
-CCFLAG := -Wall -ffreestanding -nostdinc -nostdlib -nostartfiles -Og -g -D$(UART) -I$(INC_DIR)
-ASMFLAG := -Isrc
+CCFLAG := -Wall -ffreestanding -nostdinc -nostdlib -nostartfiles -Og -g -D$(UART) -I$(DIR)
+
+# APP
+APP_DIR := app
+APP := user-process
 
 # cpio archive
 CPIO_DIR := rootfs
@@ -43,35 +38,31 @@ QEMU_CPIO := -initrd $(CPIO)
 DTB := bcm2710-rpi-3-b-plus.dtb
 QEMU_DTB := -dtb $(DTB)
 
-all:  $(BOOTLOADER).img $(TARGET).img $(CPIO)
-
-# include files
-$(INC_BUILD)/%.o: $(INC_DIR)/%.c
-	mkdir -p $(INC_BUILD)
-	$(COMPILER) $(CCFLAG) -c $< -o $@
-
-$(INC_BUILD)/%.o: $(INC_DIR)/%.S
-	mkdir -p $(INC_BUILD)
-	$(COMPILER) $(CCFLAG) -c $< -o $@
+all:  $(BOOTLOADER).img $(TARGET).img $(APP_DIR)/$(APP) $(CPIO)
 
 # kernel
-$(TARGET).img: $(INC_C_OBJ) $(INC_ASM_OBJ) $(C_OBJ) $(ASM_OBJ)
-	$(LINKER) -T $(LD) -o $(TARGET).elf $(INC_C_OBJ) $(INC_ASM_OBJ) $(C_OBJ) $(ASM_OBJ)
+$(TARGET).img: $(C_OBJ) $(APP_DIR)/$(APP) $(ASM_OBJ)
+	$(LINKER) -T $(LD) -o $(TARGET).elf $(C_OBJ) $(ASM_OBJ)
 	$(OBJCOPY) -O binary $(TARGET).elf $(TARGET).img
 
 $(BUILD_DIR)/%.o: $(DIR)/%.c
 	@mkdir -p $(BUILD_DIR)
-	$(COMPILER) $(CCFLAG) -I$(DIR) -c $< -o $@
+	$(COMPILER) $(CCFLAG) -c $< -o $@
 
 $(BUILD_DIR)/%.o: $(DIR)/%.S
 	@mkdir -p $(BUILD_DIR)
-	$(COMPILER) $(CCFLAG) -I$(DIR) -c $< -o $@
+	$(COMPILER) $(CCFLAG) -c $< -o $@
 
 # bootloader
 $(BOOTLOADER).img:
 	@cd $(BOOTLOADER) && make
 	@cp $(BOOTLOADER)/$(BOOTLOADER).img ./
 	@cp $(BOOTLOADER)/$(BOOTLOADER).elf ./
+
+# APP
+$(APP_DIR)/$(APP):
+	@cd $(APP_DIR) && make
+	cp $(APP_DIR)/$(APP) $(CPIO_DIR)
 
 # cpio archive
 $(CPIO): $(CPIO_FILES)
@@ -102,3 +93,4 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -rf $(CPIO)
 	rm -f $(TARGET).elf $(TARGET).img
+	rm -rf $(APP_DIR)/build $(APP_DIR)/$(APP)
