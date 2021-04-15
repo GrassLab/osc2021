@@ -1,6 +1,8 @@
 #include "uart.h"
 #include "shell.h"
 #include "printf.h"
+#include "mm.h"
+#include "timer.h"
 
 /* Initial Logo */
 //   ___  ____  ____ ___   ____   ___ ____  _  __   __                 
@@ -23,6 +25,12 @@ int main()
     uart_init();
     
     init_printf(0, putc);
+
+    // Initialize memory allcoator
+    mm_init();
+
+    // Initialize timer list for timeout events
+    timer_list_init();
 
     // say hello
     printf(init_logo);

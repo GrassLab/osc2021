@@ -133,6 +133,7 @@ void command_controller ( enum SPECIAL_CHARACTER input_parse, char c, char buffe
             else if ( !strcmp(buffer, "currentEL"   ) ) command_current_el();
             else if ( !strcmp(buffer, "coreTimerOn" ) ) commnad_coreTimerOn();
             else if ( !strcmp(buffer, "coreTimerOff") ) commnad_coreTimerOff();
+            else if ( !strncmp(buffer, "setTimeout ", 10)) coomand_setTimeout(buffer + 11);
             else                                        command_not_found(buffer);
         }
 

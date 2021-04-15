@@ -137,16 +137,6 @@ sync_exc_handler:
 	mrs	x1, elr_el1
 	mrs	x2, esr_el1 
 	bl sync_exc_router
-
-	
-	/* TODO: should set EL1 in sper_el1? */
-	// eret to EL1 and use loginal or to avoiding mask the original interrupt setting 
-	// In EL1 it still can get EL0 timer interrupt
-	mrs x0, spsr_el1
-	mov x1, 5 
-	orr x0, x0, x1
-	msr spsr_el1, x0
-
     kernel_exit // restore saved process state
 
 	eret // return to original program counter that exception occur

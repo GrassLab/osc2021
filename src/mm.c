@@ -113,8 +113,9 @@ void buddy_block_free(struct page* block)
     page_t *buddy_block = &bookkeep[buddy_pfn];
     while (block->order < MAX_ORDER && block->order == buddy_block->order && 
            buddy_block->used == Free) {
+        #ifdef __DEBUG
         printf("Buddy{ pfn(%d), order(%d) }\n", buddy_block->pfn, buddy_block->order);
-
+        #endif //__DEBUG
         // Pop buddy block from frealist
         pop_block_from_free_area(buddy_block, &free_area[buddy_block->order]);
 
@@ -467,7 +468,7 @@ void mm_init()
 {
     page_init();
     free_area_init();
-    
+    __init_kmalloc();
     
     /**
      *  Test Buddy memory Allocator

@@ -14,4 +14,5 @@ void command_cpio_svc();
 void command_current_el();
 void commnad_coreTimerOn();
 void commnad_coreTimerOff();
+void coomand_setTimeout(char *);
 #endif

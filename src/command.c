@@ -4,6 +4,7 @@
 #include "cpio.h"
 #include "printf.h"
 #include "utils.h"
+#include "timer.h"
 
 void input_buffer_overflow_message ( char cmd[] )
 {
@@ -26,8 +27,10 @@ void command_help ()
     uart_puts("\tcat {filename}:\tPrint content in {filename} \n");
     uart_puts("\tma:\t\tSystem of memory allcator \n");
     uart_puts("\tcurrentEL:\tPiint current exception level(You can't use it in EL0)\n");
-    uart_puts("\tcoreTimerOn:\tEnable core0 timer interrupt \n");
+    uart_puts("\tcpio_svc:\tJump to user program in cpio archive \n");
+    uart_puts("\tcoreTimerOn:\tEnable core0 timer interrupt (Interrupt periodically) \n");
     uart_puts("\tcoreTimerOff:\tDisable core0 timer interrupt \n");
+    uart_puts("\tsetTimeout [MESSAGE] [SECONDS]:\tprints [MESSAGE] after [SECONDS] ([SECONDS] need lower than 45)\n");
     uart_puts("\n");
 }
 
@@ -140,4 +143,20 @@ void commnad_coreTimerOff()
     asm volatile("svc #3");
 }
 
+void coomand_setTimeout(char *buf)
+{
+    uint64_t duration = 0;
+    for (int i = 0;buf[i];i++) {
+        if (buf[i] == ' ') {
+            for (int j = i + 1;buf[j];j++) {
+                duration = duration * 10 + (buf[j] - '0');
+            }
+            buf[i] = '\0'; // split message and sconds
+            break;
+        }
+    }
+    // printf("parse msg: %s\n", buf);
+    // printf("parse seconds: %d\n", duration);
+    add_timer(print_timeoutEventInfo, buf, duration);   
+}
 
