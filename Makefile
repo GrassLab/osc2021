@@ -27,7 +27,9 @@ all:
 
 clean:
 	make -C $(BOOTLOADER) clean
+	rm -f $(BOOT_IMG)
 	make -C $(OS) clean
+	rm -f $(OS_IMG)
 
 install:
 #cp ./setup/* $(SD_MEDIA)
