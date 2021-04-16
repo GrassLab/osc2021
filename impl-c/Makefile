@@ -9,7 +9,8 @@ LDSCRIPT = kernel/linker.ld
 LDFLAGS = -nostdlib
 
 SRC = $(wildcard **/*.S) $(wildcard **/*.c)
-OBJS = $(wildcard *.o)
+OBJS = $(wildcard ./*.o)
+BUILD_OBJS = $(wildcard build/*.o)
 
 CFLAGS = -Wall -Iinclude -nostartfiles -ffreestanding
 CFLAGS += -g -ggdb
@@ -20,15 +21,18 @@ TARGET_ELF = kernel8.elf
 .PHONY: all
 all:
 	$(CC) $(CFLAGS) -c $(SRC)
+	mkdir -p build
+	mv ./*.o build
 	make kernel
 
 .PHONY: kernel
 kernel:
-	$(LD) $(LDFLAGS)  $(OBJS) -T $(LDSCRIPT) -o $(TARGET_ELF)
+	$(LD) $(LDFLAGS)  $(BUILD_OBJS) -T $(LDSCRIPT) -o $(TARGET_ELF)
 	$(OBJCOPY) -O binary $(TARGET_ELF) $(TARGET)
 
 clean:
 	$(RM) $(OBJS)
+	$(RM) -rf build
 	$(RM) $(TARGET) $(TARGET_ELF)
 
 
