@@ -2,8 +2,8 @@ CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
 # %.o: %.c
 # 	aarch64-linux-gnu-gcc $(CFLAGS) -c $< -o $@
 
-kernel8.img: boot.o utils.o uart.o mm.o cutils.o dtp.o test.o main.o
-	aarch64-linux-gnu-ld -nostdlib -nostartfiles -Iinclude boot.o utils.o uart.o mm.o cutils.o dtp.o test.o main.o -T linker.ld -o kernel8.elf
+kernel8.img: boot.o utils.o uart.o mm.o cutils.o dtp.o test.o syscall.o entry.o irq.o cirq.o main.o
+	aarch64-linux-gnu-ld -nostdlib -nostartfiles -Iinclude boot.o utils.o uart.o mm.o cutils.o dtp.o test.o syscall.o entry.o irq.o cirq.o main.o -T linker.ld -o kernel8.elf
 	aarch64-linux-gnu-objcopy -O binary kernel8.elf kernel8.img
 
 boot.o: boot.S
@@ -26,6 +26,18 @@ dtp.o: dtp.c
 
 test.o: test.c
 	aarch64-linux-gnu-gcc $(CFLAGS) -c test.c -o test.o
+
+syscall.o: syscall.c
+	aarch64-linux-gnu-gcc $(CFLAGS) -c syscall.c -o syscall.o
+
+entry.o: entry.S
+	aarch64-linux-gnu-gcc $(CFLAGS) -c entry.S -o entry.o
+
+irq.o: irq.S
+	aarch64-linux-gnu-gcc $(CFLAGS) -c irq.S -o irq.o
+
+cirq.o: cirq.c
+	aarch64-linux-gnu-gcc $(CFLAGS) -c cirq.c -o cirq.o
 
 main.o: main.c
 	aarch64-linux-gnu-gcc $(CFLAGS) -c main.c -o main.o

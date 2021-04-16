@@ -3,7 +3,7 @@
 #include "include/mm.h"
 #include "utils.h"
 #define MAX_NR_REGIONS_POOL 20
-#define MAX_ORDER 5
+#define MAX_ORDER 7
 #define MAX_ORDER_NR_PAGES (1 << (MAX_ORDER - 1))
 #define BUDDY_BASE 0x2000
 #define PAGE_SIZE 0x1000 // 4KB
@@ -229,10 +229,12 @@ int remove_from_list(struct page *frame)
 
 int block_set_free(struct page *frame, int set_val)
 { // for frame in block: frame.free = set_val;
-    int num = 1 << frame->blk_odr;
+    // int num = 1 << frame->blk_odr;
 
-    for (int i = 0; i < num; ++i)
-        frame[i].free = set_val;
+    // for (int i = 0; i < num; ++i)
+    //     frame[i].free = set_val;
+    frame->free = set_val;
+
     return 0;
 }
 
@@ -250,7 +252,7 @@ int free_frames(struct page *frame)
     legal = 0;
     // Check if the frame is a frame we maintained.
     for (int i = 0; i < MAX_ORDER_NR_PAGES; ++i)
-        if (frame == &page_frames[i]) {
+        if (frame == &page_frames[i] && !(frame->free)) {
             legal = 1;
             break;
         }
@@ -272,7 +274,8 @@ int free_frames(struct page *frame)
         buddy_idx = page_walk->index ^ (1 << page_walk->blk_odr);
         buddy = &page_frames[buddy_idx];
 
-        if (buddy->free) { // buddy can be coalesced.
+        if (buddy->free && (buddy->blk_odr == page_walk->blk_odr)) { // buddy can be coalesced.
+            uart_send_string("[DEMO] From free_frames: merge!\r\n");
             if (buddy_idx > page_walk->index) { // buddy is at right side
                 page_walk->blk_odr++;
                 buddy->blk_odr = -1;
@@ -308,6 +311,7 @@ struct page *get_free_frames(int nr)
             remove_from_list(page_walk);
             while (order > target_ord) { 
                 // Still need to split the block
+                uart_send_string("[DEMO] From get_free_frames: split!\r\n");
                 order--;
                 buddy = page_walk + (1 << order);
                 buddy->blk_odr = order;
@@ -468,7 +472,17 @@ int rd_init()
         uart_send_string("Error: mem-region request failed.");
         return -1;
     }
-    // for buddy system
+    // kernel
+    if ((rd_request(0x80000, 0x10000)) == -1) {
+        uart_send_string("Error: mem-region request failed.");
+        return -1;
+    }
+    // initramfs
+    if ((rd_request(0x20000000, 0x1000)) == -1) {
+        uart_send_string("Error: mem-region request failed.");
+        return -1;
+    }
+    // buddy system
     if ((rd_request(BUDDY_BASE, MAX_ORDER_NR_PAGES * PAGE_SIZE)) == -1) {
         uart_send_string("Error: mem-region request failed.");
         return -1;

@@ -1,27 +1,8 @@
 #include "utils.h"
 #include "include/dtp.h"
 #include "include/cutils.h"
+#include "include/mini_uart.h"
 
-#define PBASE 0x3F000000
-
-#define GPFSEL1         (PBASE+0x00200004)
-#define GPSET0          (PBASE+0x0020001C)
-#define GPCLR0          (PBASE+0x00200028)
-#define GPPUD           (PBASE+0x00200094)
-#define GPPUDCLK0       (PBASE+0x00200098)
-
-#define AUX_ENABLES     (PBASE+0x00215004)
-#define AUX_MU_IO_REG   (PBASE+0x00215040)
-#define AUX_MU_IER_REG  (PBASE+0x00215044)
-#define AUX_MU_IIR_REG  (PBASE+0x00215048)
-#define AUX_MU_LCR_REG  (PBASE+0x0021504C)
-#define AUX_MU_MCR_REG  (PBASE+0x00215050)
-#define AUX_MU_LSR_REG  (PBASE+0x00215054)
-#define AUX_MU_MSR_REG  (PBASE+0x00215058)
-#define AUX_MU_SCRATCH  (PBASE+0x0021505C)
-#define AUX_MU_CNTL_REG (PBASE+0x00215060)
-#define AUX_MU_STAT_REG (PBASE+0x00215064)
-#define AUX_MU_BAUD_REG (PBASE+0x00215068)
 
 void uart_init ( void )
 {
@@ -42,7 +23,7 @@ void uart_init ( void )
 
     put32(AUX_ENABLES,1);                   //Enable mini uart (this also enables access to its registers)
     put32(AUX_MU_CNTL_REG,0);               //Disable auto flow control and disable receiver and transmitter (for now)
-    put32(AUX_MU_IER_REG,0);                //Disable receive and transmit interrupts
+    put32(AUX_MU_IER_REG,1);                //Enable only receive interrupts
     put32(AUX_MU_LCR_REG,3);                //Enable 8 bit mode
     put32(AUX_MU_MCR_REG,0);                //Set RTS line to be always high
     put32(AUX_MU_BAUD_REG,270);             //Set baud rate to 115200
@@ -69,10 +50,25 @@ void uart_send ( char c )
     put32(AUX_MU_IO_REG,c);
 }
 
+#define UART_BUF_SIZE 256
+extern char uart_send_buf[];
+extern int uart_send_buf_in;
+extern int uart_send_buf_out;
+void uart_send_async ( char c )
+{
+    while ((uart_send_buf_in + 1) % UART_BUF_SIZE == uart_send_buf_out)
+        ;
+    uart_send_buf[uart_send_buf_in] = c;
+    uart_send_buf_in = (uart_send_buf_in + 1) % UART_BUF_SIZE;
+
+    put32(AUX_MU_IER_REG, 3); //Enable receive and transmit interrupts
+
+}
+
 char uart_recv ( void )
 {
     while(1) {
-        if(get32(AUX_MU_LSR_REG)&0x01)      // 1sts bit is set if the receive FIFO holds at least 1 symbol.
+        if(get32(AUX_MU_LSR_REG)&0x01)      // 0th bit is set if the receive FIFO holds at least 1 symbol.
             break;
     }
     return(get32(AUX_MU_IO_REG)&0xFF);
@@ -84,6 +80,27 @@ void uart_send_string(char* str)
         uart_send((char)str[i]);
     }
 }
+
+void uart_send_string_async(char* str)
+{
+    for (int i = 0; str[i] != '\0'; i ++) {
+        uart_send_async((char)str[i]);
+    }
+}
+// extern char uart_send_buf[];
+
+// void uart_send_string_low_power(char* str)
+// {
+
+//     for (int i = 0; str[i] != '\0'; i ++) {
+//         uart_send_buf[i] = str[i];
+//     }
+
+//     while (!recv_ready) {
+//         wait_for_interrupt(); // low power standby
+//         // uart_send_string("wfi\r\n");
+//     }
+// }
 
 int read_line(char buf[], int buf_size)
 {
@@ -98,6 +115,31 @@ int read_line(char buf[], int buf_size)
     uart_send_string("\r\n");
 
     *buf_ptr = '\0';
+    return cnt;
+}
+
+extern char uart_recv_buf[];
+extern int recv_ready;
+int read_line_low_power(char buf[], int buf_size)
+{
+    char *buf_ptr, *cmd_buf_ptr;
+    int cnt;
+
+    while (!recv_ready) {
+        wait_for_interrupt(); // low power standby
+        // uart_send_string("wfi\r\n");
+    }
+
+    buf_ptr = buf;
+    cmd_buf_ptr = uart_recv_buf;
+    cnt = 0;
+    while ((*cmd_buf_ptr != '\0') && (++cnt < buf_size))
+        *buf_ptr++ = *cmd_buf_ptr++;
+    *buf_ptr = '\0';
+    uart_send_string("\r\n");
+    // Clear recv_ready, so uart interrupt can
+    // start to fill content into cmd_buf
+    recv_ready = 0;
     return cnt;
 }
 
@@ -192,3 +234,45 @@ void uart_send_ulong(unsigned long number) {
     // uart_send('\r\n');
     return ; 
 }
+
+
+// #define CMD_SIZE 64
+// #define UART_BUF_SIZE 128
+// char uart_send_buf[UART_BUF_SIZE];
+// int uart_send_buf_idx = 0;
+// char uart_recv_buf[UART_BUF_SIZE];
+// int uart_recv_buf_idx = 0;
+// char cmd_buf[CMD_SIZE];
+
+// /* AUX_MU_IIR_REG: peripheral p.13 */
+// void do_uart_handler()
+// {
+//     char ch;
+//     unsigned int iir;
+//     int cnt;
+
+//     iir = get32(AUX_MU_IIR_REG);
+
+//     if ((iir & 0x6) == 0x2)
+//     { // Transmit holding register empty 
+//         // while(get32(AUX_MU_LSR_REG));
+//         ;
+//     }
+//     else if ((iir & 0x6) == 0x4)
+//     { // Receiver holds valid byte
+//         // while (get32(AUX_MU_LSR_REG) & 0x1) {
+//         if (get32(AUX_MU_LSR_REG) & 0x1) {
+//             // The receive FIFO holds at least 1 symbol.
+//             ch = get32(AUX_MU_IO_REG) & 0xFF;
+//             uart_recv_buf[uart_recv_buf_idx++] = ch;
+//             // uart_recv_buf_idx = (uart_recv_buf_idx + 1) % UART_BUF_SIZE;
+//             uart_send_buf[uart_send_buf_idx++] = ch;
+//             while(1) {
+//                 if(get32(AUX_MU_LSR_REG)&0x20)      // 5th bit is set if the transmit FIFO can accept at least one byte.
+//                     break;
+//             }
+//             put32(AUX_MU_IO_REG,c);
+
+//         }
+//     }
+// }

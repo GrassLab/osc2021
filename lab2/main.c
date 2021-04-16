@@ -3,6 +3,7 @@
 #include "include/cutils.h"
 #include "include/dtp.h"
 #include "include/test.h"
+#include "include/cirq.h"
 // #include "include/initramfs.h"
 #include "utils.h"
 #define CMD_SIZE 64
@@ -17,20 +18,22 @@ int BSSTEST = 0;
 extern char *dt_base_g;
 
 char *cmd_lst[][2] = {
-    { "help   ", "list all commands"},
-    { "hello  ", "print hello world"},
-    { "reboot ", "reboot"},
-    { "cat    ", "show file contents"},
-    { "ls     ", "show all file"},
-    { "relo   ", "Relocate bootloader"},
-    { "load   ", "Load image from host to pi, then jump to it"},
-    { "showmem", "show memory contents"},
-    { "dtp    ", "device tree parse"},
-    { "size   ", "show type size"},
-    { "mm     ", "show memory management"},
-    { "testbs ", "test buddy system"},
-    { "testks ", "test kmalloc system"},
-    { "testsms", "test startup memory system"},
+    { "help       ", "list all commands"},
+    { "hello      ", "print hello world"},
+    { "reboot     ", "reboot"},
+    { "cat        ", "show file contents"},
+    { "run        ", "run user program"},
+    { "ls         ", "show all file"},
+    { "relo       ", "Relocate bootloader"},
+    { "load       ", "Load image from host to pi, then jump to it"},
+    { "showmem    ", "showmem start length"},
+    { "size       ", "show type size"},
+    { "mm         ", "show memory management"},
+    { "testbs     ", "test buddy system"},
+    { "testks     ", "test kmalloc system"},
+    { "testsms    ", "test startup memory system"},
+    { "el         ", "Get current EL"},
+    { "setTimeout ", "setTimeout MESSAGE SECONDS"},
     { "eocl", "This won't print out (end of cmd list)"}
 };
 
@@ -114,8 +117,8 @@ int cat_file_initramfs()
     char *name_start, *data_start;
 
     uart_send_string("Please enter file path: ");
-    read_line(file_name_buf, FILE_NAME_SIZE);
-
+    // read_line();
+    read_line_low_power(file_name_buf, FILE_NAME_SIZE);
     ent = (struct cpio_newc_header*)INITRAMFS_BASE;
     while (1)
     {
@@ -163,6 +166,49 @@ int ls_initramfs()
     return 0;
 }
 
+
+int run_initramfs()
+{
+    char file_name_buf[FILE_NAME_SIZE];
+    struct cpio_newc_header* ent;
+    int filesize, namesize;
+    char *name_start, *data_start;
+
+    uart_send_string("Please enter file path: ");
+    // read_line(file_name_buf, FILE_NAME_SIZE);
+    read_line_low_power(file_name_buf, FILE_NAME_SIZE);
+
+    ent = (struct cpio_newc_header*)INITRAMFS_BASE;
+    while (1)
+    {
+        // uart_send_string("hey");
+        namesize = hex_string_to_int(ent->c_namesize, 8);
+        filesize = hex_string_to_int(ent->c_filesize, 8);
+        name_start = ((char *)ent) + sizeof(struct cpio_newc_header);
+        data_start = align_upper(name_start + namesize, 4);
+        if (!strcmp(file_name_buf, name_start)) {
+            if (!filesize)
+                return 0;
+            // Load file to page A
+            struct page *A = get_free_frames(1);
+            char *page_ptr = (char*)A;
+            for (int i = 0; i < filesize; ++i)
+                page_ptr[i] = data_start[i];
+            run_user_program(page_ptr, page_ptr + 4096 - 1);
+            // never come back again.
+            return 0;
+        }
+        ent = (struct cpio_newc_header*)align_upper(data_start + filesize, 4);
+
+        if (!strcmp(name_start, "TRAILER!!!"))
+            break;
+    }
+    uart_send_string("run: ");
+    uart_send_string(file_name_buf);
+    uart_send_string(": No such file or directory\r\n");
+    return 1;
+}
+
 int do_showmem(char *cmd)
 { // showmem 60000 200
     char *addr_ptr, *cmd_ptr, *arg1, *arg2;
@@ -204,7 +250,7 @@ void bootloader_relocate()
     long dest_offset;
 
     uart_send_string("Please enter relocation address(hex without '0x'): ");
-    address_len = read_line(buf, 100);
+    address_len = read_line_low_power(buf, 100);
     bootloader_new_addr = hex_string_to_unsigned_long(buf, address_len);
     // uart_send_long(bootloader_new_addr);
     dest = (char*)bootloader_new_addr;
@@ -262,6 +308,67 @@ int show_type_size()
     return 0;
 }
 
+int show_sys_reg()
+{
+    int el = get_el();
+    uart_send_string("Current EL: ");
+    uart_send_int(el);
+    uart_send_string("\r\n");
+    uart_send_string("sctlr_el1: ");
+    uart_send_uint(get_sctlr_el1());
+    uart_send_string("\r\n");
+    uart_send_string("cntfrq_el0: ");
+    uart_send_uint(get_cntfrq_el0());
+    uart_send_string("\r\n");
+
+    if (el == 2) {
+        uart_send_string("hcr_el2: ");
+        uart_send_ulong(get_hcr_el2());
+        uart_send_string("\r\n");
+        uart_send_string("spsr_el2: ");
+        uart_send_uint(get_spsr_el2());
+        uart_send_string("\r\n");
+    }
+    return 0;
+}
+
+void *wakeup_mesg(void* arg)
+{
+    char *mesg = (char*)arg;
+    uart_send_string("\r\n");
+    uart_send_string(mesg);
+    return 0; // null
+}
+char globl_mesg[100];
+
+int do_setTimeout(char *cmd)
+{ // setTimeout MESSAGE second
+    char *addr_ptr, *cmd_ptr, *arg1, *arg2;
+    int arg1_len, arg2_len, seconds;
+    unsigned long addr;
+
+    cmd_ptr = cmd;
+    while (*cmd_ptr++ != ' ');
+    arg1 = cmd_ptr;
+    globl_mesg[0] = '\0';
+    arg1_len = 0;
+    while (*cmd_ptr != ' ') {
+        globl_mesg[arg1_len] = *cmd_ptr;
+        cmd_ptr++;
+        arg1_len++;
+    }
+    globl_mesg[arg1_len] = '\0';  // make arg1 a null-end string
+    arg2 = ++cmd_ptr;
+    arg2_len = 0;
+    while (*cmd_ptr++ != '\0')
+        arg2_len++;
+    seconds = dec_string_to_int(arg2, arg2_len);
+    // Now, globl_mesg is MESSAGE and arg2 is SECONDS
+    tqe_add(seconds * TICKS_FOR_ITR, wakeup_mesg, (void*)globl_mesg);
+
+    return 0;
+}
+
 int cmd_handler(char *cmd)
 {
     if (!strcmp(cmd, "help"))
@@ -272,6 +379,8 @@ int cmd_handler(char *cmd)
         return do_reboot();
     if (!strcmp(cmd, "cat"))
         return cat_file_initramfs();
+    if (!strcmp(cmd, "run"))
+        return run_initramfs();
     if (!strcmp(cmd, "ls"))
         return ls_initramfs();
     if (!strcmp(cmd, "relo"))
@@ -280,8 +389,6 @@ int cmd_handler(char *cmd)
         kernel_load_and_jump(); // Won't come back
     if (!strcmp_with_len(cmd, "showmem", 7))
         return do_showmem(cmd);
-    // if (!strcmp(cmd, "dtp"))
-    //     return do_dtp();
     if (!strcmp(cmd, "size"))
         return show_type_size();
     if (!strcmp(cmd, "mm"))
@@ -297,12 +404,47 @@ int cmd_handler(char *cmd)
         uart_send_string("\r\n");
         return 0;
     }
+    if (!strcmp(cmd, "el"))
+        return show_sys_reg();
+    if (!strcmp_with_len(cmd, "setTimeout", 10))
+        return do_setTimeout(cmd);
+    if (!strcmp(cmd, "eirq")) {
+        enable_irq();
+        return 0;
+    }
+    if (!strcmp(cmd, "dirq")) {
+        disable_irq();
+        return 0;
+    }
+
     uart_send_string("Command '");
     uart_send_string(cmd);
     uart_send_string("' not found\r\n");
     return 0;
 }
 
+// int kernel_main(char *sp)
+// {
+//     char cmd_buf[CMD_SIZE];
+
+//     do_dtp(uart_probe);
+//     // uart_init();
+//     rd_init();
+//     dynamic_mem_init();
+//     timerPool_init();
+//     // enable_irq();
+//     core_timer_enable();
+//     uart_send_string("Welcome to RPI3-OS\r\n");
+//     while (1) {
+//         uart_send_string("user@rpi3:~$ ");
+//         wait_for_interrupt(); // low power standby
+//         read_line(cmd_buf, CMD_SIZE);
+//         if (!strlen(cmd_buf))  // User input nothing but Enter
+//             continue;
+//         cmd_handler(cmd_buf);
+//     }
+//     return 0;
+// }
 
 int kernel_main(char *sp)
 {
@@ -312,13 +454,19 @@ int kernel_main(char *sp)
     // uart_init();
     rd_init();
     dynamic_mem_init();
+    timerPool_init();
+    enable_irq();
+    // core_timer_enable();
+    put32(ENABLE_IRQS_1, 1 << 29); // Enable AUX interrupt
     uart_send_string("Welcome to RPI3-OS\r\n");
+
     while (1) {
         uart_send_string("user@rpi3:~$ ");
-        read_line(cmd_buf, CMD_SIZE);
+        read_line_low_power(cmd_buf, CMD_SIZE);
         if (!strlen(cmd_buf))  // User input nothing but Enter
             continue;
         cmd_handler(cmd_buf);
     }
     return 0;
 }
+
