@@ -15,6 +15,7 @@
 
 // Shell
 #define CFG_RUN_SHELL_BUFFER_TEST
+#define CFG_RUN_SHELL_CMD_TEST
 
 // Memory management
 // #define CFG_RUN_STATUP_ALLOC_TEST

@@ -6,6 +6,7 @@
 #include "test.h"
 #include "uart.h"
 
+#define MX_CMD_BFRSIZE 64
 extern unsigned char __kernel_start, __kernel_end;
 
 void svc_test() {
@@ -45,10 +46,12 @@ int main() {
   uart_println("-------------------------------");
   uart_println(" input filename to see file content");
 
-  shellInit();
+  struct Shell sh;
+  char shell_buffer[MX_CMD_BFRSIZE + 1];
+  shell_init(&sh, shell_buffer, MX_CMD_BFRSIZE);
   while (1) {
-    shellPrintPrompt();
-    shellInputLine();
-    shellProcessCommand();
+    shell_show_prompt(&sh);
+    shell_input_line(&sh);
+    shell_process_command(&sh);
   }
 }

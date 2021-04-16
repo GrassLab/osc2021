@@ -1,26 +1,15 @@
 #pragma once
 
-#define MX_CMD_BFRSIZE 64
+#include "buffer.h"
+#include <stdint.h>
 
-typedef enum AnsiEscType {
-  Unknown,
-  CursorForward,
-  CursorBackward,
-} AnsiEscType;
-
-enum KeyboardInput {
-  KI_BackSpace = '\b',             // 8
-  KI_LineFeed = '\n',              // 10
-  KI_CarrageReturn = '\r',         // 13
-  KI_Esc = '\e',                   // 27
-  KI_ANSI_ESCAPE_SEQ_START = '\e', // 27
-
-  KI_PRINTABLE_START = 32,
-  KI_PRINTABLE_END = 126,
-  KI_Delete = 127,
+struct Shell {
+  char *data;
+  uint32_t bfr_size;
+  struct InputBuffer bfr;
 };
 
-void shellPrintPrompt();
-void shellInputLine();
-void shellProcessCommand();
-void shellInit();
+void shell_show_prompt(struct Shell *sh);
+void shell_input_line(struct Shell *sh);
+void shell_process_command(struct Shell *sh);
+void shell_init(struct Shell *sh, char *data, uint32_t size);

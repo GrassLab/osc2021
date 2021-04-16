@@ -1,101 +1,40 @@
 #include "shell/buffer.h"
+#include "shell/cmd.h"
 #include "shell/shell.h"
 
 #include "bool.h"
 #include "cfg.h"
 #include "cpio.h"
 #include "string.h"
-#include "timer.h"
 #include "uart.h"
 
 #include <stdint.h>
 
-#define PM_PASSWORD 0x5a000000
-#define PM_RSTC ((volatile unsigned int *)0x3F10001c)
-#define PM_WDOG ((volatile unsigned int *)0x3F100024)
+#ifndef RAMFS_ADDR
+#define RAMFS_ADDR 0x8000000
+#endif
 
-void cmdHello();
-void cmdLs();
-void cmdHelp();
-void cmdLoadUser();
-void cmdReboot();
+typedef enum AnsiEscType {
+  Unknown,
+  CursorForward,
+  CursorBackward,
+} AnsiEscType;
 
-typedef struct {
-  char *name;
-  char *help;
-  void (*func)(void);
-} Cmd;
+enum KeyboardInput {
+  KI_BackSpace = '\b',             // 8
+  KI_LineFeed = '\n',              // 10
+  KI_CarrageReturn = '\r',         // 13
+  KI_Esc = '\e',                   // 27
+  KI_ANSI_ESCAPE_SEQ_START = '\e', // 27
 
-struct InputBuffer bfr;
-
-char bfr_data[MX_CMD_BFRSIZE + 1] = {0};
-
-Cmd cmdList[] = {
-    {.name = "hello", .help = "Greeting", .func = cmdHello},
-    {.name = "ls", .help = "list files", .func = cmdLs},
-    {.name = "load_user",
-     .help = "load and run user program",
-     .func = cmdLoadUser},
-    {.name = "help", .help = "Show avalible commands", .func = cmdHelp},
-    {.name = "reboot", .help = "Reboot device", .func = cmdReboot},
+  KI_PRINTABLE_START = 32,
+  KI_PRINTABLE_END = 126,
+  KI_Delete = 127,
 };
 
-void cmdHello() { uart_println("Hello!!"); }
-void cmdHelp() {
-  uart_println("available commands:");
-  Cmd *end = cmdList + sizeof(cmdList) / sizeof(Cmd);
-  const int minIndent = 8;
-  for (Cmd *c = cmdList; c != end; c++) {
-    uart_printf("  %s", c->name);
-    for (int i = minIndent - strlen(c->name); i > 0; i--) {
-      uart_puts(" ");
-    }
-    uart_println("%s", c->help);
-  }
-}
-void cmdLs() { cpioLs((void *)RAMFS_ADDR); }
-void cmdReboot() {
-  uart_println("reboot");
-  *PM_RSTC = PM_PASSWORD | 0x20;
-  *PM_WDOG = PM_PASSWORD | 100; // reboot after 100 watchdog ticks
-}
-
-void cmdLoadUser() {
-  uart_println("load user program");
-  unsigned long size;
-  unsigned char *load_addr = (unsigned char *)0x20000000;
-  uint8_t *file =
-      (uint8_t *)cpioGetFile((void *)RAMFS_ADDR, "./user_program", &size);
-  if (file == NULL) {
-    uart_println("Cannot found `user_program.o` under rootfs");
-    return;
-  }
-  if (CFG_LOG_ENABLE) {
-    uart_println("  [fetchFile] file addr:%x , size:%d", file, size);
-  }
-  for (unsigned long i = 0; i < size; i++) {
-    load_addr[i] = file[i];
-  }
-  uart_println("start user app");
-
-  // change exception level
-  // asm volatile("mov x0, 0x3c0  \n"); // disable timer interrupt, enable svn
-  asm volatile("mov x0, 0x340  \n"); // enable core timer interrupt
-  asm volatile("msr spsr_el1, x0  \n");
-  asm volatile("msr elr_el1, %0   \n" ::"r"(load_addr));
-  asm volatile("msr sp_el0, %0    \n" ::"r"(load_addr));
-
-  // enable the core timer’s interrupt in el0
-  timer_el0_enable();
-  timer_el0_set_timeout();
-
-  // unmask timer interrupt
-  asm volatile("mov x0, 2             \n");
-  asm volatile("ldr x1, =0x40000040   \n");
-  asm volatile("str w0, [x1]          \n");
-
-  asm volatile("eret              \n");
-}
+static AnsiEscType decode_escape_sequence();
+static int try_fetch_file(char *filename);
+static void shell_update_prompt();
 
 AnsiEscType decode_escape_sequence() {
   char c = uart_getc();
@@ -113,76 +52,9 @@ AnsiEscType decode_escape_sequence() {
   return Unknown;
 }
 
-void _shellUpdatePrompt() {
-  // Must be called after every keystroke user input
-  // Assumption: There're at most 1 character change inside the buffer
-
-  // Rebuild buffer
-  shellPrintPrompt();
-  uart_puts(bfr_data);
-
-  // User might delete 1 character, here we paint a blank space to "delete it"
-  // on the screen
-  uart_puts(" ");
-
-  // Restore cursor on the screen
-  uart_puts("\r\e[");
-  uart_puts(itoa(bfr.write_head + 1, 10));
-  uart_puts("C");
-}
-
-void shellPrintPrompt() { uart_puts("\r>"); }
-
-void shellInit() { bfr_init(&bfr, bfr_data, MX_CMD_BFRSIZE); }
-void shellInputLine() {
-  enum KeyboardInput c;
-  AnsiEscType termCtrl;
-  bool flagExit = false;
-  bfr_clear(&bfr);
-
-  while (!flagExit) {
-    flagExit = false;
-    _shellUpdatePrompt();
-    switch ((c = uart_getc())) {
-    case KI_ANSI_ESCAPE_SEQ_START:
-      termCtrl = decode_escape_sequence();
-      switch (termCtrl) {
-      case CursorForward:
-        bfr_cursor_mov_right(&bfr);
-        break;
-      case CursorBackward:
-        bfr_cursor_mov_left(&bfr);
-        break;
-      case Unknown:
-        break;
-      }
-      break;
-    case KI_PRINTABLE_START ... KI_PRINTABLE_END:
-      bfr_push(&bfr, c);
-      uart_send(c);
-      break;
-    case KI_BackSpace:
-    case KI_Delete:
-      bfr_pop(&bfr);
-      break;
-    case KI_CarrageReturn:
-    case KI_LineFeed:
-      flagExit = true;
-      uart_puts("\r\n");
-      if (CFG_LOG_ENABLE) {
-        uart_println("buffer: '%s'", bfr_data);
-      }
-      break;
-    default:
-        // ignore other input
-        ;
-    }
-  }
-}
-
-int _tryFetchFile() {
+int try_fetch_file(char *filename) {
   unsigned long size;
-  uint8_t *file = (uint8_t *)cpioGetFile((void *)RAMFS_ADDR, bfr_data, &size);
+  uint8_t *file = (uint8_t *)cpioGetFile((void *)RAMFS_ADDR, filename, &size);
   if (file != NULL) {
     if (CFG_LOG_ENABLE) {
       uart_println("  [fetchFile] file addr:%x , size:%d", file, size);
@@ -200,14 +72,82 @@ int _tryFetchFile() {
   return 1;
 }
 
-// Process command resides in buffer
-void shellProcessCommand() {
-  Cmd *end = cmdList + sizeof(cmdList) / sizeof(Cmd);
-  for (Cmd *c = cmdList; c != end; c++) {
-    if (!strcmp(c->name, bfr_data)) {
-      c->func();
-      return;
+void shell_init(struct Shell *sh, char *data, uint32_t size) {
+  sh->data = data;
+  sh->bfr_size = size;
+  InputBuffer_init(&sh->bfr, sh->data, sh->bfr_size);
+}
+
+void shell_show_prompt(struct Shell *sh) { uart_puts("\r>"); }
+
+void shell_update_prompt(struct Shell *sh) {
+  // Must be called after every keystroke user input
+  // Assumption: There're at most 1 character change inside the buffer
+
+  // Rebuild buffer
+  shell_show_prompt(sh);
+  uart_puts(sh->data);
+
+  // User might delete 1 character, here we paint a blank space to "delete it"
+  // on the screen
+  uart_puts(" ");
+
+  // Restore cursor on the screen
+  char *num_space_to_left = itoa(sh->bfr.write_head + 1, 10);
+  uart_printf("\r\e[%sC", num_space_to_left);
+}
+
+void shell_input_line(struct Shell *sh) {
+  enum KeyboardInput c;
+  AnsiEscType termCtrl;
+  bool flagExit = false;
+  sh->bfr.clear(&sh->bfr);
+
+  while (!flagExit) {
+    flagExit = false;
+    shell_update_prompt(sh);
+    switch ((c = uart_getc())) {
+    case KI_ANSI_ESCAPE_SEQ_START:
+      termCtrl = decode_escape_sequence();
+      switch (termCtrl) {
+      case CursorForward:
+        sh->bfr.cursor_mov_right(&sh->bfr);
+        break;
+      case CursorBackward:
+        sh->bfr.cursor_mov_left(&sh->bfr);
+        break;
+      case Unknown:
+        break;
+      }
+      break;
+    case KI_PRINTABLE_START ... KI_PRINTABLE_END:
+      sh->bfr.push(&sh->bfr, c);
+      uart_send(c);
+      break;
+    case KI_BackSpace:
+    case KI_Delete:
+      sh->bfr.pop(&sh->bfr);
+      break;
+    case KI_CarrageReturn:
+    case KI_LineFeed:
+      flagExit = true;
+      uart_puts("\r\n");
+      if (CFG_LOG_ENABLE) {
+        uart_println("buffer: '%s'", sh->data);
+      }
+      break;
+    default:
+        // ignore other input
+        ;
     }
   }
-  _tryFetchFile();
+}
+
+// Process command resides in buffer
+void shell_process_command(struct Shell *sh) {
+  Cmd *cmd = getCmd(sh->data);
+  if (cmd != NULL) {
+    cmd->func();
+  }
+  try_fetch_file(sh->data);
 }
