@@ -1,7 +1,5 @@
 #pragma once
 
-#include "cfg.h"
-
 struct InputBuffer {
   char *data;
   int mx_size;
