@@ -136,13 +136,13 @@ void uart_irq_handler()
 {
     unsigned int id = *AUX_MU_IIR;
     if((id & 0x06) == 0x04) // miniReceiver holds valid byte
-	{
+    {
         // read one char and pushed to the tail end of read buffer
         char input_char = uart_getc();
         UART_READ_BUFFER[uart_read_idx++] = input_char;
-	}
-	else if((id & 0x06) == 0x02) // miniUART Transmit holding register empty
-	{
+    }
+    else if((id & 0x06) == 0x02) // miniUART Transmit holding register empty
+    {
         // print one char
         uart_send(UART_TRANSMIT_BUFFER[uart_transmit_idx - 1]);
         uart_transmit_idx--;
@@ -150,7 +150,7 @@ void uart_irq_handler()
         // All chars in transmit buffer have been processing, then disable transmit interrupt
         if (uart_transmit_idx == 0)
             disable_uart_transmit_interrupt();
-	}
+    }
 } 
 
 /**

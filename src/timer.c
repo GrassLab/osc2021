@@ -182,7 +182,7 @@ void dumpTimerEvent(timer_event_t *timerEvent)
 void dumpyTimerEventList()
 {
     printf("--------Timer event list--------\n");
-    if (!list_empty(&timer_list)){
+    if (!list_empty(&timer_list)) {
         struct list_head *pos;
         int i = 0;
         list_for_each(pos, &timer_list) {
