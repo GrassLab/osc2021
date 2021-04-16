@@ -5,7 +5,7 @@ void dynamic_init() {
   if(dynamic_system.top_chunk == null) {
     //request page frame from buddy
     dynamic_system.top_chunk = buddy_malloc(PAGE_SIZE);
-    dynamic_system.top_chunk->size = PAGE_SIZE - BUDDY_HEADER_OFFSET - DYNAMIC_CHUNK_HEADER_OFFSET;
+    dynamic_system.top_chunk->size = PAGE_SIZE - DYNAMIC_CHUNK_HEADER_OFFSET;
     dynamic_system.top_chunk->next = null;
     dynamic_system.top_chunk->prev_size = 0;
   }

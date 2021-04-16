@@ -9,7 +9,7 @@
 #include <exception.h>
 #include <printf.h>
 #include <timer.h>
-#include <dynamic_test.h>
+#include <test.h>
 
 void shell() {
   uart_puts("*****************************Hello World*****************************\r\n");
@@ -63,6 +63,9 @@ void do_command(char* command) {
     printf("asyncr: asynchronous read.\n");
     printf("settimeout [message] [timeout]: set time out and print message.\n");
     printf("dynamictest: dynamic malloc testing.\n");
+    printf("buddytest: buddy malloc testing.\n");
+    printf("enabtimer: enable core timer interrupt.\n");
+    printf("disatimer: disable core timer interrupt.\n");
   } 
   else if(strncmp(command, "hello", 6) == 0) {
     printf("Hello World!\n");
@@ -141,6 +144,21 @@ void do_command(char* command) {
   }
   else if(strncmp(command, "dynamictest", 12) == 0) {
     test_dynamic_main();
+  }
+  else if(strncmp(command, "buddytest", 9) == 0) {
+    test_buddy_main();
+  }
+  else if(strncmp(command, "enabtimer", 9) == 0) {
+    extern void* core_timer_enable;
+    
+    asm volatile("blr %0\n"::"r"(&core_timer_enable));
+  }
+  else if(strncmp(command, "disatimer", 9) == 0) {
+    extern void* core_timer_disable;
+    asm volatile("blr %0\n"::"r"(&core_timer_disable));
+  }
+  else if(strncmp(command, "backdoor", 8) == 0) {
+    printf("This is a backdoor\n");
   }
   else {
     printf("unknown command\n");

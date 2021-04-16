@@ -3,12 +3,11 @@
 void buddy_init() {
   //set buddy system start address, size, end address 
   buddy_system.start = (void *)BUDDY_START;
-  buddy_system.size = PAGE_SIZE * BUDDY_BLOCK_NUM;
+  buddy_system.size = (PAGE_SIZE + BUDDY_HEADER_OFFSET)* BUDDY_BLOCK_NUM;
   buddy_system.end = buddy_system.start + buddy_system.size;
   //buddy header init 
-  struct buddy_block* block = buddy_system.start;
-  block->next = null;
-  block->order = BUDDY_ORDER_MAX;
+  ((struct buddy_block* )buddy_system.start)->next = null;
+  ((struct buddy_block* )buddy_system.start)->order = BUDDY_ORDER_MAX;
   //free list init
   buddy_system.bins[BUDDY_ORDER_MAX] = buddy_system.start;
   //inuse map init 
@@ -34,16 +33,16 @@ void* buddy_malloc(size_t size) {
     //set inuse map
     buddy_update_inuse(block, order);
     //init block 
-    memset((char *)(block + BUDDY_HEADER_OFFSET), PAGE_SIZE * (1 << order) - BUDDY_HEADER_OFFSET, 0);
-    uart_puts("allocated address: ");
+    memset((char *)(block + BUDDY_HEADER_OFFSET), PAGE_SIZE * (1 << order), 0);
+    /*uart_puts("allocated address: ");
     uart_hex((size_t)block);
     uart_puts("\n");
 
     uart_puts("order: ");
     uart_hex(((struct buddy_block* )block)->order);
-    uart_puts("\n");
+    uart_puts("\n");*/
   }
-  buddy_status();
+  //buddy_status();
   return block + BUDDY_HEADER_OFFSET;
 }
 /**
@@ -53,6 +52,7 @@ void* buddy_malloc(size_t size) {
  */
 void* buddy_find_free_block(int order) {
   void* find_block;
+  struct buddy_block* remain;
   if(order > BUDDY_ORDER_MAX) 
     return null;
   if(buddy_system.bins[order] != null) {
@@ -65,13 +65,13 @@ void* buddy_find_free_block(int order) {
     find_block = buddy_find_free_block(order + 1);
  
   if(find_block != null) {
-    uart_puts("release redundant memory block from order ");
+    /*uart_puts("release redundant memory block from order ");
     uart_hex(order + 1);
     uart_puts(" to order ");
     uart_hex(order);
-    uart_puts(".\n");
+    uart_puts(".\n");*/
     //put order i+1 half of block into order i free list 
-    struct buddy_block* remain = (void *)find_block + PAGE_SIZE * (1 << order);
+    remain = (void *)find_block + (PAGE_SIZE + BUDDY_HEADER_OFFSET) * (1 << order);
     remain->next = buddy_system.bins[order];
     buddy_system.bins[order] = remain;
     //update inuse map
@@ -87,7 +87,7 @@ void buddy_free(void* address) {
   if(address < buddy_system.start || address > buddy_system.end) 
     return;
   buddy_merge(address);
-  buddy_status();  
+  //buddy_status();  
 }
 
 void buddy_merge(void* address) {
@@ -100,7 +100,7 @@ void buddy_merge(void* address) {
   // merged can only be done when order <= BUDDY_ORDER_MAX - 1
   while(merged_order < BUDDY_ORDER_MAX) {
     buddy_block_idx = merged_idx ^ (1 << merged_order);
-    buddy_block = (void *)BUDDY_START + PAGE_SIZE * buddy_block_idx;
+    buddy_block = (void *)BUDDY_START + (PAGE_SIZE + BUDDY_HEADER_OFFSET) * buddy_block_idx;
     //can be merged
     if(buddy_is_free(buddy_block_idx, merged_order) == 0) {
       uart_puts("buddy is free.\n");
@@ -139,9 +139,9 @@ int buddy_remove_block(void* address, int order) {
         prev_block->next = block->next;
       else
         buddy_system.bins[order] = block->next;  
-      uart_puts("remove block from free list order ");
+      /*uart_puts("remove block from free list order ");
       uart_hex(order);
-      uart_puts(".\n");
+      uart_puts(".\n");*/
       return 0;
     }
     prev_block = block;
@@ -212,5 +212,5 @@ void buddy_update_inuse_reset(void* block, int order) {
   memset(buddy_system.inuse + start + 1, size - 1, 'F');
 }
 size_t buddy_get_blocknum_from_address(void* address) {
-  return ((size_t)address - BUDDY_START)/ PAGE_SIZE;
+  return ((size_t)address - BUDDY_START)/ (PAGE_SIZE + BUDDY_HEADER_OFFSET);
 }

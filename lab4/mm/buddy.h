@@ -25,6 +25,7 @@ struct buddy_block
   size_t order;
   struct buddy_block *next;
 };
+
 void buddy_init();
 void* buddy_malloc(size_t size);
 void buddy_free(void* address);
