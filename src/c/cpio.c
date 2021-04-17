@@ -1,6 +1,8 @@
-#include "uart.h"
+#include "printf.h"
 #include "string.h"
 #include "cpio.h"
+#include "printf.h"
+#include "sys_regs.h"
 
 int hex2int(char *hex)
 {
@@ -84,7 +86,8 @@ void cpio_ls()
     char file_name[100];
     char file_content[1000];
 
-    char *ramfs = (char *)0x20000000;
+    char *ramfs = (char *)0x8000000;
+    // char *ramfs = (char *)0x20000000;
 
     while (1)
     {
@@ -96,8 +99,8 @@ void cpio_ls()
         if ((strcmp(file_name, "TRAILER!!!") == 0))
             break;
 
-        uart_puts(file_name);
-        uart_send('\n');
+        printf(file_name);
+        printf("\n");
     }
 }
 
@@ -106,7 +109,8 @@ void cpio_find_file(char file_name_to_find[])
     char file_name[100];
     char file_content[1000];
 
-    char *ramfs = (char *)0x20000000;
+    char *ramfs = (char *)0x8000000;
+    // char *ramfs = (char *)0x20000000;
     int found = 0;
 
     while(1)
@@ -126,9 +130,66 @@ void cpio_find_file(char file_name_to_find[])
     }
 
     if (found)
-        uart_puts(file_content);
+        printf(file_content);
     else
-        uart_puts("FILE NOT FOUND!");
+        printf("FILE NOT FOUND!");
 
-    uart_send('\n');
+    printf("\n");
+}
+
+void cpio_run_executable(char executable_name[])
+{
+    char *ramfs = (char *)0x8000000;
+    char file_name[100];
+
+    int file_size, name_size;
+
+    while (1)
+    {
+        strset(file_name, '0', 100);
+
+        struct cpio_newc_header header;
+
+        read(&ramfs, header.c_magic, 6);
+        ramfs += 48;
+        read(&ramfs, header.c_filesize, 8);
+        ramfs += 32;
+        read(&ramfs, header.c_namesize, 8);
+        ramfs += 8;
+
+        name_size = round2four(hex2int(header.c_namesize), 1);
+        file_size = round2four(hex2int(header.c_filesize), 2);
+
+        read(&ramfs, file_name, name_size);
+        ramfs += file_size;
+
+        file_name[name_size] = '\0';
+
+        if (strcmp(file_name, executable_name) == 0)
+            break;
+        else if ((strcmp(file_name, "TRAILER!!!") == 0))
+            return;
+    }
+
+    ramfs -= file_size;
+
+    char *program_position = (char *)0x10A0000;
+
+    while(file_size--)
+    {
+        *program_position = *ramfs;
+        program_position++;
+        ramfs++;
+    }
+
+    asm volatile(
+        "mov x0, 0x340          \n\t"
+        "msr spsr_el1, x0       \n\t"
+        "mov x0, 0x10A0000      \n\t"
+        "add x0, x0, 0x78       \n\t"
+        "msr elr_el1, x0        \n\t"
+        "mov x0, 0x60000        \n\t"
+        "msr sp_el0, x0         \n\t"
+        "ldr lr, =return_to_el1 \n\t"
+        "eret                   \n\t");
 }

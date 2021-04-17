@@ -29,7 +29,7 @@
 /**
  * Set baud rate and characteristics (115200 8N1) and map to GPIO
  */
-void uart_init()
+void init_uart()
 {
     register unsigned int reg;
 
@@ -120,6 +120,42 @@ char uart_getc()
     /* convert carrige return to newline 
        because pressing enter only sends \r */
     return r == '\r' ? '\n' : r;
+}
+
+/**
+ * Read a whole line
+ */
+void uart_getline(char *buffer)
+{
+    char c;
+    int counter = 0;
+
+    while (1)
+    {
+        c = uart_getc();
+        // delete
+        if ((c == 127) && counter > 0)
+        {
+            counter--;
+            uart_puts("\b \b");
+        }
+        // new line
+        else if ((c == 10) || (c == 13))
+        {
+            buffer[counter] = '\0';
+            uart_send(c);
+            break;
+        }
+        // regular input
+        else if (counter < 100)
+        {
+            buffer[counter] = c;
+            counter++;
+            uart_send(c);
+        }
+    }
+
+    return;
 }
 
 /**

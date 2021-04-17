@@ -83,6 +83,25 @@ void ftoa(float n, char *res, int afterpoint)
     }
 }
 
+// https://www.geeksforgeeks.org/write-your-own-atoi/
+int atoi(char *s)
+{
+    // Initialize result
+    int value = 0;
+
+    // Iterate through all characters
+    // of input string and update result
+    // take ASCII character of corosponding digit and
+    // subtract the code from '0' to get numerical
+    // value and multiply res by 10 to shuffle
+    // digits left to update running total
+    for (int i = 0; s[i] != '\0'; i++)
+        value = value * 10 + s[i] - '0';
+
+    // return result.
+    return value;
+}
+
 void reverse(char *s)
 {
     int i;
@@ -94,4 +113,13 @@ void reverse(char *s)
         s[strlen(s) - i - 1] = s[0];
         s[0] = temp;
     }
+}
+
+void strcpy(char *source, char *target)
+{
+    int length = strlen(source);
+
+    for (int i = 0; i < length; i++)
+        target[i] = source[i];
+    target[length] = '\0';
 }
