@@ -57,6 +57,15 @@ if __name__=='__main__':
 			waitFor(': ',dev)
 			arg=getLine(f)
 			dev.write(str.encode(arg))
-
+		elif cmd=='loadapp\n':
+			k_addr=getLine(f)
+			kernel=getLine(f)
+			k_size=os.stat(kernel[:-1]).st_size
+			waitFor(': ',dev)
+			dev.write(str.encode(kernel.split('/')[-1]))
+			waitFor(': ',dev)
+			dev.write(str.encode(k_addr))
+			waitFor(': ',dev)
+			dev.write(str.encode(str(k_size)+'\n'))
 		#output
 		waitFor('$ ',dev)

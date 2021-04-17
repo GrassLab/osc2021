@@ -1,5 +1,5 @@
 .macro save_regs
-	sub sp, sp, 31 * 8
+	sub sp, sp, 32 * 8
 	stp x0, x1, [sp ,16 * 0]
 	stp x2, x3, [sp ,16 * 1]
 	stp x4, x5, [sp ,16 * 2]
@@ -35,7 +35,7 @@
 	ldp x26, x27, [sp ,16 * 13]
 	ldp x28, x29, [sp ,16 * 14]
 	ldr x30, [sp, 16 * 15]
-	add sp, sp, 31 * 8
+	add sp, sp, 32 * 8
 .endm
 
 .section ".text.boot"
@@ -85,13 +85,10 @@ from_el2_to_el1:
 	msr spsr_el2, x0
 	msr elr_el2, x30//x30 = link register
 
-	// disable coprocessor traps: built-ins of uart_printf need FPU
+	// disable SIMD traps: built-ins of uart_printf will use SIMD
 	// https://github.com/bztsrc/raspi3-tutorial/tree/master/12_printf
-    mov x0, #0x33FF
-    msr cptr_el2, x0
-    msr hstr_el2, xzr
-    mov x0, #(3 << 20)
-    msr cpacr_el1, x0
+	mov x0, #(3 << 20)
+	msr cpacr_el1, x0
 	eret // return to EL1
 
 //exception table
@@ -106,9 +103,18 @@ exception_table:
 	b TODO
 
 	.align 7
-	b curSynchronous
+	b TODO
 	.align 7
 	b TODO
+	.align 7
+	b TODO
+	.align 7
+	b TODO
+
+	.align 7
+	b lowerSynchronous
+	.align 7
+	b lowerIRQ
 	.align 7
 	b TODO
 	.align 7
@@ -123,19 +129,17 @@ exception_table:
 	.align 7
 	b TODO
 
-	.align 7
-	b TODO
-	.align 7
-	b TODO
-	.align 7
-	b TODO
-	.align 7
-	b TODO
-
-//Synchronous from current level
-curSynchronous:
+//Synchronous from lower level
+lowerSynchronous:
 	save_regs
 	bl exception_handler
+	load_regs
+	eret
+
+//IRQ from lower level
+lowerIRQ:
+	save_regs
+	bl interrupt_handler
 	load_regs
 	eret
 

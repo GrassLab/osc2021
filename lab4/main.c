@@ -101,12 +101,13 @@ void shell(){
 			uart_puts("          help\n");
 			uart_puts("          hello\n");
 			uart_puts("          reboot\n");
-			uart_puts("          loadimg\n");
+			uart_puts("          loadimg\n");//current program will no longer be used(allow overlap)
 			uart_puts("          archive\n");
 			uart_puts("          falloc\n");
 			uart_puts("          ffree\n");
 			uart_puts("          dalloc\n");
 			uart_puts("          dfree\n");
+			uart_puts("          loadapp\n");//current program will handle exceptions(not allow overlap)
 		}else if(strcmp(buffer,"hello")==0){
 			uart_puts("Hello World!\n");
 		}else if(strcmp(buffer,"reboot")==0){
@@ -132,6 +133,16 @@ void shell(){
 			uart_printf("Address(Hex): ");
 			unsigned long ret=uart_getX(1);
 			dfree(ret);
+		}else if(strcmp(buffer,"loadapp")==0){
+			char path[100];
+			unsigned long a_addr,a_size;
+			uart_puts("APP path: ");
+			uart_gets(path,100,1);
+			uart_puts("Please enter app load address (Hex): ");
+			a_addr=uart_getX(1);
+			uart_puts("Please enter app size (Dec): ");
+			a_size=uart_getU(1);
+			loadApp(path,a_addr,a_size);
 		}else{
 			uart_puts("Error: No such command \"");
 			uart_puts(buffer);

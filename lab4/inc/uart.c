@@ -92,6 +92,37 @@ unsigned long uart_getX(int display){
 	return ret;
 }
 
+unsigned long uart_getU(int display){
+	unsigned long ret=0;
+	char c;
+	while(1){
+		c=uart_getc();
+		if(display)uart_send(c);
+		if(c=='\n')break;
+		if(c>='0'&&c<='9'){
+			ret=ret*10+c-'0';
+		}
+	}
+	return ret;
+}
+
+void uart_gets(char* s,int size,int display){
+	for(int i=0;;++i){
+		if(i==size){
+			uart_puts("buffer overflow!\n");
+			break;
+		}
+
+		s[i]=uart_getc();
+		if(display)uart_send(s[i]);
+
+		if(s[i]=='\n'){
+			s[i]=0;
+			break;
+		}
+	}
+}
+
 void uart_puts(char *s){
 	while(*s){
 		uart_send(*s);
