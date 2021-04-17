@@ -67,4 +67,18 @@ void uart_puts(char *s);
  */ 
 void putc ( void* p, char c);
 
+/**
+ * mini UART read/write interrupt enable/disable
+ */
+void enable_uart_interrupt();
+void disable_uart_read_interrupt();
+void disable_uart_transmit_interrupt();
+void enable_uart_transmit_interrupt();
+void enable_uart_read_interrupt();
+
+/**
+ * mini UART read/write interrupt handler
+ */
+void uart_irq_handler();
+
 #endif

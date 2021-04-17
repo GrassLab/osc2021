@@ -113,7 +113,7 @@ void *cpio_get_file(void *archive, const char *name, unsigned long *size)
     /* Find n'th entry. */
     while (1) {
         struct cpio_header *next;
-        void *result;
+        void *result;  // save the starting address of file data(content)
         const char *current_filename;
 
         int error = cpio_parse_header(header, &current_filename,

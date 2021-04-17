@@ -1,4 +1,4 @@
-# My OSDI 2020 - LAB 03
+# OSDI 2020 - LAB 04  Exception and Interrupt
 
 ## Author
 
@@ -6,15 +6,35 @@
 | -----------| -------------- | ---- | -------------------------- |
 | 0856167    | Yunyung        | 許振揚| yungyung7654321@gmail.com  |
 
+### Introduction
+An exception is an event that causes the currently executing program to relinquish the CPU to the corresponding handler. With the exception mechanism, an operating system can
+
+1. do proper handling when an error occurs during execution.
+
+2. A user program can generate an exception to get the corresponding operating system’s service.
+
+3. A peripheral device can force the currently executing program to relinquish the CPU and execute its handler.
+
 ### Goals of this lab
-- Understand memory management techiques in Linux . 
+- Understand what’s exception levels in Armv8-A.
 
-- Implement a page frame allocator (Buddy Memory Allocator).
+- Understand what’s exception handling.
 
-- Implement a dynamic memory allocator (Slab).
+- Understand what’s interrupt.
 
-- Understand and implement a startup allocator (elective goal).
-- Note: In this lab, we implement simplified version of linux's memory management strategies.
+- Understand how rpi3’s peripherals interrupt the CPU by interrupt controllers.
+
+- Implement synchronous exception and asynchronous interrupt handler from peripheral devices in Armv8-A.
+
+- Load an user program and switch between kernel mode(EL1) and user mode(EL0).
+ 
+- Implement core timer interrput handler and miniUART asynchronous read/write.
+
+- Understand how to multiplex a timer.
+
+- Implenment a timer multiplexing.
+
+- Understand how to concurrently handle I/O devices.
 
 ## Directory structure
 mm.h and mm.c is key files in our implementation.
@@ -32,8 +52,15 @@ mm.h and mm.c is key files in our implementation.
 │   ├── printf.h        # header file to provide a simple and small printf functionality
 │   ├── list.h          # The implementation of subset of list.h in linux
 │   ├── types.h         # Definition of some data type
-│   ├── cpio.h          # header file to parse  cpio archive function
-│   └── mm.h            # header file to provide memory allocation
+│   ├── uart.h          # header file to define address of miniUart register and functions 
+│   ├── cpio.h          # header file to parse  cpio archive function       
+│   ├── mm.h            # header file to provide memory allocation
+│   ├── sysregs.h   
+│   ├── base.h    
+│   ├── utils.h
+│   ├── entry.h
+│   ├── exception.h
+│   └── timer.h
 │
 ├── src                 # source files
 │   ├── command.c       # source file to process command
@@ -44,8 +71,13 @@ mm.h and mm.c is key files in our implementation.
 │   ├── math.c          # source file to implement some function in <math.h>
 │   ├── printf.c        # source file to provide a simple and small printf functionality
 │   ├── cpio.c          # source file to parse "New ASCII Format" cpio archive
-│   ├── uart.c          # source file to process uart interface
-│   └── mm.c            # Implementation of buudy system and object allocator(slab) for memory allocation
+│   ├── uart.c          # source file to process uart interface and implement uart asynchronous read/write cooperate with shell in shell.c
+│   ├── mm.c            # Implementation of buudy system and object allocator(slab) for memory allocation
+│   ├── utils.S        
+│   ├── entry.S 
+│   ├── exception.c  
+│   ├── timer.S   
+│   └── timer.c    
 │ 
 ├── rootfs              # file will be made as cpio archive
 │   └── ...             # any file 
@@ -69,6 +101,26 @@ mm.h and mm.c is key files in our implementation.
 | ls                | list cpio file                     |
 | cat {filename}    | print cpio content in {filename}   |
 | ma                | Test Memory allocation             |
+| currentEL         | Piint current exception level(You can't use it in EL0) | 
+| cpio_svc          | Jump to user program in cpio archive |
+| coreTimerOn       | Enable core0 timer interrupt (Interrupt periodically) |
+| coreTimerOff      | Disable core0 timer interrupt |
+| setTimeout [MESSAGE] [SECONDS] | prints [MESSAGE] after [SECONDS] ([SECONDS] need lower than 45) |
+
+## How to build
+```
+make
+```
+
+## Run on QEMU
+```
+make run
+```
+
+## Run on QEMU with cpio
+```
+make run_cpio
+```
 
 ## How to interact with Rpi3
 - miniUART
@@ -87,19 +139,4 @@ $ sudo screen /dev/ttyUSB0 115200
     // sudo is required
     sudo pip3 install pyserial
     ```
-        
-## How to build
-```
-make
-```
-
-## Run on QEMU
-```
-make run
-```
-
-## Run on QEMU with cpio
-```
-# INITRAMFS_ADDR should set to 0x8000000. Becauase QEMU loads the cpio archive file to 0x8000000 by default.
-make run_cpio
-```
+     

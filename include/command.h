@@ -10,4 +10,9 @@ void command_not_found ( char * );
 void command_reboot ();
 void command_cpio_ls(void *);
 void command_getCpioFile(void *, char *);
+void command_cpio_svc();
+void command_current_el();
+void commnad_coreTimerOn();
+void commnad_coreTimerOff();
+void coomand_setTimeout(char *);
 #endif
