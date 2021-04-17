@@ -6,6 +6,7 @@ void InputBufferOverflowMessage(char []);
 void CommandHelp();
 void CommandHello();
 void CommandCpiols();
+void CommandCpioexe(char *);
 void CommandCpiocat(char *);
 void CommandTimestamp();
 void CommandBuddyInit();

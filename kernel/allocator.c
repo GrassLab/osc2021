@@ -399,6 +399,7 @@ void * buddy_pool_alloc(const int size)
             }
         }
     }
+    return NULL;
 }
 
 void buddy_free_pool(const int pool, const int index)
@@ -478,10 +479,7 @@ void * buddy_contiguous_alloc(const int size)
     uart_puts(", ");
     itoa(target_block_index + pow(2, target_list_index), temp, 0);
     uart_puts(temp);
-    uart_puts("] at ");
-    itoa((int)ptr, temp, 0);
-    uart_puts(temp);
-    uart_puts(" is allocated!\n");
+    uart_puts("] at is allocated\n");
 
     return ptr;
 }

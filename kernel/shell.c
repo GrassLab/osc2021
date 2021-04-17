@@ -20,9 +20,9 @@ void ShellStart()
     {
         input_char = uart_getc();
 
-	input_parse = Parse(input_char);
+		input_parse = Parse(input_char);
 
-	CommandController(input_parse, input_char, buffer, &buffer_counter);
+		CommandController(input_parse, input_char, buffer, &buffer_counter);
     }
 }
 
@@ -88,6 +88,7 @@ void CommandController(enum SPECIAL_CHARACTER input_parse, char c, char buffer[]
 		else if (!strcmp(command, "free64"   )) CommandBuddyFreePool(64,  atoi(arg));
 		else if (!strcmp(command, "free128"  )) CommandBuddyFreePool(128, atoi(arg));
 	    else if (!strcmp(command, "cat"      )) CommandCpiocat(arg);
+		else if (!strcmp(command, "exe"      )) CommandCpioexe(arg);
 	    else                                    CommandNotFound(buffer);
 	}
 

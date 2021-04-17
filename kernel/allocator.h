@@ -59,6 +59,8 @@ int pop_list_head(int num);
 
 void buddy_initialize();
 void buddy_log_list();
+void buddy_log_pool();
+void buddy_log_allocated_table();
 
 void * buddy_alloc(const int size);
 void * buddy_contiguous_alloc(const int size);

@@ -40,6 +40,11 @@ void CommandCpiocat(char arg[])
     Cpiocat(arg);
 }
 
+void CommandCpioexe(char arg[])
+{
+    Cpioexe(arg);
+}
+
 void CommandTimestamp()
 {
     unsigned long int cnt_freq, cnt_tpct;

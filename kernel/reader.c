@@ -4,6 +4,7 @@
 
 const int FILE_NUM_LIMITED = 100;
 char * address_cpio = (char*)0x2000;
+char * address_user_program = (char*)0x3000;
 struct cpio_file cpio_archive[100];
 
 void Cpiols()
@@ -16,6 +17,55 @@ void Cpiocat(char arg[])
 {
     ReadCpio();
     PrintFileContent(arg);
+}
+
+void Cpioexe(char arg[])
+{
+    ReadCpio();
+    int file_i = 0;
+
+    for (int i = 0; i < FILE_NUM_LIMITED; ++i)
+    {
+        if (!strcmp(cpio_archive[i].filename, "TRAILER!!!"))
+	    {
+	        uart_puts("File: ");
+	        uart_puts(arg);
+	        uart_puts(" is not found.\n");
+	        return;
+	    }
+	    else if (!strcmp(cpio_archive[i].filename, arg))
+	    {
+	        file_i = i;
+
+	        break;
+        }
+    }
+
+    for (int i = 0; i < cpio_archive[file_i].size; ++i)
+    {
+        *(address_user_program + i) = cpio_archive[file_i].contents[i];
+    }
+
+    // from el1 to el0
+    asm volatile("mov x0,       0x3c0"); // save current processor's state(PSTATE) in 'SPSR_ELx'
+    asm volatile("msr spsr_el1, x0   ");
+    asm volatile("msr elr_el1,  %0   "::"r"(address_user_program)); // save exception return address
+    asm volatile("msr sp_el0,   %0   "::"r"(address_user_program)); // set user program's stack pointer to proper position by setting 'sp_el0'
+    
+    // enable timer
+    asm volatile("mov x0,             1");
+    asm volatile("msr cntp_ctl_el0,  x0");
+    asm volatile("mrs x0,    cntfrq_el0");
+    asm volatile("add x0, x0, x0       ");
+    asm volatile("msr cntp_tval_el0, x0");
+    asm volatile("mov x0,             2");
+    asm volatile("ldr x1,   =0x40000040");
+    asm volatile("str w0,          [x1]");
+
+    asm volatile("mov x0,        0x0"); // enable interrupt
+    asm volatile("msr spsr_el1,   x0");
+
+    asm volatile("eret"); // return user code
 }
 
 void ReadBytesData(char data[], int offset, int bytes)
@@ -35,11 +85,11 @@ void ReadCpio()
     while (!isEnd)
     {
         ReadCpioHeader(&cpio_archive[count], offset);
-	isEnd = ReadCpioContent(&cpio_archive[count], offset);
+	    isEnd = ReadCpioContent(&cpio_archive[count], offset);
 
-	offset += cpio_archive[count].size;
+	    offset += cpio_archive[count].size;
 	
-	++count;
+	    ++count;
     }
 }
 
@@ -49,18 +99,18 @@ void PrintCpio()
     {
         if (!strcmp(cpio_archive[i].filename, "TRAILER!!!"))
         {
-	    uart_puts("\n");
+            uart_puts("\n");
             break;
-	}
-	if (!strcmp(cpio_archive[i].filename, "."))
-	{
-	    continue;
-	}
-	else
-	{
-	    uart_puts("\t");
-	    uart_puts(cpio_archive[i].filename);
-	}
+        }
+        if (!strcmp(cpio_archive[i].filename, "."))
+        {
+            continue;
+        }
+        else
+        {
+            uart_puts("\t");
+            uart_puts(cpio_archive[i].filename);
+        }
     }
 }
 
@@ -69,16 +119,16 @@ void PrintFileContent(char arg[])
     for (int i = 0; i < FILE_NUM_LIMITED; ++i)
     {
         if (!strcmp(cpio_archive[i].filename, "TRAILER!!!"))
-	{
-	    uart_puts("File: ");
-	    uart_puts(arg);
-	    uart_puts(" is not found.\n");
-	    break;
-	}
-	else if (!strcmp(cpio_archive[i].filename, arg))
-	{
-	    uart_puts(cpio_archive[i].contents);
-	    break;
+	    {
+	        uart_puts("File: ");
+	        uart_puts(arg);
+	        uart_puts(" is not found.\n");
+	        break;
+	    }
+	    else if (!strcmp(cpio_archive[i].filename, arg))
+	    {
+	        uart_puts(cpio_archive[i].contents);
+	        break;
         }
     }
 }

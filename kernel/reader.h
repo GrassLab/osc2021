@@ -26,14 +26,15 @@ struct cpio_file {
 
 void Cpiols();
 void Cpiocat(char arg[]);
+void Cpioexe(char arg[]);
 
 int Hex2Int(char byte[]);
 
 void ReadCpio();
-void PrintCpio();
-void PrintFileContent(char arg[]);
+void ReadBytesData(char data[], int offset, int bytes);
 void ReadCpioHeader(struct cpio_file * cpio_, int offset);
 int ReadCpioContent(struct cpio_file * cpio_, int offset);
 
-void ReadBytesData(char data[], int offset, int bytes);
+void PrintCpio();
+void PrintFileContent(char arg[]);
 
