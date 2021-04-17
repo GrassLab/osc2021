@@ -1,5 +1,7 @@
 #include "auxiliary.h"
+#include "mystring.h"
 #include "gpio.h"
+#include "uart.h"
 
 void uart_init() {
     // auxiliary setting
@@ -71,4 +73,14 @@ void uart_putstr(char* str) {
         uart_putchar(*str);
         str++;
     }
+}
+
+void uart_printf(char *fmt, ...) {
+    __builtin_va_list args;
+    __builtin_va_start(args, fmt);
+
+    extern volatile unsigned char __end; // end of section
+    char *s = (char *)&__end;
+    vsprintf(s, fmt, args);
+    uart_putstr(s);
 }
