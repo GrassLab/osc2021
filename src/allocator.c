@@ -368,8 +368,8 @@ uint64_t kmalloc(uint64_t need_size){
 
 FrameArray* NewFrameArray(){
     static FrameArray frame_array;
-    frame_array.base_addr = 0x12000000; // 0x10000000 ~ 0x12000000 => small chunk
-    frame_array.end_addr = 0x20000000;  // 0x12000000 ~ 0x20000000 => large page
+    frame_array.base_addr = 0x10000000;
+    frame_array.end_addr = 0x20000000;
     int32_t idx = _cal_bit_len(0x10000);
 
     frame_array.val[0] = idx;
