@@ -29,3 +29,8 @@
 
 ### UART
 - GPIO: https://www.slideshare.net/raspberrypi-tw/raspberry-pigpiolookinside
+
+## Lab 2
+
+- [Boot options in config.txt](https://www.raspberrypi.org/documentation/configuration/config-txt/boot.md)
+- [initramfs in pi](https://raspberrypi.stackexchange.com/questions/85958/easy-backups-and-snapshots-of-a-running-system-with-lvm/85959#85959)

@@ -1,5 +1,5 @@
-kernel8.*
 *.o
 .gdb_history
 peda-session*
 tags
+*.img

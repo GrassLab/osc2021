@@ -1,6 +1,5 @@
 #include "mmio.h"
 
-
 void reset(int tick) { // reboot after watchdog timer expire
   *((unsigned int *)PM_RSTC) = PM_PASSWORD | 0x20; // full reset
   *((unsigned int *)PM_WDOG) = PM_PASSWORD | tick; // number of watchdog tick
@@ -51,7 +50,7 @@ char uart_getc() {
   }
   c = (char)*AUX_MU_IO_REG;
   // asm volatile("nop");
-  return c == '\r' ? '\n' : c;
+  return c;
 }
 
 void uart_setc(char c) {

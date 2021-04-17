@@ -4,7 +4,7 @@
 
 | 學號 | GitHub 帳號 | 姓名 | Email |
 | --- | ----------- | --- | --- |
-|`0856004`| `calee0219` | `李家安` | sz110010@gmail.com,calee.cs08@nycu.edu.tw |
+|`0856004`| `calee0219` | `李家安` | sz110010@gmail.com,<br/>calee.cs08@nycu.edu.tw<br/>calee.cs08g@nctu.edu.tw |
 
 ## How to build
 
@@ -82,26 +82,55 @@ boot.S for sp set, bss clear, then jump to kernel (write by C)
 - Folder architecture
   ``` shell
   /osc2021
-  ├── boot
-  │   └── boot.S
-  ├── c-impl
-  │   ├── include
-  │   │   ├── mmio.h
-  │   │   ├── shell.h
-  │   │   └── util.h
-  │   ├── kernel.c
-  │   ├── lib
-  │   │   ├── mmio.c
-  │   │   ├── shell.c
-  │   │   └── util.c
-  │   └── tags
-  ├── gdbcmd.gdb
-  ├── LICENSE
-  ├── linker.lds
-  ├── Makefile
-  ├── README.md
-  ├── REFERENCE.md
-  └── rust-impl
+├── bootloader                                                                                                                                                                                                                                                                                                        [4/2622]
+│   ├── include                                                                                                                                                                                                                                                                                                               
+│   │   ├── mmio.h                                                                                                                                                                                                                                                                                                            
+│   │   ├── shell.h                                                                                                                                                                                                                                                                                                           
+│   │   └── util.h                                                                                                                                                                                                                                                                                                            
+│   ├── linker.lds
+│   ├── linker_qemu.lds
+│   ├── Makefile
+│   └── src
+│       ├── bootloader.c
+│       ├── boot.S
+│       ├── mmio.c
+│       ├── shell.c
+│       └── util.c
+├── LICENSE
+├── Makefile
+├── Makefile.env
+├── Makefile.inc
+├── os
+│   ├── boot
+│   │   └── boot.S
+│   ├── kernel
+│   │   ├── include
+│   │   │   ├── cpio.h
+│   │   │   ├── mmio.h
+│   │   │   ├── shell.h
+│   │   │   └── util.h
+│   │   ├── Makefile
+│   │   └── src
+│   │       ├── cpio.c
+│   │       ├── kernel.c
+│   │       ├── mmio.c
+│   │       ├── shell.c
+│   │       └── util.c
+│   ├── linker.lds
+│   ├── linker_qemu.lds
+│   └── Makefile
+├── README.md
+├── REFERENCE.md
+├── setup
+│   ├── bootcode.bin
+│   ├── config.txt
+│   ├── fixup.dat
+│   ├── initramfs.cpio
+│   ├── kernel8.img
+│   └── start.elf
+└── tools
+    ├── boot_uart.py
+    └── gdbcmd.gdb
   ```
 
 - File usage
