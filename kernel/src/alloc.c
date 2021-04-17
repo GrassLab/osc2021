@@ -110,13 +110,13 @@ page_frame *buddy_allocate(uint64_t size) {
       frames[cur_id].is_allocated = 1;
       frames[cur_id].next = used_frame_lists[order];
       used_frame_lists[order] = &frames[cur_id];
-      print_s("allocate frame index ");
-      print_i(cur_id);
-      print_s(" (4K x 2^");
-      print_i(order);
-      print_s(" = ");
-      print_i(1 << (order + 2));
-      print_s(" KB)\n");
+      // print_s("allocate frame index ");
+      // print_i(cur_id);
+      // print_s(" (4K x 2^");
+      // print_i(order);
+      // print_s(" = ");
+      // print_i(1 << (order + 2));
+      // print_s(" KB)\n");
 
       // release redundant memory block
       for (; i > order; i--) {
@@ -125,15 +125,15 @@ page_frame *buddy_allocate(uint64_t size) {
         frames[id].is_allocated = 0;
         frames[id].next = free_frame_lists[i - 1];
         free_frame_lists[i - 1] = &frames[id];
-        print_s("put frame index ");
-        print_i(id);
-        print_s(" back to free lists (4K x 2^");
-        print_i(frames[id].order);
-        print_s(" = ");
-        print_i(1 << (frames[id].order + 2));
-        print_s(" KB)\n");
+        // print_s("put frame index ");
+        // print_i(id);
+        // print_s(" back to free lists (4K x 2^");
+        // print_i(frames[id].order);
+        // print_s(" = ");
+        // print_i(1 << (frames[id].order + 2));
+        // print_s(" KB)\n");
       }
-      print_s("\n");
+      // print_s("\n");
       return &frames[cur_id];
     }
   }
@@ -155,13 +155,13 @@ void buddy_free(page_frame *frame) {
         (frames[target_index].order != order))
       break;
 
-    print_s("merge with frame index ");
-    print_i(target_index);
-    print_s(" (4K x 2^");
-    print_i(frames[target_index].order);
-    print_s(" = ");
-    print_i(1 << (frames[target_index].order + 2));
-    print_s(" KB)\n");
+    // print_s("merge with frame index ");
+    // print_i(target_index);
+    // print_s(" (4K x 2^");
+    // print_i(frames[target_index].order);
+    // print_s(" = ");
+    // print_i(1 << (frames[target_index].order + 2));
+    // print_s(" KB)\n");
     buddy_unlink(target_index, 0);
     order += 1;
     if (index > target_index) index = target_index;
@@ -169,13 +169,13 @@ void buddy_free(page_frame *frame) {
   frames[index].order = order;
   frames[index].next = free_frame_lists[order];
   free_frame_lists[order] = &frames[index];
-  print_s("put frame index ");
-  print_i(index);
-  print_s(" back (4K x 2^");
-  print_i(frames[index].order);
-  print_s(" = ");
-  print_i(1 << (frames[index].order + 2));
-  print_s(" KB)\n\n");
+  // print_s("put frame index ");
+  // print_i(index);
+  // print_s(" back (4K x 2^");
+  // print_i(frames[index].order);
+  // print_s(" = ");
+  // print_i(1 << (frames[index].order + 2));
+  // print_s(" KB)\n\n");
 }
 
 void buddy_unlink(int index, int type) {

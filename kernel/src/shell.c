@@ -6,6 +6,7 @@
 #include "io.h"
 #include "mini_uart.h"
 #include "string.h"
+#include "timer.h"
 
 void cmd_help() {
   print_s("Command\t\tDescription\n");
@@ -18,6 +19,9 @@ void cmd_help() {
   print_s("dtb\t\tparse and print the flattened devicetree\n");
   print_s("buddy\t\ttest buddy system\n");
   print_s("dma\t\ttest dynamic memory allocator\n");
+  print_s("run\t\tload and run a user program in the initramfs\n");
+  print_s("puts\t\tasynchronous puts\n");
+  print_s("setTimeout [MESSAGE] [SECONDS]\t\tprints MESSAGE after SECONDS\n");
 }
 
 void cmd_hello() { print_s("Hello World!\n"); }
@@ -37,6 +41,32 @@ void cmd_buddy_test() { buddy_test(); }
 
 void cmd_dma_test() { dma_test(); }
 
+void cmd_load_user_program(char *program_name) {
+  uint64_t spsr_el1 = 0x0;  // EL0t with interrupt enabled
+  uint64_t target_addr = 0x30000000;
+  uint64_t target_sp = 0x31000000;
+  cpio_load_user_program(program_name, target_addr);
+  core_timer_enable();
+  asm volatile("msr spsr_el1, %0" : : "r"(spsr_el1));
+  asm volatile("msr elr_el1, %0" : : "r"(target_addr));
+  asm volatile("msr sp_el0, %0" : : "r"(target_sp));
+  asm volatile("eret");
+}
+
+void cmd_set_timeout(char *args) {
+  uint32_t duration = 0;
+  for (int i = 0; args[i]; i++) {
+    if (args[i] == ' ') {
+      for (int j = i + 1; args[j]; j++) {
+        duration = duration * 10 + (args[j] - '0');
+      }
+      args[i] = '\0';
+      break;
+    }
+  }
+  add_timer(timer_callback, args, duration);
+}
+
 void clear_buffer() {
   buffer_pos = 0;
   for (int i = 0; i < MAX_BUFFER_SIZE; i++) {
@@ -46,7 +76,7 @@ void clear_buffer() {
 
 void receive_cmd() {
   while (1) {
-    char c = uart_getc();
+    char c = uart_async_getc();
     if (c == '\0') continue;  // to avoid weird character
     if (c == '\n') {          // '\r' is replaced with '\n'
       print_s("\r\n");
@@ -85,6 +115,12 @@ void run_shell() {
       cmd_buddy_test();
     } else if (strcmp(buffer, "dma") == 0) {
       cmd_dma_test();
+    } else if (strncmp(buffer, "run", 3) == 0) {
+      cmd_load_user_program(&buffer[4]);
+    } else if (strcmp(buffer, "puts") == 0) {
+      uart_async_puts("async puts\n");
+    } else if (strncmp(buffer, "setTimeout", 10) == 0) {
+      cmd_set_timeout(&buffer[11]);
     }
   }
 }

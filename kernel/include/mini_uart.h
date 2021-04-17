@@ -1,5 +1,7 @@
 #pragma once
 
+#include "gpio.h"
+
 /* Auxilary mini UART registers */
 #define AUXIRQ ((volatile unsigned int *)(MMIO_BASE + 0x00215000))
 #define AUXENB ((volatile unsigned int *)(MMIO_BASE + 0x00215004))
@@ -15,8 +17,31 @@
 #define AUX_MU_STAT_REG ((volatile unsigned int *)(MMIO_BASE + 0x00215064))
 #define AUX_MU_BAUD ((volatile unsigned int *)(MMIO_BASE + 0x00215068))
 
+#define ARM_IRQ_REG_BASE (MMIO_BASE + 0x0000b000)
+
+#define IRQ_PENDING_1 ((volatile unsigned int *)(ARM_IRQ_REG_BASE + 0x00000204))
+#define ENABLE_IRQS_1 ((volatile unsigned int *)(ARM_IRQ_REG_BASE + 0x00000210))
+#define DISABLE_IRQS_1 \
+  ((volatile unsigned int *)(ARM_IRQ_REG_BASE + 0x0000021c))
+
+#define AUX_IRQ (1 << 29)
+
+#define UART_BUFFER_SIZE 1024
+char read_buf[UART_BUFFER_SIZE];
+char write_buf[UART_BUFFER_SIZE];
+int read_buf_start, read_buf_end;
+int write_buf_start, write_buf_end;
+
 void uart_init();
 void uart_send(unsigned int c);
 char uart_getb();
 char uart_getc();
 void uart_puts(char *s);
+
+void enable_uart_interrupt();
+void disable_uart_interrupt();
+void assert_transmit_interrupt();
+void clear_transmit_interrupt();
+void uart_handler();
+char uart_async_getc();
+void uart_async_puts(char *str);
