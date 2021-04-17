@@ -2,5 +2,6 @@
 #define EXCEPTION_H
 #include "data_type.h"
 
-int aarch64_sync_handler (u32 svc, u32 *instruction);
+int sys_call_handler ();
+void print_el1_exc ();
 #endif

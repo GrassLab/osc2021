@@ -23,9 +23,6 @@ _start:
     adr x0, exception_vector_table
     msr vbar_el1, x0
 
-/* enable time interrupt */
-    bl core_timer_enable
-
 /* init bss section */
     ldr x0, =__bss_start
     ldr x1, =__bss_size

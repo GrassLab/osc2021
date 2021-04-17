@@ -1,4 +1,3 @@
-#define CORE0_TIMER_IRQ_CTRL 0x40000040
 .macro vector_block label
     .align 7
     save_basic_reg
@@ -97,13 +96,19 @@ sp_elx_irq:
 sp_elx_fiq:
 sp_elx_vserror:
 
+#define svc_mask 0xfffff
 aarch64_sync:
-    mrs x1, elr_el1
-    bl aarch64_sync_handler
-    cmp x0, #60
+    mrs x10, elr_el1
+    sub x10, x10, #4
+    ldr x10, [x10]
+    ldr x11, =svc_mask
+    and x10, x10, x11
+    lsr x10, x10, #5    // svc imm
+    cmp x10, #0x80
+    bne 1f
+    cmp x19, #60 // system call: exit
     beq process_exit
-    cmp x0, #0
-    beq 1f
+    bl sys_call_handler
     load_basic_reg
     eret
 1:
@@ -129,50 +134,28 @@ error_handler:
     b 1b
 
 irq_lower_el:
-    bl kprint_time
+    bl disable_DAIF
     mrs x0, cntfrq_el0
+    add x0, x0, x0
     msr cntp_tval_el0, x0
+    bl kprint_time
     load_basic_reg
-    msr DAIFClr, 0x2
     eret
     b irq_lower_el
-
-
-/* system call handler */
-sys_call:
-    lsl x0, x0, #2
-    ldr x1, =sys_call_table
-    add x0, x0, x1
-    br x0
-sys_call_ret:
-    load_basic_reg
-    eret
-
-sys_call_table:
-    b print_el1_content
-    b ret_kernel
-
-.global print_el1_reg
-print_el1_content:
-    bl print_el1_reg
-    b sys_call_ret
-
-.global ret_kernel
-ret_kernel:
-    load_basic_reg
-    ret
 
 .global from_el1_to_el0
 from_el1_to_el0:
     save_basic_reg
     msr elr_el1, x0
+    //mov x0, 0x340
     mov x0, 0x3c0
     msr spsr_el1, x0
     mov x0, #0x70000
     msr sp_el0, x0
-    //bl core_timer_enable
+    bl enable_irq_system_timer1
+    bl enable_DAIF_irq
+    bl core_timer_enable
     eret
-    ret
 
 .global tmp_p
 tmp_p:
@@ -190,12 +173,9 @@ tmp_p:
     svc 0
     b 1b
 
-#define IRQ_TMP 0x3F00B210
+#define CORE0_TIMER_IRQ_CTRL 0x40000040
 .global core_timer_enable
 core_timer_enable:
-    ldr x0, =IRQ_TMP
-    mov x1, #2
-    str x1, [x0]
     mov x0, 1
     msr cntp_ctl_el0, x0 // enable
     mrs x0, cntfrq_el0
@@ -203,6 +183,6 @@ core_timer_enable:
     mov x0, 2
     ldr x1, =CORE0_TIMER_IRQ_CTRL
     str w0, [x1] // unmask timer interrupt
-    mov x0, #0
+    mov x0, 0x340
     msr spsr_el1, x0
     ret

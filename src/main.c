@@ -122,15 +122,12 @@ int main () {
     buddy_system_init();
     dynamic_allocator_init();
 
-    //from_el1_to_el0();
-
     char buffer[BUFFER_SIZE];
 
     kprintf("\n");
     kprintf("+========================+\n");
     kprintf("|       osdi shell       |\n");
     kprintf("+========================+\n");
-
 
     while (1) {
         kprintf("$ ");

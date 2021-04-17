@@ -4,6 +4,11 @@
 extern u64 get_spsr_el1 ();
 extern u64 get_elr_el1 ();
 extern u64 get_esr_el1 ();
+extern u64 get_x0 ();
+extern u64 get_x30 ();
+extern u64 get_x19 ();
+extern void enable_DAIF_irq ();
+extern void disable_DAIF_irq ();
 
 extern unsigned long long time_counter ();
 extern unsigned int time_freq ();

@@ -1,8 +1,16 @@
 #include "exc.h"
 #include "io.h"
 #include "utility.h"
+#include "mmio.h"
 
-int sys_call_handler (int sys_num) {
+void print_el1_exc () {
+    kprintf("spsr_el1: %x\n", get_spsr_el1());
+    kprintf("elr_el1: %x\n", get_elr_el1());
+    kprintf("esr_el1: %x\n\n", get_esr_el1());
+}
+
+int sys_call_handler () {
+    u64 sys_num = get_x19();
     switch (sys_num) {
         /* show specific register */
         case 400:
@@ -24,14 +32,6 @@ int sys_call_handler (int sys_num) {
     }
     return 1;
 }
-
-int aarch64_sync_handler (u32 sys_num, u32 *instruction) {
-    u32 svc_num = (instruction[-1] & 0xfffff) >> 5;
-    if (svc_num != 0x80)
-        return 0;
-    return sys_call_handler(sys_num);
-}
-
 
 void print_exc_error (int error) {
     switch (error) {
@@ -87,3 +87,11 @@ void print_exc_error (int error) {
             kprintf("Unkown exception: %d\n", error);
     }
 }
+
+/* IRQ table */
+#define system_timer_match1 (1 << 1)
+
+void enable_irq_system_timer1 () {
+    *mmio(ENABLE_IRQS1) = system_timer_match1;
+}
+
