@@ -1,40 +1,68 @@
-ARMGNU = aarch64-linux-gnu
-QEMU = qemu-system-aarch64
-# -Iinclude tells it to look for header files in the include folder.
-# -fPIC makes the addresses relative instead of absolute allowing us to place the kernel anywhere in memory.
-COPS = -Wall -O0 -ffreestanding -nostdinc -nostdlib -nostartfiles -Iinclude
-ASMOPS = -Iinclude
+# cross-compiler
+CC 			= aarch64-linux-gnu-gcc
+LINKER 		= aarch64-linux-gnu-ld
+OBJ_CPY 	= aarch64-linux-gnu-objcopy
+QEMU		= qemu-system-aarch64
 
-BUILD_DIR = build
-SRC_DIR = src
 
+
+SRCDIR 		= src
+INCLUDE_DIR = include
+LIB_DIR 	= lib
+LIB_HEADER	= lib/headers
+
+
+SRCS = $(wildcard $(SRCDIR)/*.c )
+OBJS = $(patsubst $(SRCDIR)/%.c, %.o, $(SRCS))
+LINK_SCRIPT = linker.ld
 KERNEL = bootloader
-Linker = linker.ld
+CFLAGS = -Wall -O0 -ffreestanding -nostdinc -nostdlib -nostartfiles -g 
 
-all : clean $(KERNEL).img
+# cpio archive
+CPIO_DIR = rootfs
+CPIO_FILES = $(wildcard $(CPIO_DIR)/*)
+CPIO = initramfs.cpio
+QEMU_CPIO = -initrd $(CPIO)
 
-clean :
-	rm -rf $(BUILD_DIR) *.img
+MINI-UART = -serial null -serial stdio
+DTB = bcm2710-rpi-3-b-plus.dtb
+QEMU_DTB = -dtb $(DTB)
+
+
+VPATH = $(SRCDIR)
+vpath %.c %.S $(SRCDIR) 
+
+# cpio archive
+
+
+
+all:  $(KERNEL).img
+
+
+
+# include files
+boot.o: boot.S
+	$(CC) $(CFLAGS)  -c $< -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) -I $(INCLUDE_DIR) -c $< -o $@
+
+$(KERNEL).img: boot.o  $(OBJS)
+	$(LINKER) -nostdlib -nostartfiles boot.o  $(OBJS) -T $(LINK_SCRIPT) -o $(KERNEL).elf
+	$(OBJ_CPY) -O binary $(KERNEL).elf $@
+
+
+
+
+# debug tools
+cpio: $(CPIO_FILES)
+	cd $(CPIO_DIR) && find . | cpio -o -H newc > ../$(CPIO)
 	
-$(BUILD_DIR)/%_s.o: $(SRC_DIR)/%.S
-	mkdir -p $(@D)
-	$(ARMGNU)-gcc $(ASMOPS) -c $< -o $@
-	
-$(BUILD_DIR)/%_c.o: $(SRC_DIR)/%.c
-	$(ARMGNU)-gcc $(COPS) -c $< -o $@
-
-
-ASM_FILES = $(wildcard $(SRC_DIR)/*.S) 
-C_FILES = $(wildcard $(SRC_DIR)/*.c) 
-OBJ_FILES = $(ASM_FILES:$(SRC_DIR)/%.S=$(BUILD_DIR)/%_s.o)
-OBJ_FILES += $(C_FILES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%_c.o)
-
-DEP_FILES = $(OBJ_FILES:%.o=%.d)
--include $(DEP_FILES)
-
-$(KERNEL).img: $(SRC_DIR)/$(Linker) $(OBJ_FILES)
-	$(ARMGNU)-ld -T $(SRC_DIR)/$(Linker) -o $(BUILD_DIR)/$(KERNEL).elf  $(OBJ_FILES)
-	$(ARMGNU)-objcopy $(BUILD_DIR)/$(KERNEL).elf -O binary $(KERNEL).img
-
 run:
-	$(QEMU) -M raspi3 -kernel $(KERNEL).img -serial null -serial stdio
+	$(QEMU) -M raspi3 -kernel $(KERNEL).img $(MINI-UART)
+	
+clean:
+	rm -f  *.o
+	rm -f  $(KERNEL).elf $(KERNEL).img
+
+	

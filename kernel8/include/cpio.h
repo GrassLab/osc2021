@@ -1,11 +1,10 @@
 #ifndef _CPIO_H_
 #define _CPIO_H_
 #include "uart.h"
-#include "utils.h"
-
+#include "string.h"
 
 //#define CPIO_ADDR ((char*)0x8000000)    //QEMU(0x8000000)
-#define CPIO_ADDR ((char*)0x30000000)
+#define CPIO_ADDR ((char*)0x20000000)
 
 
 /* Magic identifiers for the "cpio" file format. */
@@ -13,10 +12,7 @@
 #define CPIO_FOOTER_MAGIC "TRAILER!!!"
 #define CPIO_ALIGNMENT 4
 
-
-#define CPIO_SIZE 110
-
-struct cpio_newc_header {
+struct cpio_header {
     char c_magic[6];      /* Magic header '070701'. */
     char c_ino[8];        /* "i-node" number. */
     char c_mode[8];       /* Permisions. */
@@ -33,18 +29,20 @@ struct cpio_newc_header {
     char c_check[8];      /* Checksum. */
 };
 
+
 struct cpio_info {
     unsigned long file_size; 
-	unsigned long file_align;
+	unsigned long file_padding;
 	unsigned long name_size; 
-	unsigned long name_align;
+	unsigned long name_padding;
     unsigned long offset;
 
 };
 
-unsigned long align(unsigned long  size, unsigned long  multiplier);
-void extract_header(struct cpio_newc_header *cpio_addr, struct cpio_info *size_info);
+unsigned long padding(unsigned long  size, unsigned long multiplier);
+void extract_header(struct cpio_header *cpio_addr, struct cpio_info *size_info);
 void cpio_list();
 void cpio_cat(char *args);
 
 #endif /* _CPIO_H_ */
+

@@ -20,7 +20,7 @@ void print_dt_info(){
 
     uart_puts("###########################################\r\n");
     uart_puts("Device Tree Address \t");
-    uart_put_hex(addr);
+    uart_put_int(*dt_addr);
     uart_puts("\r\n");
     uart_puts("Total Size \t\t");
     uart_put_int(totalsize);
@@ -53,7 +53,6 @@ void parse_dt(){
     unsigned long string_addr = (unsigned long)*dt_addr + off_dt_strings;
     unsigned long struct_end_addr = struct_addr + size_dt_struct;
     unsigned int *struct_ptr = (unsigned int*)struct_addr;
-
     unsigned int cur_val, cur_len, cur_nameoff;
     char *cur_name, *cur_name_val;
 	

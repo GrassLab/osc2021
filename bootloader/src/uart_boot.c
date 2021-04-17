@@ -34,7 +34,8 @@ void load_new_kernel(){
         c = uart_get();
         *(current_addr + i) = c;
     }
-    uart_puts("Transmit done.\r\n                        ");
+    uart_puts("Transmit new kernel done.\r\n");
+	uart_puts("\r\n");
     void (*new_kernel_start)(void) = (void*)KERNEL_ADDR;
     new_kernel_start();
 }

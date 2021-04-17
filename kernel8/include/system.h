@@ -1,13 +1,13 @@
 #ifndef __SYSTEM_H__
 #define __SYSTEM_H__
-#include "utils.h"
+#include "string.h"
 #include "uart.h"
 #include "uart_boot.h"
 #include "cpio.h"
 #include "dtb_parser.h"
-#include "mm.h"
 
-#define SYS_CMD_NUM 13
+
+#define SYS_CMD_NUM 8
 
 void system_command(char*);
 
