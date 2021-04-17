@@ -11,24 +11,19 @@ int strcmp(const char *s1, const char *s2) {
   return (*(unsigned char *)s1 - *(unsigned char *)s2);
 }
 
+int strcmp_n(const char *s1, const char *s2, size_t n) {
+  while (--n && *s1 && (*s1 == *s2)) {
+    ++s1;
+    ++s2;
+  }
+  return (*(unsigned char *)s1 - *(unsigned char *)s2);
+}
+
 void *memcpy(void *dst, const void *src, size_t len) {
   char *d = dst;
   const char *s = src;
   while (len--) *d++ = *s++;
   return dst;
-}
-
-int strcmp_n(const char *s1, const char *s2, size_t n) {
-  while (n && *s1 && (*s1 == *s2)) {
-    ++s1;
-    ++s2;
-    --n;
-  }
-  if (n == 0) {
-    return 0;
-  } else {
-    return (*(unsigned char *)s1 - *(unsigned char *)s2);
-  }
 }
 
 char *strcpy(char *dst, const char *src) {
@@ -59,35 +54,42 @@ size_t strlen(const char *str) {
   return (s - str);
 }
 
-long long atoi(const char *s) {
+long atoi(const char *s) {
   if (*s == '-') {
-    return -1 * (long long)atol(s + 1);
+    return -1 * (long)atol(s + 1);
   }
-  return (long long)atol(s);
+  return (long)atol(s);
 }
 
-long long atoi_n(const char *s, size_t len, int base) {
+long atoi_n(const char *s, size_t len, size_t base) {
   if (len == 0) return 0;
   if (*s == '-') {
-    return -1 * (long long)atol_n(s + 1, len - 1, base);
+    return -1 * (long)atol_n(s + 1, len - 1, base);
   }
-  return (long long)atol_n(s, len, base);
+  return (long)atol_n(s, len, base);
 }
 
-unsigned long long atol(const char *s) { return atol_n(s, 21, 10); }
+size_t atol(const char *s) { return atol_n(s, 23, 10); }
 
-unsigned long long atol_n(const char *s, size_t len, int base) {
-  unsigned long long num = 0;
-  while (*s && len) {
-    unsigned long long n = 0;
-    if (*s >= '0' && *s <= '9') {
-      n = *s - '0';
-    } else if (*s >= 'a' && *s <= 'f') {
-      n = *s - 'a' + 10;
-    } else if (*s >= 'A' && *s <= 'F') {
-      n = *s - 'A' + 10;
+size_t atol_n(const char *s, size_t len, size_t base) {
+  if (base == 16) {
+    if (strcmp_n(s, "0x", 2) == 0) {
+      s += 2;
     }
-    num = num * (unsigned long long)base + n;
+  }
+
+  size_t num = 0;
+  while (len && *s) {
+    size_t n = 0;
+    char c = *s;
+    if (c >= '0' && c <= '9') {
+      n = c - '0';
+    } else if (c >= 'a' && c <= 'f') {
+      n = c - 'a' + 10;
+    } else if (c >= 'A' && c <= 'F') {
+      n = c - 'A' + 10;
+    }
+    num = num * base + n;
     len--;
     s++;
   }
@@ -101,21 +103,15 @@ char *new_str(char *src) {
   return str;
 }
 
-void init_list(list_head *l) {
-  l->bk = l;
-  l->fd = l;
+char *split_str(char *s) {
+  char *right = NULL;
+  while (*s) {
+    if (*s == ' ') {
+      right = s + 1;
+      *s = 0;
+      break;
+    }
+    s++;
+  }
+  return right;
 }
-
-void push_list(list_head *l, list_head *chunk) {
-  chunk->bk = l;
-  chunk->fd = l->fd;
-  l->fd->bk = chunk;
-  l->fd = chunk;
-}
-
-void pop_list(list_head *chunk) {
-  chunk->fd->bk = chunk->bk;
-  chunk->bk->fd = chunk->fd;
-}
-
-int list_empty(list_head *l) { return l->fd == l; }

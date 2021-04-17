@@ -1,119 +1,71 @@
 #include "mem.h"
 
-#include <stddef.h>
-
+#include "exc.h"
 #include "io.h"
 #include "util.h"
 
-#define get_order(ptr) (__builtin_ctzl((unsigned long)ptr) - PAGE_SIZE_CTZ)
-#define set_buddy_ord(bd, ord) (bd = ord | (bd & 0xe0))
-#define set_buddy_flag(bd, flag) (bd = (flag << 5) | (bd & 0x1f))
-#define get_buddy_ord(bd) (bd & 0x1f)
-#define get_buddy_flag(bd) ((bd & 0xe0) >> 5)
-#define ptr_to_pagenum(ptr) (((unsigned long)(ptr)) >> PAGE_SIZE_CTZ)
-#define pagenum_to_ptr(pn) ((void *)((pn) << PAGE_SIZE_CTZ))
-#define buddy_pagenum(pg, ord) ((pg) ^ (1 << ord))
-#define BUDDY_FREE 0
-#define BUDDY_USE 1
-#define SLAB_USE 2
-#define RESRVE_USE 3
-#define INIT_PAGE 0x20
+#define ptr_to_ord(ptr) (__builtin_ctzl((unsigned long)ptr) - PAGE_SIZE_CTZ)
+#define flag_mask 0xe0
+#define ord_mask 0x1f
+#define set_page_ord(ps, ord) (ps = ord | (ps & flag_mask))
+#define set_page_flag(ps, flag) (ps = flag | (ps & ord_mask))
+#define get_page_ord(ps) (ps & ord_mask)
+#define get_page_flag(ps) (ps & flag_mask)
+#define ptr_to_pn(ptr) (((unsigned long)(ptr)) >> PAGE_SIZE_CTZ)
+#define pn_to_ptr(pn) ((void *)((pn) << PAGE_SIZE_CTZ))
+#define buddy_pn(pn, ord) ((pn) ^ (1 << ord))
+#define size_to_idx(size) ((size / MEM_PAD) - 1)
+#define idx_to_size(idx) ((idx + 1) * MEM_PAD)
+
+#define BUDDY_FREE 0x0
+#define BUDDY_USE 0x20
+#define SLAB_USE 0x40
+#define RESRVE_USE 0x60
 
 typedef struct buddy_system {
-  list_head free_list[BUDDY_MAX];
+  cdl_list free_list[BUDDY_MAX_ORD];
+  unsigned char *page_stat;
 } buddy_system;
 
 typedef struct startup_allocator {
-  void *addr[STARTUP_MAX];
-  unsigned long long size[STARTUP_MAX];
+  void *addr[MEM_MAX_RESERVE];
+  unsigned long size[MEM_MAX_RESERVE];
+  unsigned long reserve_cnt;
 } startup_allocator;
 
-typedef struct cache_list {
-  struct cache_list *next;
-} cache_list;
-
+// at the head of page owned by slab
 typedef struct page_descriptor {
-  void *page;
   struct page_descriptor *next_pd;
-  cache_list *free_list;
-  unsigned int free_count;
+  l_list free_list;
+  unsigned long free_cnt;
+  unsigned long slab_idx;
 } page_descriptor;
 
-static inline void *pop_cache(cache_list **cl) {
-  void *addr = (void *)*cl;
-  *cl = (*cl)->next;
-  return addr;
-}
-
-static inline void push_cache(cache_list **cl, cache_list *new_chunk) {
-  new_chunk->next = (*cl);
-  (*cl) = new_chunk;
-}
-
 typedef struct slab_cache {
-  struct slab_cache *next_slab;
   page_descriptor *head_pd;
   page_descriptor *cache_pd;
-  void *page_slice_pos;
-  unsigned int size;
-  unsigned int free_count;
-  unsigned int page_remain;
+  void *slice_pos;
+  unsigned long free_cnt;
+  unsigned long remain;
+  unsigned long pd_cnt;
 } slab_cache;
 
-void *pop_slab_cache(slab_cache *sc) {
-  if (sc->cache_pd->free_list == NULL) {
-    page_descriptor *pd_itr = sc->head_pd;
-    while (pd_itr->free_list == NULL) {
-      pd_itr = pd_itr->next_pd;
-    }
-    sc->cache_pd = pd_itr;
-  }
-  page_descriptor *pd = sc->cache_pd;
-  void *new_chunk = pop_cache(&(pd->free_list));
-  pd->free_count--;
-  sc->free_count--;
-  log("pop slab cache\n");
-  return new_chunk;
-}
+#define SLAB_SIZE (PAGE_SIZE / 2 / MEM_PAD)
 
-slab_cache *sc_slab_tok;
-slab_cache *pd_slab_tok;
-
-unsigned long long mem_size = 0x40000000;  // 1 GB
-unsigned long long reserve_count = 0;
+unsigned long mem_size = 0x40000000;  // 1 GB
+slab_cache *slab[SLAB_SIZE];
+startup_allocator sa = {.reserve_cnt = 0};
 buddy_system bs;
-startup_allocator sa;
-char *buddy_stat;
-slab_cache *slab_st;
-
-void *kmalloc(unsigned long size) {
-  size = pad(size, 16);
-  if (size > PAGE_SIZE / 2) {
-    return alloc_page(size);
-  } else {
-    return alloc_slab(register_slab(size));
-  }
-}
-
-void kfree(void *ptr) {
-  int flag = get_buddy_flag(buddy_stat[ptr_to_pagenum(ptr)]);
-  if (flag == BUDDY_USE) {
-    free_page(ptr);
-  } else if (flag == RESRVE_USE) {
-    free_reserve(ptr);
-  } else if (flag == SLAB_USE) {
-    free_unknow_slab(ptr);
-  }
-}
+slab_cache slab_slab;
 
 void sort_reserve() {
-  for (int i = reserve_count - 1; i >= 0; i--) {
+  for (int i = sa.reserve_cnt - 1; i >= 0; i--) {
     for (int j = 0; j < i; j++) {
-      if ((unsigned long long)sa.addr[j] > (unsigned long long)sa.addr[j + 1]) {
+      if ((unsigned long)sa.addr[j] > (unsigned long)sa.addr[j + 1]) {
         void *tmp_addr = sa.addr[j];
         sa.addr[j] = sa.addr[j + 1];
         sa.addr[j + 1] = tmp_addr;
-        unsigned long long tmp_size = sa.size[j];
+        unsigned long tmp_size = sa.size[j];
         sa.size[j] = sa.size[j + 1];
         sa.size[j + 1] = tmp_size;
       }
@@ -121,7 +73,7 @@ void sort_reserve() {
   }
 }
 
-int check_reserve_collision(void *a1, size_t s1, void *a2, size_t s2) {
+int check_collision(void *a1, size_t s1, void *a2, size_t s2) {
   void *e1 = (void *)((unsigned long long)a1 + s1);
   void *e2 = (void *)((unsigned long long)a2 + s2);
   return ((a2 >= a1) && (a2 < e1)) || ((e2 > a1) && (e2 <= e1)) ||
@@ -129,159 +81,206 @@ int check_reserve_collision(void *a1, size_t s1, void *a2, size_t s2) {
 }
 
 int reserve_mem(void *addr, unsigned long size) {
-  if (((unsigned long long)addr & 0xfff) != 0 || (size & 0xfff) != 0) {
-    log("reserve mem require page align\n");
-    return -1;
+  if (((unsigned long)addr & 0xfff) != 0 || (size & 0xfff) != 0) {
+    return RESERVE_NOT_ALIGN;
   }
-  if (reserve_count >= STARTUP_MAX) {
-    log("no reserve slot available\n");
-    return -1;
+  if (sa.reserve_cnt >= MEM_MAX_RESERVE) {
+    return RESERVE_SLOT_FULL;
   } else {
-    for (int i = 0; i < reserve_count; i++) {
-      if (check_reserve_collision(sa.addr[i], sa.size[i], addr, size)) {
-        log("reserve collision\n");
-        return -1;
+    for (int i = 0; i < sa.reserve_cnt; i++) {
+      if (check_collision(sa.addr[i], sa.size[i], addr, size)) {
+        return RESERVE_COLLISION;
       }
     }
-    sa.addr[reserve_count] = addr;
-    sa.size[reserve_count] = size;
-    reserve_count++;
+    sa.addr[sa.reserve_cnt] = addr;
+    sa.size[sa.reserve_cnt] = size;
+    sa.reserve_cnt++;
     return 0;
   }
 }
 
-void _place_buddy(void *ptr, int ord, int flag) {
-  unsigned long long idx = (unsigned long long)ptr >> PAGE_SIZE_CTZ;
-
-  set_buddy_ord(buddy_stat[idx], ord);
-  set_buddy_flag(buddy_stat[idx], flag);
-
-  if (flag == BUDDY_FREE) {
-    push_list(&bs.free_list[ord], (list_head *)ptr);
+void *reserve_alloc(unsigned long size) {
+  size = pad(size, PAGE_SIZE);
+  if (sa.reserve_cnt >= MEM_MAX_RESERVE) {
+    log("reserve slot full", LOG_ERROR);
+    return NULL;
   }
+  if (reserve_mem((void *)0, size) != RESERVE_COLLISION) {
+    return (void *)0;
+  }
+  for (int i = 0; i < sa.reserve_cnt; i++) {
+    if (reserve_mem(sa.addr[i] + sa.size[i], size) != RESERVE_COLLISION) {
+      return sa.addr[i] + sa.size[i];
+    }
+  }
+  log("no reserve space", LOG_ERROR);
+  return NULL;
 }
 
+// set page stat of page and push free list if BUDDY_FREE
+void set_buddy(void *ptr, int ord, int flag) {
+  unsigned long pn = ptr_to_pn(ptr);
+  set_page_flag(bs.page_stat[pn], flag);
+  set_page_ord(bs.page_stat[pn], ord);
+  if (flag == BUDDY_FREE) {
+    push_cdl_list(&(bs.free_list[ord]), (cdl_list *)ptr);
+  }
+}
+// place memory segment into buddy system w/ flag
 void place_buddy(void *st, void *ed, int flag) {
   while (st != ed) {
-    int st_ord = get_order(st);
-    int ed_ord = get_order(ed);
-    if (st_ord >= BUDDY_MAX) {
-      st_ord = BUDDY_MAX - 1;
-    }
-    if (ed_ord >= BUDDY_MAX) {
-      ed_ord = BUDDY_MAX - 1;
-    }
+    int st_ord = ptr_to_ord(st);
+    int ed_ord = ptr_to_ord(ed);
+    st_ord = min(st_ord, BUDDY_MAX_ORD - 1);
+    ed_ord = min(ed_ord, BUDDY_MAX_ORD - 1);
+
     if (st_ord <= ed_ord) {
-      _place_buddy(st, st_ord, flag);
+      set_buddy(st, st_ord, flag);
       st += (1 << (st_ord + PAGE_SIZE_CTZ));
     } else {
       ed -= (1 << (ed_ord + PAGE_SIZE_CTZ));
-      _place_buddy(ed, ed_ord, flag);
+      set_buddy(ed, ed_ord, flag);
     }
   }
 }
 
-void init_buddy(char *stat_ptr) {
-  buddy_stat = stat_ptr;
-  sort_reserve();
-  for (int i = 0; i < BUDDY_MAX; i++) {
-    init_list(&(bs.free_list[i]));
-  }
-  for (unsigned long i = 0; i < mem_size / PAGE_SIZE; i++) {
-    buddy_stat[i] = INIT_PAGE;
-  }
-  void *mem_itr = 0;
-  for (int i = 0; i < reserve_count; i++) {
-    place_buddy(mem_itr, sa.addr[i], BUDDY_FREE);
-    place_buddy(sa.addr[i], sa.addr[i] + sa.size[i], RESRVE_USE);
-    mem_itr = sa.addr[i] + sa.size[i];
-  }
-  place_buddy(mem_itr, (void *)mem_size, BUDDY_FREE);
-}
-
-void *alloc_page(size_t size) {
-  log("alloc page: ");
-  log_hex(size);
-  log("\n");
+void *alloc_page(unsigned long size) {
   size = pad(size, PAGE_SIZE);
-  size_t target_ord = 51 - __builtin_clzl(size);
-  if ((((1 << (target_ord + 12)) - 1) & size) != 0) {
-    target_ord++;
+  unsigned long ord = 51 - __builtin_clzl(size);
+  if ((((1 << (ord + PAGE_SIZE_CTZ)) - 1) & size) != 0) {
+    ord++;
   }
-
-  size_t find_ord = target_ord;
-  while (list_empty(&bs.free_list[find_ord])) {
+  log_hex("allocate page w/ order", ord, LOG_DEBUG);
+  if (ord >= BUDDY_MAX_ORD) {
+    log("out of memory", LOG_ERROR);
+    return NULL;
+  }
+  unsigned long find_ord = ord;
+  while (cdl_list_empty(&(bs.free_list[find_ord]))) {
     find_ord++;
-    if (find_ord >= BUDDY_MAX) {
-      log("out of memory\n");
+    if (find_ord >= BUDDY_MAX_ORD) {
+      log("alloc chunk larger than max ord", LOG_ERROR);
       return NULL;
     }
   }
-  void *new_chunk = (void *)bs.free_list[find_ord].fd;
-  pop_list((list_head *)new_chunk);
-  size_t pn = ptr_to_pagenum(new_chunk);
-  set_buddy_flag(buddy_stat[pn], BUDDY_USE);
-  set_buddy_ord(buddy_stat[pn], target_ord);
-
-  while (find_ord > target_ord) {
-    log("release\n");
+  void *chunk = pop_cdl_list(bs.free_list[find_ord].fd);
+  unsigned long pn = ptr_to_pn(chunk);
+  set_page_flag(bs.page_stat[pn], BUDDY_USE);
+  set_page_ord(bs.page_stat[pn], ord);
+  while (find_ord > ord) {
+    log_hex("release order", find_ord, LOG_DEBUG);
     find_ord--;
-    size_t bd = buddy_pagenum(pn, find_ord);
-    set_buddy_flag(buddy_stat[bd], BUDDY_FREE);
-    set_buddy_ord(buddy_stat[bd], find_ord);
-    push_list(&bs.free_list[find_ord], (list_head *)pagenum_to_ptr(bd));
+    unsigned long bd = buddy_pn(pn, find_ord);
+    set_page_flag(bs.page_stat[bd], BUDDY_FREE);
+    set_page_ord(bs.page_stat[bd], find_ord);
+    push_cdl_list(&(bs.free_list[find_ord]), (cdl_list *)pn_to_ptr(bd));
   }
+  return chunk;
+}
 
-  return new_chunk;
+void new_pd(unsigned long slab_idx) {
+  log_hex("new pd at idx", slab_idx, LOG_DEBUG);
+  unsigned long ord = slab[slab_idx]->pd_cnt;
+  page_descriptor *pd = alloc_page(PAGE_SIZE << ord);
+  unsigned long pn = ptr_to_pn(pd);
+  set_page_flag(bs.page_stat[pn], SLAB_USE);
+  for (int i = 1; i < (1 << ord); i++) {
+    bs.page_stat[pn + i] = bs.page_stat[pn];
+  }
+  pd->free_cnt = 0;
+  pd->free_list.next = NULL;
+  pd->next_pd = slab[slab_idx]->head_pd;
+  slab[slab_idx]->head_pd = pd;
+  pd->slab_idx = slab_idx;
+  slab[slab_idx]->slice_pos =
+      (void *)((unsigned long)pd + pad(sizeof(page_descriptor), MEM_PAD));
+  slab[slab_idx]->remain =
+      (PAGE_SIZE << ord) - pad(sizeof(page_descriptor), MEM_PAD);
+  slab[slab_idx]->pd_cnt++;
+}
+
+void *pop_slab_cache(slab_cache *sc) {
+  if (sc->cache_pd->free_list.next == NULL) {
+    page_descriptor *pd_itr = sc->head_pd;
+    while (pd_itr->free_list.next == NULL) {
+      pd_itr = pd_itr->next_pd;
+    }
+    sc->cache_pd = pd_itr;
+  }
+  page_descriptor *pd = sc->cache_pd;
+  void *chunk = pop_l_list(&(pd->free_list));
+  pd->free_cnt--;
+  sc->free_cnt--;
+  return chunk;
+}
+
+void *slice_slab_remain(unsigned long idx) {
+  unsigned long size = idx_to_size(idx);
+  void *chunk = slab[idx]->slice_pos;
+  slab[idx]->remain -= size;
+  slab[idx]->slice_pos += size;
+  return chunk;
+}
+
+void *alloc_slab(unsigned long size) {
+  unsigned long idx = size_to_idx(size);
+  log_hex("allocate slab at idx", idx, LOG_DEBUG);
+  if (slab[idx] == NULL) {
+    slab[idx] = kmalloc(sizeof(slab_cache));
+    slab[idx]->head_pd = NULL;
+    slab[idx]->free_cnt = 0;
+    slab[idx]->pd_cnt = 0;
+    new_pd(idx);
+    slab[idx]->cache_pd = slab_slab.head_pd;
+  }
+  if (slab[idx]->free_cnt > 0) {
+    return pop_slab_cache(slab[idx]);
+  }
+  if (slab[idx]->remain < size) {
+    new_pd(idx);
+  }
+  return slice_slab_remain(idx);
 }
 
 void free_page(void *ptr) {
-  log("free page: ");
-  log_hex((unsigned long long)ptr);
-  log("\n");
-  unsigned long pagenum = ptr_to_pagenum(ptr);
-  unsigned long ord = get_buddy_ord(buddy_stat[pagenum]);
-  buddy_stat[pagenum] = INIT_PAGE;
+  unsigned long pn = ptr_to_pn(ptr);
+  log_hex("free page w/ pagenum", pn, LOG_DEBUG);
+  unsigned long ord = get_page_ord(bs.page_stat[pn]);
+  bs.page_stat[pn] = BUDDY_USE;
 
-  while (ord < BUDDY_MAX - 1) {
-    unsigned long buddy = buddy_pagenum(pagenum, ord);
-    if (get_buddy_flag(buddy_stat[buddy]) == BUDDY_FREE &&
-        get_buddy_ord(buddy_stat[buddy]) == ord) {
-      log("coalesce\n");
-      pop_list((list_head *)pagenum_to_ptr(buddy));
-      buddy_stat[buddy] = INIT_PAGE;
+  while (ord < BUDDY_MAX_ORD - 1) {
+    unsigned long bd = buddy_pn(pn, ord);
+    if (get_page_flag(bs.page_stat[bd]) == BUDDY_FREE &&
+        get_page_ord(bs.page_stat[bd]) == ord) {
+      log_hex("coalesce order", ord, LOG_DEBUG);
+      pop_cdl_list((cdl_list *)pn_to_ptr(bd));
+      bs.page_stat[bd] = BUDDY_USE;
       ord++;
-      pagenum = pagenum < buddy ? pagenum : buddy;
+      pn = min(pn, bd);
     } else {
       break;
     }
   }
-  set_buddy_flag(buddy_stat[pagenum], BUDDY_FREE);
-  set_buddy_ord(buddy_stat[pagenum], ord);
-  push_list(&bs.free_list[ord], pagenum_to_ptr(pagenum));
+  set_page_flag(bs.page_stat[pn], BUDDY_FREE);
+  set_page_ord(bs.page_stat[pn], ord);
+  push_cdl_list(&(bs.free_list[ord]), (cdl_list *)pn_to_ptr(pn));
 }
 
 void free_reserve(void *ptr) {
-  log("free reserve: ");
-  log_hex((unsigned long long)ptr);
-  log("\n");
+  log_hex("free reserve", (unsigned long)ptr, LOG_DEBUG);
   void *st = ptr;
-  void *ed;
-  for (int i = 0; i < reserve_count; i++) {
+  void *ed = ptr;
+  for (int i = 0; i < sa.reserve_cnt; i++) {
     if (sa.addr[i] == st) {
-      ed = st + sa.size[i];
+      ed = ed + sa.size[i];
     }
   }
-
   while (st != ed) {
-    int st_ord = get_order(st);
-    int ed_ord = get_order(ed);
-    if (st_ord >= BUDDY_MAX) {
-      st_ord = BUDDY_MAX - 1;
-    }
-    if (ed_ord >= BUDDY_MAX) {
-      ed_ord = BUDDY_MAX - 1;
-    }
+    int st_ord = ptr_to_ord(st);
+    int ed_ord = ptr_to_ord(ed);
+    st_ord = min(st_ord, BUDDY_MAX_ORD - 1);
+    ed_ord = min(ed_ord, BUDDY_MAX_ORD - 1);
+
     if (st_ord <= ed_ord) {
       free_page(st);
       st += (1 << (st_ord + PAGE_SIZE_CTZ));
@@ -292,244 +291,73 @@ void free_reserve(void *ptr) {
   }
 }
 
-void log_buddy() {
-  for (int i = 0; i < BUDDY_MAX; i++) {
-    list_head *l = &bs.free_list[i];
-    list_head *head = l;
-    int count = 0;
-    log("ord: ");
-    log_hex(i);
-    log("\n");
-    while (l->fd != head) {
-      log("block: ");
-      log_hex((unsigned long long)l->fd);
-      log("\n");
-      l = l->fd;
-      count++;
-    }
-    log("total: ");
-    log_hex(count);
-    log("\n");
+void free_slab(void *ptr) {
+  log_hex("free slab", (unsigned long)ptr, LOG_DEBUG);
+  unsigned long ord = get_page_ord(bs.page_stat[ptr_to_pn(ptr)]);
+  unsigned long pn = ptr_to_pn(ptr);
+  page_descriptor *pd = (page_descriptor *)pn_to_ptr(((pn >> ord) << ord));
+  push_l_list(&(pd->free_list), (l_list *)ptr);
+  pd->free_cnt++;
+  slab[pd->slab_idx]->free_cnt++;
+  if (slab[pd->slab_idx]->cache_pd->free_list.next == NULL) {
+    slab[pd->slab_idx]->cache_pd = pd;
   }
 }
 
-void check_buddy_stat() {
-  for (unsigned long i = 0; i < mem_size / PAGE_SIZE; i++) {
-    if (buddy_stat[i] != INIT_PAGE) {
-      if (get_buddy_flag(buddy_stat[i]) == BUDDY_FREE) {
-        log("buddy free: ");
-      } else if (get_buddy_flag(buddy_stat[i]) == RESRVE_USE) {
-        log("reserve use: ");
-      } else if (get_buddy_flag(buddy_stat[i]) == BUDDY_USE) {
-        log("buddy use: ");
-      } else {
-        log("slab use :");
-      }
-      log_hex(i);
-      log("\n");
-    }
-  }
-}
-
-void init_slab() {
-
-  void *p1 = alloc_page(PAGE_SIZE);
-  void *p2 = alloc_page(PAGE_SIZE);
-  // slab_cache for slab_cache type
-  slab_cache *sc_slab = (slab_cache *)(p1 + 16);
-  // slab_cache for page_descriptor type
-  slab_cache *pd_slab = sc_slab + 1;
-  // page_descriptor for slab_cache type
-  page_descriptor *sc_page = (page_descriptor *)(p2 + 16);
-  // page_descriptor for page_descriptor type
-  page_descriptor *pd_page = sc_page + 1;
-
-  set_buddy_flag(buddy_stat[ptr_to_pagenum((void *)sc_slab)], SLAB_USE);
-  set_buddy_flag(buddy_stat[ptr_to_pagenum((void *)sc_page)], SLAB_USE);
-
-  sc_slab->next_slab = pd_slab;
-  sc_slab->free_count = 0;
-  sc_slab->cache_pd = sc_page;
-  sc_slab->page_remain = PAGE_SIZE - pad(sizeof(slab_cache), 16) * 2 - 16;
-  sc_slab->page_slice_pos = pd_slab + 1;
-  sc_slab->head_pd = sc_page;
-  sc_slab->size = pad(sizeof(slab_cache), 16);
-
-  pd_slab->next_slab = NULL;
-  pd_slab->free_count = 0;
-  pd_slab->cache_pd = pd_page;
-  pd_slab->page_remain = PAGE_SIZE - pad(sizeof(page_descriptor), 16) * 2 - 16;
-  pd_slab->page_slice_pos = pd_page + 1;
-  pd_slab->head_pd = pd_page;
-  pd_slab->size = pad(sizeof(page_descriptor), 16);
-
-  sc_page->free_list = NULL;
-  sc_page->next_pd = NULL;
-  sc_page->page = (void *)p1;
-  sc_page->free_count = 0;
-
-  pd_page->free_list = NULL;
-  pd_page->next_pd = NULL;
-  pd_page->page = (void *)p2;
-  pd_page->free_count = 0;
-
-  slab_st = sc_slab;
-  sc_slab_tok = sc_slab;
-  pd_slab_tok = pd_slab;
-
-  *(void **)p1 = (void *)sc_slab;
-  *(void **)p2 = (void *)pd_slab;
-  log("slab");
-  log_hex((unsigned long long)sc_slab_tok);
-  log("\n");
-  log("slab");
-  log_hex((unsigned long long)pd_slab_tok);
-  log("\n");
-}
-
-void pd_self_alloc() {
-  void *p = alloc_page(PAGE_SIZE);
-  *(void **)p = (void *)pd_slab_tok;
-  page_descriptor *new_pd = (page_descriptor *)(p + 16);
-  set_buddy_flag(buddy_stat[ptr_to_pagenum((void *)new_pd)], SLAB_USE);
-  new_pd->page = p;
-  new_pd->free_count = 0;
-  new_pd->free_list = NULL;
-  new_pd->next_pd = pd_slab_tok->head_pd;
-  pd_slab_tok->head_pd = new_pd;
-  pd_slab_tok->page_remain = PAGE_SIZE - pad(sizeof(page_descriptor), 16) - 16;
-  pd_slab_tok->page_slice_pos = new_pd + 1;
-  log("pd self allocate\n");
-}
-
-page_descriptor *new_pd() {
-  page_descriptor *pd;
-  if (pd_slab_tok->free_count > 0) {
-    pd = (page_descriptor *)pop_slab_cache(pd_slab_tok);
+void *kmalloc(unsigned long size) {
+  size = pad(size, MEM_PAD);
+  void *chunk;
+  disable_interrupt();
+  if (size > SLAB_SIZE * MEM_PAD) {
+    chunk = alloc_page(size);
   } else {
-    if (pd_slab_tok->page_remain < pad(sizeof(page_descriptor), 16)) {
-      pd_self_alloc();
-    }
-
-    pd_slab_tok->page_remain -= pad(sizeof(page_descriptor), 16);
-    pd = (page_descriptor *)(pd_slab_tok->page_slice_pos);
-    pd_slab_tok->page_slice_pos += pad(sizeof(page_descriptor), 16);
+    chunk = alloc_slab(size);
   }
-  pd->free_count = 0;
-  pd->free_list = NULL;
-  pd->next_pd = NULL;
-  pd->page = alloc_page(PAGE_SIZE);
-  set_buddy_flag(buddy_stat[ptr_to_pagenum(pd->page)], SLAB_USE);
-  log("new pd at: ");
-  log_hex((unsigned long long)pd->page);
-  log("\n");
-  return pd;
+  enable_interrupt();
+  return chunk;
 }
 
-void *register_slab(size_t size) {
-  slab_cache *sc = slab_st;
-  while (sc != NULL) {
-    if (sc->size == size) {
-      log("find token\n");
-      return (void *)sc;
-    }
-    sc = sc->next_slab;
+void kfree(void *ptr) {
+  disable_interrupt();
+  int flag = get_page_flag(bs.page_stat[ptr_to_pn(ptr)]);
+  if (flag == BUDDY_USE) {
+    free_page(ptr);
+  } else if (flag == RESRVE_USE) {
+    free_reserve(ptr);
+  } else if (flag == SLAB_USE) {
+    free_slab(ptr);
   }
-  sc = (slab_cache *)alloc_slab((void *)sc_slab_tok);
-  sc->head_pd = new_pd();
-  sc->cache_pd = sc->head_pd;
-  sc->page_slice_pos = sc->head_pd->page + 16;
-  sc->size = size;
-  sc->free_count = 0;
-  sc->page_remain = PAGE_SIZE - 16;
-  *(void **)(sc->head_pd->page) = (void *)sc;
-  sc->next_slab = slab_st;
-  slab_st = sc;
-  log("new slab\n");
-  log("slab");
-  log_hex((unsigned long long)sc);
-  log("\n");
-  return (void *)sc;
+  enable_interrupt();
 }
 
-static inline void *slice_remain_slab(slab_cache *sc) {
-  sc->page_remain -= sc->size;
-  void *addr = sc->page_slice_pos;
-  sc->page_slice_pos += sc->size;
-  log("slice remain: ");
-  log_hex(sc->page_remain);
-  log("\n");
-  return addr;
-}
-
-void *alloc_slab(void *slab_tok) {
-  slab_cache *sc = (slab_cache *)slab_tok;
-  if (sc->free_count > 0) {
-    return pop_slab_cache(sc);
+void init_kmalloc() {
+  // init buddy system
+  bs.page_stat = (unsigned char *)reserve_alloc(mem_size / PAGE_SIZE);
+  log_hex("page stat at", (unsigned long)bs.page_stat, LOG_DEBUG);
+  sort_reserve();
+  for (int i = 0; i < BUDDY_MAX_ORD; i++) {
+    init_cdl_list(&(bs.free_list[i]));
   }
-  if (sc->page_remain < sc->size) {
-    if (sc == pd_slab_tok) {
-      pd_self_alloc();
-    } else {
-      page_descriptor *pd = new_pd();
-      pd->next_pd = sc->head_pd;
-      sc->head_pd = pd;
-      sc->page_slice_pos = sc->head_pd->page + 16;
-      sc->page_remain = PAGE_SIZE - 16;
-      *(void **)(pd->page) = sc;
-    }
+  for (unsigned long i = 0; i < mem_size / PAGE_SIZE; i++) {
+    bs.page_stat[i] = BUDDY_USE;
   }
-  return slice_remain_slab(sc);
-}
-
-void _free_slab(void *ptr, slab_cache *sc, page_descriptor *pd) {
-  log("free slab inter\n");
-  push_cache(&(pd->free_list), (cache_list *)ptr);
-  pd->free_count++;
-  sc->free_count++;
-  if (sc->cache_pd->free_list == NULL) {
-    sc->cache_pd = pd;
+  void *mem_itr = 0;
+  for (int i = 0; i < sa.reserve_cnt; i++) {
+    place_buddy(mem_itr, sa.addr[i], BUDDY_FREE);
+    place_buddy(sa.addr[i], sa.addr[i] + sa.size[i], RESRVE_USE);
+    mem_itr = sa.addr[i] + sa.size[i];
   }
-}
+  place_buddy(mem_itr, (void *)mem_size, BUDDY_FREE);
 
-void free_unknow_slab(void *ptr) {
-  log("free slab unknow\n");
-  // slab_cache *sc = slab_st;
-  // while (sc != NULL) {
-  //   page_descriptor *pd = sc->head_pd;
-  //   while (pd != NULL) {
-  //     if (ptr_to_pagenum(pd->page) == ptr_to_pagenum(ptr)) {
-  //       _free_slab(ptr, sc, pd);
-  //       return;
-  //     }
-  //     pd = pd->next_pd;
-  //   }
-  //   sc = sc->next_slab;
-  // }
-  slab_cache *sc = *(slab_cache **)pagenum_to_ptr(ptr_to_pagenum(ptr));
-  log_hex((unsigned long long)sc);
-  free_slab(ptr, sc);
-}
-
-void free_slab(void *ptr, void *slab) {
-  log("free slab\n");
-  page_descriptor *pd = ((slab_cache *)slab)->head_pd;
-  while (pd != NULL) {
-    if (ptr_to_pagenum(pd->page) == ptr_to_pagenum(ptr)) {
-      _free_slab(ptr, ((slab_cache *)slab), pd);
-      return;
-    }
-    pd = pd->next_pd;
+  // init slab
+  for (int i = 0; i < SLAB_SIZE; i++) {
+    slab[i] = NULL;
   }
-}
-
-void check_slab() {
-  slab_cache *sc = slab_st;
-  while (sc != NULL) {
-   log("slab cache\n");
-   log("size: ");
-   log_hex(sc->size);
-   log("\n");
-   sc = sc->next_slab; 
-  }
+  int slab_idx = size_to_idx(pad(sizeof(slab_cache), MEM_PAD));
+  slab[slab_idx] = &slab_slab;
+  slab_slab.head_pd = NULL;
+  slab_slab.free_cnt = 0;
+  slab_slab.pd_cnt = 0;
+  new_pd(slab_idx);
+  slab_slab.cache_pd = slab_slab.head_pd;
 }
