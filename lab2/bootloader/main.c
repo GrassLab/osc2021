@@ -1,10 +1,11 @@
 #include "uart.h"
-#include "shell.h"
+#include "bootloader.h"
+#include "dtb.h"
 
-void main()
-{
-    uart_init();
+void main() {
+    //uart_init();
 
-    uart_put_str("\nwelcome to bootloader\n");
-    shell();
+    dtb_scan(uart_probe);
+
+    bootloader();
 }

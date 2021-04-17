@@ -14,6 +14,8 @@
 #define AUX_MU_CNTL ((volatile unsigned int*)(MMIO_BASE + 0x00215060))
 #define AUX_MU_BAUD ((volatile unsigned int*)(MMIO_BASE + 0x00215068))
 
+#define BUFFER_SIZE         50
+
 void uart_init() {
     *AUX_ENABLE |= 1;
     *AUX_MU_CNTL = 0;
@@ -26,9 +28,9 @@ void uart_init() {
     *GPFSEL1 |= (2 << 12) | (2 << 15);
     
     *GPPUD = 0;
-    for(int i = 0; i < 150; i++) asm volatile("nop");
+    for (int i = 0; i < 150; i++) asm volatile("nop");
     *GPPUDCLK0 = (1 << 14) | (1 << 15);
-    for(int i = 0; i < 150; i++) asm volatile("nop");
+    for (int i = 0; i < 150; i++) asm volatile("nop");
     *GPPUDCLK0 = 0;
     
     *AUX_MU_CNTL = 3;
@@ -42,6 +44,32 @@ char uart_get_char() {
     return c;
 }
 
+char *uart_get_str() {
+    static char str[BUFFER_SIZE];
+    int counter = 0;
+
+    for (int i = 0 ; i < BUFFER_SIZE ; i++) {
+        str[i] = '\0';
+    }
+
+    while (1) {
+        str[counter] = uart_get_char();
+        if (str[counter] == '\r')
+            str[counter] = '\n';
+        uart_send(str[counter]);
+        if (str[counter] == '\n') {
+            str[counter] = '\0';
+            return str;
+        }
+        if (counter >= BUFFER_SIZE - 1) {
+            str[BUFFER_SIZE - 1] = '\0';
+            uart_put_str("\nBuffer is full.\n");
+            return str;
+        }
+        counter++;
+    }
+}
+
 int uart_get_int() {
     unsigned int num;
     num = uart_get_char()<<24;
@@ -52,32 +80,30 @@ int uart_get_int() {
 }
 
 void uart_send(unsigned int c) {
-    if(c == 10)
+    if (c == '\n')
         uart_send('\r');
     
-    while( !(*AUX_MU_LSR&0x20) );
+    while ( !(*AUX_MU_LSR&0x20) );
     *AUX_MU_IO = c;
 }
 
 void uart_put_str(char *s) {
-    while(*s)
+    while (*s)
         uart_send(*s++);
 }
 
 void uart_put_int(int num) {
-    if(num/10)
+    if (num/10)
 		uart_put_int(num/10);
     uart_send((num%10) + '0');
 }
 
-void uart_put_addr(unsigned long addr)
-{
+void uart_put_addr(unsigned long addr) {
     uart_put_str("0x");
-    for(int i = 15;i >= 0; i--)
-    {
+    for (int i = 15;i >= 0; i--) {
         int num = (addr >> (i * 4)) & 0xf;
         num += '0';
-        if(num > '9')
+        if (num > '9')
             num += 'a' - ('9' + 1);
         uart_send(num);
     }

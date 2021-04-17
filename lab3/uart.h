@@ -1,10 +1,11 @@
-#ifndef UART
-#define UART
+#ifndef __UART__
+#define __UART__
 
 #include "dtb.h"
 
 void uart_init();
 char uart_get_char();
+char *uart_get_str();
 int uart_get_int();
 void uart_send(unsigned int);
 void uart_put_str(char *);

@@ -2,9 +2,9 @@ import time
 import os
 import struct
 
-tty_path = '/dev/pts/1'
+tty_path = '/dev/pts/3'
 #tty_path = '/dev/ttyUSB0'
-kernel_path = 'kernel/kernel8.img'
+kernel_path = 'kernel8.img'
 size = os.path.getsize(kernel_path)
 
 with open(tty_path, "wb", buffering = 0) as tty:

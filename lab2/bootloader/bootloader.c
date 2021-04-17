@@ -6,12 +6,10 @@
 
 extern unsigned long __program_size;
 
-void relocate(char *old_addr, char *new_addr)
-{
+void relocate(char *old_addr, char *new_addr) {
     uart_put_str("start to relocate.\n");
     unsigned long program_size = (unsigned long) &__program_size;
-    for(int i = 0; i < program_size; i++)
-    {
+    for(int i = 0; i < program_size; i++) {
         *new_addr++ = *old_addr++;
     }
     
@@ -27,8 +25,7 @@ void relocate(char *old_addr, char *new_addr)
     
 }
 
-void bootloader()
-{
+void bootloader() {
     char *old_addr = (char *) OLD_BOOTLOADER_ADDR;
     char *new_addr = (char *) NEW_BOOTLOADER_ADDR;
     relocate(old_addr, new_addr);
@@ -41,25 +38,27 @@ void bootloader()
     uart_put_int(kernel_size);
     uart_put_str("\n");
     
-    
-    for(int i = 0; i < kernel_size; i++)
-    {
-        char *kernel_address = (char *) OLD_BOOTLOADER_ADDR;
+    char *kernel_start_address = (char *) OLD_BOOTLOADER_ADDR;
+    for(int i = 0; i < kernel_size; i++) {
         char c = uart_get_char();
-        kernel_address[i] = c;
+        kernel_start_address[i] = c;
     }
+    
     uart_put_str("kernel received.\n");
 
     uart_put_str("kernel start.\n");
+    /*
     for(int i = 0; i < 115200; i++)
         asm volatile("nop");
     
     char *kernel_start_addr = (char *) OLD_BOOTLOADER_ADDR;
+    */
     asm volatile(
         "add x10, %0, #0\n\t"
+        "mov x0, x20\n\t"
         "br x10" 
         :
-        :"r" (kernel_start_addr)
+        :"r" (kernel_start_address)
     );
     
 

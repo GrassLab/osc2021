@@ -2,8 +2,8 @@ SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
 TARGET = kernel8.img
 ELF_TARGET = kernel8.elf
-CPIO = ../initramfs.cpio
-DTB = ../bcm2710-rpi-3-b-plus.dtb
+CPIO = initramfs.cpio
+DTB = bcm2710-rpi-3-b-plus.dtb
 
 CC = aarch64-linux-gnu-gcc
 LD = aarch64-linux-gnu-ld
@@ -34,4 +34,4 @@ run:
 	$(QEMU) -M raspi3 -kernel $(TARGET) -serial null -display none -serial stdio -initrd $(CPIO) -dtb $(DTB)
 
 debug:
-	$(QEMU) -M raspi3 -kernel $(TARGET) -serial null -display none -serial stdio -initrd $(CPIO) -S -s -dtb $(DTB)
+	$(QEMU) -M raspi3 -kernel $(TARGET) -serial null -display none -serial stdio -initrd $(CPIO) -dtb $(DTB) -S -s

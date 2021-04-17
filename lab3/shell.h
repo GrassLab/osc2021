@@ -1,5 +1,5 @@
-#ifndef SHELL
-#define SHELL
+#ifndef __SHELL__
+#define __SHELL__
 
 void help();
 void hello();
