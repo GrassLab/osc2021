@@ -1,4 +1,4 @@
-_heap_stack_size = 4M;
+_heap_stack_size = 8M;
 _save_dts = 0x880000;
 SECTIONS
 {

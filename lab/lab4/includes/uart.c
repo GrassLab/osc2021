@@ -28,8 +28,40 @@ void uart_init() {
   while (r--) asm volatile("nop");
   *GPPUDCLK0 = 0;    // flush GPIO setup
   *AUX_MU_CNTL = 3;  // enable TX, RX
+  if (INTERUPT) _uart_interrupt_init();
 }
-
+void enable_uart_interrupt() { *(unsigned int *)ENB_IRQS1 |= AUX_IRQ; }
+void disable_uart_interrupt() { *(unsigned int *)DSB_IRQS1 |= AUX_IRQ; }
+void _uart_interrupt_init() {
+  *AUX_MU_IER |= 0x1;  // 0x1
+  enable_uart_interrupt();
+  get_top = get_buttom = 0;
+}
+void uart_asyn_puts(char *str) {
+  int i = 0;
+  for (int j = 0; str[j] != '\0'; ++i, ++j) {
+    send_buff[i] = str[j];
+    if (i >= buff_size - 1) {
+      i = -1;
+      *AUX_MU_IER |= 0x02;  // puts interrupt
+    }
+  }
+  send_buff[i] = '\0';
+  *AUX_MU_IER |= 0x02;  // puts interrupt
+}
+void _uart_irq_puts() {
+  for (int i = 0; i < buff_size && send_buff[i]; ++i) uart_send(send_buff[i]);
+  *AUX_MU_IER &= 0x01;
+}
+void _uart_irq_getc() {
+  if (get_buttom >= buff_size) get_buttom = 0;
+  get_buff[get_buttom++] = _uart_getc();
+}
+char uart_asyn_getc() {
+  while (get_top == get_buttom) asm volatile("nop");  // spin lock
+  if (get_top >= buff_size) get_top = 0;
+  return get_buff[get_top++];
+}
 /* Send a character */
 void uart_send(unsigned int c) {
   /* wait until we can send */
@@ -42,7 +74,7 @@ void uart_send(unsigned int c) {
 }
 
 /* Receive a character */
-char uart_getc() {
+char _uart_getc() {
   /* wait until something is in the buffer */
   do {
     asm volatile("nop");
@@ -54,5 +86,12 @@ char uart_getc() {
 
 /* Display a string */
 void uart_puts(char *s) {
-  while (*s) uart_send(*s++);  // convert newline to carrige return + newline
+  if (!INTERUPT)
+    while (*s) uart_send(*s++);  // convert newline to carrige return + newline
+  else
+    uart_asyn_puts(s);
+}
+char uart_getc() {
+  if (!INTERUPT) return _uart_getc();
+  return uart_asyn_getc();
 }

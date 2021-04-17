@@ -2,21 +2,22 @@
 .global _start
 
 _start:
+/* save dts address */
+	ldr x2, =_save_dts
+	str x0, [x2]
+
 /* read cpu id, stop slave cores */
 	mrs    x1, mpidr_el1 // mpidr_ell: cpu core/device information
 	and    x1, x1, #0xff // mask information to get cpu id
 	
-	/* save dts address */
-	ldr x2, =_save_dts
-	str x0, [x2]
 
 	/* jump to set up stack pointer */
-	cbz    x1, _setup_stack // if cpu id == 0 --> go to set up stack pointer
+	// cbz    x1, _setup_stack // if cpu id == 0 --> go to set up stack pointer
+	cbz    x1, _setup_stack // if cpu id == 0 --> go to set up ELx
 
 _error:  
 	wfe
 	b				_error
-
 
 _setup_stack:
 	ldr 		x0, =_stack_top

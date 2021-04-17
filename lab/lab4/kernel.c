@@ -1,5 +1,5 @@
 #include "kernel.h"
-
+void shell();
 /*  do_funcs */
 void do_reset(int tick) {         // reboot after watchdog timer expire
   *PM_RSTC = PM_PASSWORD | 0x20;  // full reset
@@ -47,6 +47,41 @@ void do_cat(char *buff) {
   uart_puts("\r\n");
 }
 void do_clear() { uart_puts("\033c"); }
+void do_run(char *buff) {
+  char *now_addr = (char *)CPIO_ARRD, *filename, *context;
+  struct cpio_newc_header *cpio_header;
+  int k = 0;
+  unsigned long long int context_size = 0;
+  buff = "run\0test.img\0";  //+++++++++++++++++++++++++++++++++++++++++
+  while (buff[k] != '\0') k++;
+  do {
+    filename = now_addr + CPIO_SIZE;
+    context_size = cpio_info(&cpio_header, &now_addr, &context);
+  } while (!strcmp("TRAILER!!!", filename) && !strcmp(&buff[k + 1], filename));
+  /* check file exist */
+  if (!strcmp(&buff[k + 1], filename)) {
+    uart_puts("run: ");
+    uart_puts(&buff[k + 1]);
+    uart_puts(": No such file or directory\r\n");
+    return;
+  }
+  /* get cpio context size */
+  char *process_location = (char *)malloc(context_size + 4 * MB);
+  for (int i = 0; i < context_size; i++) process_location[i] = context[i];
+  add_timer(0x0, 10);
+  add_timer(0x0, 1);
+  add_timer(0x0, 5);
+  add_timer(0x0, 2);
+  add_timer(0x0, 3);
+  _run_el0(process_location, process_location + context_size + 4 * MB);
+  free(process_location);
+}
+void do_timeOut(char *buff) {
+  int k = 0;
+  while (buff[k] != '\0') k++;
+  uint64_t after = atoi(&buff[++k]);
+  add_timer(0x0, after);
+}
 void shell() {
   char buff[buff_size];
   /* say hello */
@@ -71,11 +106,10 @@ void shell() {
 
     } else if (strcmp(buff, "clear"))
       do_clear();
-    else if (strcmp(buff, "lab3")) {
-      buddy_test1();
-      // buddy_test4();
-      dma_test1();
-      dma_test2();
+    else if (strcmp(buff, "run"))
+      do_run(buff);
+    else if (strcmp(buff, "timer")) {
+      do_timeOut(buff);
     } else
       do_except(buff);
   }
@@ -85,6 +119,8 @@ void main() {
   uart_init();  // set up serial console
   buddy_init((char *)BUDDY_START);
   dma_init();
+  timer_init();
+  irq_init();
   do_clear();
   shell();
 }
