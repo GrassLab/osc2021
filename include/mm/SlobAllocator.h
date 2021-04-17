@@ -26,10 +26,11 @@ class SlobAllocator {
 
  private:
   struct Slob final {
-    Slob* next;
+    Slob* next;  // only reliable if current chunk is free!
     int32_t index;
     int32_t prev_chunk_size;
 
+    size_t get_chunk_size() const;
     int32_t get_prev_chunk_size() const;
     void set_prev_chunk_size(const int32_t size);
 
@@ -52,9 +53,7 @@ class SlobAllocator {
   void bin_del_entry(Slob* chunk);
 
   int get_bin_index(size_t size);
-  size_t get_chunk_size(const int index) const;
-
-  size_t sanitize_size(size_t size);
+  size_t normalize_size(size_t size);
   size_t round_up_to_multiple_of_16(size_t x);
 
 
@@ -62,6 +61,7 @@ class SlobAllocator {
   void* _page_frame_allocatable_begin;
   void* _top_chunk;
   void* _page_frame_allocatable_end;
+  int32_t _top_chunk_prev_chunk_size;
 
   Slob* _bins[NUM_OF_BINS];
   Slob* _unsorted_bin;

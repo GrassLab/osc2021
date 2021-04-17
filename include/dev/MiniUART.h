@@ -11,7 +11,7 @@
 // The bus addresses for peripherals are set up to map onto the peripheral
 // bus address range starting at 0x7E000000. Thus a peripheral advertised here
 // at bus address 0x7Ennnnnn is available at physical address 0x3Fnnnnnn.
-#define AUX_ENABLES     (MMIO_BASE + 0X215004)
+#define AUX_ENABLES     (MMIO_BASE + 0x215004)
 #define AUX_MU_IO_REG   (MMIO_BASE + 0x215040)
 #define AUX_MU_IER_REG  (MMIO_BASE + 0x215044)
 #define AUX_MU_IIR_REG  (MMIO_BASE + 0x215048)
@@ -33,21 +33,61 @@
 #define GPFSEL_ALT4   0b011
 #define GPFSEL_ALT5   0b010
 
+#define READ_BUFFER_SIZE  512
+#define WRITE_BUFFER_SIZE 512
+
 namespace valkyrie::kernel {
 
 class MiniUART {
  public:
-  MiniUART();
+  static MiniUART& get_instance();
   ~MiniUART() = default;
 
+  char getchar();
+  void gets(char* s);
+  void putchar(const char c);
+  void puts(const char* s, bool newline = true);
+
+  void enable_interrupts() const;
+  void disable_interrupts() const;
+  bool has_pending_irq() const;
+  void handle_irq();
+
+  bool is_debugging() const;
+  void set_debugging(bool debugging);
+  void set_read_buffer_enabled(bool enabled);
+  void set_write_buffer_enabled(bool enabled);
+
+ private:
+  MiniUART();
+
+  // Synchronous I/O
   uint8_t recv();
   void send(const uint8_t byte);
+  char getchar_sync();
+  void gets_sync(char* s);
+  void putchar_sync(const char c);
+  void puts_sync(const char* s, bool newline = true);
 
-  char getchar();
-  void putchar(const char c);
+  // Asynchronous I/O
+  void handle_tx_irq();
+  void handle_rx_irq();
+  void flush_write_buffer();
+  char getchar_async();
+  void gets_async(char* s);
+  void putchar_async(const char c);
+  void puts_async(const char* s, bool newline = true);
 
-  void gets(char* s);
-  void puts(const char* s, bool newline = true);
+
+  bool _is_debugging;
+  bool _is_read_buffer_enabled;
+  bool _is_write_buffer_enabled;
+
+  int _read_buffer_bytes_pending;
+  int _write_buffer_bytes_pending;
+
+  uint8_t _read_buffer[READ_BUFFER_SIZE];
+  uint8_t _write_buffer[WRITE_BUFFER_SIZE];
 };
 
 }  // namespace valkyrie::kernel

@@ -10,7 +10,7 @@ namespace valkyrie::kernel {
 template <typename T>
 class UniquePtr {
  public:
-  // Default Constructor
+  // Default constructor
   UniquePtr() : _p() {}
 
   // Constructor
@@ -18,7 +18,9 @@ class UniquePtr {
   UniquePtr(T* p) : _p(p) {}
 
   // Destructor
-  ~UniquePtr() { reset(); }
+  ~UniquePtr() {
+    reset();
+  }
 
   // Copy constructor
   UniquePtr(const UniquePtr&) = delete;
@@ -27,14 +29,22 @@ class UniquePtr {
   UniquePtr& operator =(const UniquePtr&) = delete;
 
   // Move constructor
-  UniquePtr(UniquePtr&& other) noexcept : _p(other.release()) {}
+  UniquePtr(UniquePtr&& r) noexcept : _p(r.release()){}
 
   // Move assignment operator
-  UniquePtr& operator =(UniquePtr&& other) noexcept {
-    reset(other.release());
+  UniquePtr& operator =(UniquePtr&& r) noexcept {
+    reset(r.release());
     return *this;
   }
 
+  // Conversion operator
+  template <typename U>
+  operator UniquePtr<U>() {
+    if (dynamic_cast<U*>(_p)) {
+      return UniquePtr<U>(release());
+    }
+    return UniquePtr<U>();
+  }
 
   T* operator ->() const { return get(); }
   T& operator *() const { return *get(); }
@@ -52,7 +62,7 @@ class UniquePtr {
 
   void swap(UniquePtr& r) noexcept {
     using ::valkyrie::kernel::swap;
-    swap(_p, r._p);
+    swap(*this, r);
   }
 
   T* release() {
@@ -61,33 +71,22 @@ class UniquePtr {
     return p;
   }
 
- private:
+ protected:
   T* _p;
 };
 
 
-// https://stackoverflow.com/questions/47360599/c-is-there-a-way-for-a-template-class-specialization-to-contain-code-from-th
+
 template <typename T>
-class UniquePtr<T[]> {
+class UniquePtr<T[]> : private UniquePtr<T> {
  public:
-  // Default Constructor
-  UniquePtr() : _p() {}
-
-  // Constructor
-  explicit
-  UniquePtr(T* p) : _p(p) {}
-
-  // Destructor
-  ~UniquePtr() { reset(); }
-
-  // Copy constructor
-  UniquePtr(const UniquePtr&) = delete;
-
-  // Copy assignment operator
-  UniquePtr& operator =(const UniquePtr&) = delete;
+  using UniquePtr<T>::UniquePtr;
+  using UniquePtr<T>::operator=;
 
   // Move constructor
-  UniquePtr(UniquePtr&& other) noexcept : _p(other.release()) {}
+  UniquePtr(UniquePtr&& other) noexcept {
+    *this = move(other);
+  }
 
   // Move assignment operator
   UniquePtr& operator =(UniquePtr&& other) noexcept {
@@ -95,12 +94,18 @@ class UniquePtr<T[]> {
     return *this;
   }
 
-  T& operator [](size_t i) { return get()[i]; }
-  T* operator ->() const { return get(); }
-  T& operator *() const { return *get(); }
-  operator bool() const { return get(); }
+  ~UniquePtr() {
+    reset();
+  }
 
-  T* get() const { return _p; }
+  T& operator [](size_t i) { return get()[i]; }
+  using UniquePtr<T>::operator ->;
+  using UniquePtr<T>::operator *;
+  using UniquePtr<T>::operator bool;
+
+  using UniquePtr<T>::get;
+  using UniquePtr<T>::release;
+  using UniquePtr<T>::swap;
 
   void reset(T* p = nullptr) {
     if (_p == p) {
@@ -110,20 +115,11 @@ class UniquePtr<T[]> {
     _p = p;
   }
 
-  void swap(UniquePtr& r) noexcept {
-    using ::valkyrie::kernel::swap;
-    swap(_p, r._p);
-  }
-
-  T* release() {
-    T* p = _p;
-    _p = nullptr;
-    return p;
-  }
 
  private:
-  T* _p;
+  using UniquePtr<T>::_p;
 };
+
 
 
 template <typename T>
@@ -135,6 +131,7 @@ struct _UniqueIf<T[]> { using _UnknownBound = UniquePtr<T[]>; };
 template <typename T, size_t N>
 struct _UniqueIf<T[N]> { using _KnownBound = void; };
 
+
 template <typename T, typename... Args>
 typename _UniqueIf<T>::_SingleObject make_unique(Args&&... args) {
   return UniquePtr<T>(new T(forward<Args>(args)...));
@@ -142,8 +139,7 @@ typename _UniqueIf<T>::_SingleObject make_unique(Args&&... args) {
 
 template <typename T>
 typename _UniqueIf<T>::_UnknownBound make_unique(size_t n) {
-  using U = RemoveExtent<T>;
-  return UniquePtr<T>(new U[n]());
+  return UniquePtr<T>(new RemoveExtent<T>[n]());
 }
 
 template <typename T, typename... Args>

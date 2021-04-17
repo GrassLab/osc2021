@@ -1,11 +1,6 @@
-<div align="center">
-  <h3>Unix-like ARM64 kernel</h3>
-  <img src="/Documentation/logo.png">
-</div>
+## NYCU, Operating System Capstone, Spring 2021
 
-<br>
-
-## Overview
+Lab Specification: https://grasslab.github.io/NYCU_Operating_System_Capstone/index.html
 
 | 學號 | GitHub 帳號 | 姓名 | Email |
 | --- | ----------- | --- | --- |

@@ -1,5 +1,5 @@
 // Copyright (c) 2021 Marco Wang <m.aesophor@gmail.com>. All rights reserved.
-#include <libs/String.h>
+#include <libs/CString.h>
 
 extern "C" {
 
@@ -20,6 +20,18 @@ void* memset(void* dest, uint8_t val, size_t n) {
     *dest_p++ = val;
   }
   return dest;
+}
+
+int memcmp(const void* ptr1, const void* ptr2, size_t num) {
+  const uint8_t* p1 = reinterpret_cast<const uint8_t*>(ptr1);
+  const uint8_t* p2 = reinterpret_cast<const uint8_t*>(ptr2);
+
+  while (num-- > 0) {
+    if (*p1++ != *p2++) {
+      return p1[-1] < p2[-1] ? -1 : 1;
+    }
+  }
+  return 0;
 }
 
 

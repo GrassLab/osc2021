@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Marco Wang <m.aesophor@gmail.com>. All rights reserved.
-#ifndef VALKYRIE_STRING_H_
-#define VALKYRIE_STRING_H_
+#ifndef VALKYRIE_C_STRING_H_
+#define VALKYRIE_C_STRING_H_
 
 #include <Types.h>
 
@@ -8,6 +8,7 @@ extern "C" {
 
 void* memcpy(void* dest, const void* src, size_t n);
 void* memset(void* dest, uint8_t val, size_t n);
+int memcmp(const void* ptr1, const void* ptr2, size_t num);
 
 size_t strlen(const char* s);
 int strcmp(const char* s1, const char* s2);
@@ -24,4 +25,4 @@ int atoi(const char* str, const int base = 10);
 
 }
 
-#endif  // VALKYRIE_STRING_H_
+#endif  // VALKYRIE_C_STRING_H_
