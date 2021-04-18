@@ -99,7 +99,7 @@ u32 parse_prop (u32 offset, char is_kprintf) {
 
     if (is_kprintf) {
         kprintf("%s: ", name);
-        if (strlength((char *)ptr) != len - 1) {
+        if (strlen((char *)ptr) != len - 1) {
             kprintf_u32s((u32 *)ptr, len / 4);
         }
         else
@@ -123,7 +123,7 @@ void show_all_fdt () {
         /* next chunck is string */
         if (fdt_struct[i] == FDT_BEGIN_NODE_BIG) {
             kprintf("\n%s\n", (char *)&fdt_struct[i + 1]);
-            unsigned long len = strlength((char *)&fdt_struct[i + 1]) + 1;
+            unsigned long len = strlen((char *)&fdt_struct[i + 1]) + 1;
             i += len / 4;
             i += len % 4 ? 1 : 0;
             i++;

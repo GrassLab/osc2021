@@ -45,8 +45,8 @@
 
 /* interrupt */
 #define IRQ_BASIC_REG (MMIO_BASE + 0xB200)
-#define IRQ1_REG (MMIO_BASE + 0xB204)
-#define IRQ2_REG (MMIO_BASE + 0xB208)
+#define IRQ1_PENDING_REG (MMIO_BASE + 0xB204)
+#define IRQ2_PENDING_REG (MMIO_BASE + 0xB208)
 #define FIQ_CONTROL_REG (MMIO_BASE + 0xB20C)
 #define ENABLE_IRQS1_REG (MMIO_BASE + 0xB210)
 #define ENABLE_IRQS2_REG (MMIO_BASE + 0xB214)
@@ -54,6 +54,24 @@
 #define DISABLE_IRQS1_REG (MMIO_BASE + 0xB21C)
 #define DISABLE_IRQS2_REG (MMIO_BASE + 0xB220)
 #define DISABLE_BASIC_IRQS_REG (MMIO_BASE + 0xB224)
+
+/* interrupt IRQ table */
+#define IRQ_TABLE_SYSTEM_TIMER1 ((u64)1 << 1)
+#define IRQ_TABLE_SYSTEM_TIMER2 ((u64)1 << 3)
+#define IRQ_TABLE_USB_CONTROLLER ((u64)1 << 9)
+#define IRQ_TABLE_AUX_INT ((u64)1 << 29)
+#define IRQ_TABLE_I2C_SPI_SLV_INT ((u64)1 << 43)
+#define IRQ_TABLE_PWA0 ((u64)1 << 45)
+#define IRQ_TABLE_PWA1 ((u64)1 << 46)
+#define IRQ_TABLE_SMI ((u64)1 << 48)
+#define IRQ_TABLE_GPIO_INT0 ((u64)1 << 49)
+#define IRQ_TABLE_GPIO_INT1 ((u64)1 << 50)
+#define IRQ_TABLE_GPIO_INT2 ((u64)1 << 51)
+#define IRQ_TABLE_GPIO_INT3 ((u64)1 << 52)
+#define IRQ_TABLE_I2C_INT ((u64)1 << 53)
+#define IRQ_TABLE_SPI_INT ((u64)1 << 54)
+#define IRQ_TABLE_PCM_INT ((u64)1 << 55)
+#define IRQ_TABLE_UART_INT ((u64)1 << 57)
 
 
 /* timer */
@@ -65,4 +83,6 @@
 #define MAILBOX_WRITE_REG (MMIO_BASE + 0xB8A0)
 
 #define mmio(NAME) ((volatile unsigned int *)(NAME ## _REG))
+#define clear(r, n) *mmio(r) &= ~(1 << n)
+#define set(r, n) *mmio(r) |= 1 << n
 #endif

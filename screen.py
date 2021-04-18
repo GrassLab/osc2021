@@ -131,8 +131,13 @@ def auto_load ():
 
 is_end = False
 def read_thread ():
+    global is_end
     while not is_end:
-        nonblock_read()
+        try:
+            nonblock_read()
+        except:
+            is_end = True
+            os._exit(0)
 
 def sig_handler (sig, frame):
     if sig == signal.SIGINT:
@@ -167,7 +172,7 @@ if __name__ == '__main__':
     t = threading.Thread(target = read_thread)
     t.start()
 
-    while True:
+    while not is_end:
         command = input()
         if command == 'exit':
             if args.load:

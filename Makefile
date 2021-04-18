@@ -70,13 +70,13 @@ $(CPIO): $(CPIO_FILES)
 
 # debug tools
 exe:
-	$(QEMU) -M raspi3 -kernel $(TEST_IMG) $(QEMU_CPIO) $(QEMU_DTB) -display none -serial null -serial pty
+	$(QEMU) -M raspi3 -kernel $(TEST_IMG) $(QEMU_CPIO) $(QEMU_DTB) -display none -serial null -serial pty -d int
 
 dump:
 	$(QEMU) -M raspi3 -kernel $(TEST_IMG) -display none -d in_asm
 
 debug:
-	$(QEMU) -M raspi3 -kernel $(TEST_IMG) $(QEMU_CPIO) $(QEMU_DTB) -display none -S -s $(MINI-UART)
+	$(QEMU) -M raspi3 -kernel $(TEST_IMG) $(QEMU_CPIO) $(QEMU_DTB) -display none -serial null -serial pty -S -s $(MINI-UART) -d int
 
 gdb:
 	@echo "target remote :1234"

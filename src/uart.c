@@ -1,6 +1,61 @@
 #include "uart.h"
 #include "mmio.h"
 #include "string.h"
+#include "utility.h"
+#include "io.h"
+
+#define BUFFER_SIZE 0x1000
+char read_buffer[BUFFER_SIZE], write_buffer[BUFFER_SIZE];
+long read_start = 0, read_end = 0, write_start = 0, write_end = 0;
+
+int push_read_buffer () {
+    int flag = 0;
+    while (*aux(MU_LSR) & 0x1) {
+        read_buffer[read_end] = (unsigned char) *aux(MU_IO);
+        read_end = (read_end + 1) % BUFFER_SIZE;
+        /* buffer is already full. discard oldest data. */
+        if (read_start == read_end) {
+            read_start = (read_start + 1) % BUFFER_SIZE;
+            flag = 1;
+        }
+    }
+    return flag;
+}
+
+int read_line (char *buffer, u32 size) {
+    int is_ready = 0;
+    /* block until data is ready */
+    while (!is_ready) {
+        long tmp, counter = 0;
+        for (tmp = read_start; tmp != read_end; tmp = (tmp + 1) % BUFFER_SIZE) {
+            if (read_buffer[tmp] == '\n') {
+                is_ready = 1;
+                break;
+            }
+            if (++counter > size) {
+                is_ready = 1;
+                break;
+            }
+        }
+    }
+
+    /* disable irq */
+    disable_DAIF_irq();
+    long anchor = read_start, i = 0;
+    for (; i < size - 1 && anchor != read_end; i++,
+            anchor = (anchor + 1) % BUFFER_SIZE) {
+        buffer[i] = read_buffer[anchor];
+        if (read_buffer[anchor] == '\n') {
+            anchor = (anchor + 1) % BUFFER_SIZE;
+            break;
+        }
+    }
+    read_start = anchor;
+    buffer[i + 1] = '\0';
+    /* enable irq */
+    enable_DAIF_irq();
+    return i;
+}
 
 void delay_cycles (unsigned int num) {
     for (int i = 0; i < num; i++) {
@@ -38,7 +93,7 @@ void uart_sendi (long num) {
     }
 
     /* reverse buffer */
-    int len = strlength(buffer);
+    int len = strlen(buffer);
     for (int i = 0; i < len / 2; i++) {
         char tmp = buffer[i];
         buffer[i] = buffer[len - i - 1];
@@ -70,7 +125,7 @@ void uart_sendhf (unsigned long num) {
     }
 
     /* reverse buffer */
-    int len = strlength(buffer);
+    int len = strlen(buffer);
     for (int i = 0; i < len / 2; i++) {
         char tmp = buffer[i];
         buffer[i] = buffer[len - i - 1];
@@ -78,10 +133,6 @@ void uart_sendhf (unsigned long num) {
     }
 
     uart_send("0x");
-    /*
-    for (int i = 0; i < 16 - hexn; i++)
-        uart_send("0");
-    */
     uart_send(buffer);
 }
 
@@ -105,7 +156,7 @@ void uart_sendh (unsigned long num) {
     }
 
     /* reverse buffer */
-    int len = strlength(buffer);
+    int len = strlen(buffer);
     for (int i = 0; i < len / 2; i++) {
         char tmp = buffer[i];
         buffer[i] = buffer[len - i - 1];
@@ -137,7 +188,7 @@ void uart_sendf (float num) {
     }
 
     /* reverse buffer */
-    int len = strlength(integer);
+    int len = strlen(integer);
     for (int i = 0; i < len / 2; i++) {
         char tmp = integer[i];
         integer[i] = integer[len - i - 1];
@@ -183,8 +234,6 @@ void uart_getline (char *buffer, unsigned int size) {
     }
 }
 
-#define clear(r, n) *mmio(r) &= ~(1 << n)
-#define set(r, n) *mmio(r) |= 1 << n
 
 void uart_init () {
 #ifdef UART_MINI
@@ -211,8 +260,11 @@ void uart_init () {
     *aux(ENABLES) |= 1;
     /* Disable transmitter and receiver */
     *aux(MU_CNTL) = 0;
+
     /* Disable interrupt */
-    *aux(MU_IER) = 0;
+    set(AUX_MU_IER, 0); /* enable receive interrupt */
+    set(ENABLE_IRQS1, 29);
+
     /* Set the data size to 8 bit */
     *aux(MU_LCR) = 3;
     /* Don’t need auto flow control */

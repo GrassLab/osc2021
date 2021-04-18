@@ -20,7 +20,18 @@ void mem_set (char *dst, char value, u64 size) {
     }
 }
 
-int strlength (char *str) {
+void strip_newline (char *buffer) {
+    int len = strlen(buffer);
+    if (len > 1 && buffer[len - 1] == '\n' && buffer[len - 2] == '\r') {
+        buffer[len - 1] = '\0';
+        buffer[len - 2] = '\0';
+    }
+    else if (len > 0 && buffer[len - 1] == '\n') {
+        buffer[len - 1] = '\0';
+    }
+}
+
+int strlen (char *str) {
     int num = 0;
     while (str[num]) num++;
     return num;
@@ -102,3 +113,8 @@ long atoi (char *b) {
     return -num;
 }
 
+long strfind (char *buffer, char *token) {
+    long ptr = 0;
+
+    return ptr;
+}

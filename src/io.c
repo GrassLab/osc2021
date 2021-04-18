@@ -55,7 +55,7 @@ void kprintf (char *format, ...) {
         }
     }
 
-   u64 size = strlength(format);
+   u64 size = strlen(format);
    va_list ap;
    va_start(ap, format);
    for (u64 i = 0; i < size;) {

@@ -9,6 +9,39 @@ void print_el1_exc () {
     kprintf("esr_el1: %x\n\n", get_esr_el1());
 }
 
+#include "uart.h"
+void irq_uart_handler () {
+    push_read_buffer ();
+}
+
+void sp_elx_irq_handler () {
+    u64 pending = *mmio(IRQ1_PENDING);
+    pending |= (u64)(*mmio(IRQ2_PENDING)) << 32;
+    switch (pending) {
+        case IRQ_TABLE_AUX_INT:
+            irq_uart_handler();
+            return;
+        case IRQ_TABLE_UART_INT:
+        case IRQ_TABLE_SYSTEM_TIMER1:
+        case IRQ_TABLE_SYSTEM_TIMER2:
+        case IRQ_TABLE_USB_CONTROLLER:
+        case IRQ_TABLE_I2C_SPI_SLV_INT:
+        case IRQ_TABLE_PWA0:
+        case IRQ_TABLE_PWA1:
+        case IRQ_TABLE_SMI:
+        case IRQ_TABLE_GPIO_INT0:
+        case IRQ_TABLE_GPIO_INT1:
+        case IRQ_TABLE_GPIO_INT2:
+        case IRQ_TABLE_GPIO_INT3:
+        case IRQ_TABLE_I2C_INT:
+        case IRQ_TABLE_SPI_INT:
+        case IRQ_TABLE_PCM_INT:
+        default:
+            kprintf("Error: Unsupport irq %x\n", pending);
+    }
+    while (1); /* trap */
+}
+
 int sys_call_handler () {
     u64 sys_num = get_x19();
     switch (sys_num) {
@@ -33,7 +66,7 @@ int sys_call_handler () {
     return 1;
 }
 
-void print_exc_error (int error) {
+void exc_error (int error) {
     switch (error) {
         case 0:
             kprintf("Unsupport exception: SP_EL0 sync\n");
@@ -86,6 +119,9 @@ void print_exc_error (int error) {
         default:
             kprintf("Unkown exception: %d\n", error);
     }
+
+    /* trap */
+    while (1) ;
 }
 
 /* IRQ table */

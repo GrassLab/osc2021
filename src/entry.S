@@ -1,11 +1,14 @@
 .macro vector_block label
-    .align 7
     save_basic_reg
     b \label
 .endm
 
+.macro kvector_block label
+    save_kernel_reg
+    b \label
+.endm
+
 .macro todo_vector_block num
-    .align 7
     mov x0, #\num
     save_basic_reg
     b error_handler
@@ -66,24 +69,40 @@
 .global exception_vector_table
 exception_vector_table:
 /* part 0 */
+    .align 7
     todo_vector_block 0
+    .align 7
     todo_vector_block 1
+    .align 7
     todo_vector_block 2
+    .align 7
     todo_vector_block 3
 /* part 1 */
+    .align 7
     todo_vector_block 4
-    todo_vector_block 5
+    .align 7
+    vector_block sp_elx_irq
+    .align 7
     todo_vector_block 6
+    .align 7
     todo_vector_block 7
 /* part 2 */
+    .align 7
     vector_block aarch64_sync
+    .align 7
     vector_block aarch64_irq
+    .align 7
     todo_vector_block 10
+    .align 7
     todo_vector_block 11
 /* part 3 */
+    .align 7
     todo_vector_block 12
+    .align 7
     todo_vector_block 13
+    .align 7
     todo_vector_block 14
+    .align 7
     todo_vector_block 15
 
 
@@ -93,6 +112,10 @@ sp_el0_fiq:
 sp_el0_vserror:
 sp_elx_sync:
 sp_elx_irq:
+    bl sp_elx_irq_handler
+    load_kernel_reg
+    eret
+
 sp_elx_fiq:
 sp_elx_vserror:
 
@@ -129,7 +152,7 @@ aarch32_fiq:
 aarch32_vserror:
 
 error_handler:
-    bl print_exc_error
+    bl exc_error
 1:
     b 1b
 
@@ -156,22 +179,6 @@ from_el1_to_el0:
     bl enable_DAIF_irq
     bl core_timer_enable
     eret
-
-.global tmp_p
-tmp_p:
-    mov x0, 0
-1:
-    add x0, x0, 1
-    mov x1, x0
-    mov x0, #0
-    svc 0
-    mov x0, x1
-    cmp x0, 5
-    blt 1b
-1:
-    mov x0, #1
-    svc 0
-    b 1b
 
 #define CORE0_TIMER_IRQ_CTRL 0x40000040
 .global core_timer_enable

@@ -114,6 +114,7 @@ void parse_command (char *b) {
 
 int main () {
     uart_init();
+    enable_DAIF_irq();
     startup_allocator_init();
     cpio_init();
     fdt_init();
@@ -131,7 +132,8 @@ int main () {
 
     while (1) {
         kprintf("$ ");
-        uart_getline(buffer, BUFFER_SIZE);
+        read_line(buffer, BUFFER_SIZE);
+        strip_newline(buffer);
         parse_command(buffer);
         kprintf("\n");
     }

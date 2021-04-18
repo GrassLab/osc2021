@@ -20,7 +20,7 @@ void mem_hex_kprintf (unsigned long address, unsigned int num) {
 }
 
 int mem_print (char *b) {
-    unsigned int blen = strlength(b);
+    unsigned int blen = strlen(b);
     if (blen < 4 || b[0] != 'x' || b[1] != '/')
         return 0;
 

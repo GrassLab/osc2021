@@ -1,5 +1,9 @@
 #ifndef UART_H
 #define UART_H
+#include "data_type.h"
+int push_read_buffer ();
+int read_line (char *buffer, u32 size);
+void tmp_read ();
 
 void uart_init ();
 void uart_sendc (char c);
