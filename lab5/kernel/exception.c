@@ -12,3 +12,7 @@ void exception_level_info() {
   printf("esr_el1: %x\n", esr_el1);
 }
 
+void syscall_number_error() {
+  printf("syscall_number_error\n");
+}
+

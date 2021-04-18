@@ -1,6 +1,6 @@
 .section ".text"
 .macro store_context
-  sub  sp, sp, #16 * 16
+  sub  sp, sp, #16 * 17
   stp  x0, x1, [sp, #16 * 0]
   stp  x2, x3, [sp, #16 * 1]
   stp  x4, x5, [sp, #16 * 2]
@@ -16,9 +16,18 @@
   stp  x24, x25, [sp, #16 * 12]
   stp  x26, x27, [sp, #16 * 13]
   stp  x28, x29, [sp, #16 * 14]
-  str  x30, [sp, 16 * 15] 
+  mrs  x9, sp_el0
+  stp  x30, x9, [sp, 16 * 15]
+  mrs  x9, elr_el1
+  mrs  x10, spsr_el1
+  stp  x9, x10, [sp, 16 * 16]  
 .endm
 .macro restore_context 
+  ldp  x30, x9, [sp, #16 * 15]
+  msr  sp_el0, x9
+  ldp  x9, x10, [sp, #16 * 16]
+  msr  elr_el1, x9
+  msr  spsr_el1, x10
   ldp  x0, x1, [sp, #16 * 0]
   ldp  x2, x3, [sp, #16 * 1]
   ldp  x4, x5, [sp, #16 * 2]
@@ -34,8 +43,7 @@
   ldp  x24, x25, [sp, #16 * 12]
   ldp  x26, x27, [sp, #16 * 13]
   ldp  x28, x29, [sp, #16 * 14]
-  ldr  x30, [sp, #16 * 15] 
-  add  sp, sp, #16 * 16
+  add  sp, sp, #16 * 17
 .endm
 
 .align 11 // vector table should be aligned to 0x800
@@ -84,23 +92,42 @@ _set_exception_vector_table:
   ret
 
 exception_handler:
-  #disable interrupt
-  msr DAIFSet, 0xf
   store_context
-  bl exception_level_info
+  #bl exception_level_info
+  
+  #checks the source of exception
+  mrs x9, esr_el1
+  mov x10, x9
+  #EC( 1<< 26) = 010101 = 0x15: SVC instruction execution in AArch64 state
+  lsr x9, x9, #26
+  cmp x9, #0x15
+  bne not_syscall
+  #imm16 low 16bit value 0: syscall 
+  and x10, x10, 0xffff
+  cmp x10, #0
+  bne not_syscall
+  bl syscall
+
+not_syscall:
   restore_context
-  #enable interrupt
-  msr DAIFClr, 0xf
   eret
 
 irq_handler:
-  #disable interrupt
-  msr DAIFSet, 0xf
   store_context
+  
   bl irq_routing
+
+  #bl schedule
+  
   restore_context
-  #enable interrupt
-  msr DAIFClr, 0xf
   eret
 
+.global enable_interrupt
+enable_interrupt:
+  msr DAIFClr, 0xf
+  ret
 
+.global disable_interrupt
+disable_interrupt:
+  msr DAIFSet, 0xf
+  ret

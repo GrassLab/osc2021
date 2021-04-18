@@ -12,7 +12,6 @@ void irq_routing() {
     //nCNTHPIRQ core 0 interrupt source 2
     // core timer interrupt handler
     core_time_interrupt_handler();
-    schedule();
   }
   else if(*CORE0_INTERRUPT_SOURCE & (1 << 8)) {
     //GPU interrupt

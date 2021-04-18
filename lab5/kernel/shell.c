@@ -105,8 +105,10 @@ void do_command(char* command) {
   else if(strncmp(command, "dfree", 5) == 0) {
     dynamic_free((void *)strtol(command + 5, 0, 16));
   }
-  else if(strncmp(command, "svc", 4) == 0) {
-    asm volatile("svc #1");
+  else if(strncmp(command, "svc", 3) == 0) {
+    int syscall_num = strtol(command + 4, 0, 10);
+    printf("syscall_number: %d\n", syscall_num);
+    asm volatile("mov x0, %0\n" "svc #0\n"::"r"(syscall_num));
   }
   else if(strncmp(command, "run", 3) == 0) {
     void* addr;
