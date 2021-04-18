@@ -20,7 +20,7 @@ static inline void __list_add(list_head_t *new_, list_head_t *prev, list_head_t 
     prev->next = new_;
 }
 
-static inline void list_add(list_head_t *new_, list_head_t *head)
+static inline void list_add_head(list_head_t *new_, list_head_t *head)
 {
     __list_add(new_, head, head->next);
 }

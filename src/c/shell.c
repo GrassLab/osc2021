@@ -2,6 +2,7 @@
 #include "string.h"
 #include "command.h"
 #include "uart.h"
+#include "printf.h"
 
 void shell_start()
 {
@@ -13,7 +14,7 @@ void shell_start()
     strset(buffer, 0, MAX_BUFFER_LEN);
 
     // new line head
-    uart_puts("# ");
+    printf("# ");
 
     // read input
     while (1)
@@ -48,12 +49,12 @@ void command_controller(enum SPECIAL_CHARACTER input_parse, char c, char buffer[
         if ((*counter) > 0)
         {
             (*counter)--;
-            uart_puts("\b \b");
+            printf("\b \b");
         }
     }
     else if (input_parse == NEW_LINE)
     {
-        uart_send(c);
+        printf("%c", c);
 
         if ((*counter) == MAX_BUFFER_LEN)
         {
@@ -67,12 +68,16 @@ void command_controller(enum SPECIAL_CHARACTER input_parse, char c, char buffer[
                 command_help();
             else if (!strcmp(buffer, "hello"))
                 command_hello();
-            else if (!strcmp(buffer, "timestamp"))
-                command_timestamp();
             else if (!strcmp(buffer, "reboot"))
                 command_reboot();
             else if (!strcmp(buffer, "cpio"))
                 command_cpio();
+            else if (!strcmp(buffer, "timer_on"))
+                command_timer_on();
+            else if (!strcmp(buffer, "timer_off"))
+                command_timer_off();
+            else if (!strcmp(buffer, "set_timeout"))
+                command_set_timeout();
             else
                 command_not_found(buffer);
         }
@@ -81,11 +86,11 @@ void command_controller(enum SPECIAL_CHARACTER input_parse, char c, char buffer[
         strset(buffer, 0, MAX_BUFFER_LEN);
 
         // new line head;
-        uart_puts("# ");
+        printf("# ");
     }
     else if (input_parse == REGULAR_INPUT)
     {
-        uart_send(c);
+        printf("%c", c);
 
         if (*counter < MAX_BUFFER_LEN)
         {

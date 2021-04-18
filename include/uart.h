@@ -46,7 +46,7 @@
 /**
  * Set baud rate and characteristics (115200 8N1) and map to GPIO
  */
-void uart_init();
+void init_uart();
 
 /**
  * Send a character
@@ -56,6 +56,11 @@ void uart_send(unsigned int c);
  * Receive a character
  */
 char uart_getc();
+
+/**
+ * Read a whole line
+ */
+void uart_getline(char *buffer);
 
 /**
  * Display a string
