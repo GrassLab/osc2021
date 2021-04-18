@@ -9,7 +9,7 @@
 #define PAGE_SIZE 0x1000 // 4KB
 #define PAGE_OFFSET(ADDR) ((PAGE_SIZE - 1) & (ADDR)) 
 #define MAX_PD_TYPE 8
-#define MAX_DMPP 10
+#define MAX_DMPP 32
 
 struct region_descriptor rd_pool[MAX_NR_REGIONS_POOL];
 struct region_descriptor *free_region_head;

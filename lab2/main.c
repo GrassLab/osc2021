@@ -4,6 +4,7 @@
 #include "include/dtp.h"
 #include "include/test.h"
 #include "include/cirq.h"
+#include "include/csched.h"
 // #include "include/initramfs.h"
 #include "utils.h"
 #define CMD_SIZE 64
@@ -117,8 +118,8 @@ int cat_file_initramfs()
     char *name_start, *data_start;
 
     uart_send_string("Please enter file path: ");
-    // read_line();
     read_line_low_power(file_name_buf, FILE_NAME_SIZE);
+    // read_line(file_name_buf, FILE_NAME_SIZE);
     ent = (struct cpio_newc_header*)INITRAMFS_BASE;
     while (1)
     {
@@ -196,6 +197,7 @@ int run_initramfs()
                 page_ptr[i] = data_start[i];
             run_user_program(page_ptr, page_ptr + 4096 - 1);
             // never come back again.
+            uart_send_string("Should never print out.\r\n");
             return 0;
         }
         ent = (struct cpio_newc_header*)align_upper(data_start + filesize, 4);
@@ -251,6 +253,7 @@ void bootloader_relocate()
 
     uart_send_string("Please enter relocation address(hex without '0x'): ");
     address_len = read_line_low_power(buf, 100);
+    // address_len = read_line(buf, 100);
     bootloader_new_addr = hex_string_to_unsigned_long(buf, address_len);
     // uart_send_long(bootloader_new_addr);
     dest = (char*)bootloader_new_addr;
@@ -337,6 +340,7 @@ void *wakeup_mesg(void* arg)
     char *mesg = (char*)arg;
     uart_send_string("\r\n");
     uart_send_string(mesg);
+    
     return 0; // null
 }
 char globl_mesg[100];
@@ -423,46 +427,74 @@ int cmd_handler(char *cmd)
     return 0;
 }
 
-// int kernel_main(char *sp)
-// {
-//     char cmd_buf[CMD_SIZE];
+extern struct task task_pool[];
+extern struct task *current;
 
-//     do_dtp(uart_probe);
-//     // uart_init();
-//     rd_init();
-//     dynamic_mem_init();
-//     timerPool_init();
-//     // enable_irq();
-//     core_timer_enable();
-//     uart_send_string("Welcome to RPI3-OS\r\n");
-//     while (1) {
-//         uart_send_string("user@rpi3:~$ ");
-//         wait_for_interrupt(); // low power standby
-//         read_line(cmd_buf, CMD_SIZE);
-//         if (!strlen(cmd_buf))  // User input nothing but Enter
-//             continue;
-//         cmd_handler(cmd_buf);
-//     }
-//     return 0;
+
+void test_thread_1(char *arg)
+{
+    uart_send_string("From test_thread_1\r\n");
+    int cnt = 2;
+    while (cnt--) {
+        for(int i = 0; i < 10; ++i) {
+            uart_send_string(arg);
+            delay(1000000);
+        }
+        schedule();
+    }
+    exit(current);
+}
+
+void idle()
+{
+    struct task *walk;
+
+    while (1) {
+        uart_send_string("From idle\r\n");
+        for (int i = 0; i < MAX_TASK_NR; ++i) {
+            walk = &task_pool[i];
+            if (walk->free == 0 && walk->status == TASK_ZOMBIE) {
+                uart_send_string("From idle: Find zombie and cleared.\r\n");
+                kfree(walk->stack_page);
+                walk->free = 1;
+            }
+        }
+        schedule();
+    }
+}
+
+// int show_regs()
+// {
+//     current
 // }
 
 int kernel_main(char *sp)
 {
     char cmd_buf[CMD_SIZE];
 
-    do_dtp(uart_probe);
-    // uart_init();
+    // do_dtp(uart_probe);
+    uart_init();
     rd_init();
     dynamic_mem_init();
     timerPool_init();
     enable_irq();
     // core_timer_enable();
     put32(ENABLE_IRQS_1, 1 << 29); // Enable AUX interrupt
+    wait_for_interrupt();
     uart_send_string("Welcome to RPI3-OS\r\n");
+
+    init_ts_pool();
+    struct task *a = thread_create((unsigned long)test_thread_1, "CCC\r\n");
+    struct task *b = thread_create((unsigned long)test_thread_1, "DDD\r\n");
+    thread_create((unsigned long)idle, 0);
+    current = new_ts();
+    current->ctx.sp = (unsigned long)kmalloc(4096);
+    schedule();
 
     while (1) {
         uart_send_string("user@rpi3:~$ ");
         read_line_low_power(cmd_buf, CMD_SIZE);
+        // read_line(cmd_buf, CMD_SIZE);
         if (!strlen(cmd_buf))  // User input nothing but Enter
             continue;
         cmd_handler(cmd_buf);

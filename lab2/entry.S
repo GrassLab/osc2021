@@ -62,25 +62,25 @@ el1_table_init:
 .global el1_table
 el1_table:
 // Exception from CurrentEL (SP_EL0)
-    entry invalid_handler      // Synchronous
-    entry invalid_handler      // IRQ
-    entry invalid_handler      // FIQ
-    entry invalid_handler      // SError
+    entry invalid_entry      // Synchronous
+    entry invalid_entry      // IRQ
+    entry invalid_entry      // FIQ
+    entry invalid_entry      // SError
 // Exception from CurrentEL (SP_ELx)
-    entry invalid_handler      // Synchronous
-    entry irq_entry            // IRQ
-    entry invalid_handler      // FIQ
-    entry invalid_handler      // SError
+    entry invalid_entry      // Synchronous
+    entry irq_entry          // IRQ
+    entry invalid_entry      // FIQ
+    entry invalid_entry      // SError
 // Exception from lower EL (AArch64)
-    entry syscall_entry        // Synchronous
-    entry irq_entry            // IRQ
-    entry invalid_handler      // FIQ
-    entry invalid_handler      // SError
+    entry syscall_entry      // Synchronous
+    entry irq_entry          // IRQ
+    entry invalid_entry      // FIQ
+    entry invalid_entry      // SError
 // Exception from lower EL (AArch32)
-    entry invalid_handler      // Synchronous
-    entry invalid_handler      // IRQ
-    entry invalid_handler      // FIQ
-    entry invalid_handler      // SError
+    entry invalid_entry      // Synchronous
+    entry invalid_entry      // IRQ
+    entry invalid_entry      // FIQ
+    entry invalid_entry      // SError
 
 
 .globl syscall_entry
@@ -100,7 +100,16 @@ irq_entry:
     load_all
     eret
 
-.globl invalid_handler
-invalid_handler:
+.globl invalid_entry
+invalid_entry:
     b   invalid_handler
 
+// [0]
+.globl ret_from_fork
+ret_from_fork:
+    // bl  schedule_tail
+    mov x0, x20
+    blr x19         //should never return
+
+
+//[0] https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson04/src/entry.S#L146

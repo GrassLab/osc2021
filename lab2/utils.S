@@ -18,6 +18,10 @@ delay:
 branch_to_address:
     br x1
 
+.globl _branch_to_address
+_branch_to_address:
+    br x0
+
 .globl lead_zero
 lead_zero:
     clz w0, w0
@@ -61,6 +65,14 @@ run_user_program:
     msr    spsr_el1, x0    // set to EL0
     msr    sp_el0, x1      // set EL0 sp
     //bl core_timer_enable
+    eret
+
+.globl to_el0
+to_el0:
+    ldr    x0, =0x3c0      // enable irq in el0 (e.g. =0x3c0 is disable)
+    msr    spsr_el1, x0    // set to EL0
+    mrs    x0, SP_EL1
+    msr    SP_EL0, x0
     eret
 
 .globl enable_irq
