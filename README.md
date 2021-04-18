@@ -14,6 +14,10 @@
 - ```make run``` to start the enumerator
 
 ## How to burn it into pi3
+I follow the instruction in lab0, loading bootcode.bin, fixup.dat and start.elf into SD card, and also put our kernel8.img into Rpi3. Then, we can start the board to check the result.
+
+## Architecture
+=======
 1. Replace the ```bootloader.img``` file and ```config.txt``` to the new one which previous ```make``` had created
 2. You can connect to your pi3 by UART
 

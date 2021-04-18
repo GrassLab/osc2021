@@ -2,4 +2,6 @@
 *.o
 *.d
 *.img
+*.elf
+
 *.cpio
