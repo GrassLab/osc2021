@@ -30,6 +30,8 @@ struct CMD command[] = {
     {.name="state", .help="dump the value of SPSR, ELR and ESR", .func=shell_dump},
     {.name="run", .help="execute a subprogram", .func=shell_run},
     {.name="getEL", .help="get current Exception Level", .func=shell_getel}
+    {.name="memory", .help="do some memory operation", .func=shell_memory}
+    {.name="ls", .help="list all the file", .func=shell_ls}
 };
 
 char input_buffer[MAX_INPUT+1];
@@ -217,6 +219,9 @@ void shell_ls(){
             uart_putc(file_content[i]);
         }*/
 
+=======
+            
+        // uart_puts(file_content);
         uart_puts("\r\n");
         uart_puts("File Size: ");
         uart_puts(itoa(file_size, 10));
@@ -258,7 +263,8 @@ void shell_memory(){
                 uart_puts("New Memory Address: ");
                 uart_puts(itoa(mem, 16));
                 uart_puts("\r\n");
-            }
+           resolved
+Only those with write access to this repository can merge pull requests. }
         }
         else if(cur_char == 'd'){   //delete memory
             uart_puts("Enter the allocated memory address (hex)\r\n");
@@ -347,4 +353,5 @@ void shell_run(){
 void shell_getel(){
     int _EL = get_el();
     printf("Current EL is %d\r\n",_EL);
+
 }

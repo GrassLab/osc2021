@@ -72,6 +72,27 @@ bootloader.img: $(BOOT_SRC_DIR)/bootloader.ld $(BOOT_OBJ_FILES) $(UTILS_OBJ_FILE
 	$(ARMGNU)-ld -T $< -o bootloader.elf $(BOOT_OBJ_FILES) $(UTILS_OBJ_FILES)
 	$(ARMGNU)-objcopy bootloader.elf -O binary $@
 
+=======
+
+$(RES_DIR)/%_s.o: $(BOOT_SRC_DIR)/%.S
+	$(ARMGNU)-gcc $(ASMOPS) -MMD -c $< -o $@
+
+$(RES_DIR)/%_c.o: $(UTILS_SRC_DIR)/%.c
+	mkdir -p $(@D)
+	$(ARMGNU)-gcc $(COPS) -MMD -c $< -o $@
+
+$(RES_DIR)/%_s.o: $(UTILS_SRC_DIR)/%.S
+	$(ARMGNU)-gcc $(ASMOPS) -MMD -c $< -o $@
+#############################################
+
+kernel8.img: $(SRC_DIR)/linker.ld $(OBJ_FILES) $(UTILS_OBJ_FILES)
+	$(ARMGNU)-ld -T $< -o $(RES_DIR)/kernel8.elf $(OBJ_FILES) $(UTILS_OBJ_FILES)
+	$(ARMGNU)-objcopy $(RES_DIR)/kernel8.elf -O binary $@
+
+bootloader.img: $(BOOT_SRC_DIR)/bootloader.ld $(BOOT_OBJ_FILES) $(UTILS_OBJ_FILES)
+	$(ARMGNU)-ld -T $< -o $(RES_DIR)/bootloader.elf $(BOOT_OBJ_FILES) $(UTILS_OBJ_FILES)
+	$(ARMGNU)-objcopy $(RES_DIR)/bootloader.elf -O binary $@
+
 $(RAMFS): rootfs
 	cd rootfs; find . | cpio -o -H newc > ../$@; cd ..;
 
@@ -97,3 +118,8 @@ debug:
 
 clean:
 	rm -rf $(RES_DIR)/* *.img *.cpio *.elf program/*.elf program/*.img
+	rm -rf $(RES_DIR)/* *.img *.cpio *.elf
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -initrd $(RAMFS)
+
+clean:
+	rm -rf $(RES_DIR)/* *.img *.cpio
