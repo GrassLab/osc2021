@@ -6,9 +6,3 @@
 | 學號 | GitHub 帳號 | 姓名 | Email |
 | --- | ----------- | --- | --- |
 |`L091197`| `andykuo8766` | `郭紘安` | andykuo8766@gapp.nthu.edu.tw |
-
-## How to build kernel
-```bash
-cd kernel8
-make
-```
