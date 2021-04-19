@@ -87,7 +87,7 @@ void* cpio_get_file_address(char* pathname, uint32_t size) {
   return null;
 }
 
-void* cpio_get_metadata(char* pathname, uint32_t size) {
+void* cpio_get_metadata(const char* pathname, uint32_t size) {
   for(int i = 0; i < cpio_file_list_size; i++) {
     if(strncmp((char *)cpio_file_list[i].name_address, pathname, size) == 0) {
       return (void* )&cpio_file_list[i];
@@ -99,7 +99,9 @@ void* cpio_load_program(char* filename, size_t size, void* address) {
   struct cpio_metadata *metadata;
 
   metadata = (struct cpio_metadata *)cpio_get_metadata(filename, size);
-  //check overlap
+  
+  //should check overlap
+  
   if(metadata == null)
     return null;
   //move program to specific address

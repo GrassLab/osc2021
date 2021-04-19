@@ -64,6 +64,7 @@ void do_command(char* command) {
     printf("settimeout [message] [timeout]: set time out and print message.\n");
     printf("dynamictest: dynamic malloc testing.\n");
     printf("buddytest: buddy malloc testing.\n");
+    printf("variedtest: varied malloc test\n");
     printf("enabtimer: enable core timer interrupt.\n");
     printf("disatimer: disable core timer interrupt.\n");
   } 
@@ -149,6 +150,9 @@ void do_command(char* command) {
   }
   else if(strncmp(command, "buddytest", 9) == 0) {
     test_buddy_main();
+  }
+  else if(strncmp(command, "variedtest", 10) == 0) {
+    test_varied_main();
   }
   else if(strncmp(command, "enabtimer", 9) == 0) {
     extern void* core_timer_enable;

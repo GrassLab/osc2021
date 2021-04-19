@@ -15,10 +15,10 @@ struct task_struct* privilege_task_create( void(*func)() ) {
   //set task element
   task_pool[i].task_id = i + 1;
   task_pool[i].status = TASK_STATUS_LIVE;
-  task_pool[i].kstack = (void* )KERNEL_STACK_ADDR + TASK_STACK_SIZE * i;
-  task_pool[i].ctx.sp = (size_t)task_pool[i].kstack + TASK_STACK_SIZE; 
+  task_pool[i].kstack = (void* )KERNEL_STACK_ADDR + TASK_STACK_SIZE * (i + 1);
+  task_pool[i].ctx.sp = (size_t)task_pool[i].kstack; 
   task_pool[i].ctx.lr = (size_t)func;
-  task_pool[i].stack = (void *)USER_STACK_ADDR + TASK_STACK_SIZE * (i + 1);
+  //task_pool[i].stack = (void *)USER_STACK_ADDR + TASK_STACK_SIZE * (i + 1);
   task_pool[i].next = null;
   //push into run queue
   task_queue_push(&task_pool[i], &run_queue);
@@ -53,8 +53,6 @@ void test_task() {
 
 void task_init() {
   struct task_struct fake;
-  printf("task_queue_head: %x\n", run_queue.head);
-  printf("task_queue_tail: %x\n", run_queue.tail);
   //create idle task
   privilege_task_create(idle_task);
 
@@ -67,3 +65,11 @@ void task_init() {
   switch_to(&fake, task_queue_pop(&run_queue));
 
 }
+
+struct trapframe* get_trapframe(struct task_struct* t) {
+  struct trapframe* tf;
+  tf = (struct trapframe* )(t->kstack - sizeof(struct trapframe));
+  return tf;
+}
+
+

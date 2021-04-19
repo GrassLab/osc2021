@@ -2,4 +2,5 @@
 #define _TEST_H_
 #include <buddy_test.h>
 #include <dynamic_test.h>
+#include <varied_test.h>
 #endif

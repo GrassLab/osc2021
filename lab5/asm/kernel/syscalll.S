@@ -24,21 +24,15 @@ fail:
 .global syscall_table
 .global syscall_table_end
 syscall_table:
-  #test
-  b exception_level_info
-  .align 4
-  #test
-  b core_timer_enable
-  .align 4
-  /*#getpid
+  #getpid
   b sys_getpid
   .align 4
-  #uart_read
+  /*#uart_read
   b sys_uart_read
   .align 4
   #uart_write
-  b sys_uart_write
-  .align 4
+  /*b sys_uart_write
+  .align 4*/
   #exec
   b sys_exec
   .align 4
@@ -47,5 +41,5 @@ syscall_table:
   .align 4
   #fork
   b sys_fork
-  .align 4*/
+  .align 4
 syscall_table_end:

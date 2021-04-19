@@ -91,10 +91,9 @@ _set_exception_vector_table:
   msr vbar_el1, x0
   ret
 
+.global not_syscall
 exception_handler:
   store_context
-  #bl exception_level_info
-  
   #checks the source of exception
   mrs x9, esr_el1
   mov x10, x9
@@ -107,7 +106,8 @@ exception_handler:
   cmp x10, #0
   bne not_syscall
   bl syscall
-
+  //store return value
+  str x0, [sp, #16 * 0]
 not_syscall:
   restore_context
   eret

@@ -12,6 +12,14 @@
 #define TASK_STATUS_DEAD 1
 #define TASK_STATUS_LIVE 2
 
+
+struct trapframe {
+  size_t x0, x1, x2, x3, x4, x5, x6, x7, x8, x9;
+  size_t x10, x11, x12, x13, x14, x15, x16, x17, x18, x19;
+  size_t x20, x21, x22, x23, x24, x25, x26, x27, x28, x29;
+  size_t x30, sp_el0, elr_el1, spsr_el1; 
+};
+
 struct context {
   size_t x19;
   size_t x20;
@@ -26,15 +34,17 @@ struct context {
   size_t fp; //frame pointer, stack base address
   size_t lr; //return address
   size_t sp; //stack pointer
-  };
+};
 
 struct task_struct {
   struct context ctx;
   size_t task_id;
   void* kstack;
-  void* stack;
   int status;
   int exit_status;
+  void* start;
+  size_t size;
+  void* stack;
   struct task_struct* next;
 };
 
@@ -45,17 +55,28 @@ extern struct task_struct* get_current();
 extern void switch_to(struct task_struct* prev, struct task_struct* next);
 
 struct task_struct* privilege_task_create( void(*func)() );
+void schedule();
 void task_init();
 void idle_task();
-void schedule();
 
 extern void* disable_interrupt();
 extern void* enable_interrupt();
+extern void* not_syscall();
+struct trapframe* get_trapframe(struct task_struct* t);
+
 void sys_exit(int status);
 void do_exit(int status);
 int sys_fork();
 int do_fork();
-int sys_exec(void(*func)());
-int do_exec(void(*func)());
+int sys_exec(const char* name, char* const argv[]);
+int do_exec(const char* name, char* const argv[]);
+int sys_getpid();
+int do_getpid();
+size_t sys_uart_read(char buf[], size_t size);
+size_t do_uart_read(char buf[], size_t size);
+size_t sys_uart_write(const char buf[], size_t size);
+size_t do_uart_write(const char buf[], size_t size);
 
+void* load_program(const char* name);
+void* fork_memcpy();
 #endif

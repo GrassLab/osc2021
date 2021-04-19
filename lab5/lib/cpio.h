@@ -43,5 +43,6 @@ void cpio_parse_newc_header(void* address);
 void cpio_get_file_content(char* pathname, uint32_t size);
 void cpio_get_all_pathname();
 void* cpio_get_file_address(char* pathname, uint32_t size);
+void* cpio_get_metadata(const char* pathname, uint32_t size);
 void* cpio_load_program(char* filename, size_t size, void* address);
 #endif
