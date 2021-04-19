@@ -2,12 +2,14 @@
 #include "utils.h"
 #include "string.h"
 
+volatile unsigned char *cpio_address = (unsigned char *) 0x20000000;
+// on qemu
+// volatile unsigned char *cpio_address = (unsigned char *) 0x08000000;
+
 void getFileData(char *target) {
     uart_puts("Please enter file name: ");
     uart_read_line(target, 1);
     uart_send('\r');
-    //volatile unsigned char *cpio_address = (unsigned char *) 0x20000000;
-    volatile unsigned char *cpio_address = (unsigned char *) 0x8000000;
     
     int i = 0;
     while(1) {
@@ -47,9 +49,6 @@ void getFileData(char *target) {
 }
 
 void list_file() {
-    //volatile unsigned char *cpio_address = (unsigned char *) 0x20000000;
-    volatile unsigned char *cpio_address = (unsigned char *) 0x8000000;
-    
     int i = 0;
     while(1) {
         int file_size = 0;
@@ -84,8 +83,7 @@ void load_user_program() {
     uart_puts("Please enter file name: ");
     uart_read_line(target, 1);
     uart_send('\r');
-    volatile unsigned char *cpio_address = (unsigned char *) 0x20000000;
-    //volatile unsigned char *cpio_address = (unsigned char *) 0x8000000;
+    
     volatile unsigned char *prog_addr = (unsigned char *) 0x100000;
     
     int i = 0;

@@ -21,7 +21,7 @@ void dumpState() {
 
 void dumpTimer() {
     asm volatile("mrs x0, cntfrq_el0 \n");
-    asm volatile("add x0, x0, x0 \n");
+    asm volatile("add x0, x0, x0 \n"); // 2 second
     asm volatile("msr cntp_tval_el0, x0 \n");
     unsigned long cntpct, cntfrq, tmp;
     asm volatile("mrs %0, cntpct_el0 \n":"=r"(cntpct):);
