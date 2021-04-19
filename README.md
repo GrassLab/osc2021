@@ -19,7 +19,7 @@
     * [Branch](https://github.com/andykuo8766/osc2021/tree/LAB-03)
 * **Lab 4: Exception and Interrupt**
     * [Branch](https://github.com/andykuo8766/osc2021/tree/LAB-04)
-* **Lab 5: Virtual Memory**
+* **Lab 5: Thread and User Process**
     * [Branch]
 * **Lab 6: Allocator**
     * [Branch]
