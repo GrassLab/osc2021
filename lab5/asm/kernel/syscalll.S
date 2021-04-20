@@ -27,12 +27,12 @@ syscall_table:
   #getpid
   b sys_getpid
   .align 4
-  /*#uart_read
+  #uart_read
   b sys_uart_read
   .align 4
   #uart_write
-  /*b sys_uart_write
-  .align 4*/
+  b sys_uart_write
+  .align 4
   #exec
   b sys_exec
   .align 4

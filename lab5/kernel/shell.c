@@ -113,12 +113,13 @@ void do_command(char* command) {
   }
   else if(strncmp(command, "run", 3) == 0) {
     void* addr;
-    addr = cpio_load_program("user_program.elf", 16, (void *)strtol(command + 4, 0, 16));
+    addr = cpio_load_program("user_test", 9, (void *)strtol(command + 4, 0, 16));
     if(addr != null) {
       printf("addr: %x\n", addr);
       //from el1 to el0 and jump to user_program
       asm volatile("mov x0, #0x3c0\n" "msr spsr_el1, x0\n");
-      asm volatile("mov x0, %0\n" "msr elr_el1, x0\n" "eret\n"::"r"(addr + 0x40));
+      asm volatile("mov x0, %0\n" "msr elr_el1, x0\n" "eret\n"::"r"(addr));
+      //asm volatile("blr %0\n"::"r"(addr));
     }
   }
   else if(strncmp(command, "el12el0", 8) == 0) {

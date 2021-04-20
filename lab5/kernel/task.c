@@ -62,7 +62,7 @@ void task_init() {
   
   task_queue_status(run_queue.head);
 
-  switch_to(&fake, task_queue_pop(&run_queue));
+  //switch_to(&fake, task_queue_pop(&run_queue));
 
 }
 

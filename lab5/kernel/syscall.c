@@ -122,7 +122,7 @@ int do_exec(const char* name, char* const argv[]) {
     return -1;
   
   //set user context
-
+  
   return 0;
 }
 
@@ -147,4 +147,17 @@ int sys_getpid() {
 
 int do_getpid() {
   return get_current()->task_id;  
+}
+
+size_t sys_uart_read(char buf[], size_t size) {
+  return do_uart_read(buf, size);
+}
+size_t do_uart_read(char buf[], size_t size) {
+  return 0;
+}
+size_t sys_uart_write(const char buf[], size_t size) {
+  return do_uart_write(buf, size);
+}
+size_t do_uart_write(const char buf[], size_t size) {
+  return 0;
 }
