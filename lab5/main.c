@@ -3,6 +3,7 @@
 #include "inc/mailbox.h"
 #include "inc/cpio.h"
 #include "inc/allocator.h"
+#include "inc/thread.h"
 
 #define min(a,b) ((a)<(b)?(a):(b))
 
@@ -108,6 +109,7 @@ void shell(){
 			uart_puts("          dalloc\n");
 			uart_puts("          dfree\n");
 			uart_puts("          loadapp\n");//current program will handle exceptions(not allow overlap)
+			uart_puts("          lab5-1\n");
 		}else if(strcmp(buffer,"hello")==0){
 			uart_puts("Hello World!\n");
 		}else if(strcmp(buffer,"reboot")==0){
@@ -143,6 +145,8 @@ void shell(){
 			uart_puts("Please enter app size (Dec): ");
 			a_size=uart_getU(1);
 			loadApp(path,a_addr,a_size);
+		}else if(strcmp(buffer,"lab5-1")==0){
+			threadTest();
 		}else{
 			uart_puts("Error: No such command \"");
 			uart_puts(buffer);
