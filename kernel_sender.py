@@ -14,7 +14,7 @@ if len(sys.argv) > 1:
     def listen():
         while 1:
             if s.in_waiting > 0:
-                print(s.read().decode('ascii'), end = '')
+                print(s.read().decode('ascii'), end = '', flush=True)
 
     t = threading.Thread(target = listen)
     stop_threads = False
@@ -28,7 +28,6 @@ if len(sys.argv) > 1:
     while 1:
         cmd = input()
         s.write((cmd + '\r').encode())
-        s.flushInput()
 
     t.join()
 else:
