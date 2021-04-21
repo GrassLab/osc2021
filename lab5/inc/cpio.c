@@ -134,15 +134,92 @@ void loadApp(char* path,unsigned long a_addr,unsigned long a_size){
 	//asm volatile("mov x0, #(3 << 20)	\n");
 	//asm volatile("msr cpacr_el0, x0		\n");
 
-	//enable the core timer’s interrupt
-	asm volatile("mov x0, 1				\n");
-	asm volatile("msr cntp_ctl_el0, x0	\n");
-	asm volatile("mrs x0, cntfrq_el0	\n");
-	asm volatile("add x0, x0, x0		\n");
-	asm volatile("msr cntp_tval_el0, x0	\n");
-	asm volatile("mov x0, 2				\n");
-	asm volatile("ldr x1, =0x40000040	\n");
-	asm volatile("str w0, [x1]			\n");
+	asm volatile("eret					\n");
+}
+
+unsigned long argvPut(char** argv,unsigned long ret){
+	int cnt1=0,cnt2=0;
+	for(int i=0;;++i){
+		cnt1++;//with null
+		if(!argv[i])break;
+
+		for(int j=0;;++j){
+			cnt2++;//with null
+			if(!argv[i][j])break;
+		}
+	}
+
+	int sum=8+8+8*cnt1+cnt2;
+	ret=(ret-sum);
+	//alignment
+	ret=ret-(ret&15);
+
+	char* tmp=(char*)ret;
+	*(unsigned long*)tmp=cnt1-1;
+	tmp+=8;
+	*(unsigned long*)tmp=(unsigned long)(tmp+8);
+	tmp+=8;
+	char* buffer=tmp+8*cnt1;
+	for(int i=0;i<cnt1;++i){
+		if(i+1==cnt1){
+			*(unsigned long*)tmp=0;
+		}else{
+			*(unsigned long*)tmp=(unsigned long)buffer;
+			tmp+=8;
+			for(int j=0;;++j){
+				*buffer=argv[i][j];
+				buffer++;
+				if(!argv[i][j])break;
+			}
+		}
+	}
+	return ret;
+}
+
+void loadApp_with_argv(char* path,unsigned long a_addr,char** argv,unsigned long* task_a_addr,unsigned long* task_a_size){
+	cpio_header* ret=findEntry(CPIO_BASE,path);
+	if(!ret){
+		uart_puts("App not found!\n");
+		return;
+	}
+	unsigned long a_size=strToU(ret->c_filesize);
+	unsigned long psize=strToU(ret->c_namesize);
+	if((sizeof(cpio_header)+psize)&3)psize+=4-((sizeof(cpio_header)+psize)&3);
+	unsigned char* data=(unsigned char*)(ret+1)+psize;
+
+	*task_a_addr=a_addr;
+	*task_a_size=a_size;
+
+	unsigned char* target=(unsigned char*)a_addr;
+	while(a_size--){
+		*target=*data;
+		target++;
+		data++;
+	}
+
+	uart_puts("loading...\n");
+
+	unsigned long sp_addr=argvPut(argv,a_addr);
+	/*
+	uart_printf("%d\n",*(unsigned long*)sp_addr);
+	char** tmp=*(char***)(sp_addr+8);
+	uart_printf("%x %x\n",tmp,tmp[0]);
+	for(int i=0;;++i){
+		if(!tmp[i])break;
+		uart_printf("%d %s\n",i,tmp[i]);
+	}
+	while(1){}
+	*/
+
+	//change exception level
+	asm volatile("mov x0, 0x340			\n");//enable interrupt
+	asm volatile("msr spsr_el1, x0		\n");
+	asm volatile("msr elr_el1, %0		\n"::"r"(a_addr));
+	asm volatile("msr sp_el0, %0		\n"::"r"(sp_addr));
+
+	asm volatile("mrs x3, sp_el0		\n"::);
+	asm volatile("ldr x0, [x3, 0]		\n"::);
+	asm volatile("ldr x1, [x3, 8]		\n"::);
 
 	asm volatile("eret					\n");
 }

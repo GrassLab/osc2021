@@ -110,6 +110,7 @@ void shell(){
 			uart_puts("          dfree\n");
 			uart_puts("          loadapp\n");//current program will handle exceptions(not allow overlap)
 			uart_puts("          lab5-1\n");
+			uart_puts("          lab5-2\n");
 		}else if(strcmp(buffer,"hello")==0){
 			uart_puts("Hello World!\n");
 		}else if(strcmp(buffer,"reboot")==0){
@@ -146,7 +147,9 @@ void shell(){
 			a_size=uart_getU(1);
 			loadApp(path,a_addr,a_size);
 		}else if(strcmp(buffer,"lab5-1")==0){
-			threadTest();
+			threadTest1();
+		}else if(strcmp(buffer,"lab5-2")==0){
+			threadTest2();
 		}else{
 			uart_puts("Error: No such command \"");
 			uart_puts(buffer);

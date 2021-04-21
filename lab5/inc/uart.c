@@ -106,11 +106,11 @@ unsigned long uart_getU(int display){
 	return ret;
 }
 
-void uart_gets(char* s,int size,int display){
+int uart_gets(char* s,int size,int display){
 	for(int i=0;;++i){
 		if(i==size){
 			uart_puts("buffer overflow!\n");
-			break;
+			return i;
 		}
 
 		s[i]=uart_getc();
@@ -118,7 +118,7 @@ void uart_gets(char* s,int size,int display){
 
 		if(s[i]=='\n'){
 			s[i]=0;
-			break;
+			return i;
 		}
 	}
 }

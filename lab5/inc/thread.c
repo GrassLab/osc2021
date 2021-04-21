@@ -1,14 +1,17 @@
 #include "thread.h"
 #include "uart.h"
 #include "allocator.h"
+#include "cpio.h"
 
 #define TASKSIZE 4096
 #define TASKEXIT 1
+#define TASKFORK 2
 
 typedef struct _Task{
-	unsigned long context[13];
+	unsigned long context[12+1+2+1+31];//kreg+ksp & spsr+elr & usp+ureg
 	int id;
 	int status;
+	unsigned long a_addr,a_size,child;
 	struct _Task* next;
 	/*
 	task stack:this ~ this+TASKSIZE
@@ -42,6 +45,7 @@ _threadSwitch:\n\
 		ldp x29, x30, [x1, 16 * 5]\n\
 		ldr x9, [x1, 16 * 6]\n\
 		mov sp, x9\n\
+		\n\
 		msr tpidr_el1, x1\n\
 		\n\
 		ret\n\
@@ -62,7 +66,7 @@ void threadSchedule(){
 			rq.end=rq.beg;
 			rq.beg=rq.beg->next;
 			rq.end->next=0;
-		}while(rq.beg->status&TASKEXIT);
+		}while(rq.beg->status);//ignore abnormal task
 
 		//uart_printf("%d %x %x %x\n",rq.beg->id,rq.beg->context[10],rq.beg->context[11],rq.beg->context[12]);
 		asm volatile("\
@@ -85,6 +89,7 @@ Task* threadCreate(void* func){
 	new_task->context[12]=(unsigned long)new_task+TASKSIZE;//sp
 	new_task->id=task_cnter++;
 	new_task->status=0;
+	new_task->a_addr=new_task->a_size=new_task->child=0;
 	new_task->next=0;
 
 	if(rq.beg){
@@ -96,6 +101,8 @@ Task* threadCreate(void* func){
 
 	return new_task;
 }
+
+/*--------------------------------------------*/
 
 void zombiesKill(){//called by idle()
 	Task* tar=rq.beg;
@@ -115,6 +122,80 @@ void zombiesKill(){//called by idle()
 	}
 }
 
+void taskUpdate(Task* p,Task* c){
+	p->status^=TASKFORK;
+	p->child=c->id;
+
+	Task* tmp=c->next;
+	char* src=(char*)p;
+	char* dst=(char*)c;
+	for(int i=0;i<TASKSIZE;++i){//task copy
+		*dst=*src;
+		dst++;
+		src++;
+	}
+
+	c->id=p->child;
+	uart_puts("Please enter app load address (Hex): ");
+	c->a_addr=uart_getX(1);
+	c->child=0;
+	c->next=tmp;
+
+	long k_delta=(long)c-(long)p;
+	long a_delta=(long)c->a_addr-(long)p->a_addr;
+	c->context[10]+=k_delta;//kernel fp
+	c->context[12]+=k_delta;//kernel sp
+	c->context[14]+=a_delta;//elr_el1
+	c->context[15]+=a_delta;//sp_el0
+	c->context[45]+=a_delta;//user fp
+	c->context[46]+=a_delta;//user lr
+
+	src=(char*)(p->context[15]);
+	dst=(char*)(c->context[15]);
+	for(int i=0,ii=p->a_addr+p->a_size-(p->context[15]);i<ii;++i){//program copy
+		*dst=*src;
+		dst++;
+		src++;
+	}
+}
+
+void doFork(){//called by idle()
+	Task* tar=rq.beg->next;
+	while(tar){
+		if((tar->status)&TASKFORK){
+			Task* child=threadCreate(0);
+			taskUpdate(tar,child);
+		}
+		tar=tar->next;
+	}
+}
+
+void idle(){
+	while(1){
+		//uart_printf("idle()\n");
+		//uart_getc();
+		zombiesKill();
+		doFork();
+		threadSchedule();
+	}
+}
+
+/*--------------------------------------------*/
+
+int tidGet(){
+	Task* cur;
+	asm volatile("mrs %0, tpidr_el1\n":"=r"(cur):);
+	return cur->id;
+}
+
+void exec(char* path,char** argv){//will not reset sp...
+	unsigned long a_addr;
+	uart_puts("Please enter app load address (Hex): ");
+	a_addr=uart_getX(1);
+	loadApp_with_argv(path,a_addr,argv,&(rq.beg->a_addr),&(rq.beg->a_size));
+	exit();
+}
+
 void exit(){
 	Task* cur;
 	asm volatile("mrs %0, tpidr_el1\n":"=r"(cur):);
@@ -126,22 +207,15 @@ void exit(){
 	}
 }
 
-int tidGet(){
-	Task* cur;
-	asm volatile("mrs %0, tpidr_el1\n":"=r"(cur):);
-	return cur->id;
+int fork(){
+	rq.beg->status|=TASKFORK;
+	threadSchedule();
+	return rq.beg->child;
 }
 
-void idle(){
-	while(1){
-		//uart_printf("idle()\n");
-		//uart_getc();
-		zombiesKill();
-		threadSchedule();
-	}
-}
+/*--------------------------------------------*/
 
-void foo(){
+void foo1(){
 	for(int i=0;i<10;++i){
 		uart_printf("Thread id: %d %d\n",tidGet(),i);
 		//uart_getc();
@@ -151,13 +225,27 @@ void foo(){
 	exit();
 }
 
-void threadTest(){
-	Task* cur=threadCreate(0);//use kernel stack (not task stack)
+void threadTest1(){
+	Task* cur=threadCreate(0);//use startup stack (not kernel stack)
 	asm volatile("msr tpidr_el1, %0\n"::"r"((unsigned long)cur));
 
 	for(int i=0;i<3;++i){
-		threadCreate(foo);
+		threadCreate(foo1);
 	}
+
+	idle();
+}
+
+void foo2(){
+	char* argv[]={"argv_test","-o","arg2",0};
+	exec("app1",argv);
+}
+
+void threadTest2(){
+	Task* cur=threadCreate(0);//use startup stack (not kernel stack)
+	asm volatile("msr tpidr_el1, %0\n"::"r"((unsigned long)cur));//TODO
+
+	threadCreate(foo2);
 
 	idle();
 }
