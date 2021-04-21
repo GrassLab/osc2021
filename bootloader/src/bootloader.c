@@ -2,7 +2,7 @@
 #include "string.h"
 #include "bootloader.h"
 
-void* bootloader(void *kernel_entry)
+void* main(void *kernel_entry)
 {
     init_uart();
     puts("waiting for kernel transmission\r\n");
