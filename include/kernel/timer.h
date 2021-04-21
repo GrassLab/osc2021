@@ -2,6 +2,6 @@
 #define _TIMER_H
 
 void core_timer_enable();
-void core_timer_reset();
+void core_timer_disable();
 
 #endif

@@ -1,8 +1,10 @@
-DEBUG = 1
-
 ARMGNU = aarch64-linux-gnu
+ifeq ($(DEBUG), 1)
 FLAGS = -Wall -nostdlib -ffreestanding -Werror -ggdb3 -O0
-# FLAGS = -Wall -nostdlib -ffreestanding -Werror
+else
+FLAGS = -Wall -nostdlib -ffreestanding -Werror
+endif
+
 INCLUDES = -Iinclude/bootloader -Iinclude/kernel -Iinclude/lib
 
 BUILD_DIR= build

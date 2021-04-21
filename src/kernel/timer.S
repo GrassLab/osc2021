@@ -20,10 +20,4 @@ core_timer_disable:
 
     ldr x1, = CORE0_TIMER_IRQCNTL
     str w0, [x1] // unmask timer interrupt
-
-core_timer_reset:
-    mrs x0, cntpct_el0
-    mrs x1, cntfrq_el0
-    add x0, x0, x1
-    msr cntp_tval_el0, x0 // set expired time
     ret

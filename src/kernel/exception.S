@@ -103,6 +103,9 @@ exception_handler:
 irq_handler:
     save_all
     ldr   x0, = CORE0_IRQ_SOURCE
+
+    mrs   x1, cntpct_el0
+
     bl    irq_parser
     load_all
     eret
@@ -119,3 +122,4 @@ exec_in_el0:
     
     bl    core_timer_enable
     eret
+    

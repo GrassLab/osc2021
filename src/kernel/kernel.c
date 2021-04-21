@@ -13,7 +13,7 @@ void kernel()
     printf("***********************************\r\n");
     printf("Welcome!\r\n");
     printf("***********************************\r\n");
-    
+    // cpio_read("test");
     char command[MAX_COMMAND_SIZE];
     while (1)
     {
