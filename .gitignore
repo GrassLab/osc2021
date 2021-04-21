@@ -1,4 +1,3 @@
-/build
-/objs
-/rootfs/app
 /.vscode
+/tmp
+/build

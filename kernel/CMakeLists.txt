@@ -1,4 +1,4 @@
-include_directories(${CMAKE_SOURCE_DIR}/include/kernel ${CMAKE_SOURCE_DIR}/include/lib)
+include_directories(${CMAKE_SOURCE_DIR}/kernel/include ${CMAKE_SOURCE_DIR}/lib/include)
 
 # local variables
 set(TARGET kernel.elf)
@@ -17,6 +17,7 @@ add_executable(${TARGET} ${C_FILES} ${ASM_FILES})
 target_link_options(${TARGET} PRIVATE -T ${CMAKE_SOURCE_DIR}/kernel/src/linker.ld)
 
 
+# link
 target_link_libraries(
     ${TARGET}
     mini_uart

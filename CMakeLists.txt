@@ -8,7 +8,7 @@ set(LIB_DIR ${CMAKE_SOURCE_DIR}/lib)
 set(CMAKE_C_FLAGS "-Wall -nostdlib -ffreestanding -Werror")
 
 # library
-include_directories(include/lib)
+include_directories(lib/include)
 
 ## asm file
 set_property(SOURCE ${LIB_DIR}/src/base_ops.S PROPERTY LANGUAGE C)

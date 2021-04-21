@@ -1,0 +1,20 @@
+#! /bin/bash
+
+BUILD_DIR=build
+CMAKE_DIR=tmp
+
+mkdir -p $BUILD_DIR
+
+# build in CMAKE_DIR
+cmake -S . -B $CMAKE_DIR
+cd $CMAKE_DIR
+make &&
+
+cd ..
+aarch64-linux-gnu-objcopy $CMAKE_DIR/bootloader/bootloader.elf -O binary $BUILD_DIR/bootloader.img
+aarch64-linux-gnu-objcopy $CMAKE_DIR/kernel/kernel.elf -O binary $BUILD_DIR/kernel.img
+
+# copy to build
+cd assets/rootfs
+find . | cpio -o -H newc > ../../$BUILD_DIR/initramfs.cpio
+
