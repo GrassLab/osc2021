@@ -1,7 +1,7 @@
 include_directories(${CMAKE_SOURCE_DIR}/kernel/include ${CMAKE_SOURCE_DIR}/lib/include)
 
 # local variables
-set(TARGET kernel.elf)
+set(TARGET kernel8.elf)
 
 # target
 file(GLOB C_FILES src/*.c)

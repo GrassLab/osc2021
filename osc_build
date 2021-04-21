@@ -3,7 +3,7 @@ BUILD_DIR=build
 CMAKE_DIR=tmp
 
 ## clean
-if [ "$1" == "clean" ]
+if [ "$1" == "-c" ]
 then
     rm -rf build
 fi
@@ -11,13 +11,14 @@ fi
 mkdir -p $BUILD_DIR
 
 # build in CMAKE_DIR
-cmake -S . -B $CMAKE_DIR
+cmake -S . -B $CMAKE_DIR -DDEBUG=ON &&
 cd $CMAKE_DIR
 make &&
 
 cd ..
 aarch64-linux-gnu-objcopy $CMAKE_DIR/bootloader/bootloader.elf -O binary $BUILD_DIR/bootloader.img
-aarch64-linux-gnu-objcopy $CMAKE_DIR/kernel/kernel.elf -O binary $BUILD_DIR/kernel.img
+aarch64-linux-gnu-objcopy $CMAKE_DIR/kernel/kernel8.elf -O binary $BUILD_DIR/kernel8.img
+aarch64-linux-gnu-objcopy $CMAKE_DIR/app/app.elf -O binary assets/rootfs/app
 
 # copy to build
 cd assets/rootfs

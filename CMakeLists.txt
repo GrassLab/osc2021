@@ -7,6 +7,14 @@ set(CMAKE_C_COMPILER aarch64-linux-gnu-gcc)
 set(LIB_DIR ${CMAKE_SOURCE_DIR}/lib)
 set(CMAKE_C_FLAGS "-Wall -nostdlib -ffreestanding -Werror")
 
+if (${DEBUG})
+    message("######### " DEBUG\ MODE " #########"\n)
+    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -ggdb3 -O0")
+    
+    # debug definition
+    add_compile_definitions(EMU=1)
+endif(${DEBUG})
+
 # library
 include_directories(lib/include)
 
@@ -19,7 +27,7 @@ add_library(math STATIC ${LIB_DIR}/src/math.c)
 add_library(mini_uart STATIC ${LIB_DIR}/src/mini_uart.c)
 add_library(string STATIC ${LIB_DIR}/src/string.c)
 
-
 # targets
 add_subdirectory(bootloader)
 add_subdirectory(kernel)
+add_subdirectory(app)

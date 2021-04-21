@@ -38,7 +38,7 @@ clear:
 start:
     // start bootloader
     ldr     x0, = _begin
-    bl      main
+    bl      bootloader
 
     // jump to kernel
     br      x0
