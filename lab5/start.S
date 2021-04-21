@@ -149,8 +149,7 @@ from_el2_to_el1:
 	//enable the core timer’s interrupt
 	mov x0, 1
 	msr cntp_ctl_el0, x0
-	mrs x0, cntfrq_el0
-	add x0, x0, x0
+	mov x0, 0
 	msr cntp_tval_el0, x0
 	mov x0, 2
 	ldr x1, =0x40000040
