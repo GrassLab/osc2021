@@ -1,7 +1,12 @@
 #! /bin/bash
-
 BUILD_DIR=build
 CMAKE_DIR=tmp
+
+## clean
+if [ "$1" == "clean" ]
+then
+    rm -rf build
+fi
 
 mkdir -p $BUILD_DIR
 
