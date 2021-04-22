@@ -1,4 +1,4 @@
-#define CORE0_IRQ_SOURCE 0x40000060
+#define CORE0_IRQ_SOURCE (0x40000060)
 
 .global exec_in_el0
 .global el1_exception_vector_table

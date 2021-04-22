@@ -7,5 +7,7 @@ void get(char *command, int maxSize);
 void exec_command(char *input);
 
 void reboot(int tick);
+void demo1();
+void demo2();
 
 #endif

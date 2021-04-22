@@ -1,19 +1,12 @@
-#include "mini_uart.h"
 #include "command.h"
 #include "io.h"
-#include "pf_alloc.h"
-#include "cpio.h"
-#include "timer.h"
 
-void kernel()
+void shell()
 {
-    init_uart();
-    init_page_frame();
-
     printf("***********************************\r\n");
     printf("Welcome!\r\n");
     printf("***********************************\r\n");
-    // cpio_read("test");
+
     char command[MAX_COMMAND_SIZE];
     while (1)
     {

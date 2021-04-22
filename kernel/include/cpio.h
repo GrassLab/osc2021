@@ -1,7 +1,7 @@
 #ifndef _CPIO_H
 #define _CPIO_H
 
-// qemu use 0x8000000 as default
+// qemu use 0x8000000 as default ramfs address
 #ifdef EMU
 #define RAMFS_ADDR (0x8000000)
 #else
