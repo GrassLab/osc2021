@@ -8,7 +8,7 @@ set(LIB_DIR ${CMAKE_SOURCE_DIR}/lib)
 set(CMAKE_C_FLAGS "-Wall -nostdlib -ffreestanding -Werror")
 
 if (${DEBUG})
-    message("######### " DEBUG\ MODE " #########"\n)
+    message("######### " DEBUG\ MODE " #########\n")
     set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -ggdb3 -O0")
     
     # debug definition
