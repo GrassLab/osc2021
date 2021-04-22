@@ -8,15 +8,12 @@ _prepare:
     beq     start
 
     // else do initialization
+    
+    // clear bss memory
     ldr     x0, = bss_begin
     ldr     x1, = bss_end
     sub     x1, x1, x0
-
-clear:
-    // clear bss memory
-    str     xzr, [x0], #8
-    subs    x1, x1, #8
-    bgt     clear
+    bl      clear_bss
 
     // set stack position
     mov     x0, BOOTLOADER_ORIGINAL_STACK_TOP
