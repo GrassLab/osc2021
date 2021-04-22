@@ -21,5 +21,14 @@ int main(void) {
     } else {
         uart_printf("parent here, pid %d, child %d, ptr: %x\n", getpid(), ret, &cnt);
     }
+
+	/*int i=1;
+	fork();
+	fork();
+	while(i<=5){
+		uart_printf("pid:%d, i:%d\n",getpid(),i);
+		delay(1000000);
+		i++;
+	}*/
     exit();
 }
