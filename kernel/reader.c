@@ -1,6 +1,6 @@
 #include "reader.h"
-#include "uart.h"
-#include "string.h"
+#include "../lib/uart.h"
+#include "../lib/string.h"
 
 const int FILE_NUM_LIMITED = 100;
 char * address_cpio = (char*)0x2000;

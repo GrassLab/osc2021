@@ -23,7 +23,7 @@
 #
 #
 
-SRCS = $(wildcard *.c)
+SRCS = $(wildcard *.c) $(wildcard ../lib/*.c)
 OBJS = $(SRCS:.c=.o)
 CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
 CC = aarch64-linux-gnu-gcc
@@ -43,7 +43,7 @@ bootloader.img: start.o $(OBJS)
 	$(OBJ_CPY) -O binary bootloader.elf bootloader.img
 
 clean:
-	rm bootloader.elf *.o >/dev/null 2>/dev/null || true
+	rm bootloader.elf bootloader.img ../lib/*.o *.o >/dev/null 2>/dev/null || true
 
 run:
 	qemu-system-aarch64 -M raspi3 -kernel bootloader.img -serial null -serial stdio

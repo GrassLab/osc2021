@@ -23,8 +23,8 @@
  *
  */
 
-#include "uart.h"
 #include "shell.h"
+#include "../lib/uart.h"
 
 void main()
 {

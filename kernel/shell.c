@@ -1,7 +1,7 @@
 #include "shell.h"
-#include "string.h"
 #include "command.h"
-#include "uart.h"
+#include "../lib/uart.h"
+#include "../lib/string.h"
 
 void ShellStart()
 {
@@ -9,8 +9,6 @@ void ShellStart()
     char input_char;
     char buffer[MAX_BUFFER_LEN];
     enum SPECIAL_CHARACTER input_parse;
-
-	CommandBuddyInit();
 
     strset(buffer, 0, MAX_BUFFER_LEN);
 
@@ -81,6 +79,7 @@ void CommandController(enum SPECIAL_CHARACTER input_parse, char c, char buffer[]
 		else if (!strcmp(buffer,  "loglist"  )) CommandBuddyLogList();
 		else if (!strcmp(buffer,  "logpool"  )) CommandBuddyLogPool();
 		else if (!strcmp(buffer,  "logtable" )) CommandBuddyLogTable();
+		else if (!strcmp(buffer,  "buddyinit")) CommandBuddyInit();
 		else if (!strcmp(command, "alloc"    )) CommandBuddyAlloc(atoi(arg));
 		else if (!strcmp(command, "free"     )) CommandBuddyFree(atoi(arg));
 		else if (!strcmp(command, "free16"   )) CommandBuddyFreePool(16,  atoi(arg));

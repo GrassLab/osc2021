@@ -23,8 +23,8 @@
  *
  */
 
-#include "uart.h"
-#include "string.h"
+#include "../lib/uart.h"
+#include "../lib/string.h"
 
 void main()
 {

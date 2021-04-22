@@ -1,6 +1,6 @@
 #include "exception.h"
-#include "uart.h"
 #include "time.h"
+#include "../lib/uart.h"
 
 void log_state()
 {
