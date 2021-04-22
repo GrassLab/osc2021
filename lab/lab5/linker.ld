@@ -20,8 +20,9 @@ SECTIONS
   {
     _bss_top = .;
     *(.bss)
+    _bss_end = .;
   }
-  bss_size =  SIZEOF(.bss) >> 3;
+  bss_size = (_bss_end - _bss_top) >> 3;
   .heap :
   {
     . = ALIGN(8);

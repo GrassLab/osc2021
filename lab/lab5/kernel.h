@@ -163,7 +163,6 @@ typedef struct dma {
   buddy_list *page;
   int size;
 } dma;
-dma *dma_dummy[6];  // align for 8
 dma *free_pool, *used_pool;
 void dma_init() { free_pool = used_pool = 0; }
 
@@ -262,8 +261,8 @@ typedef struct timer_list {
   struct timer_list *next;
   void *return_addr;
 } timer_list;
-timer_list *timer_head, *timer_dummy[7];
-uint64_t current, cntfrq_el0, current_dummy[6];
+timer_list *timer_head;
+uint64_t current, cntfrq_el0;
 uint64_t _update_current() {
   uint64_t new_current, delta;
   asm volatile("mrs %0, cntpct_el0" : "=r"(new_current));
@@ -332,7 +331,7 @@ typedef struct thread_list {
   void *regs[10], *fp, *lr, *sp;
   uint64_t status, pid, tid;
 } thread_list;
-thread_list *run_q, *wait_q, *thread_dummy[5];
+thread_list *run_q, *wait_q;
 void *kernel_tpdir_el1;
 void thread_init() {
   run_q = wait_q = 0;
