@@ -3,6 +3,7 @@
 #include "bool.h"
 #include "cfg.h"
 #include "cpio.h"
+#include "log.h"
 #include "string.h"
 #include "test.h"
 #include "timer.h"
@@ -10,6 +11,12 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
+#ifdef CFG_LOG_SHELL_CMD
+static const int _DO_LOG = 1;
+#else
+static const int _DO_LOG = 0;
+#endif
 
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC ((volatile unsigned int *)0x3F10001c)
@@ -82,9 +89,7 @@ void cmdLoadUser() {
     uart_println("Cannot found `user_program.o` under rootfs");
     return;
   }
-  if (CFG_LOG_ENABLE) {
-    uart_println("  [fetchFile] file addr:%x , size:%d", file, size);
-  }
+  log_println("  [fetchFile] file addr:%x , size:%d", file, size);
   for (unsigned long i = 0; i < size; i++) {
     load_addr[i] = file[i];
   }

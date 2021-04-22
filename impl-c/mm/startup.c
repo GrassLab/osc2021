@@ -1,5 +1,6 @@
 
 #include "cfg.h"
+#include "log.h"
 #include "test.h"
 #include "uart.h"
 
@@ -7,6 +8,12 @@
 #include "mm/startup.h"
 
 #include <stddef.h>
+
+#ifdef CFG_LOG_MEM_STARTUP
+static const int _DO_LOG = 1;
+#else
+static const int _DO_LOG = 0;
+#endif
 
 StartupAllocator_t StartupAlloc;
 struct MemRegion ReservedRegions[STARTUP_MAX_RESERVE_COUNT];
@@ -24,13 +31,11 @@ void startup_init() {
 }
 bool startup_reserve(void *addr, unsigned long size) {
   bool succes = sa_reserve(&StartupAlloc, addr, size);
-#ifdef CFG_LOG_STARTUP
   if (succes) {
-    uart_println("reserve addr: %x", addr);
+    log_println("reserve addr: %x", addr);
   } else {
-    uart_println("failed to reserve addr: %x", addr);
+    log_println("failed to reserve addr: %x", addr);
   }
-#endif
   return succes;
 }
 
@@ -83,24 +88,18 @@ void sa_init(StartupAllocator_t *sa, struct MemRegion *reserved,
 bool sa_reserve(StartupAllocator_t *sa, void *addr, unsigned long size) {
   if (((unsigned long long)addr & FRAME_MASK) != 0 ||
       (size & FRAME_MASK) != 0) {
-#ifdef CFG_LOG_STARTUP
-    uart_println("not aligned");
-#endif
+    log_println("not aligned");
     return false;
   }
   if (sa->num_reserved >= sa->max_reserved) {
-#ifdef CFG_LOG_STARTUP
-    uart_println("limited reached");
-#endif
+    log_println("limited reached");
     return false;
   }
   MemRegion requested = {.addr = addr, .size = size};
   // Should not overlapped with space that reserved already
   for (int i = 0; i < sa->num_reserved; i++) {
     if (is_overlap(&requested, &sa->_reserved[i])) {
-#ifdef CFG_LOG_STARTUP
-      uart_println("overlap");
-#endif
+      log_println("overlap");
       return false;
     }
   }

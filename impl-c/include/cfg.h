@@ -3,10 +3,14 @@
 /**
  *  Log
  * */
-
-#define CFG_LOG_ENABLE 0
-// #define CFG_LOG_STARTUP
-// #define CFG_LOG_KALLOC
+// #define CFG_LOG_CPIO
+// #define CFG_LOG_SHELL_SEARCH_FILE
+// #define CFG_LOG_SHELL_CMD
+// #define CFG_LOG_SHELL_BUFFER
+// #define CFG_LOG_MEM_STARTUP
+// #define CFG_LOG_MEM_KALLOC
+// #define CFG_LOG_MEM_BUDDY
+// #define CFG_LOG_MEM_SLAB
 
 /**
  *  TEST
