@@ -76,9 +76,9 @@ void enable_uart_interrupt() { *ENABLE_IRQS_1 = AUX_IRQ; }
 
 void disable_uart_interrupt() { *DISABLE_IRQS_1 = AUX_IRQ; }
 
-void assert_transmit_interrupt() { *AUX_MU_IER_REG |= 0x2; }
+void enable_transmit_interrupt() { *AUX_MU_IER_REG |= 0x2; }
 
-void clear_transmit_interrupt() { *AUX_MU_IER_REG &= ~(0x2); }
+void disable_transmit_interrupt() { *AUX_MU_IER_REG &= ~(0x2); }
 
 void uart_handler() {
   disable_uart_interrupt();
@@ -92,7 +92,7 @@ void uart_handler() {
   } else if (is_write) {
     while (*AUX_MU_LSR_REG & 0x20) {
       if (write_buf_start == write_buf_end) {
-        clear_transmit_interrupt();
+        disable_transmit_interrupt();
         break;
       }
       char c = write_buf[write_buf_start++];
@@ -120,5 +120,5 @@ void uart_async_puts(char *str) {
     write_buf[write_buf_end++] = str[i];
     if (write_buf_end == UART_BUFFER_SIZE) write_buf_end = 0;
   }
-  assert_transmit_interrupt();
+  enable_transmit_interrupt();
 }

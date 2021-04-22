@@ -40,8 +40,8 @@ void uart_puts(char *s);
 
 void enable_uart_interrupt();
 void disable_uart_interrupt();
-void assert_transmit_interrupt();
-void clear_transmit_interrupt();
+void enable_transmit_interrupt();
+void disable_transmit_interrupt();
 void uart_handler();
 char uart_async_getc();
 void uart_async_puts(char *str);
