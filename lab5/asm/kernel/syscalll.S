@@ -1,5 +1,5 @@
 /**
- * syscall_x0(x1, x2...x8)
+ * syscall_x8(x0, x1...x7)
  */
 
 .section ".text"
@@ -7,16 +7,16 @@
 
 syscall:
   ldr x9, =syscall_table
-  lsl x0, x0, #4
-  add x0, x0, x9
+  lsl x8, x8, #4
+  add x8, x8, x9
   #smaller than syscall_table
-  cmp x9, x0
+  cmp x9, x8
   bgt fail 
   ldr x10, =syscall_table_end
   #larger than syscall_table
-  cmp x0, x10
+  cmp x8, x10
   bge fail
-  br x0
+  br x8
 fail:
   b syscall_number_error
 
@@ -43,3 +43,9 @@ syscall_table:
   b sys_fork
   .align 4
 syscall_table_end:
+
+.global exit
+exit:
+  mov x8, #4
+  svc #0
+  ret

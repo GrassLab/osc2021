@@ -89,7 +89,7 @@ void* cpio_get_file_address(char* pathname, uint32_t size) {
 
 void* cpio_get_metadata(const char* pathname, uint32_t size) {
   for(int i = 0; i < cpio_file_list_size; i++) {
-    if(strncmp((char *)cpio_file_list[i].name_address, pathname, size) == 0) {
+    if(strncmp((char *)cpio_file_list[i].name_address, pathname, cpio_file_list[i].name_size) == 0) {
       return (void* )&cpio_file_list[i];
     }
   }
@@ -104,6 +104,7 @@ void* cpio_load_program(char* filename, size_t size, void* address) {
   
   if(metadata == null)
     return null;
+  printf("addr: %x\n", metadata->file_address);
   //move program to specific address
   memcpy((char *)address, (char *)metadata->file_address, metadata->file_size);
   return address;

@@ -1,6 +1,6 @@
 .section ".text.boot"
 
-.globl _start
+.global _start
 
 _start:
   mov  x3, x0

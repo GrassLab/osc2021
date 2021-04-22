@@ -6,8 +6,8 @@
 
 #define TASK_POOL_SIZE 0x40
 #define TASK_STACK_SIZE 0x1000
-#define KERNEL_STACK_ADDR 0x10000000
-#define USER_STACK_ADDR (0x10000000 + TASK_STACK_SIZE * TASK_POOL_SIZE)
+#define KERNEL_STACK_ADDR 0x11000000
+#define USER_STACK_ADDR (0x11000000 + TASK_STACK_SIZE * TASK_POOL_SIZE)
 
 #define TASK_STATUS_DEAD 1
 #define TASK_STATUS_LIVE 2
@@ -79,4 +79,5 @@ size_t do_uart_write(const char buf[], size_t size);
 
 void* load_program(const char* name);
 void* fork_memcpy();
+extern int exit();
 #endif

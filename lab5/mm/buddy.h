@@ -7,7 +7,7 @@
 #define PAGE_SIZE (4 * 1024)
 #define BUDDY_ORDER_MAX 9
 #define BUDDY_BLOCK_NUM (1 << BUDDY_ORDER_MAX)
-#define BUDDY_START  0x11000000 
+#define BUDDY_START  0x10000000 
 #define BUDDY_HEADER_OFFSET 0x10
 struct buddy_struct
 {

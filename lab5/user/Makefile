@@ -8,8 +8,8 @@ BUILD_DIR=.
 HEADER := $(wildcard */*.h)
 SRC := $(wildcard */*.c)
 ASM := $(wildcard */*/*.S)
-ELF = $(BUILD_DIR)/user_test.elf
-IMG = $(BUILD_DIR)/user_test
+ELF = user_test.elf
+IMG = user_test
 OBJ := program/main.o $(patsubst %.S, %.o, $(ASM)) $(filter-out program/main.o, $(patsubst %.c, %.o, $(SRC)))
 .PHONY: all clean rootfs 
 
@@ -26,6 +26,7 @@ clean:
 	rm -f $(IMG)
 rootfs:
 	cp $(IMG) ../rootfs/$(IMG)
+	cp $(ELF) ../rootfs/$(ELF)
 	cd ../rootfs; find . | cpio -o -H newc > ../initramfs.cpio
 
 

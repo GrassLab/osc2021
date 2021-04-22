@@ -15,11 +15,12 @@ struct task_struct* privilege_task_create( void(*func)() ) {
   //set task element
   task_pool[i].task_id = i + 1;
   task_pool[i].status = TASK_STATUS_LIVE;
-  task_pool[i].kstack = (void* )KERNEL_STACK_ADDR + TASK_STACK_SIZE * (i + 1);
-  task_pool[i].ctx.sp = (size_t)task_pool[i].kstack; 
+  task_pool[i].kstack = (void* )KERNEL_STACK_ADDR + TASK_STACK_SIZE * i;
+  task_pool[i].ctx.sp = (size_t)task_pool[i].kstack + TASK_STACK_SIZE; 
   task_pool[i].ctx.lr = (size_t)func;
-  //task_pool[i].stack = (void *)USER_STACK_ADDR + TASK_STACK_SIZE * (i + 1);
+  task_pool[i].stack = (void *)USER_STACK_ADDR + TASK_STACK_SIZE * i;
   task_pool[i].next = null;
+  task_pool[i].start = func;
   //push into run queue
   task_queue_push(&task_pool[i], &run_queue);
  
@@ -45,6 +46,7 @@ void idle_task() {
 void test_task() {
   //while(1) {
   printf("test task id: %d\n", get_current()->task_id);
+  do_exec("user_test", null);
   do_exit(0);
     //schedule();
   //}
@@ -56,19 +58,19 @@ void task_init() {
   //create idle task
   privilege_task_create(idle_task);
 
-  for(int i = 0; i < 5; i++) {
+  /*for(int i = 0; i < 5; i++) {
     privilege_task_create(test_task);
-  }
+  }*/
   
-  task_queue_status(run_queue.head);
-
-  //switch_to(&fake, task_queue_pop(&run_queue));
+  privilege_task_create(test_task);
+  
+  switch_to(&fake, &task_pool[1]);
 
 }
 
 struct trapframe* get_trapframe(struct task_struct* t) {
   struct trapframe* tf;
-  tf = (struct trapframe* )(t->kstack - sizeof(struct trapframe));
+  tf = (struct trapframe* )(t->kstack + TASK_STACK_SIZE - sizeof(struct trapframe));
   return tf;
 }
 

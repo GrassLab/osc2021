@@ -3,35 +3,35 @@
 
 .global getpid
 getpid:
-  mov  x0, GETPID
+  mov  x8, GETPID
   svc  #0
   ret
 
 .global uart_read
 uart_read:
-  mov  x0, UART_READ
+  mov  x8, UART_READ
   svc  #0
   ret
 
 .global uart_write
 uart_write:
-  mov  x0, UART_WRITE
+  mov  x8, UART_WRITE
   svc  #0
   ret
 
 .global exec
 exec:
-  mov  x0, EXEC
+  mov  x8, EXEC
   svc  #0
   ret
 
 .global exit
 exit:
-  mov  x0, EXIT
+  mov  x8, EXIT
   svc  #0
   ret
 .global fork
 fork:
-  mov  x0, FORK
+  mov  x8, FORK
   svc  #0
   ret  
