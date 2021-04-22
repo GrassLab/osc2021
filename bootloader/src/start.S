@@ -1,3 +1,5 @@
+#include "bootloader.h"
+
 .section ".text.boot"
 
 _prepare:
@@ -16,16 +18,16 @@ clear:
     subs    x1, x1, #8
     bgt     clear
 
-    // set stack position, defined in linker.ld
-    ldr     x0, = _stack_top
+    // set stack position
+    mov     x0, BOOTLOADER_RELOCATED_STACK_TOP
     mov     sp, x0
 
     // relocate
-    ldr     x0, = _relocate_addr
+    mov     x0, BOOTLOADER_RELOCATED_ADDRESS
     bl      do_relocate
 
     adr     x0, _begin
-    adr     x1, _relocate_addr
+    mov     x1, BOOTLOADER_RELOCATED_ADDRESS
 
     sub     x2, sp, x0  // get offset of stack point
     add     sp, x1, x2  // set stack point according to the offset

@@ -50,10 +50,10 @@ void* bootloader(void *kernel_entry)
 
 void do_relocate(void *target)
 {
-    char *pAddr = BOOTLOADER_ADDRESS;
+    char *pAddr = (void *)BOOTLOADER_ORIGNINAL_ADDRESS;
     char *targetTmp = (char *)target;
     
-    while (pAddr != BOOTLOADER_STACK_TOP)
+    while (pAddr != (void *)BOOTLOADER_ORIGINAL_STACK_TOP)
     {
         *targetTmp = *pAddr;
 
