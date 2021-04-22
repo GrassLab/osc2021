@@ -19,8 +19,8 @@ clear:
     bgt     clear
 
     // set stack position
-    mov     x0, BOOTLOADER_RELOCATED_STACK_TOP
-    mov     sp, x0
+    mov     x0, BOOTLOADER_ORIGINAL_STACK_TOP
+    mov     sp,  x0
 
     // relocate
     mov     x0, BOOTLOADER_RELOCATED_ADDRESS

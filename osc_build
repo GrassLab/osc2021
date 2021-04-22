@@ -1,6 +1,6 @@
 #! /bin/bash
 BUILD_DIR=build
-CMAKE_DIR=tmp
+CMAKE_DIR=$BUILD_DIR/tmp
 
 ## clean
 if [ "$1" == "-c" ]
@@ -15,7 +15,7 @@ cmake -S . -B $CMAKE_DIR -DDEBUG=ON &&
 cd $CMAKE_DIR
 make &&
 
-cd ..
+cd ../../
 aarch64-linux-gnu-objcopy $CMAKE_DIR/bootloader/bootloader.elf -O binary $BUILD_DIR/bootloader.img
 aarch64-linux-gnu-objcopy $CMAKE_DIR/kernel/kernel8.elf -O binary $BUILD_DIR/kernel8.img
 aarch64-linux-gnu-objcopy $CMAKE_DIR/app/app.elf -O binary assets/rootfs/app
