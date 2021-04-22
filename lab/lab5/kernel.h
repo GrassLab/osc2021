@@ -368,8 +368,8 @@ thread_list *get_current_thread() {
   return now;
 }
 uint64_t get_current_tid() { return get_current_thread()->tid; }
-uint64_t get_free_tid(thread_list *q) {
-  for (uint64_t tid = 0;; ++tid)
+uint64_t get_free_tid(thread_list *q, uint64_t i) {
+  for (uint64_t tid = i;; ++tid)
     if (find_tid(q, tid) == 0) return tid;
 }
 void add_to_q(thread_list **q, thread_list *item) {
@@ -410,7 +410,7 @@ thread_list *thread_create(void *func_ptr) {
                        .lr = func_ptr,
                        .sp = sp,
                        .status = ALIVE,
-                       .tid = get_free_tid(run_q),
+                       .tid = get_free_tid(wait_q, get_free_tid(run_q, 0)),
                        .pid = 0};
   add_to_q(&run_q, new);
   uart_puts("create: ");

@@ -120,7 +120,7 @@ void main() {
   buddy_init((char *)BUDDY_START);
   dma_init();
   timer_init();
-  thread_init();
+  // thread_init();
   do_clear();
   shell();
 }
