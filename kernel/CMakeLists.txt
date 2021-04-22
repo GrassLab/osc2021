@@ -4,8 +4,8 @@ include_directories(${CMAKE_SOURCE_DIR}/kernel/include ${CMAKE_SOURCE_DIR}/lib/i
 set(TARGET kernel8.elf)
 
 # target
-file(GLOB C_FILES src/*.c)
-file(GLOB ASM_FILES src/*.S)
+file(GLOB_RECURSE C_FILES src/*.c)
+file(GLOB_RECURSE ASM_FILES src/*.S)
 
 ## deal with asm files
 foreach(X IN LISTS ASM_FILES)
