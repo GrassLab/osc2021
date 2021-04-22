@@ -1,3 +1,4 @@
+void delay(int cnt);
 int getpid();
 int uart_read(char* buf,int size);
 int uart_write(char* buf,int size);

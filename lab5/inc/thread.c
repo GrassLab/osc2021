@@ -69,6 +69,7 @@ void threadSchedule(){
 		}while(rq.beg->status);//ignore abnormal task
 
 		//uart_printf("%d %x %x %x\n",rq.beg->id,rq.beg->context[10],rq.beg->context[11],rq.beg->context[12]);
+		//uart_printf("%d -> %d\n",rq.end->id,rq.beg->id);
 		asm volatile("\
 			mov x0, %0\n\
 			mov x1, %1\n\

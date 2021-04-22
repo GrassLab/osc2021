@@ -15,7 +15,7 @@ int main(void) {
         fork();
         while (cnt < 5) {
             uart_printf("pid: %d, cnt: %d, ptr: %x\n", getpid(), cnt, &cnt);
-            //delay(1000000);
+            delay(1000000);
             ++cnt;
         }
     } else {

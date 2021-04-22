@@ -1,6 +1,10 @@
 #include "syscall.h"
 #include "printf.h"
 
+void delay(int cnt){
+	while(cnt>0)cnt--;
+}
+
 int getpid(){
 	long ret;
 	asm volatile("\

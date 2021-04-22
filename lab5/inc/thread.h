@@ -1,3 +1,4 @@
+void threadSchedule();
 int tidGet();
 void exec(char* path,char** argv);
 void exit();

@@ -84,6 +84,7 @@ void exception_handler(){
 }
 
 void interrupt_handler(){
+	/*
 	asm volatile("mrs x0, cntfrq_el0	\n");
 	asm volatile("add x0, x0, x0		\n");
 	asm volatile("msr cntp_tval_el0, x0	\n");
@@ -95,6 +96,11 @@ void interrupt_handler(){
 	uart_printf("--------------------\n");
 	uart_printf("Time Elapsed: %d.%ds\n",tmp/10,tmp%10);
 	uart_printf("--------------------\n");
+	*/
+	asm volatile("mrs x0, cntfrq_el0	\n");
+	asm volatile("asr x0, x0, 7			\n");// 1/128 second
+	asm volatile("msr cntp_tval_el0, x0	\n");
+	threadSchedule();
 }
 
 void error_handler(){
