@@ -2,6 +2,7 @@
 #include "include/entry.h"
 #include "include/csched.h"
 #include "include/mini_uart.h"
+#include "utils.h"
 
 struct task task_pool[MAX_TASK_NR];
 struct task *readyQueue;
@@ -59,8 +60,10 @@ struct task *thread_create(unsigned long func_addr, unsigned long args)
     if (!(new = new_ts()))
         return 0; // null
     /* Setting task struct */
-    new->stack_page = kmalloc(0x1000); // 4kb
-    new->ksp = new->stack_page + 0x1000; // 16 alignment
+    new->kernel_stack_page = kmalloc(0x1000); // 4kb
+    new->ksp = new->kernel_stack_page + 0x1000 - sizeof(struct trap_frame); // 16 alignment
+    new->user_stack_page = kmalloc(0x1000); // 4kb
+    new->usp = new->user_stack_page + 0x1000; // 16 alignment
     new->ctx.x19 = func_addr;
     new->ctx.x20 = args;
     new->ctx.x30 = (unsigned long)ret_from_fork; // pc
@@ -74,7 +77,10 @@ struct task *thread_create(unsigned long func_addr, unsigned long args)
     add_to_ready(new);
     return new;
 }
-
+void imhere()
+{
+    uart_send_string("I'm here\r\n");
+}
 struct task *pick_next()
 {
     struct task *ret;
@@ -95,14 +101,15 @@ int schedule()
         return 0;
     current = next;
     cpu_switch_to(prev, next);
+    enable_irq();
     return 0;
 }
 
-int exit(struct task *zb)
+int sys_exit()
 {
-    if (rm_from_queue(zb) == -1)
+    if (rm_from_queue(current) == -1)
         return -1;
-    zb->status = TASK_ZOMBIE;
+    current->status = TASK_ZOMBIE;
     // Release all resources, except stack and struct task.
     schedule();
     return 0;

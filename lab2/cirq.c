@@ -2,6 +2,7 @@
 #include "include/mini_uart.h"
 #include "utils.h"
 #include "include/cirq.h"
+#include "include/csched.h"
 
 struct irq_btm_task irq_btm_q[MAX_NR_BOTTOM];
 int irq_btm_total = 0;
@@ -9,6 +10,9 @@ int irq_btm_total = 0;
 struct tqe *timerQueue = 0; // initialized to NUL
 struct tqe timerPool[MAX_NR_TQE];
 struct tqe *timerPool_h;
+
+extern struct task *current;
+
 
 void *core_timer_btm(void* arg)
 {
@@ -25,12 +29,14 @@ void *core_timer_btm(void* arg)
 
 void do_core_timer_handler(void)
 {
-    uart_send_string("From do_core_timer_handler: ");
-    uart_send_ulong(core_timer_get_sec());
-    uart_send_string(" seconds have passed.\r\n");
+    // uart_send_string("From do_core_timer_handler: ");
+    // uart_send_ulong(core_timer_get_sec());
+    // uart_send_string(" seconds have passed.\r\n");
     set_core_timer(TICKS_FOR_ITR);
-    // if (--current->counter <= 0)
-    //     schedule();
+    if (--current->counter <= 0) {
+        current->resched = 1;
+        current->counter = current->priority;
+    }
     tqe_decr(TICKS_FOR_ITR);
     /* After top half, we have to set bottom half task. */
     // irq_btm_q_insert(PRIORITY_TIMER, core_timer_btm);
@@ -321,4 +327,16 @@ void invalid_handler()
 {
     uart_send_string("From invalid_handler\r\n");
     while (1);
+}
+
+
+int chk_sched()
+{ // if interrupt is not nested && current->resched:
+  //     schedule()
+  // But now assume interrupt won't nest
+    if (current->resched){
+        current->resched = 0;
+        schedule();
+    }
+    return 0;
 }

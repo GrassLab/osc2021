@@ -1,5 +1,7 @@
 char *align_upper(char *addr, int alignment);
+char *align_down(char *addr, int alignment);
 int strlen(char *str);
+void *memcpy(char *str1, const char *str2, int n);
 int strcmp(char *str1, char *str2);
 int strcmp_with_len(char *str1, char *str2, int len);
 char *strstr(char *haystack, char *needle);

@@ -275,7 +275,7 @@ int free_frames(struct page *frame)
         buddy = &page_frames[buddy_idx];
 
         if (buddy->free && (buddy->blk_odr == page_walk->blk_odr)) { // buddy can be coalesced.
-            uart_send_string("[DEMO] From free_frames: merge!\r\n");
+            // uart_send_string("[DEMO] From free_frames: merge!\r\n");
             if (buddy_idx > page_walk->index) { // buddy is at right side
                 page_walk->blk_odr++;
                 buddy->blk_odr = -1;
@@ -311,7 +311,7 @@ struct page *get_free_frames(int nr)
             remove_from_list(page_walk);
             while (order > target_ord) { 
                 // Still need to split the block
-                uart_send_string("[DEMO] From get_free_frames: split!\r\n");
+                // uart_send_string("[DEMO] From get_free_frames: split!\r\n");
                 order--;
                 buddy = page_walk + (1 << order);
                 buddy->blk_odr = order;

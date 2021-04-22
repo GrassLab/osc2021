@@ -61,3 +61,4 @@ int irq_btm_q_insert(int priority, void *(*btm_handler)(void*));
 
 void do_uart_handler();
 void invalid_handler();
+int chk_sched();
