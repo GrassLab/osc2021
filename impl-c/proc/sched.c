@@ -5,6 +5,15 @@
 #include "mm.h"
 #include "uart.h"
 
+#include "cfg.h"
+#include "log.h"
+
+#ifdef CFG_LOG_PROC_SCHED
+static const int _DO_LOG = 1;
+#else
+static const int _DO_LOG = 0;
+#endif
+
 // proc/sched.S
 void switch_to(struct task_struct *prev, struct task_struct *next);
 
@@ -19,7 +28,6 @@ void scheduler_init() {
 }
 
 void task_schedule() {
-  uart_println("Scheduler called");
   struct task_struct *cur = get_current();
   struct task_struct *next;
 
@@ -35,7 +43,7 @@ void task_schedule() {
         list_push(&entry_next->list, &exited);
       }
     }
-    uart_println("cur:%d next:%d", cur->id, next->id);
+    log_println("schedule next %d->%d", cur->id, next->id);
     switch_to(cur, next);
   }
 }
@@ -55,7 +63,7 @@ void kill_zombies() {
   while (!list_empty(&exited)) {
     entry = list_pop(&exited);
     task = ((struct task_entry *)entry)->task;
-    uart_println("recycle space for task:%d", task->id);
+    log_println("recycle space for task:%d", task->id);
     list_del(entry);
     kfree(task);
     kfree(entry);

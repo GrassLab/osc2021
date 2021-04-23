@@ -5,7 +5,7 @@
  *
  * For Example:
  * #ifdef CFG_LOG_MEM_BUDDY
- *  static const int _DO_LOG = 1
+ *  static const int _DO_LOG = 1;
  * #else
  *  static const int _DO_LOG = 0;
  * #endif

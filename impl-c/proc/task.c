@@ -8,6 +8,15 @@
 #include "mm/frame.h"
 #include "uart.h"
 
+#include "cfg.h"
+#include "log.h"
+
+#ifdef CFG_LOG_PROC_TASK
+static const int _DO_LOG = 1;
+#else
+static const int _DO_LOG = 0;
+#endif
+
 static void foo();
 
 void foo() {
@@ -24,7 +33,7 @@ struct task_struct *task_create(void *func, int tid) {
   struct task_struct *t;
   t = (struct task_struct *)kalloc(FRAME_SIZE);
   if (t == NULL) {
-    uart_println("oops cannot allocate thread");
+    log_println("[task] oops cannot allocate thread");
     return NULL;
   }
 
@@ -38,10 +47,10 @@ struct task_struct *task_create(void *func, int tid) {
       (struct task_entry *)kalloc(sizeof(struct task_entry));
   entry->task = t;
   list_push(&entry->list, &run_queue);
-  uart_println("entry created: %x %x", entry->task, entry->list);
+  // uart_println("entry created: %x %x", entry->task, entry->list);
 
-  uart_println("task created: id:%d struct:%x func:%x", t->id, t,
-               t->cpu_context.lr);
+  log_println("task created: id:%d struct:%x func:%x", t->id, t,
+              t->cpu_context.lr);
   return t;
 }
 
@@ -49,7 +58,7 @@ void cur_task_exit() {
   // Exit current running thread;
   struct task_struct *task = get_current();
   task->status = TASK_STATUS_DEAD;
-  uart_println("task %d called cur_task_exit", task->id);
+  log_println("[task] exit called: %d", task->id);
   task_schedule();
 }
 
@@ -58,12 +67,13 @@ void test_tasks() {
 
   struct task_struct *root_task;
   root_task = task_create(idle, 0);
-  uart_println("t = %x", root_task);
   asm volatile("msr tpidr_el1, %0\n" ::"r"((unsigned long)root_task));
 
   task_create(foo, 1);
   task_create(foo, 2);
   task_create(foo, 3);
+#ifdef CFG_LOG_PROC_SCHED
   _dump_runq();
+#endif
   idle();
 }

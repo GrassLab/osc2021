@@ -11,6 +11,8 @@
 // #define CFG_LOG_MEM_KALLOC
 // #define CFG_LOG_MEM_BUDDY
 // #define CFG_LOG_MEM_SLAB
+// #define CFG_LOG_PROC_TASK
+// #define CFG_LOG_PROC_SCHED
 
 /**
  *  TEST
