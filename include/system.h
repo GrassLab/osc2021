@@ -63,6 +63,7 @@ uint64_t sys_get64bits(char *);
 unsigned long long int need_padding(unsigned long long int size, unsigned long long int multiplier);
 void swap(int *, int *);
 void *malloc(int);
+void free(void*);
 void __lab3(char *);
 void __lab5(char *);
 #endif

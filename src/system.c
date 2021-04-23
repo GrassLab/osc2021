@@ -190,6 +190,9 @@ void* malloc(int size){
     return dynamic_alloc(size);
     // return (void*)(ptr->addr);
 }
+void free(void* addr){
+    dynamic_free(addr);
+}
 void sys_help(char* args){
     uart_puts("[Command] : [Description]\r\n");
     for(int i = 0; i < sizeof(cmd_list) / sizeof(struct cmd); ++i){
@@ -212,6 +215,9 @@ void *__memset(void* buf, int c, int size){
     while(size--)
         *ptr++ = c;
     return buf;
+}
+void memset(void* buf, int c, int size){
+    __memset(buf, c, size);
 }
 void reset(int tick){
     *PM_RSTC = PM_PASSWORD | 0x20;
