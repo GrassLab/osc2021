@@ -1,6 +1,6 @@
 #include "cpio.h"
 
-#include "io.h"
+#include "printf.h"
 #include "string.h"
 
 void cpio_ls() {
@@ -17,13 +17,12 @@ void cpio_ls() {
     pathname = (char *)ptr;
     // the end is indicated by a special record with pathname "TRAILER!!!"
     if (strcmp(pathname, CPIO_END) == 0) break;
-    print_s(pathname);
-    print_s(" ");
+    printf("%s ", pathname);
 
     ptr = align_up(ptr + namesize, 4);
     ptr = align_up(ptr + filesize, 4);
   }
-  print_s("\n");
+  printf("\n");
 }
 
 void cpio_cat(char *pathname_to_cat) {
@@ -45,15 +44,14 @@ void cpio_cat(char *pathname_to_cat) {
     if (strcmp(pathname, pathname_to_cat) == 0) {
       char *content = (char *)ptr;
       for (unsigned long long i = 0; i < filesize; i++) {
-        if (content[i] == '\n') print_c('\r');
-        print_c(content[i]);
+        printf("%c", content[i]);
       }
-      print_s("\n");
+      printf("\n");
       return;
     }
     ptr = align_up(ptr + filesize, 4);
   }
-  print_s("No such file\n");
+  printf("No such file\n");
 }
 
 void cpio_load_user_program(char *target_program, uint64_t target_addr) {
@@ -82,5 +80,5 @@ void cpio_load_user_program(char *target_program, uint64_t target_addr) {
     }
     ptr = align_up(ptr + filesize, 4);
   }
-  print_s("No such file\n");
+  printf("No such file\n");
 }

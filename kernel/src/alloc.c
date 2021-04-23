@@ -1,6 +1,7 @@
 #include "alloc.h"
 
 #include "io.h"
+#include "printf.h"
 #include "utils.h"
 
 void buddy_test() {
@@ -11,26 +12,22 @@ void buddy_test() {
   };
   page_frame *frame_ptr[6];
 
-  print_s("********** buddy allocation test **********\n");
+  printf("********** buddy allocation test **********\n");
   for (int i = 0; i < 6; i++) {
-    print_s("Press any key to continue...");
+    printf("Press any key to continue...");
     char c = read_c();
-    if (c != '\n') print_s("\n");
+    if (c != '\n') printf("\n");
     frame_ptr[i] = buddy_allocate(size[i]);
-    print_s("Successfully allocate ");
-    print_i(size[i] / PAGE_SIZE);
-    print_s(" pages\n");
+    printf("Successfully allocate %lld pages\n", size[i] / PAGE_SIZE);
     if (c == 'p') print_frame_lists();
   }
-  print_s("********** buddy free test **********\n");
+  printf("********** buddy free test **********\n");
   for (int i = 0; i < 6; i++) {
-    print_s("Press any key to continue...");
+    printf("Press any key to continue...");
     char c = read_c();
-    if (c != '\n') print_s("\n");
+    if (c != '\n') printf("\n");
     buddy_free(frame_ptr[i]);
-    print_s("Successfully free ");
-    print_i(size[i] / PAGE_SIZE);
-    print_s(" pages\n");
+    printf("Successfully free %lld pages\n", size[i] / PAGE_SIZE);
     if (c == 'p') print_frame_lists();
   }
 }
@@ -45,33 +42,25 @@ void dma_test() {
   };
   void *ptr[6];
 
-  print_s("********** malloc test **********\n");
+  printf("********** malloc test **********\n");
   for (int i = 0; i < 6; i++) {
-    print_s("Press any key to continue...");
+    printf("Press any key to continue...");
     char c = read_c();
-    if (c != '\n') print_s("\n");
+    if (c != '\n') printf("\n");
     ptr[i] = malloc(size[i]);
-    print_s("Successfully allocate ");
-    print_i(size[i]);
-    print_s(" bytes in address ");
-    print_h((uint64_t)ptr[i]);
-    print_s("\n");
+    printf("Successfully allocate %lld bytes in address %p\n", size[i], ptr[i]);
     if (c == 'p') {
       print_frame_lists();
       print_dma_list();
     }
   }
-  print_s("********** free test **********\n");
+  printf("********** free test **********\n");
   for (int i = 0; i < 6; i++) {
-    print_s("Press any key to continue...");
+    printf("Press any key to continue...");
     char c = read_c();
-    if (c != '\n') print_s("\n");
+    if (c != '\n') printf("\n");
     free(ptr[i]);
-    print_s("Successfully free ");
-    print_i(size[i]);
-    print_s(" bytes in address ");
-    print_h((uint64_t)ptr[i]);
-    print_s("\n");
+    printf("Successfully free %lld bytes in address %p\n", size[i], ptr[i]);
     if (c == 'p') {
       print_frame_lists();
       print_dma_list();
@@ -110,13 +99,8 @@ page_frame *buddy_allocate(uint64_t size) {
       frames[cur_id].is_allocated = 1;
       frames[cur_id].next = used_frame_lists[order];
       used_frame_lists[order] = &frames[cur_id];
-      // print_s("allocate frame index ");
-      // print_i(cur_id);
-      // print_s(" (4K x 2^");
-      // print_i(order);
-      // print_s(" = ");
-      // print_i(1 << (order + 2));
-      // print_s(" KB)\n");
+      printf("allocate frame index %d (4K x 2^%lld = %lld KB)\n", cur_id, order,
+             1 << (order + 2));
 
       // release redundant memory block
       for (; i > order; i--) {
@@ -125,15 +109,11 @@ page_frame *buddy_allocate(uint64_t size) {
         frames[id].is_allocated = 0;
         frames[id].next = free_frame_lists[i - 1];
         free_frame_lists[i - 1] = &frames[id];
-        // print_s("put frame index ");
-        // print_i(id);
-        // print_s(" back to free lists (4K x 2^");
-        // print_i(frames[id].order);
-        // print_s(" = ");
-        // print_i(1 << (frames[id].order + 2));
-        // print_s(" KB)\n");
+        printf(
+            "put frame index %d back to free lists (4K x 2^%lld = %lld KB)\n",
+            id, frames[id].order, 1 << (frames[id].order + 2));
       }
-      // print_s("\n");
+      printf("\n");
       return &frames[cur_id];
     }
   }
@@ -143,7 +123,7 @@ page_frame *buddy_allocate(uint64_t size) {
 void buddy_free(page_frame *frame) {
   uint64_t index = frame->id;
   if (!frames[index].is_allocated) {
-    print_s("Error: it is already free\n");
+    printf("Error: it is already free\n");
     return;
   }
 
@@ -155,13 +135,8 @@ void buddy_free(page_frame *frame) {
         (frames[target_index].order != order))
       break;
 
-    // print_s("merge with frame index ");
-    // print_i(target_index);
-    // print_s(" (4K x 2^");
-    // print_i(frames[target_index].order);
-    // print_s(" = ");
-    // print_i(1 << (frames[target_index].order + 2));
-    // print_s(" KB)\n");
+    printf("merge with frame index %d (4K x 2^%lld = %lld KB)\n", target_index,
+           frames[target_index].order, 1 << (frames[target_index].order + 2));
     buddy_unlink(target_index, 0);
     order += 1;
     if (index > target_index) index = target_index;
@@ -169,13 +144,8 @@ void buddy_free(page_frame *frame) {
   frames[index].order = order;
   frames[index].next = free_frame_lists[order];
   free_frame_lists[order] = &frames[index];
-  // print_s("put frame index ");
-  // print_i(index);
-  // print_s(" back (4K x 2^");
-  // print_i(frames[index].order);
-  // print_s(" = ");
-  // print_i(1 << (frames[index].order + 2));
-  // print_s(" KB)\n\n");
+  printf("put frame index %d back (4K x 2^%lld = %lld KB)\n", index,
+         frames[index].order, 1 << (frames[index].order + 2));
 }
 
 void buddy_unlink(int index, int type) {
@@ -214,24 +184,16 @@ void buddy_unlink(int index, int type) {
 }
 
 void print_frame_lists() {
-  print_s("========================\n");
-  print_s("Free frame lists: \n");
+  printf("========================\n");
+  printf("Free frame lists: \n");
   for (int i = MAX_FRAME_ORDER; i >= 0; i--) {
-    print_s("4K x 2^");
-    print_i(i);
-    print_s(" (");
-    print_i(1 << (i + 2));
-    print_s(" KB):");
+    printf("4K x 2^%d (%d KB):", i, 1 << (i + 2));
     for (page_frame *cur = free_frame_lists[i]; cur; cur = cur->next) {
-      print_s("  index ");
-      print_i(cur->id);
-      print_s("(");
-      print_h(cur->addr);
-      print_s(")");
+      printf("  index %d(0x%x)", cur->id, cur->addr);
     }
-    print_s("\n");
+    printf("\n");
   }
-  print_s("========================\n");
+  printf("========================\n");
 }
 
 void *malloc(uint64_t size) {
@@ -376,14 +338,12 @@ void free(void *ptr) {
 }
 
 void print_dma_list() {
-  print_s("========================\n");
-  print_s("Free DMA slots: \n");
+  printf("========================\n");
+  printf("Free DMA slots: \n");
   for (dma_header *cur = free_dma_list; cur; cur = cur->next) {
-    print_s("size: ");
-    print_i(cur->total_size - align_up(sizeof(dma_header), 8));
-    print_s(", frame index: ");
-    print_i(cur->frame_ptr->id);
-    print_s("\n");
+    printf("size: %lld, frame index: %d\n",
+           cur->total_size - align_up(sizeof(dma_header), 8),
+           cur->frame_ptr->id);
   }
-  print_s("========================\n");
+  printf("========================\n");
 }

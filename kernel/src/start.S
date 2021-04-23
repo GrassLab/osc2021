@@ -42,6 +42,11 @@ from_el2_to_el1:
     mov x0, 0x3c5           // EL1h with interrupt disabled
     msr spsr_el2, x0
     msr elr_el2, lr
+
+    // IMPORTANT: disable exceptions of accessing the SIMD and floating-point registers
+    mov x0, #(3 << 20)
+	msr cpacr_el1, x0
+
     eret                    // return to EL1
 
 set_exception_vector_table:

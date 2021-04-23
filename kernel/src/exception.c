@@ -1,7 +1,7 @@
 #include "exception.h"
 
-#include "io.h"
 #include "mini_uart.h"
+#include "printf.h"
 #include "timer.h"
 #include "utils.h"
 
@@ -16,15 +16,9 @@ void sync_handler() {
   asm volatile("mrs %0, spsr_el1" : "=r"(spsr_el1));
   asm volatile("mrs %0, elr_el1" : "=r"(elr_el1));
   asm volatile("mrs %0, esr_el1" : "=r"(esr_el1));
-  print_s("SPSR_EL1: ");
-  print_h(spsr_el1);
-  print_s("\n");
-  print_s("ELR_EL1: ");
-  print_h(elr_el1);
-  print_s("\n");
-  print_s("ESR_EL1: ");
-  print_h(esr_el1);
-  print_s("\n");
+  printf("SPSR_EL1: 0x%08x\n", spsr_el1);
+  printf("ELR_EL1: 0x%08x\n", elr_el1);
+  printf("ESR_EL1: 0x%08x\n", esr_el1);
 }
 
 void irq_handler_currentEL_ELx() {
@@ -55,4 +49,4 @@ void irq_handler_lowerEL_64() {
   enable_interrupt();
 }
 
-void default_handler() { print_s("===== default handler =====\n"); }
+void default_handler() { printf("===== default handler =====\n"); }
