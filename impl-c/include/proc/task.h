@@ -1,5 +1,8 @@
 #pragma once
-#include "list.h"
+#include "stdint.h"
+
+#define TASK_STATUS_DEAD 0
+#define TASK_STATUS_ALIVE 1
 
 struct cpu_context {
   unsigned long x19;
@@ -35,25 +38,17 @@ struct task_struct {
   //
 };
 
-#define TASK_STATUS_DEAD 0
-#define TASK_STATUS_ALIVE 1
-
-/* sched.c */
-void test_tasks();
-void scheduler_init();
-
-/* sched.S */
-//
-void switch_to(struct task_struct *prev, struct task_struct *next);
-
-static inline struct task_struct *get_current() {
-  unsigned long cur;
-  asm volatile("mrs %0, tpidr_el1 \n" : "=r"(cur) :);
-  return (struct task_struct *)cur;
-}
+struct task_struct *task_create(void *func, int tid);
+void cur_task_exit();
 
 static inline void _wait() {
   for (uint64_t j = 0; j < (1 << 27); j++) {
     ;
   }
+}
+
+static inline struct task_struct *get_current() {
+  unsigned long cur;
+  asm volatile("mrs %0, tpidr_el1 \n" : "=r"(cur) :);
+  return (struct task_struct *)cur;
 }

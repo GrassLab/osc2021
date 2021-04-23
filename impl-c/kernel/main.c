@@ -2,7 +2,7 @@
 #include "exec.h"
 #include "mm.h"
 #include "mm/startup.h"
-#include "sched.h"
+#include "proc.h"
 #include "shell/shell.h"
 #include "test.h"
 #include "uart.h"
