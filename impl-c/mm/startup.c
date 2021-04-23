@@ -18,9 +18,6 @@ static const int _DO_LOG = 0;
 StartupAllocator_t StartupAlloc;
 struct MemRegion ReservedRegions[STARTUP_MAX_RESERVE_COUNT];
 
-// Mask for address inside frame
-#define FRAME_MASK ((1 << FRAME_SHIFT) - 1)
-
 static void sa_init(StartupAllocator_t *sa, struct MemRegion *reserved,
                     int max_reserved_count);
 // static void *sa_alloc(StartupAllocator_t *sa, unsigned long size);
