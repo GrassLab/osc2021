@@ -1,7 +1,7 @@
 #define CORE0_IRQ_SOURCE (0x40000060)
 
-.global exception_handler
-.global irq_handler
+.global exception_entry
+.global irq_entry
 
 
 // save general registers to stack
@@ -46,18 +46,30 @@
     add sp, sp, 32 * 8
 .endm
 
-exception_handler:
+
+.macro preserve_context
     save_all
+    // tpidr
+.endm
+
+.macro restore_context
+    save_all
+.endm
+
+exception_entry:
+    save_all
+
     mrs   x0, spsr_el1
     mrs   x1, elr_el1
     mrs   x2, esr_el1
     
     bl    print_num
+
     load_all
     
     eret
 
-irq_handler:
+irq_entry:
     save_all
     ldr   x0, = CORE0_IRQ_SOURCE
 
@@ -66,4 +78,3 @@ irq_handler:
     bl    irq_parser
     load_all
     eret
-

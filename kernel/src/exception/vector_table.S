@@ -25,9 +25,9 @@ el1_exception_vector_table:
     .align 7
 
     // Lower EL using AArch64
-    b exception_handler
+    b exception_entry
     .align 7
-    b irq_handler
+    b irq_entry
     .align 7
     b noop
     .align 7
