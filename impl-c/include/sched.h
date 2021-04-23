@@ -36,10 +36,11 @@ struct task_struct {
 };
 
 #define TASK_STATUS_DEAD 0
-#define TASK_STATUS_LIVE 1
+#define TASK_STATUS_ALIVE 1
 
 /* sched.c */
 void test_tasks();
+void scheduler_init();
 
 /* sched.S */
 //
@@ -49,4 +50,10 @@ static inline struct task_struct *get_current() {
   unsigned long cur;
   asm volatile("mrs %0, tpidr_el1 \n" : "=r"(cur) :);
   return (struct task_struct *)cur;
+}
+
+static inline void _wait() {
+  for (uint64_t j = 0; j < (1 << 27); j++) {
+    ;
+  }
 }
