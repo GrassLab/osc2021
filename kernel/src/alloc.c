@@ -99,8 +99,9 @@ page_frame *buddy_allocate(uint64_t size) {
       frames[cur_id].is_allocated = 1;
       frames[cur_id].next = used_frame_lists[order];
       used_frame_lists[order] = &frames[cur_id];
-      printf("allocate frame index %d (4K x 2^%lld = %lld KB)\n", cur_id, order,
-             1 << (order + 2));
+      // printf("allocate frame index %d (4K x 2^%lld = %lld KB)\n", cur_id,
+      // order,
+      //        1 << (order + 2));
 
       // release redundant memory block
       for (; i > order; i--) {
@@ -109,11 +110,11 @@ page_frame *buddy_allocate(uint64_t size) {
         frames[id].is_allocated = 0;
         frames[id].next = free_frame_lists[i - 1];
         free_frame_lists[i - 1] = &frames[id];
-        printf(
-            "put frame index %d back to free lists (4K x 2^%lld = %lld KB)\n",
-            id, frames[id].order, 1 << (frames[id].order + 2));
+        // printf(
+        //     "put frame index %d back to free lists (4K x 2^%lld = %lld
+        //     KB)\n", id, frames[id].order, 1 << (frames[id].order + 2));
       }
-      printf("\n");
+      // printf("\n");
       return &frames[cur_id];
     }
   }
@@ -135,8 +136,10 @@ void buddy_free(page_frame *frame) {
         (frames[target_index].order != order))
       break;
 
-    printf("merge with frame index %d (4K x 2^%lld = %lld KB)\n", target_index,
-           frames[target_index].order, 1 << (frames[target_index].order + 2));
+    // printf("merge with frame index %d (4K x 2^%lld = %lld KB)\n",
+    // target_index,
+    //        frames[target_index].order, 1 << (frames[target_index].order +
+    //        2));
     buddy_unlink(target_index, 0);
     order += 1;
     if (index > target_index) index = target_index;
@@ -144,8 +147,8 @@ void buddy_free(page_frame *frame) {
   frames[index].order = order;
   frames[index].next = free_frame_lists[order];
   free_frame_lists[order] = &frames[index];
-  printf("put frame index %d back (4K x 2^%lld = %lld KB)\n", index,
-         frames[index].order, 1 << (frames[index].order + 2));
+  // printf("put frame index %d back (4K x 2^%lld = %lld KB)\n", index,
+  //        frames[index].order, 1 << (frames[index].order + 2));
 }
 
 void buddy_unlink(int index, int type) {
