@@ -23,7 +23,8 @@ struct cmd cmd_list[] = {
     {.input = "lab4", .description="execute user program in el0", .callback = sys_load_user_program},
     {.input = "clear", .description = "clean screen", .callback=sys_clear}, 
     {.input = "setTimeout", .description = "regist callback function", .callback=sys_setTimeout},
-    {.input = "DT", .description = "disable time core", .callback=sys_disable_timer}
+    {.input = "DT", .description = "disable time core", .callback=sys_disable_timer},
+    {.input = "lab5", .description="lab 5 requirement", .callback=__lab5}
 };
 
 void show_el1_status_info(int spsr_el1, int elr_el1, int esr_el1){
@@ -38,6 +39,14 @@ void __lab3(char* args){
     DMA_test2();
     DEBUG = 0;
 }
+void __lab5(char* args){
+    for(int i = 0; i < 4; ++i){
+        Thread(foo);
+    }
+    idle();
+    uart_puts("lab 5 req done\r\n");
+}
+
 void sys_disable_timer(char* args){
     core_timer_disable();
 }

@@ -5,6 +5,7 @@
 #include "dynamic_allocator.h"
 #include "uart.h"
 #include "entry.h"
+#include "thread.h"
 #include "timer.h"
 
 #define PM_PASSWORD 0x5a000000
@@ -63,4 +64,5 @@ unsigned long long int need_padding(unsigned long long int size, unsigned long l
 void swap(int *, int *);
 void *malloc(int);
 void __lab3(char *);
+void __lab5(char *);
 #endif
