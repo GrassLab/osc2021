@@ -1,4 +1,4 @@
-_heap_stack_size = 4M;
+_heap_stack_size = 4K;
 _save_dts = 0x880000;
 SECTIONS
 {
@@ -25,13 +25,13 @@ SECTIONS
   bss_size = (_bss_end - _bss_top) >> 3;
   .heap :
   {
-    . = ALIGN(8);
+    . = ALIGN(16);
     _heap_top = .;
   }
-  . = . + _heap_stack_size;
   .stack :
   {
-    . = ALIGN(8);
+    . = ALIGN(16);
+    . = . + _heap_stack_size;
     _stack_top = .;
   }
   _end = .;

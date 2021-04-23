@@ -2,9 +2,6 @@
 .global _start
 
 _start:
-	bl _from_el2_to_el1
-	bl _set_exception_vector_table
-
 	/* read cpu id, stop slave cores */
 	mrs    x1, mpidr_el1 // mpidr_ell: cpu core/device information
 	and    x1, x1, #0xff // mask information to get cpu id
@@ -17,8 +14,10 @@ _error:
 	b	_error
 
 _setup_stack:
-	ldr 		x0, =_stack_top
-	mov 		sp, x0
+	bl _from_el2_to_el1
+	bl _set_exception_vector_table
+	ldr 	x1, =_stack_top
+	mov 	sp, x1
 	// mov sp, #0x80000
 
 _setup_bss:
@@ -28,7 +27,7 @@ _setup_bss:
 _init_bss:
 	cbz     w2, _main		// if there is no bss --> go to run main
 	str     xzr, [x1], #8 // zxr is a register always contain 0
-	sub     w2, w2, #8
+	sub     w2, w2, #1
 	cbnz    w2, _init_bss
 
 _main:

@@ -83,6 +83,7 @@ void do_test() {
   idle();
   uart_puts("exit\r\n");
 }
+
 void shell() {
   char buff[buff_size];
   /* say hello */
@@ -117,10 +118,15 @@ void shell() {
 
 void main() {
   uart_init();  // set up serial console
+  uart_puts("\r\nuart_init\r\n");
   buddy_init((char *)BUDDY_START);
+  uart_puts("\r\nbuddy_init\r\n");
   dma_init();
+  uart_puts("\r\ndma_init\r\n");
   timer_init();
-  // thread_init();
+  uart_puts("\r\ntimer_init\r\n");
+  thread_init();
+  uart_puts("\r\nthread_init\r\n");
   do_clear();
   shell();
 }

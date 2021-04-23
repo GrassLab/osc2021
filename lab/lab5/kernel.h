@@ -323,18 +323,22 @@ void _timer_handler() {
 #define WAIT (ALIVE + 1)
 #define ALIVE (ACTIVE + 1)
 #define ACTIVE 0x0
-
-extern void switch_to(void *prev, void *next);
-extern void *get_current();
+#define KERNEL_TPDIR_EL1 0x00000000
+// 0x30000000
+#define STACK_SIZE (PAGE_SIZE - sizeof(dma))
 typedef struct thread_list {
   struct thread_list *next, *prev;
   void *regs[10], *fp, *lr, *sp;
   uint64_t status, pid, tid;
 } thread_list;
-thread_list *run_q, *wait_q;
+
+thread_list *run_q, *wait_q, *running;
 void *kernel_tpdir_el1;
+
+extern void switch_to(void *prev, void *next);
+extern void *get_current();
 void thread_init() {
-  run_q = wait_q = 0;
+  running = run_q = wait_q = 0;
   kernel_tpdir_el1 = get_current();
 }
 void print_q(thread_list *q) {
@@ -342,14 +346,8 @@ void print_q(thread_list *q) {
   thread_list *now = q;
   for (; now->next != q; now = now->next) {
     print_h((unsigned long int)now);
-    // print_h((unsigned long int)now->next);
-    // print_h((unsigned long int)now->prev);
-    // uart_puts("\r\n");
   }
   print_h((unsigned long int)now);
-  // print_h((unsigned long int)now->next);
-  // print_h((unsigned long int)now->prev);
-  // uart_puts("\r\n+++++++++++++++++++\r\n");
   return;
 }
 thread_list *find_tid(thread_list *q, uint64_t tid) {
@@ -382,12 +380,6 @@ void add_to_q(thread_list **q, thread_list *item) {
   }
   *q = item;
 }
-void pop_prev(thread_list **q) {
-  thread_list *now = (*q)->prev;
-  if (*q == (*q)->next) *q = 0;
-  now->prev->next = now->next;
-  now->next->prev = now->prev;
-}
 void pop(thread_list **q) {
   thread_list *now = *q;
   if (*q == (*q)->next) *q = 0;
@@ -397,58 +389,44 @@ void pop(thread_list **q) {
 }
 void del(thread_list **q, thread_list *item) {
   if (*q == (*q)->next) *q = 0;
+  if (*q == item) *q = item->next;
   item->prev->next = item->next;
   item->next->prev = item->prev;
 }
 thread_list *thread_create(void *func_ptr) {
   thread_list *new = malloc(sizeof(thread_list));
-  void *sp = malloc(PAGE_SIZE);
+  void *sp = malloc(STACK_SIZE);
   *new = (thread_list){.next = new,
                        .prev = new,
                        .regs = {},
-                       .fp = sp,
+                       .fp = sp + STACK_SIZE,
                        .lr = func_ptr,
-                       .sp = sp,
+                       .sp = sp + STACK_SIZE,
                        .status = ALIVE,
                        .tid = get_free_tid(wait_q, get_free_tid(run_q, 0)),
                        .pid = 0};
   add_to_q(&run_q, new);
-  uart_puts("create: ");
-  print_h((unsigned long int)new);
-  uart_puts("\r\n");
-  // print_q(run_q);
   return new;
 }
 void schedule() {
   if (run_q == 0) return;
+  if (running) running->status = ALIVE;
   delay();
-  thread_list *now = run_q;
-  run_q = now->next;
-  now->prev->status = ALIVE;
-  now->status = ACTIVE;
-  // print_q(run_q);
-  // uart_puts("schedule: ");
-  // print_h((unsigned long int)now);
-  // uart_puts("reg 11:");  //\r\n
-  // print_h(*(unsigned long int *)(now->regs + 11));
-  // uart_puts("\r\nlr: ");
-  // print_h((unsigned long int)now->lr);
-  // uart_puts("\r\ncurrent: ");
-  // print_h((unsigned long int)get_current());
-  // uart_puts("\r\n");
-  switch_to(get_current(), now->regs);
-  // switch_to(get_current(), get_current());
+  running = run_q;
+  run_q = running->next;
+  running->status = ACTIVE;
+  void *tpdir_el1 = get_current();
+  if (tpdir_el1 > (void *)BUDDY_END || tpdir_el1 < (void *)BUDDY_START)
+    tpdir_el1 = KERNEL_TPDIR_EL1;
+  switch_to(tpdir_el1, running->regs);
 }
 
 void exit() {
-  thread_list *now = run_q->prev;
-  // uart_puts("exit now: ");
-  // print_h((unsigned long int)now);
-  pop_prev(&run_q);
-  // print_q(run_q);
-  add_to_q(&wait_q, now);
+  del(&run_q, running);
+  add_to_q(&wait_q, running);
   if (run_q) schedule();
-  switch_to(get_current(), kernel_tpdir_el1);
+  running = 0;
+  switch_to(get_current(), (void *)KERNEL_TPDIR_EL1);
 }
 
 void kill_zombies(thread_list **q) {
@@ -468,12 +446,13 @@ void kill_zombies(thread_list **q) {
 }
 void idle() {
   // while (1)
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 5; i++) {
     kill_zombies(&wait_q);
     schedule();
     uart_puts("idle\r\n");
   }
 }
+
 void foo4() {
   for (int i = 0; i < 5; ++i) {
     uart_puts("Thread id: ");
