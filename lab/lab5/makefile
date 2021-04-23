@@ -1,4 +1,4 @@
-CFLAGS= -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
+CFLAGS= -Wall -O2 -ffreestanding -nostdlib -nostartfiles
 INCLUDE= includes
 G=-g
 ifeq ($(OS), Windows_NT)
@@ -26,7 +26,7 @@ endif
 
 bootloader.img: clean bootloader.elf kernel.img ./rootfs/test.img
 	$(GNU_OBJECT) -O binary bootloader.elf bootloader.img
-bootloader.elf: bstart.o uart.o bootloader.o linker.ld utils.o
+bootloader.elf: bstart.o uart.o bootloader.o linker.ld utils.o 
 	$(GNU_LD) -T linker.ld -o bootloader.elf bstart.o bootloader.o uart.o utils.o
 bstart.o: bstart.S
 	$(GNU_GCC) $(CFLAGS) -c $(G) bstart.S
@@ -35,12 +35,14 @@ bootloader.o: bootloader.c
 
 kernel.img: kernel.elf
 	$(GNU_OBJECT) -O binary kernel.elf kernel.img
-kernel.elf: kstart.o uart.o kernel.o linker.ld utils.o
-	$(GNU_LD) -T linker.ld -o kernel.elf kstart.o kernel.o uart.o utils.o
+kernel.elf: kstart.o uart.o kernel.o linker.ld utils.o printf.o
+	$(GNU_LD) -T linker.ld -o kernel.elf kstart.o kernel.o uart.o utils.o printf.o
 kstart.o: kstart.S
 	$(GNU_GCC) $(CFLAGS) -c $(G) kstart.S
 kernel.o: kernel.c kernel.h
 	$(GNU_GCC) $(CFLAGS) -I $(INCLUDE) -c $(G) kernel.c
+printf.o: printf.c printf.h
+	$(GNU_GCC) $(CFLAGS) -I $(INCLUDE) -c $(G) printf.c
 
 ./rootfs/test.img: test.elf
 	$(GNU_OBJECT) -O binary test.elf ./rootfs/test.img

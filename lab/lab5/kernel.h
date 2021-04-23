@@ -1,6 +1,7 @@
 #include "bootloader.h"
 #include "uart.h"
 #include "utils.h"
+#include "printf.h"
 
 void pause() {
   uart_puts("Press any key to continue . . .");
@@ -422,6 +423,7 @@ void schedule() {
 }
 
 void exit() {
+  running->status = DEAD;
   del(&run_q, running);
   add_to_q(&wait_q, running);
   if (run_q) schedule();
@@ -451,6 +453,7 @@ void idle() {
     schedule();
     uart_puts("idle\r\n");
   }
+  // print_q(wait_q);
 }
 
 void foo4() {

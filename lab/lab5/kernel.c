@@ -90,7 +90,7 @@ void shell() {
   uart_puts("\r\n++++++++++++++++++++++\r\n");
   uart_puts("+++ Hello Kernel!! +++\r\n");
   uart_puts("++++++++++++++++++++++\r\n");
-
+  printf("%d123123\r\n123123",456);
   while (1) {
     uart_puts("$ ");
     get_cmd(buff);
