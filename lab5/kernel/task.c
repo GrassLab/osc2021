@@ -46,7 +46,7 @@ void idle_task() {
 void test_task() {
   //while(1) {
   printf("test task id: %d\n", get_current()->task_id);
-  do_exec("user_test", null);
+  do_exec("user_test.elf", null);
   do_exit(0);
     //schedule();
   //}

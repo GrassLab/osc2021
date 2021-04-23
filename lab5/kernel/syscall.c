@@ -3,6 +3,7 @@
 #include <string.h>
 #include <varied.h>
 #include <cpio.h>
+#include <elf.h>
 
 void sys_exit(int status) {
   do_exit(status);
@@ -122,7 +123,7 @@ int sys_exec(const char* name, char* const argv[]) {
 }
 
 int do_exec(const char* name, char* const argv[]) {
-  void* addr;
+  void* addr, *start;
   struct trapframe *tf;
   printf("do_exec\n");
   
@@ -132,6 +133,8 @@ int do_exec(const char* name, char* const argv[]) {
   if(addr == null)
     return -1;
   
+  start = elf_header_parse(addr);
+  printf("start_address: 0x%x\n", start);
   //set pass argument
 
   //reset context
@@ -152,7 +155,7 @@ int do_exec(const char* name, char* const argv[]) {
                "eret\n"
                ::"r"(get_current()->stack + TASK_STACK_SIZE),
                "r"(get_current()->kstack + TASK_STACK_SIZE),
-               "r"(addr),
+               "r"(start),
                "r"((void* )exit)
                 :"x0");
   return 0;
@@ -164,6 +167,8 @@ void* load_program(const char* name) {
   size_t size;
   metadata = (struct cpio_metadata* )cpio_get_metadata(name, strlen(name));
   
+ 
+
   size = metadata->file_size + PAGE_SIZE;
   //printf("file addr: 0x%x\n", metadata->file_address);
   if((size_t)get_current()->start >= BUDDY_START) {
@@ -192,11 +197,10 @@ void* load_program(const char* name) {
 
   if(addr == null)
     return null;
-
+  
   printf("addr: 0x%x\n", addr);
 
   memcpy((char *)addr, (char *)metadata->file_address, metadata->file_size);
-
   //store user space info
   get_current()->start = addr;
   get_current()->size = metadata->file_size;
