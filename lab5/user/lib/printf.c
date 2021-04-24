@@ -1,4 +1,4 @@
-#include <uart.h>
+#include <syscall.h>
 #include <string.h>
 #include <stdarg.h>
 #include "printf.h"
@@ -22,35 +22,35 @@ printf (const char *format, ...)
 	    case 'd':
 	      val_ulong = va_arg (args, unsigned long);
 	      ltoa (val_ulong, buf);
-	      uart_puts (buf);
+	      putstr (buf);
 	      break;
 	    case 'q':
 	      // kernel space float point
 	      dividend = va_arg (args, unsigned long);
 	      divisor = va_arg (args, unsigned long);
 	      fdivtoa (dividend, divisor, buf);
-	      uart_puts (buf);
+	      putstr (buf);
 	      break;
 	    case 'f':
 	      // user space float point
 	      val_double = va_arg (args, double);
 	      ftoa (val_double, buf);
-	      uart_puts (buf);
+	      putstr (buf);
 	      break;
 	    case 's':
-	      uart_puts (va_arg (args, char *));
+	      putstr (va_arg (args, char *));
 	      break;
 	    case '%':
-	      uart_send ('%');
+	      uart_write ("%", 1);
 	      break;
 	    case 'x':
 	      val_hex = va_arg (args, unsigned long);
-	      uart_hex (val_hex);
+	      puthex  (val_hex);
 	      break;
 	    case 'p':
 	      val_hex = va_arg (args, unsigned long);
-	      uart_hex (val_hex >> 32);
-	      uart_hex (val_hex);
+	      puthex  (val_hex >> 32);
+	      puthex  (val_hex);
 	      break;
 	    default:
 	      buf[0] = '\0';
@@ -60,8 +60,8 @@ printf (const char *format, ...)
       else
 	{
     if(*format == '\n')
-      uart_send('\r');
-	  uart_send (*format);
+      uart_write("\r", 1);
+	  uart_write ((char *)format, 1);
 	}
       ++format;
     }
@@ -139,5 +139,29 @@ fdivtoa (unsigned long dividend, unsigned long divisor, char *buf)
     {
       *buf-- = quot % 10 + '0';
       quot /= 10;
+    }
+}
+
+void
+putstr (char *s)
+{
+  while (*s != '\0')
+    uart_write (s++, 1);
+}
+
+void
+puthex (unsigned int d)
+{
+  char buf[1];
+  unsigned int n;
+  int c;
+  for (c = 28; c >= 0; c -= 4)
+    {
+      // get highest tetrad
+      n = (d >> c) & 0xF;
+      // 0-9 => '0'-'9', 10-15 => 'A'-'F'
+      n += n > 9 ? 0x37 : 0x30;
+      buf[0] = n;
+      uart_write (buf, 1);
     }
 }

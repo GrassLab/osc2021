@@ -30,10 +30,12 @@ void uart_send(unsigned int c);
 __attribute__((__section__ (".bootloader"))) char uart_getc();
 void uart_puts(char* s);
 void uart_hex(unsigned int d);
-__attribute__((__section__ (".bootloader"))) size_t uart_read(char* buf, size_t count);
+size_t sys_uart_read(char buf[], size_t size);
+size_t sys_uart_write(const char buf[], size_t size);
+__attribute__((__section__ (".bootloader"))) size_t do_uart_read(char buf[], size_t size);
+size_t do_uart_write(const char buf[], size_t size);
 size_t uart_readline(char* buf, size_t count);
-size_t uart_write(char* buf, size_t count);
-void putc( void* p, char c);
+
 void uart_tx_interrupt_enable();
 void uart_rx_interrupt_enable();
 void uart_tx_interrupt_disable();

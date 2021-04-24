@@ -1,5 +1,6 @@
 #include "sched.h"
 #include <printf.h>
+#include <string.h>
 
 struct task_struct* privilege_task_create( void(*func)() ) {
   size_t i;
@@ -43,10 +44,10 @@ void idle_task() {
   }
 }
 
-void test_task() {
+void user_task() {
   //while(1) {
-  printf("test task id: %d\n", get_current()->task_id);
-  do_exec("user_test.elf", null);
+  char* argv[] = {"argv_test", "-o", "arg2", 0};
+  do_exec("argv_test", argv);
   do_exit(0);
     //schedule();
   //}
@@ -62,7 +63,7 @@ void task_init() {
     privilege_task_create(test_task);
   }*/
   
-  privilege_task_create(test_task);
+  privilege_task_create(user_task);
   
   switch_to(&fake, &task_pool[1]);
 

@@ -188,7 +188,7 @@ void loadimg() {
   uart_hex((size_t)load_address);
   //read size
   uart_puts("\nInput the image size(0x): ");
-  uart_read(buf, 8);
+  do_uart_read(buf, 8);
   buf[8] = '\0';
   img_size = strtol(buf, 0, 16);
   uart_puts("\nimage size: 0x");
@@ -221,7 +221,7 @@ void loadimg() {
 }
 //read kernel img, and jump 
 void readimg_jump(void* load_address, size_t img_size, size_t dtb_address) {
-  uart_read((char* )load_address, img_size);
+  do_uart_read((char* )load_address, img_size);
   asm volatile ("mov x0, %0\n" "mov sp, %1\n" "blr %2\n"::
   "r" (dtb_address),
   "r" (load_address),

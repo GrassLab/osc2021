@@ -72,12 +72,9 @@ int sys_exec(const char* name, char* const argv[]);
 int do_exec(const char* name, char* const argv[]);
 int sys_getpid();
 int do_getpid();
-size_t sys_uart_read(char buf[], size_t size);
-size_t do_uart_read(char buf[], size_t size);
-size_t sys_uart_write(const char buf[], size_t size);
-size_t do_uart_write(const char buf[], size_t size);
 
 void* load_program(const char* name);
 void* fork_memcpy();
+void* exec_set_argv(void* stack, int argc, char* const argv[]);
 extern int exit();
 #endif

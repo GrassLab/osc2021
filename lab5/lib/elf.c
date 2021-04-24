@@ -18,7 +18,6 @@ void* elf_header_parse(void* addr) {
   for(int i = 0; i < elf_header->e_shnum; i++) {
     name_idx = (section_header_arr + i)->sh_name;
     if(strncmp((char* )shst + name_idx, ".text", 5) == 0) {
-      printf("%s\n", (char* )shst + name_idx);
       return addr + (section_header_arr + i)->sh_offset;
     }
   }

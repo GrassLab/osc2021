@@ -1,6 +1,7 @@
 .section ".text.boot"
 
-.global _start_main
+.global _main
+
 _start_main:
   bl main
   b exit

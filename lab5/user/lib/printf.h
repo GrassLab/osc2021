@@ -7,4 +7,6 @@ int printf(const char *format, ...);
 void ltoa(unsigned long val, char *buf);
 void ftoa(double val, char *buf);
 void fdivtoa(unsigned long dividend, unsigned long divisor, char *buf);
+void putstr(char *s);
+void puthex(unsigned int d);
 #endif

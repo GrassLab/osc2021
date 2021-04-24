@@ -62,7 +62,7 @@ void cpio_parse_newc_header(void* address) {
 void cpio_get_file_content(char* pathname, uint32_t size) {
   for(int i = 0; i < cpio_file_list_size; i++) {
     if(strncmp((char *)cpio_file_list[i].name_address, pathname, size) == 0) {
-      uart_write((char *)cpio_file_list[i].file_address, cpio_file_list[i].file_size);
+      do_uart_write((char *)cpio_file_list[i].file_address, cpio_file_list[i].file_size);
       uart_puts("\n");
       return;
     }
@@ -72,7 +72,7 @@ void cpio_get_file_content(char* pathname, uint32_t size) {
 
 void cpio_get_all_pathname() {
   for(int i = 0; i < cpio_file_list_size; i++) {
-    uart_write((char *)cpio_file_list[i].name_address, cpio_file_list[i].name_size);
+    do_uart_write((char *)cpio_file_list[i].name_address, cpio_file_list[i].name_size);
     uart_send(' ');
   }
   uart_puts("\n");

@@ -79,9 +79,9 @@ void uart_hex(unsigned int d) {
     }
 }
 
-size_t uart_read(char* buf, size_t count) {
+size_t do_uart_read(char buf[], size_t size) {
   size_t i;
-  for(i = 0; i < count; i++) {
+  for(i = 0; i < size; i++) {
     *buf = uart_getc();
     buf++;
   }
@@ -105,20 +105,14 @@ size_t uart_readline(char* buf, size_t count) {
   return i;
 }
 
-size_t uart_write(char *buf, size_t count) {
+size_t do_uart_write(const char buf[], size_t size) {
   size_t i;
-  for(i = 0; i < count; i++) {
+  for(i = 0; i < size; i++) {
     if(*buf =='\n') 
       uart_send('\r');
     uart_send(*buf++);
   }
   return i;
-}
-
-void putc( void* p, char c) {
-	if(c =='\n') 
-    uart_send('\r');
-  uart_send(c);
 }
 
 void uart_tx_interrupt_enable() {
@@ -166,4 +160,12 @@ size_t uart_async_read(char* buf, size_t size) {
   if(count < size)
     buf[count] = '\0';
   return count;
+}
+
+size_t sys_uart_read(char buf[], size_t size) {
+  return do_uart_read(buf, size);
+}
+
+size_t sys_uart_write(const char buf[], size_t size) {
+  return do_uart_write(buf, size);
 }

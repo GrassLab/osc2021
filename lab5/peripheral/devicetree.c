@@ -61,7 +61,7 @@ void devicetree_parse(void* address, int mode, char* dev_name) {
           uart_puts("\n");
           //property value
           uart_puts("----");
-          uart_write((char *)address, property_len);
+          do_uart_write((char *)address, property_len);
           uart_puts("\n");
         }
         //strncpy(, (char *)address, property_len);

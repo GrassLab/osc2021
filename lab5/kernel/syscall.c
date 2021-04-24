@@ -4,6 +4,7 @@
 #include <varied.h>
 #include <cpio.h>
 #include <elf.h>
+#include <uart.h>
 
 void sys_exit(int status) {
   do_exit(status);
@@ -123,8 +124,9 @@ int sys_exec(const char* name, char* const argv[]) {
 }
 
 int do_exec(const char* name, char* const argv[]) {
-  void* addr, *start;
-  struct trapframe *tf;
+  void* addr, *start, *stack;
+  char *arg;
+  int argc;
   printf("do_exec\n");
   
   //load program from initrootfs
@@ -133,32 +135,87 @@ int do_exec(const char* name, char* const argv[]) {
   if(addr == null)
     return -1;
   
+  //parse elf header
   start = elf_header_parse(addr);
   printf("start_address: 0x%x\n", start);
-  //set pass argument
-
+  
   //reset context
   memset((char* )&get_current()->ctx, sizeof(struct context), 0);
-  //set user context
-  //set kernel stack sp
-  //set user stack sp_el0
-  printf("stack: 0x%x\n", get_current()->stack);
-  printf("kstack: 0x%x\n", get_current()->kstack);
+ 
+  stack = get_current()->stack + TASK_STACK_SIZE;
   
-  //set trapframe in kernel stack
-  //set elr_el1 to binary entry point
-  //return address to exit
+  arg = argv[0];
+  argc = 0;
+  
+  while(arg != null) 
+    arg = argv[++argc];
+  
+  //set pass argument
+  stack = exec_set_argv(stack, argc, argv);
+  
+  printf("stack: 0x%x\n", stack);
+
+  /** set user context
+   * set kernel stack sp
+   * set user stack sp_el0
+   * return address to exit
+   * set argument
+   */
   asm volatile("mov x0, %0\n" "msr sp_el0, x0\n"
                "mov sp, %1\n" 
                "mov x0, %2\n" "msr elr_el1, x0\n" 
                "mov x30, %3\n"
+               "mov x0, %4\n"
+               "mov x1, %5\n"
                "eret\n"
-               ::"r"(get_current()->stack + TASK_STACK_SIZE),
+               ::"r"(stack),
                "r"(get_current()->kstack + TASK_STACK_SIZE),
                "r"(start),
-               "r"((void* )exit)
+               "r"((void* )exit),
+               "r"(argc),
+               "r"(stack + sizeof(int))
                 :"x0");
   return 0;
+}
+
+void* exec_set_argv(void* stack, int argc, char* const argv[]) {
+  char **argv_addr;
+  int count, r;
+  count = argc;
+  
+  if(count < 4) 
+    count = 4;
+  
+  argv_addr = (char** )varied_malloc(count * sizeof(char *));
+  //set argv[i] content
+  for(int i = argc - 1; i >= 0; i--) {
+    r = (strlen(argv[i])+ 1) % 8;
+    //padding
+    if(r != 0) 
+      stack -= 8 - r;
+      
+    stack -= strlen(argv[i]) + 1;
+    argv_addr[i] = stack;
+    memcpy((char *)stack, argv[i], strlen(argv[i]) + 1);
+    memset((char *)stack + (strlen(argv[i])+ 1), 8 - r, 0);
+  }
+  //set null
+  stack -= sizeof(char *);
+  *(char **)stack = null;
+  //set argv[i] address
+  for(int i = argc - 1; i >= 0; i--) {
+    stack -= sizeof(char *);
+    *(char **)stack = argv_addr[i]; 
+  }
+
+  /*stack -= sizeof(char **);
+  *(char** )stack = (char*)stack + sizeof(char **);*/
+
+  //set argc
+  stack -= sizeof(int);
+  *(int *)stack = argc;
+  
+  return stack;
 }
 
 void* load_program(const char* name) {
@@ -167,7 +224,8 @@ void* load_program(const char* name) {
   size_t size;
   metadata = (struct cpio_metadata* )cpio_get_metadata(name, strlen(name));
   
- 
+   if(metadata == null)
+    return null;
 
   size = metadata->file_size + PAGE_SIZE;
   //printf("file addr: 0x%x\n", metadata->file_address);
@@ -216,15 +274,4 @@ int do_getpid() {
   return get_current()->task_id;  
 }
 
-size_t sys_uart_read(char buf[], size_t size) {
-  return do_uart_read(buf, size);
-}
-size_t do_uart_read(char buf[], size_t size) {
-  return 0;
-}
-size_t sys_uart_write(const char buf[], size_t size) {
-  return do_uart_write(buf, size);
-}
-size_t do_uart_write(const char buf[], size_t size) {
-  return 0;
-}
+
