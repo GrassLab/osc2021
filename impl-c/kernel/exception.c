@@ -1,6 +1,23 @@
 #include "timer.h"
 #include "uart.h"
 
+#include "stddef.h"
+#include "stdint.h"
+
+#define EC_SVC_AARCH64 0b010101
+
+// Get field inside an int
+// example: EC is at bit 29-24 in variable "ELR"
+//  ->  get_bits(ELR, 24, 6)
+#define get_bits(var, base_shift, mask_len)                                    \
+  (((var) >> (base_shift)) & (((1 << (mask_len)) - 1)))
+
+struct Exception {
+  uint8_t ec;        // Exception class
+  uint32_t iss;      // Instruction specific syndrome
+  uint64_t ret_addr; // Exception return address
+};
+
 void dumpState() {
   unsigned long esr, elr, spsr;
   asm volatile("mrs %0, esr_el1 \n" : "=r"(esr) :);
@@ -13,7 +30,26 @@ void dumpState() {
 
 void syn_handler() {
   uart_println("Syn Exception");
+  struct Exception exception;
+  uint32_t esr_el1;
+
+  asm volatile("mrs %0, elr_el1 \n" : "=r"(exception.ret_addr) :);
+  asm volatile("mrs %0, esr_el1 \n" : "=r"(esr_el1) :);
   dumpState();
+  exception.ec = get_bits(esr_el1, 26, 6);
+  exception.iss = get_bits(esr_el1, 0, 25);
+
+  switch (exception.ec) {
+  case EC_SVC_AARCH64:
+    uart_println("syscall requested");
+    break;
+  default:
+    uart_println("Unknown exception, ec:%d iss:%d", exception.ec,
+                 exception.iss);
+  }
+  // cheetsheet for syscall in this OS
+  // syscall_NR, return, arg0, arg1, arg2, arg3
+  //         x8,     x0,   x0,   x1,   x2,   x3
 }
 
 void irq_handler() {

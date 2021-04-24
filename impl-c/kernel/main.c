@@ -44,7 +44,7 @@ int main() {
   // KAllocManager_run_example();
   // KAllocManager_show_status();
 
-  test_tasks();
+  // test_tasks();
 
   uart_println("-------------------------------");
   uart_println(" Operating System Capstone 2021");
