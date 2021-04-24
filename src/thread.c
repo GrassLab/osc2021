@@ -18,7 +18,7 @@ thread_info* Thread(void* func){
     ptr->context[11] = (unsigned long)func;
     ptr->context[12] = (unsigned long)ptr + THREAD_SIZE;
     ptr->tid = thread_cnt++;
-    ptr->status = ALIVE;
+    ptr->status = 0;
     ptr->next = nullptr;
     add_to_run_queue(ptr);
     return ptr;
@@ -32,7 +32,7 @@ void schedule(){
             run_queue.head = run_queue.head->next;
             run_queue.end = run_queue.end->next;
             run_queue.end->next = nullptr;
-        } while(run_queue.head->status != ALIVE);
+        } while(run_queue.head->status != 0);
         switch_to(get_current(), (uint64_t)run_queue.head->context);
     }
 }
@@ -54,43 +54,60 @@ thread_info *current_thread(){
 void exit(){
     // move current thread to wait queue
     thread_info *cur = current_thread();
-    cur->status = DEAD;
+    cur->status |= THREAD_DEAD;
     schedule();
 }
 void kill_zombies(){
-    thread_info *ptr = run_queue.head;
-    while(1){
-        while(ptr->next != nullptr && ptr->next->status==DEAD){
-            thread_info *tmp = ptr->next->next;
-            free((void*)(ptr->next));
+    if(run_queue.head == nullptr) return;
+    for(thread_info* ptr = run_queue.head; ptr->next != nullptr ; ptr = ptr->next){
+        for(thread_info *cur = ptr->next; cur != nullptr && (cur->next->status & THREAD_DEAD) > 0;){
+            thread_info *tmp = cur->next;
+            free((void*)cur);
             ptr->next = tmp;
+            cur = tmp;
         }
         if(ptr->next == nullptr){
             run_queue.end = ptr;
             break;
         }
-        else{
-            ptr = ptr->next;
+    }
+    
+}
+
+int fork(){
+    // return child pid
+    run_queue.head->status |= THREAD_FORK;
+    schedule();
+    return run_queue.head->child_pid;
+}
+void copy_program(thread_info* parent, thread_info* child){
+    parent->status ^= THREAD_FORK;
+    parent->child_pid = child->tid;
+
+}
+void do_fork(){
+    for(thread_info* ptr = run_queue.head->next; ptr != nullptr; ptr = ptr->next){
+        if(ptr->status & THREAD_FORK){
+            thread_info* child = Thread(nullptr);
+            copy_program(ptr, child)
         }
+    }
+}
+void idle(){
+    int cnt = 0;
+    while(1){
+        kill_zombies();
+        do_fork();
+        schedule();
     }
 }
 void foo(){
     for(int i = 0; i < 5; ++i){
         printf("Thread id: %d, %d\n", current_thread()->tid, i);
-        delay(1000000);
+        delay(100000000);
         schedule();
     }
     exit();
-}
-
-void idle(){
-    int cnt = 0;
-    while(1){
-        kill_zombies();
-        schedule();
-        //uart_puts("in idle\r\n");
-        //++cnt;
-    }
 }
 void thread_test(){
     thread_info *idle_t = Thread(nullptr);

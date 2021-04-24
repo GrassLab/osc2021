@@ -126,10 +126,11 @@ irq_el0_aarch64:
 
 sync_el0_aarch64:
     save_all
-    mrs x0, spsr_el1
-	mrs x1, elr_el1
-	mrs x2, esr_el1
-    bl show_el1_status_info  
+    //mrs x0, spsr_el1
+	//mrs x1, elr_el1
+	//mrs x2, esr_el1
+    //bl show_el1_status_info  
+    bl sync_el0_handler
     load_all
     eret
 

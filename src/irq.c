@@ -3,6 +3,11 @@
 void handle_sync_el1(unsigned long esr_el1, unsigned long elr_el1){
     return;
 }
+void sync_el0_handler(){
+    unsigned long esr, svc;
+    asm volatile("mrs %0, esr_el1\n":"=r"(esr):);
+    
+}
 void handle_el1_irq(){
     unsigned int irq_sig2 = get32(IRQ_PENDING_1);
     unsigned int irq_sig1 = get32(CORE0_INTERRUPT_SOURCE);

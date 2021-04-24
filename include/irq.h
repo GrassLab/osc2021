@@ -15,7 +15,7 @@ extern void el0_timer_handler();
 void handle_sync_el1(unsigned long, unsigned long);
 void handle_el1_irq();
 void handle_el0_irq();
-
+void sync_el0_handler();
 #define IRQ_PENDING_1 (MMIO_BASE + 0x0000B204)
 #define ENB_IRQS1 (MMIO_BASE + 0x0000B210)
 #define DISABLE_IRQS1 (MMIO_BASE + 0x0000B21C)
