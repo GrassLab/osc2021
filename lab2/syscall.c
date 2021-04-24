@@ -41,7 +41,6 @@ int sys_uart_read(char buf[], int size)
 int sys_uart_write(const char buf[], int size)
 {
     int cnt = 0;
-
     for (int i = 0; i < size; i++) {
         uart_send(buf[i]);
         cnt++;
@@ -82,58 +81,95 @@ int sys_fork(void)
     return new->pid;
 }
 
-int sys_exec(unsigned long func_addr, char *const argv[])
-{
-    int argc, len;
-    char *user_sp;
-    char **argv_fake, **argv_fake_start;
-    struct trap_frame *cur_trap_frame;
-delay(10000000);
-    /* Get argc, not include null terminate */
-    argc = 0;
-    while (argv[argc])
-        argc++;
-    // argv_fake = kmalloc(argc*sizeof(char*));
-    argv_fake = (char**)kmalloc(0x1000);
-    user_sp = current->user_stack_page + 0x1000;
-    for (int i = argc - 1; i >= 0; --i) {
-        len = strlen(argv[i]) + 1; // including '\0'
-        user_sp -= len;
-        argv_fake[i] = user_sp;
-        memcpy(user_sp, argv[i], len);
-    }
-    user_sp -= sizeof(char*); // NULL pointer
-    user_sp = align_down(user_sp, 0x8); // or pi will fail
-    *((char**)user_sp) = (char*)0;
-    for (int i = argc - 1; i >= 0; --i) {
-        user_sp -= sizeof(char*);
-        *((char**)user_sp) = argv_fake[i];
-    }
-    // TODO: argv_fake_start: this is
-    // temporary. cause now  I don't
-    // have solution to conquer the
-    // pushing stack issue when
-    // starting of function call.
-    argv_fake_start = (char**)user_sp;
-    user_sp -= sizeof(char**); // char** argv
-    *((char**)user_sp) = user_sp + sizeof(char**);
-    user_sp -= sizeof(int); // argc
-    *((int*)user_sp) = argc;
-    kfree((char*)argv_fake);
-    current->usp = align_down(user_sp, 0x10);
+// int sys_exec(unsigned long func_addr, char *const argv[])
+// int sys_exec(char *filename, char *const argv[])
+// {
+//     unsigned long func_addr;
+//     struct cpio_newc_header* ent;
+//     int filesize, namesize;
+//     char *name_start, *data_start;
 
-    cur_trap_frame = get_trap_frame(current);
-    cur_trap_frame->regs[0] = (unsigned long)argc;
-    cur_trap_frame->regs[1] = (unsigned long)argv_fake_start;
-    cur_trap_frame->sp_el0 = (unsigned long)current->usp;
-    cur_trap_frame->elr_el1 = func_addr;
-    cur_trap_frame->spsr_el1 = 0x0; // enable_irq
+//     ent = (struct cpio_newc_header*)INITRAMFS_BASE;
+//     while (1)
+//     {
+//         namesize = hex_string_to_int(ent->c_namesize, 8);
+//         filesize = hex_string_to_int(ent->c_filesize, 8);
+//         name_start = ((char *)ent) + sizeof(struct cpio_newc_header);
+//         data_start = align_upper(name_start + namesize, 4);
+//         if (!strcmp(filename, name_start)) {
+//             func_addr = (unsigned long)data_start;
+//             break;
+//             if (!filesize)
+//                 return 0;
+//             // load file to user_stack_page.
+//             char *code_start = current->user_stack_page;
+//             for (int i = 0; i < filesize; ++i)
+//                 code_start[i] = data_start[i];
+//             run_user_program(code_start, current->usp);
+//             // never come back again.
+//             uart_send_string("Should never print out.\r\n");
+//             return 0;
+//         }
+//         ent = (struct cpio_newc_header*)align_upper(data_start + filesize, 4);
 
-    // set_user_program((char*)func_addr, current->usp, argc,
-    //     argv_fake_start, current->kernel_stack_page + 0x1000);
-    // never come back again.
-    return argc;  // Geniusly
-}
+//         if (!strcmp(name_start, "TRAILER!!!"))
+//             break;
+//     }
+//     // uart_send_string("do_exec: ");
+//     // uart_send_string(filename);
+//     // uart_send_string(": No such file or directory\r\n");
+//     // return 1;
+
+//     int argc, len;
+//     char *user_sp;
+//     char **argv_fake, **argv_fake_start;
+//     struct trap_frame *cur_trap_frame;
+// delay(10000000);
+//     /* Get argc, not include null terminate */
+//     argc = 0;
+//     while (argv[argc])
+//         argc++;
+//     // argv_fake = kmalloc(argc*sizeof(char*));
+//     argv_fake = (char**)kmalloc(0x1000);
+//     user_sp = current->user_stack_page + 0x1000;
+//     for (int i = argc - 1; i >= 0; --i) {
+//         len = strlen(argv[i]) + 1; // including '\0'
+//         user_sp -= len;
+//         argv_fake[i] = user_sp;
+//         memcpy(user_sp, argv[i], len);
+//     }
+//     user_sp -= sizeof(char*); // NULL pointer
+//     user_sp = align_down(user_sp, 0x8); // or pi will fail
+//     *((char**)user_sp) = (char*)0;
+//     for (int i = argc - 1; i >= 0; --i) {
+//         user_sp -= sizeof(char*);
+//         *((char**)user_sp) = argv_fake[i];
+//     }
+//     // TODO: argv_fake_start: this is
+//     // temporary. cause now  I don't
+//     // have solution to conquer the
+//     // pushing stack issue when
+//     // starting of function call.
+//     argv_fake_start = (char**)user_sp;
+//     user_sp -= sizeof(char**); // char** argv
+//     *((char**)user_sp) = user_sp + sizeof(char**);
+//     user_sp -= sizeof(int); // argc
+//     *((int*)user_sp) = argc;
+//     kfree((char*)argv_fake);
+//     current->usp = align_down(user_sp, 0x10);
+
+//     cur_trap_frame = get_trap_frame(current);
+//     cur_trap_frame->regs[0] = (unsigned long)argc;
+//     cur_trap_frame->regs[1] = (unsigned long)argv_fake_start;
+//     cur_trap_frame->sp_el0 = (unsigned long)current->usp;
+//     cur_trap_frame->elr_el1 = func_addr;
+//     cur_trap_frame->spsr_el1 = 0x0; // enable_irq
+
+//     // set_user_program((char*)func_addr, current->usp, argc,
+//     //     argv_fake_start, current->kernel_stack_page + 0x1000);
+//     // never come back again.
+//     return argc;  // Geniusly
+// }
 
 // DDI0487C_a_armv8_arm.pdf p.2438
 unsigned long get_syscall_type()
