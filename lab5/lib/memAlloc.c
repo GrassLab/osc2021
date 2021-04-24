@@ -219,7 +219,7 @@ void *my_alloc(int size) {
   }
 }
 
-void my_free(int addr) {
+void my_free(unsigned long addr) {
 
   if (addr >= addr16 && addr < (addr16 + PAGE_SIZE)) {
     chunk16[(addr - addr16) >> 4].onused = 0;

@@ -3,6 +3,8 @@
 #include "include/initrd.h"
 #include "include/memAlloc.h"
 #include "include/utils.h"
+#include "include/task.h"
+#include "include/switch.h"
 
 void main()
 {
@@ -15,6 +17,7 @@ void main()
     // echo everything back
     int el = get_el();
     uart_printf("Exception level: %d\n",el);
+    test();
     while(1) {
         shell();
     }

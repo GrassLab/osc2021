@@ -12,21 +12,31 @@ typedef struct _cpu_context{
   unsigned long x27;
   unsigned long x28;
   unsigned long fp;//x29
+  unsigned long lr;//x30
   unsigned long sp;
-  unsigned long pc;//x30
 }cpu_context;
 
 typedef struct _task_struct{
   cpu_context context;
   int id;
   int state;
-  unsigned long a_addr, a_size, child;
-  struct _task_struct *next;
 }task_struct;
+
+
+typedef struct _RUN_Q_NODE{
+  task_struct* task;
+  struct _RUN_Q_NODE *next;
+}RUN_Q_NODE;
 
 typedef struct _RUN_Q{
 
-  task_struct *beg, *end;
-}RUN_Q
+  RUN_Q_NODE *beg;
+  RUN_Q_NODE *end;
+}RUN_Q;
 
+task_struct* threadCreate(void* func);
+void foo();
+void cur_exit();
+void threadSchedule();
+void idle();
 #endif
