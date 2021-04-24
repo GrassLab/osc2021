@@ -40,11 +40,7 @@ void __lab3(char* args){
     DEBUG = 0;
 }
 void __lab5(char* args){
-    for(int i = 0; i < 4; ++i){
-        Thread(foo);
-    }
-    idle();
-    uart_puts("lab 5 req done\r\n");
+    thread_test();
 }
 
 void sys_disable_timer(char* args){

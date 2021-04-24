@@ -1,35 +1,35 @@
 #pragma once
 #include "utils.h"
 #include "system.h"
-#include "shell.h"
+#include "printf.h"
 
 enum thread_status
 {
+    ALIVE,
     ACTIVE,
     DEAD,
-    ALIVE,
     WAIT,
 };
 typedef struct thread_info
 {
-    struct thread_info *prev, *next;
-    void *reg[10], *fp, *lr, *sp;
-    uint64_t pid, tid;
+    unsigned long context[13]; // context
+    uint64_t tid;
+    struct thread_info *next;
     enum thread_status status;
 } thread_info;
+#define THREAD_SIZE 4096
 
 extern void delay(int);
 extern uint64_t get_current();
-extern void switch_to(void *, void *);
+extern void switch_to(uint64_t, uint64_t);
 
-void Thread(void *);
+thread_info *Thread(void *);
 void add_to_run_queue(thread_info *);
-void move_to_wait_queue();
 thread_info *current_thread();
 void schedule();
 void exit();
 void foo();
 void idle();
 void kill_zombies();
-int available_thread_id();
 void init_thread();
+void thread_test();
