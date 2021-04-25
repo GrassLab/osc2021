@@ -8,4 +8,5 @@ extern size_t uart_write(const char buf[], size_t size);
 extern int exec(const char* name, char *const argv[]);
 extern void exit();
 extern int fork();
+extern size_t get_time();
 #endif

@@ -4,7 +4,7 @@
 #include <printf.h>
 #include <dynamic.h>
 
-void get_core_time() {
+void show_core_time() {
   size_t count, freq;
   float time;
   asm volatile("mrs  %[result], cntpct_el0": [result]"=r"(count));
@@ -16,7 +16,7 @@ void get_core_time() {
 void core_time_interrupt_handler() {
   struct core_timer_callback *q = null;
   core_timer_queue_update();
-  //core_timer_queue_status();
+  
   while(1) {
     q = (struct core_timer_callback *)core_timer_queue_pop();
     if(q != null) {
@@ -28,17 +28,46 @@ void core_time_interrupt_handler() {
   }
   //set next time out      
   //"lsl x0, x0, #1\n" 
-  asm volatile("mrs x0, cntfrq_el0\n" "msr cntp_tval_el0, x0\n");
+  asm volatile("mrs x0, cntfrq_el0\n" "lsr x0, x0, #1\n" "msr cntp_tval_el0, x0\n");
+  
   //output now time
-  odd_flag = ~odd_flag;
+  /*odd_flag = ~odd_flag;
   if(odd_flag == 0)
-    get_core_time();
+    show_core_time();*/
 }
 
 void core_timer_print_message_callback(char *message, size_t size) {
   //print message
   printf("message: %s\n", message);
   //print current time
-  get_core_time();
+  show_core_time();
 }
  
+
+ size_t sys_get_time() {
+   return do_get_time();
+ }
+
+ size_t do_get_time() {
+  size_t count, freq;
+  float time;
+  disable_interrupt();
+
+  asm volatile("mrs  %[result], cntpct_el0": [result]"=r"(count));
+  asm volatile("mrs  %[result], cntfrq_el0": [result]"=r"(freq));
+  time = (1000 * count) / freq;
+  
+  enable_interrupt();
+   
+   return time;
+ }
+
+void delay(size_t sec) {
+  size_t start_t, now_t;
+  start_t = do_get_time();
+  now_t = start_t;
+  
+  while((now_t - start_t) < 1000 * sec) {
+    now_t = do_get_time();
+  }
+}

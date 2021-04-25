@@ -6,4 +6,5 @@
 #define EXEC 3
 #define EXIT 4
 #define FORK 5
+#define GET_TIME 6
 #endif

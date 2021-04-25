@@ -30,8 +30,15 @@ exit:
   mov  x8, EXIT
   svc  #0
   ret
+
 .global fork
 fork:
   mov  x8, FORK
   svc  #0
   ret  
+
+.global get_time
+get_time:
+  mov x8, get_time
+  svc #0
+  ret

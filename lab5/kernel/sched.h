@@ -9,8 +9,8 @@
 #define KERNEL_STACK_ADDR 0x11000000
 #define USER_STACK_ADDR (0x11000000 + TASK_STACK_SIZE * TASK_POOL_SIZE)
 
-#define TASK_STATUS_DEAD 1
-#define TASK_STATUS_LIVE 2
+#define TASK_STATUS_DEAD 0
+#define TASK_STATUS_READY 1
 
 
 struct trapframe {
@@ -42,6 +42,7 @@ struct task_struct {
   void* kstack;
   int status;
   int exit_status;
+  int resched;
   void* start;
   size_t size;
   void* stack;
@@ -59,9 +60,10 @@ void schedule();
 void task_init();
 void idle_task();
 
-extern void* disable_interrupt();
-extern void* enable_interrupt();
+extern void disable_interrupt();
+extern void enable_interrupt();
 extern void* not_syscall();
+extern void* kernel_exit();
 struct trapframe* get_trapframe(struct task_struct* t);
 
 void sys_exit(int status);

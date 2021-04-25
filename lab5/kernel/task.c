@@ -1,6 +1,8 @@
 #include "sched.h"
 #include <printf.h>
 #include <string.h>
+#include <varied.h>
+#include <sched_test.h>
 
 struct task_struct* privilege_task_create( void(*func)() ) {
   size_t i;
@@ -15,16 +17,18 @@ struct task_struct* privilege_task_create( void(*func)() ) {
   
   //set task element
   task_pool[i].task_id = i + 1;
-  task_pool[i].status = TASK_STATUS_LIVE;
+  task_pool[i].status = TASK_STATUS_READY;
   task_pool[i].kstack = (void* )KERNEL_STACK_ADDR + TASK_STACK_SIZE * i;
   task_pool[i].ctx.sp = (size_t)task_pool[i].kstack + TASK_STACK_SIZE; 
   task_pool[i].ctx.lr = (size_t)func;
   task_pool[i].stack = (void *)USER_STACK_ADDR + TASK_STACK_SIZE * i;
   task_pool[i].next = null;
-  task_pool[i].start = func;
+  task_pool[i].start = null;
+  task_pool[i].resched = 0;
+  
   //push into run queue
   task_queue_push(&task_pool[i], &run_queue);
- 
+   
   return &task_pool[i];
 }
 
@@ -35,37 +39,47 @@ void idle_task() {
     //kill zombie task
       if(task_pool[i].status == TASK_STATUS_DEAD &&  task_pool[i].task_id != 0) {
         //zombie process
-        printf("kill task: %d\n", task_pool[i].task_id);
+        //free user space memory
+        if(task_pool[i].start != null)
+          varied_free(task_pool[i].start);
+        task_pool[i].start = 0;
+        task_pool[i].kstack = 0;
+        task_pool[i].stack = 0;
         task_pool[i].task_id = 0;
       }
     }
-
     schedule();  
   }
 }
 
 void user_task() {
-  //while(1) {
+
   char* argv[] = {"argv_test", "-o", "arg2", 0};
   do_exec("argv_test", argv);
-  do_exit(0);
-    //schedule();
-  //}
+  
 }
 
 
 void task_init() {
   struct task_struct fake;
+  
+  disable_interrupt();
   //create idle task
   privilege_task_create(idle_task);
 
-  /*for(int i = 0; i < 5; i++) {
-    privilege_task_create(test_task);
-  }*/
+  for(int i = 0; i < 5; i++) {
+    privilege_task_create(foo);
+  }
   
   privilege_task_create(user_task);
+    
+  task_queue_pop(&run_queue);
   
-  switch_to(&fake, &task_pool[1]);
+  task_queue_status(&run_queue);
+
+  enable_interrupt();
+
+  switch_to(&fake, &task_pool[0]);
 
 }
 
@@ -74,5 +88,6 @@ struct trapframe* get_trapframe(struct task_struct* t) {
   tf = (struct trapframe* )(t->kstack + TASK_STACK_SIZE - sizeof(struct trapframe));
   return tf;
 }
+
 
 

@@ -6,8 +6,6 @@
 
 void task_queue_push(struct task_struct* t, struct task_queue_struct* q) {
   
-  t->next = null;
-
   if(q->tail == null) {
     q->head = t;
     q->tail = t;
@@ -16,6 +14,8 @@ void task_queue_push(struct task_struct* t, struct task_queue_struct* q) {
     q->tail->next = t;
     q->tail = t;
   }
+
+  q->tail->next = null;
 }
 
 struct task_struct* task_queue_pop(struct task_queue_struct* q) {
@@ -30,6 +30,8 @@ struct task_struct* task_queue_pop(struct task_queue_struct* q) {
   t = q->head;
   q->head = q->head->next;
   
+  t->next = null;
+
   return t;
 }
 
@@ -66,9 +68,9 @@ void task_queue_remove(struct task_struct* t, struct task_queue_struct* q) {
   
 }
 
-void task_queue_status(struct task_struct* q) {
+void task_queue_status(struct task_queue_struct* q) {
   struct task_struct *t;
-  t = q;  
+  t = q->head;  
   if(t == null)
     return;
 
@@ -77,5 +79,8 @@ void task_queue_status(struct task_struct* q) {
     t = t->next;
   }
   printf("null\n");
+  
+  printf("head: task_id: %d\n", q->head->task_id);
 
+  printf("tail: task_id: %d\n", q->tail->task_id);
 }

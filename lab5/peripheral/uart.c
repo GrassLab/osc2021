@@ -81,10 +81,14 @@ void uart_hex(unsigned int d) {
 
 size_t do_uart_read(char buf[], size_t size) {
   size_t i;
+  disable_interrupt();
+
   for(i = 0; i < size; i++) {
     *buf = uart_getc();
     buf++;
   }
+
+  enable_interrupt();
   return i;
 }
 
@@ -107,11 +111,15 @@ size_t uart_readline(char* buf, size_t count) {
 
 size_t do_uart_write(const char buf[], size_t size) {
   size_t i;
+  disable_interrupt();
+
   for(i = 0; i < size; i++) {
     if(*buf =='\n') 
       uart_send('\r');
     uart_send(*buf++);
   }
+
+  enable_interrupt();
   return i;
 }
 

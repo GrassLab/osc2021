@@ -44,4 +44,6 @@ void uart_async_send(unsigned int c);
 char uart_async_getc();
 size_t uart_async_write(char* buf, size_t count);
 size_t uart_async_read(char* buf, size_t size);
+extern void disable_interrupt();
+extern void enable_interrupt();
 #endif

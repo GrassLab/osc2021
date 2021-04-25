@@ -92,6 +92,7 @@ _set_exception_vector_table:
   ret
 
 .global not_syscall
+.global kernel_exit
 exception_handler:
   store_context
   #checks the source of exception
@@ -108,7 +109,11 @@ exception_handler:
   bl syscall
   //store return value
   str x0, [sp, #16 * 0]
+  b kernel_exit
 not_syscall:
+  bl exception_level_info
+kernel_exit:
+  bl schedule
   restore_context
   eret
 
@@ -117,7 +122,7 @@ irq_handler:
   
   bl irq_routing
 
-  #bl schedule
+  bl schedule
   
   restore_context
   eret

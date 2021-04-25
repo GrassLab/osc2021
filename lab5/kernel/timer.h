@@ -24,8 +24,13 @@ void core_timer_queue_status();
 void core_timer_queue_sorted(struct core_timer_callback *q);
 void core_timer_queue_update();
 
-void get_core_time();
+void show_core_time();
 void core_time_interrupt_handler();
 void core_timer_print_message_callback(char *message, size_t size);
 
+size_t sys_get_time();
+size_t do_get_time();
+extern void disable_interrupt();
+extern void enable_interrupt();
+void delay(size_t sec);
 #endif

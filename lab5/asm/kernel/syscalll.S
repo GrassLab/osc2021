@@ -42,6 +42,9 @@ syscall_table:
   #fork
   b sys_fork
   .align 4
+  #get_time
+  b sys_get_time
+  .align 4
 syscall_table_end:
 
 .global exit

@@ -11,6 +11,7 @@ void irq_routing() {
   if(*CORE0_INTERRUPT_SOURCE & 0x2) {
     //nCNTHPIRQ core 0 interrupt source 2
     // core timer interrupt handler
+    get_current()->resched = 1;
     core_time_interrupt_handler();
   }
   else if(*CORE0_INTERRUPT_SOURCE & (1 << 8)) {
