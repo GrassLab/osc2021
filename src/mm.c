@@ -473,15 +473,15 @@ void mm_init()
     /**
      *  Test Buddy memory Allocator
      */
-    int allocate_test1[] = {1};
-    int test1_size = sizeof(allocate_test1) / sizeof(int);
-    page_t *(one_pages[test1_size]);
-    for (int i = 0;i < test1_size;i++) {
-        page_t *one_page = buddy_block_alloc(allocate_test1[i]); // Allocate one page frame
-        //printf("\n Allocated Block{ pfn(%d), order(%d), phy_addr_16(0x%x) }: %u\n", one_page->pfn, one_page->order, one_page->phy_addr);
-        one_pages[i] = one_page;
-    }
-    buddy_block_free(one_pages[0]);
+    // int allocate_test1[] = {1};
+    // int test1_size = sizeof(allocate_test1) / sizeof(int);
+    // page_t *(one_pages[test1_size]);
+    // for (int i = 0;i < test1_size;i++) {
+    //     page_t *one_page = buddy_block_alloc(allocate_test1[i]); // Allocate one page frame
+    //     //printf("\n Allocated Block{ pfn(%d), order(%d), phy_addr_16(0x%x) }: %u\n", one_page->pfn, one_page->order, one_page->phy_addr);
+    //     one_pages[i] = one_page;
+    // }
+    // buddy_block_free(one_pages[0]);
 
     /**
      *  Test object allcator

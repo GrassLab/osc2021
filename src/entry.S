@@ -147,6 +147,12 @@ irq_exc_handler:
 	kernel_exit
 	eret
 
+.globl ret_from_fork
+ret_from_fork:
+	bl	schedule_tail // enabled preemption
+	mov	x0, x20
+	blr	x19 		//should never return
+	
 .globl enable_irq_persist
 enable_irq_persist:
 	mov x2, x30	// store return address
