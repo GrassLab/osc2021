@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "timer.h"
 #include "uart.h"
+#include "thread.h"
 
 extern void core_timer_disable(void);
 extern void core_timer_handler();
@@ -11,7 +12,7 @@ extern void enable_irq();
 extern void disable_irq();
 extern void sync_call_uart();
 extern void el0_timer_handler();
-
+void x0Set(unsigned long v);
 void handle_sync_el1(unsigned long, unsigned long);
 void handle_el1_irq();
 void handle_el0_irq();

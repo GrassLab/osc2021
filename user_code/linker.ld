@@ -1,36 +1,16 @@
-__process_size = 0x4000;
-__dtb_addr = 0x120000;
 SECTIONS
 {
- . = 0x70000;
- __start_addr = .;
- .text : { 
-	*( .text)  
- }
- .rodata : {
-	*(.rodata)
- }
- .data : {
- 	*(.data)
- }
- .bss (NOLOAD) : {
-	. = ALIGN(16);
-	__bss_start = .;
- 	*(.bss .bss.*)
-	__bss_end = .;
- }
- 
- .heap : {
-	 . = ALIGN(16);
-	 __heap_top = .;
-	 *(.heap)
- }
- .stack : {
-	 . = ALIGN(16);
-	. = . + __process_size;
-	__stack_top = .;
- }
- 
- __end = .;
+    . = 0x70000;
+    __prog_start = .;
+    .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
+    .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
+    .data : { *(.data .data.* .gnu.linkonce.d*) }
+    .bss (NOLOAD) : {
+        . = ALIGN(16);
+        __bss_start = .;
+        *(.bss .bss.*)
+        *(COMMON)
+        __bss_end = .;
+    }
 }
-__bss_size = (__bss_end - __bss_start) >> 3;
+__bss_size = (__bss_end - __bss_start)>>3;

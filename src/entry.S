@@ -2,9 +2,11 @@
 _load_user_program:
     msr    elr_el1, x0
     msr    sp_el0, x1
-    //mov    x0, 0x3c0
-    mov    x0, 0
-    msr    spsr_el1, x0
+    mov    x2, 0x340
+    msr    spsr_el1, x2
+    mrs    x3, sp_el0
+    ldr x0, [x3, 0]
+    ldr x1, [x3, 8]
     eret
 
 .macro print_el registers
@@ -125,11 +127,7 @@ irq_el0_aarch64:
     eret
 
 sync_el0_aarch64:
-    save_all
-    //mrs x0, spsr_el1
-	//mrs x1, elr_el1
-	//mrs x2, esr_el1
-    //bl show_el1_status_info  
+    save_all 
     bl sync_el0_handler
     load_all
     eret

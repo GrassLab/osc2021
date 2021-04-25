@@ -120,6 +120,17 @@ void uart_puts(char *s){
 	uart_send(*s++);
     }
 }
+unsigned long uart_gets(char *buf, int size){
+    for(int i = 0; i < size; ++i){
+        buf[i] = uart_get();
+        uart_send(buf[i]);
+        if(buf[i] == '\n' || buf[i] == '\r'){
+            buf[i] = '\0';
+            return i;
+        }
+    }
+    return size;
+}
 void uart_puts_bySize(char *s, int size){
     for(int i = 0; i < size ;++i){
         if(*s == '\n') uart_send('\r');
@@ -152,7 +163,6 @@ char uart_get(){
     	asm volatile("nop");
     } while(~(*AUX_MU_LSR_REG)&0x01);
     res = (char)(*AUX_MU_IO_REG);
-    // if(res == '\r') return '\n';
     return res;
 }
 

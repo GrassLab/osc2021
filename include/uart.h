@@ -17,5 +17,6 @@ void uart_printhex(unsigned long long int num);
 void uart_irq();
 void uart_send_string(char *);
 void enable_uart_interrupt();
+unsigned long uart_gets(char *, int);
 
 #endif

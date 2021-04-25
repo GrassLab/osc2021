@@ -2,10 +2,11 @@
 #include "utils.h"
 #include "system.h"
 #include "printf.h"
+#include "entry.h"
 
 typedef struct thread_info
 {
-    unsigned long context[13]; // context
+    unsigned long context[13 + 3 + 31]; // context
     uint64_t tid;
     struct thread_info *next;
     int status;
@@ -22,13 +23,18 @@ extern void switch_to(uint64_t, uint64_t);
 thread_info *Thread(void *);
 void add_to_run_queue(thread_info *);
 thread_info *current_thread();
+unsigned long get_pid();
 void schedule();
 int fork();
 void do_fork();
 void copy_program(thread_info *, thread_info *);
+void exec(char *, char **);
+unsigned long pass_argument(char **, unsigned long);
 void exit();
 void foo();
+void exec_test();
 void idle();
 void kill_zombies();
 void init_thread();
 void thread_test();
+void thread_test2();

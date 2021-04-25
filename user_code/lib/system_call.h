@@ -1,9 +1,7 @@
-#pragma once
-#define size_t int
-
 int getpid();
-size_t uart_read(char buf[], size_t size);
-size_t uart_write(const char buf[], size_t size);
-int exec(const char *name, char *const argv[]);
+int uart_read(char *buf, int size);
+int uart_write(char *buf, int size);
+unsigned int uart_printf(char *fmt, ...);
+int exec(char *name, char **argv);
 void exit();
 int fork();

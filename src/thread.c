@@ -51,6 +51,9 @@ thread_info *current_thread(){
     asm volatile("mrs %0, tpidr_el1\n" : "=r"(ptr):);
     return ptr;
 }
+unsigned long get_pid(){
+    return current_thread()->tid;
+}
 void exit(){
     // move current thread to wait queue
     thread_info *cur = current_thread();
@@ -73,7 +76,78 @@ void kill_zombies(){
     }
     
 }
+unsigned long pass_argument(char** argv,unsigned long addr){
+    int argc = 0, byte_cnt = 0;
+    for(int i = 0;;++i){
+        ++argc;
+        if(argv[i] == 0) break;
+        for(int j = 0;; ++j){
+            ++byte_cnt;
+            if(argv[i][j] == 0) break;
+        }
+    }
+    // printf("argc: %d %d\n", argc, byte_cnt);
+    int arg_size = (1 + 1 + argc) * 8 + byte_cnt;
+    addr = addr - arg_size;
+    addr = addr - (addr & 15); //sp
+    char* data = (char*) addr;
+    *(unsigned long*)data = argc - 1; // exclude NULL
+    data += 8;
+    *(unsigned long*)data = (unsigned long)(data + 8); //argv addr
+    data += 8;
+    char* argv_buf = data + 8 * argc;
+    for(int i = 0; i < argc - 1; ++i){ // without NULL
+        *(unsigned long*)data = (unsigned long)argv_buf;
+        for(int j = 0;;++j){
+            *argv_buf = argv[i][j];
+            ++argv_buf;
+            if(argv[i][j] == 0) break;
+        }
+        data += 8;
+    }
+    *(unsigned long*)data = 0;
+    return addr;
+}
+void load_program_with_args(char* file_name, char**argv, unsigned long addr){
+    struct cpio_newc_header *cpio_addr = find_cpio_entry(file_name);
+    struct cpio_size_info size_info;
+    if(cpio_addr == nullptr){
+        printf("file doesn't exist\n");
+        return;
+    }
+    extract_header(cpio_addr, &size_info);
+    char* context_addr = (char*)cpio_addr + 110 + size_info.name_size + size_info.name_padding;
 
+    unsigned long context_size = size_info.file_size;
+    char* target = (char*) addr;
+    for(unsigned long i = 0; i < context_size; ++i, target++, context_addr++){
+        *target = *context_addr;
+    }
+    unsigned long sp_addr = pass_argument(argv, addr);
+    printf("load program\n");
+    // core_timer_enable();
+    uart_printhex(addr); printf("\n");
+    uart_printhex(sp_addr); printf("\n");
+    _load_user_program((void*)addr, (void*)sp_addr);
+    // asm volatile("mov x0, 0x340			\n");//enable interrupt
+	// asm volatile("msr spsr_el1, x0		\n");
+	// asm volatile("msr elr_el1, %0		\n"::"r"(addr));
+	// asm volatile("msr sp_el0, %0		\n"::"r"(sp_addr));
+
+	// asm volatile("mrs x3, sp_el0		\n"::);
+	// asm volatile("ldr x0, [x3, 0]		\n"::);
+	// asm volatile("ldr x1, [x3, 8]		\n"::);
+
+	// asm volatile("eret					\n");
+
+}
+
+void exec(char* file_name, char** argv){
+    unsigned long addr = USER_PROGRAM_ADDR; // need handle ??
+    load_program_with_args(file_name, argv, addr);
+    printf("exec done\n");
+    exit();
+}
 int fork(){
     // return child pid
     run_queue.head->status |= THREAD_FORK;
@@ -89,7 +163,7 @@ void do_fork(){
     for(thread_info* ptr = run_queue.head->next; ptr != nullptr; ptr = ptr->next){
         if(ptr->status & THREAD_FORK){
             thread_info* child = Thread(nullptr);
-            copy_program(ptr, child)
+            copy_program(ptr, child);
         }
     }
 }
@@ -115,5 +189,17 @@ void thread_test(){
     for(int i = 0; i < 4; ++i){
         Thread(foo);
     }
+    idle();
+}
+void exec_test(){
+    char* argv[] = {"argv_test", "-o", "arg2", 0};
+    //char* argv[] = {};
+    // exec("user_program.img", argv);
+    exec("argv_test", argv);
+}
+void thread_test2(){
+    thread_info *idle_t = Thread(nullptr);
+    asm volatile("msr tpidr_el1, %0\n"::"r"((unsigned long)idle_t));
+    Thread(exec_test);
     idle();
 }
