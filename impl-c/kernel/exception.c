@@ -1,3 +1,5 @@
+#include "exception.h"
+#include "syscall.h"
 #include "timer.h"
 #include "uart.h"
 
@@ -28,7 +30,7 @@ void dumpState() {
   uart_println("SPSR: %x, ELR:%x, ESR: %x", spsr, elr, esr);
 }
 
-void syn_handler() {
+void syn_handler(struct trap_frame *tf) {
   uart_println("Syn Exception");
   struct Exception exception;
   uint32_t esr_el1;
@@ -40,16 +42,17 @@ void syn_handler() {
   exception.iss = get_bits(esr_el1, 0, 25);
 
   switch (exception.ec) {
+
+  // cheetsheet for syscall in this OS
+  // syscall_NR, return, arg0, arg1, arg2, arg3
+  //         x8,     x0,   x0,   x1,   x2,   x3
   case EC_SVC_AARCH64:
-    uart_println("syscall requested");
+    syscall_routing(tf->regs[8], tf);
     break;
   default:
     uart_println("Unknown exception, ec:%d iss:%d", exception.ec,
                  exception.iss);
   }
-  // cheetsheet for syscall in this OS
-  // syscall_NR, return, arg0, arg1, arg2, arg3
-  //         x8,     x0,   x0,   x1,   x2,   x3
 }
 
 void irq_handler() {

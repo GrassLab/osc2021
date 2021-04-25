@@ -7,14 +7,14 @@ CFLAGS = -Wall -nostartfiles -ffreestanding
 
 
 NAME= user_program
-SRC = $(NAME).S
-OBJ = $(NAME).o
+SRC = main.c lib.S
+OBJ = main.o lib.o
 ELF = $(NAME).elf
 TARGET = $(NAME).out
 
 
 $(TARGET):
-	$(CC) $(CFLAGS) -c $(SRC) -o $(OBJ)
+	$(CC) $(CFLAGS) -c $(SRC)
 	$(LD) $(OBJ) -T linker.ld -o $(ELF)
 	$(OBJCOPY) -O binary $(ELF) $(TARGET)
 

@@ -1,11 +1,11 @@
 #include "proc/task.h"
-#include "proc.h"
-#include "proc/sched.h"
-
 #include "bool.h"
 #include "list.h"
 #include "mm.h"
 #include "mm/frame.h"
+#include "proc.h"
+#include "proc/sched.h"
+#include "syscall.h"
 #include "uart.h"
 
 #include "cfg.h"
@@ -53,6 +53,12 @@ struct task_struct *task_create(void *func, int tid) {
               t->cpu_context.lr);
   return t;
 }
+
+void sys_getpid(struct trap_frame *tf) {
+  // dummy version
+  uart_println("pid: %d", 87);
+  tf->regs[0] = 87;
+};
 
 void cur_task_exit() {
   // Exit current running thread;
