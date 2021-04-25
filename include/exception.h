@@ -23,14 +23,15 @@ void sync_svc_handler(unsigned long spsr, unsigned long elr, unsigned long esr);
 void irq_exc_router();
 void print_timestamp();
 void print_pstate_interrupt_mask_bits();
+
 // defined in entry.S. 
 // It's weird that we can't define them in entry.h. It seems that because we include entry.h in entry.S
-void enable_irq_persist();
-void disable_irq_persist();
-void enable_irq();
-void disable_irq();
-void enable_interrupt();
-void disable_interrupt();
+// void enable_irq_persist();
+// void disable_irq_persist();
+// void enable_irq();
+// void disable_irq();
+// void enable_interrupt();
+// void disable_interrupt();
 
 #endif  /*_EXC_H */
 

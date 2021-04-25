@@ -398,7 +398,7 @@ void dump_obj_alloc(obj_allocator_t *obj_allocator_p)
 
 void __init_kmalloc()
 {
-    for (int i = MIN_KMALLOC_ORDER;i <= MAX_KMALLOC_ODER;i++) {
+    for (int i = MIN_KMALLOC_ORDER;i <= MAX_KMALLOC_ORDER;i++) {
         register_obj_allocator(1 << i);
     }
 }
@@ -412,7 +412,7 @@ void *kmalloc(int size)
     void *allocated_addr;
 
     // Object allocator
-    for (int i = MIN_KMALLOC_ORDER;i <= MAX_KMALLOC_ODER;i++) {
+    for (int i = MIN_KMALLOC_ORDER;i <= MAX_KMALLOC_ORDER;i++) {
         if (size <= (1<<i)) {
             allocated_addr = obj_allocate(i - MIN_KMALLOC_ORDER);
 

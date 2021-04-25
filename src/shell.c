@@ -5,7 +5,7 @@
 #include "cpio.h"
 #include "printf.h"
 #include "mm.h"
-#include "exception.h"
+#include "entry.h"
 
 extern int uart_read_idx;
 extern char UART_READ_BUFFER[MAX_BUFFER_LEN];

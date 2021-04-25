@@ -1,6 +1,7 @@
 #include "printf.h"
 #include "entry.h"
 #include "timer.h"
+#include "entry.h"
 #include "exception.h"
 #include "uart.h"
 
@@ -30,7 +31,7 @@ const char *entry_error_messages[] = {
 
 void show_invalid_entry_message(int type, unsigned long esr, unsigned long address)
 {
-	printf("%s, ESR: %x, address: %x\r\n", entry_error_messages[type], esr, address);
+    printf("%s, ESR: %x, address: %x\r\n", entry_error_messages[type], esr, address);
 }
 
 void sync_exc_router(unsigned long spsr, unsigned long elr, unsigned long esr)
