@@ -91,6 +91,17 @@ void sys_uart_write(struct trap_frame *tf) {
   tf->regs[0] = written;
 }
 
+void sys_uart_read(struct trap_frame *tf) {
+  char *buf = (char *)tf->regs[0];
+  size_t size = tf->regs[1];
+  size_t read = 0;
+  for (read = 0; read < size - 1; read++) {
+    buf[read] = uart_getc();
+  }
+  buf[read] = 0;
+  tf->regs[0] = read;
+}
+
 /**
  * Send a character
  */

@@ -9,6 +9,9 @@ void syscall_routing(int num, struct trap_frame *tf) {
   case SYS_UART_WRITE:
     sys_uart_write(tf);
     break;
+  case SYS_UART_READ:
+    sys_uart_read(tf);
+    break;
   default:
     uart_println("syscall not implemented: %d", num);
     while (1) {

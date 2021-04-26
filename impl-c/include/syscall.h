@@ -12,3 +12,4 @@ void syscall_routing(int num, struct trap_frame *);
 
 void sys_getpid(struct trap_frame *);
 void sys_uart_write(struct trap_frame *);
+void sys_uart_read(struct trap_frame *);

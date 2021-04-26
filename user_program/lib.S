@@ -15,3 +15,9 @@ uart_write:
     mov x8, SYS_UART_WRITE
     svc 0
     ret
+
+.global uart_read
+uart_read:
+    mov x8, SYS_UART_READ
+    svc 0
+    ret
