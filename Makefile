@@ -6,12 +6,10 @@ kernel_impl = impl-c
 OPT_BUILD_BOOTLOADER = 0
 bootloader_impl = bootloader
 
-
 INIT_RAM_FS = res/initramfs.cpio
 INIT_RAM_FS_SRC = res/rootfs
 KERNEL_IMG = res/kernel/kernel8.img
 BOOT_LOADER_IMG = res/bootloader/kernel8.img
-USER_PROGRAM = res/rootfs/user_program.out
 
 QEMU = qemu-system-aarch64
 CROSS_GDB = aarch64-linux-gdb
@@ -25,7 +23,7 @@ WHITE        := $(shell tput setaf 7)
 RESET := $(shell tput sgr0)
 
 # == Commands
-all: $(KERNEL_IMG) $(BOOT_LOADER_IMG) $(USER_PROGRAM) $(INIT_RAM_FS)
+all: $(KERNEL_IMG) $(BOOT_LOADER_IMG) user_programs $(INIT_RAM_FS)
 	@echo "${YELLOW} 📦 Build Finished${RESET}"
 
 shell:
@@ -37,7 +35,7 @@ clean:
 ifeq ($(OPT_BUILD_BOOTLOADER), 1)
 	@python3 scripts/builder.py $(bootloader_impl) clean
 endif
-	@python3 scripts/builder.py user_program clean
+	@python3 scripts/builder.py user_programs clean
 	$(RM) $(INIT_RAM_FS)
 	$(RM) -rf scripts/__pycache__
 	@echo "${YELLOW} 🚚 Finish cleanup${RESET}"
@@ -90,8 +88,10 @@ $(INIT_RAM_FS):  $(shell find $(INIT_RAM_FS_SRC))
 	@echo "${GREEN} 📦 Generate ramfs file from ${YELLOW}$(INIT_RAM_FS_SRC)${GREEN} to ${YELLOW}${INIT_RAM_FS}${RESET}"
 	cd $(INIT_RAM_FS_SRC) && find . |  cpio -o -H newc> ../$(@F)
 
-$(USER_PROGRAM): $(shell find ./user_program)
-	@python3 scripts/builder.py user_program build
+# always build
+.PHONY: user_programs
+user_programs:
+	@python3 scripts/builder.py user_programs build
 
 # ==
 

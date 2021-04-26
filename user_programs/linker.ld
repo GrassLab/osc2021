@@ -4,7 +4,9 @@ SECTIONS
   __kernel_start = .;
   .text :
   {
-     *(.text)
+    /* always put main function at the start */
+    *(.text.main)
+    *(.text)
   }
   .rodata :
   {

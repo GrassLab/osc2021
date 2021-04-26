@@ -82,7 +82,7 @@ void cmdReboot() {
 
 void cmdLoadUser() {
   log_println("load user program");
-  exec("./user_program.out", 0, NULL);
+  exec("./get_pid.out", 0, NULL);
 }
 
 #ifdef CFG_RUN_SHELL_CMD_TEST

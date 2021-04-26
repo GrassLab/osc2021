@@ -42,10 +42,10 @@ def init_global():
             run_cross=False,
         ),
         BuildProject(
-            keyword="user_program",
-            project_folder="user_program",
+            keyword="user_programs",
+            project_folder="user_programs",
             target_folder="res/rootfs",
-            target_files=["user_program.out"],
+            target_files=["hello_world.out", "get_pid.out"],
             run_cross=True,
             clean_target_folder=False,
         ),
