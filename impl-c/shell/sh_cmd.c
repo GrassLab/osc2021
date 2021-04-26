@@ -3,6 +3,7 @@
 #include "bool.h"
 #include "cfg.h"
 #include "cpio.h"
+#include "exec.h"
 #include "log.h"
 #include "string.h"
 #include "test.h"
@@ -80,38 +81,8 @@ void cmdReboot() {
 }
 
 void cmdLoadUser() {
-  uart_println("load user program");
-  unsigned long size;
-  unsigned char *load_addr = (unsigned char *)0x20000000;
-  uint8_t *file =
-      (uint8_t *)cpioGetFile((void *)RAMFS_ADDR, "./user_program.out", &size);
-  if (file == NULL) {
-    uart_println("Cannot found `user_program.out` under rootfs");
-    return;
-  }
-  log_println("  [fetchFile] file addr:%x , size:%d", file, size);
-  for (unsigned long i = 0; i < size; i++) {
-    load_addr[i] = file[i];
-  }
-  uart_println("start user app");
-
-  // change exception level
-  // asm volatile("mov x0, 0x3c0  \n"); // disable timer interrupt, enable svn
-  asm volatile("mov x0, 0x340  \n"); // enable core timer interrupt
-  asm volatile("msr spsr_el1, x0  \n");
-  asm volatile("msr elr_el1, %0   \n" ::"r"(load_addr));
-  asm volatile("msr sp_el0, %0    \n" ::"r"(load_addr));
-
-  // enable the core timer’s interrupt in el0
-  timer_el0_enable();
-  timer_el0_set_timeout();
-
-  // unmask timer interrupt
-  asm volatile("mov x0, 2             \n");
-  asm volatile("ldr x1, =0x40000040   \n");
-  asm volatile("str w0, [x1]          \n");
-
-  asm volatile("eret              \n");
+  log_println("load user program");
+  exec("./user_program.out", 0, NULL);
 }
 
 #ifdef CFG_RUN_SHELL_CMD_TEST
