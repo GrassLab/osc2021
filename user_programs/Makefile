@@ -3,7 +3,7 @@ CC := $(TOOLCHAIN_PREFIX)-gcc
 LD:= $(TOOLCHAIN_PREFIX)-ld
 OBJCOPY := $(TOOLCHAIN_PREFIX)-objcopy
 
-CFLAGS = -Wall -nostartfiles -ffreestanding -ffunction-sections
+CFLAGS = -Wall -nostartfiles -ffreestanding
 
 
 HELLO = hello_world.out

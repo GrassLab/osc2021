@@ -4,6 +4,20 @@
 #define SYS_EXEC 4
 #define SYS_EXIT 5
 
+
+// Program Runtime
+.section ".text._runtime"
+.global _runtime_start
+_runtime_start:
+    // jump to main function
+    bl main
+
+.global _runtime_end
+_runtime_end:
+    // should called sys_exit to notifu the system
+    b _runtime_end
+
+.section ".text._syscalls"
 .global getpid
 getpid:
     mov x8, SYS_GETPID

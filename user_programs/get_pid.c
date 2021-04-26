@@ -5,7 +5,5 @@ int main() {
   for (int j = 0; j < 5; j++) {
     asm volatile("svc 0\n" :);
   }
-  while (1) {
-    ;
-  }
+  return 0;
 }
