@@ -1,11 +1,14 @@
 *.elf
 *.img
 
+# system images
 !res/*
 res/*.cpio
-poetry.lock
+res/rootfs/*.out
 res/bootloader
 res/kernel
+
+poetry.lock
 .vscode
 
 #=========================
