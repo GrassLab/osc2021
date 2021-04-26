@@ -7,25 +7,9 @@
 # define SVC_ISS_PRINT_SYSTEM_TIME_DISABLE 4
 # define SVC_ISS_SET_ONE_SHOT_TIMER  5
 
+# define IRQ_ENABLE()    asm volatile("msr DAIFClr, 0x2");
+# define IRQ_DISABLE()   asm volatile("msr DAIFSet, 0x2");
 
-char vector_table_desc[16][30] = {
-  "0x000, Synchronous-SP_EL0",
-  "0x080, IRQ-SP_EL0",
-  "0x100, FIQ-SP_EL0",
-  "0x180, sError-SP_EL0",
-  "0x200, Synchronous-SP_ELx",
-  "0x280, IRQ-SP_ELx",
-  "0x300, FIQ-SP_ELx",
-  "0x380, sError-SP_ELx",
-  "0x400, Synchronous-AArch64",
-  "0x480, IRQ-AArch64",
-  "0x500, FIQ-AArch64",
-  "0x580, sError-AArch64",
-  "0x600, Synchronous-AArch32",
-  "0x680, IRQ-AArch32",
-  "0x700, FIQ-AArch32",
-  "0x780, sError-AArch32",
-};
 
 extern "C"
 void general_exception_handler(

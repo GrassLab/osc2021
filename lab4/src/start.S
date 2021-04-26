@@ -39,7 +39,7 @@ _start:
     adr    x1, el1_start
     msr    elr_el2, x1
 
-    bl     core_timer_init
+    //bl     core_timer_init
 
     eret
 
@@ -58,6 +58,12 @@ el1_start:
 
     adr     x1, el0_start
     msr     elr_el1, x1
+
+    ldr     x1, =0x40000
+    msr     sp_el0, x1
+
+    bl     main
+    b      1b
 
     eret
 

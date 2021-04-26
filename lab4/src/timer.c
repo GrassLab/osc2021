@@ -97,11 +97,13 @@ void set_cval_register(){
 inline void core_timer_enable(){
   // enable timer iinterrupt
   *((unsigned int *)CORE0_TIMER_IRQ_CTRL) |= 1 << 1;
+  //asm volatile("msr DAIFClr, 0x2");
 }
 
 inline void core_timer_disable(){
   // disable timer interrupt
   *((unsigned int *)CORE0_TIMER_IRQ_CTRL) &= ~(1 << 1);
+  //asm volatile("msr DAIFSet, 0x2");
 }
 
 void print_system_time_enable(){

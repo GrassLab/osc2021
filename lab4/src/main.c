@@ -9,11 +9,13 @@
 # include "bitset.h"
 # include "timer.h"
 # include "svc_call.h"
+# include "exception.h"
 
 
 int main(){
-  //core_timer_init();
+  core_timer_init();
   uart_init();
+  //uart_puts((char *)"aaa\n");
   svc_init();
   uart_puts((char *) "Buddy system init\n");
   buddy_init();
@@ -23,6 +25,7 @@ int main(){
   uart_puts((char *) "Welcome to Eric's system ~\n");
   uart_puts((char *) "(Lab4)\n");
   uart_flush();
+  IRQ_ENABLE();
 
   char cmd[1000];
   cmd[0] = '\0';
