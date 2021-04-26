@@ -24,30 +24,27 @@ _start:
     sub     x1, x1, x0
     bl      clear_bss
 
-    mov     x0, KERNEL_STACK_TOP
+    ldr     x0, = KERNEL_STACK_TOP
     mov     sp, x0
-
-    //      page frame allocater initialization
-    bl      init_page_frame
-
-    //      start the shell interface
-    b       shell
+    
+    #bl      idle
+    bl      kernel_main
 
 from_el2_to_el1:
     /*
      * HCR_EL2.RW control the execution state for lower Exception levels
      * Exceution state of EL1 is aarch64
      */
-    mov x0, (1 << 31) 
-    msr HCR_EL2, x0
+    mov     x0, (1 << 31) 
+    msr     HCR_EL2, x0
 
     /*
      * SPSR_EL2 holds the saved process state when an exception is taken to EL2.
      * Since we are already in EL2 by default, before returning to EL1, we have to 
      * manually set the PSTATE that EL1 can restore
      */
-    mov x0, 0x3c5 // EL1h (SPSel = 1) with interrupt disabled
-    msr SPSR_EL2, x0
-    msr ELR_EL2, lr
+    mov     x0, 0x3c5 // EL1h (SPSel = 1) with interrupt disabled
+    msr     SPSR_EL2, x0
+    msr     ELR_EL2, lr
     
     eret

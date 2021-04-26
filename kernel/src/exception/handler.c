@@ -9,3 +9,9 @@ void irq_parser(void *source_addr, long int cntpct_el0)
         core_timer_enable();
     }
 }
+
+
+void exception_handler(int svc_num)
+{
+    printf("svc number is: %d\n", svc_num);
+}

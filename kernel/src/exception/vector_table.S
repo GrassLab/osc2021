@@ -51,15 +51,15 @@ set_el1_exception_vector_table:
     ret   lr
 
 exec_in_el0:
-    msr   elr_el1, x0
-    mov   x1, 0
-    msr   spsr_el1, x1 
+    msr   elr_el1, x0 // execute start from this address
+    msr   sp_el0, x1  // set sp of el0
 
-    // set sp of el0
-    add   x2, x0, 0x10000
-    msr   sp_el0, x2 
+    mov   x0, 0
+    msr   spsr_el1, x0
     
-    bl    core_timer_enable
+    // set tpidr(?)
+
+    // bl    core_timer_enable
     eret
     
 noop: 

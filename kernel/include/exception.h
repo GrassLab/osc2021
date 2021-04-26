@@ -1,6 +1,6 @@
 #ifndef _EXCEPTION_H
 #define _EXCEPTION_H
 
-void exec_in_el0(void *addr);
+void exec_in_el0(void *start_addr, void *end_addr);
 
 #endif

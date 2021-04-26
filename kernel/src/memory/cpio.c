@@ -2,9 +2,10 @@
 #include "string.h"
 #include "mini_uart.h"
 #include "exception.h"
-#include "pf_alloc.h"
 #include "io.h"
 #include "def.h"
+#include "process.h"
+#include "thread.h"
 
 void cpio_exec(char *path)
 {
@@ -13,20 +14,9 @@ void cpio_exec(char *path)
         printf("could not find the file. \r\n");
     } else {
         int filesize = cpio_attr_value(targetAddr, C_FILESIZE);
-        char *content_addr = (char *)cpio_content_addr(targetAddr);
+        struct Thread * t = create_process(cpio_content_addr(targetAddr), filesize);
 
-        void *dest_addr = NULL;
-        alloc_page(&dest_addr, 17); // FIXIT: hardcoded
-
-        
-        char *dest_tmp = (char *)dest_addr;
-
-        // move file
-        for (int i = 0; i < filesize; i++, content_addr++, dest_tmp++) {
-            *dest_tmp = *content_addr;
-        }
-
-        exec_in_el0(dest_addr);
+        exec_in_el0(t->code, (void *)t->user_sp);
     }
 }
 

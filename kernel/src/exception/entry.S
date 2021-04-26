@@ -47,23 +47,12 @@
 .endm
 
 
-.macro preserve_context
-    save_all
-    // tpidr
-.endm
-
-.macro restore_context
-    save_all
-.endm
-
 exception_entry:
     save_all
-
-    mrs   x0, spsr_el1
-    mrs   x1, elr_el1
-    mrs   x2, esr_el1
-    
-    bl    print_num
+    // get the svc number, stored in lower 16 bit of ESR_ELx
+    mrs     x0, ESR_EL1
+    and     x0, x0, #0xFFFF
+    bl      exception_handler
 
     load_all
     
@@ -71,10 +60,10 @@ exception_entry:
 
 irq_entry:
     save_all
-    ldr   x0, = CORE0_IRQ_SOURCE
 
-    mrs   x1, cntpct_el0
+    ldr     x0, = CORE0_IRQ_SOURCE
+    mrs     x1, cntpct_el0
+    bl      irq_parser
 
-    bl    irq_parser
     load_all
     eret

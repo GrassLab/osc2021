@@ -9,6 +9,9 @@
 #include "dynamic_alloc.h"
 #include "io.h"
 
+
+#include "thread.h"
+
 void exec_command(char *input)
 {
     if (strcmp(input, "help") == 0) {
@@ -35,6 +38,9 @@ void exec_command(char *input)
     } else if (strcmp(input, "load") == 0) {
         // load app
         cpio_exec("app");
+        // ilde();
+
+    } else if (strcmp(input, "thread") == 0) {
 
     } else {
         printf("Try another command\r\n");
