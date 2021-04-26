@@ -12,7 +12,7 @@ extern void enable_irq();
 extern void disable_irq();
 extern void sync_call_uart();
 extern void el0_timer_handler();
-void x0Set(unsigned long v);
+void set_x0(unsigned long);
 void handle_sync_el1(unsigned long, unsigned long);
 void handle_el1_irq();
 void handle_el0_irq();

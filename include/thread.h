@@ -6,7 +6,7 @@
 
 typedef struct thread_info
 {
-    unsigned long context[13 + 3 + 31]; // context
+    unsigned long context[13 + 31]; // context: (10(reg), fp, lr, sp), (user reg)
     uint64_t tid;
     struct thread_info *next;
     int status;

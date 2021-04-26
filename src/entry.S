@@ -4,9 +4,9 @@ _load_user_program:
     msr    sp_el0, x1
     mov    x2, 0x340
     msr    spsr_el1, x2
-    mrs    x3, sp_el0
-    ldr x0, [x3, 0]
-    ldr x1, [x3, 8]
+    mrs    x3, sp_el0 
+    ldr x0, [x3, 0]    // main argc
+    ldr x1, [x3, 8]    // main argv
     eret
 
 .macro print_el registers

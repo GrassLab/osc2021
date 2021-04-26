@@ -13,7 +13,7 @@ void init_thread(){
 }
 thread_info* Thread(void* func){
     thread_info* ptr = (thread_info*)malloc(THREAD_SIZE);
-    void *sp_ptr = malloc(PAGE_SIZE);
+    // void *sp_ptr = malloc(PAGE_SIZE);
     ptr->context[10] = (unsigned long)ptr + THREAD_SIZE;
     ptr->context[11] = (unsigned long)func;
     ptr->context[12] = (unsigned long)ptr + THREAD_SIZE;
@@ -129,17 +129,6 @@ void load_program_with_args(char* file_name, char**argv, unsigned long addr){
     uart_printhex(addr); printf("\n");
     uart_printhex(sp_addr); printf("\n");
     _load_user_program((void*)addr, (void*)sp_addr);
-    // asm volatile("mov x0, 0x340			\n");//enable interrupt
-	// asm volatile("msr spsr_el1, x0		\n");
-	// asm volatile("msr elr_el1, %0		\n"::"r"(addr));
-	// asm volatile("msr sp_el0, %0		\n"::"r"(sp_addr));
-
-	// asm volatile("mrs x3, sp_el0		\n"::);
-	// asm volatile("ldr x0, [x3, 0]		\n"::);
-	// asm volatile("ldr x1, [x3, 8]		\n"::);
-
-	// asm volatile("eret					\n");
-
 }
 
 void exec(char* file_name, char** argv){
