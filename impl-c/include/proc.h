@@ -5,4 +5,5 @@
 /* proc/task.c */
 void test_tasks();
 
-void scheduler_init();
+// Initialize the proc subsystem
+void proc_init();

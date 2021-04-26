@@ -22,7 +22,7 @@ static void kill_zombies();
 struct list_head run_queue;
 struct list_head exited;
 
-void scheduler_init() {
+void proc_init() {
   list_init(&run_queue);
   list_init(&exited);
 }

@@ -69,7 +69,7 @@ void cur_task_exit() {
 }
 
 void test_tasks() {
-  scheduler_init();
+  proc_init();
 
   struct task_struct *root_task;
   root_task = task_create(idle, 0);
