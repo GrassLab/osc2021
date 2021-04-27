@@ -3,4 +3,5 @@
 .global _start
 
 _start:
-  b main
+  bl main
+  svc 60

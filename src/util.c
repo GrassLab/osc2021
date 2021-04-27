@@ -26,6 +26,21 @@ void *memcpy(void *dst, const void *src, size_t len) {
   return dst;
 }
 
+void *memcpy_ul(void *dst, const void *src, size_t len) {
+  len /= sizeof(unsigned long);
+  unsigned long *d = dst;
+  const unsigned long *s = src;
+  while (len--) *d++ = *s++;
+  return dst;
+}
+
+void *memset_ul(void *dst, unsigned long data, size_t len) {
+  len /= sizeof(unsigned long);
+  unsigned long *d = dst;
+  while (len--) *d++ = data;
+  return dst;
+}
+
 char *strcpy(char *dst, const char *src) {
   if (dst == NULL) return NULL;
   char *ptr = dst;

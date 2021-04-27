@@ -6,8 +6,7 @@
 .global el2_to_el1_preserve_sp
 .global set_el1_evt
 .global _exec_usr
-.global switch_exec
-.global ret_kern
+.global ret_exc
 
 el2_to_el1_preserve_sp:
     mov x0, #(1 << 31)
@@ -136,7 +135,7 @@ _syn_handler:
     load_all
     eret
 
-switch_exec:
+ret_exc:
     msr elr_el1, x0
     msr sp_el0, x1
     msr spsr_el1, x2
@@ -156,19 +155,8 @@ _exec_usr:
     msr elr_el1, x0
     msr sp_el0, x1
     msr spsr_el1, x2
-    save_pres
-    adr x30, _force_exit
     clear_reg
     eret
-
-_force_exit:
-    svc SYS_EXIT
-
-ret_kern:
-    mov sp, x0
-    add sp, sp, #(256)
-    load_pres
-    ret
 
 .section ".vec_tbl"
 

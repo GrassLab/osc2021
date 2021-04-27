@@ -160,6 +160,7 @@ void gets_n(char *buffer, unsigned long len) {
 }
 
 void log(const char *msg, int flag) {
+  disable_interrupt();
   if (flag == LOG_DEBUG) {
 #ifdef LOGGING_DEBUG
     print(msg);
@@ -173,9 +174,11 @@ void log(const char *msg, int flag) {
     print(msg);
 #endif
   }
+  enable_interrupt();
 }
 
 void log_hex(const char *msg, unsigned long num, int flag) {
+  disable_interrupt();
   if (flag == LOG_DEBUG) {
 #ifdef LOGGING_DEBUG
     print(msg);
@@ -198,6 +201,7 @@ void log_hex(const char *msg, unsigned long num, int flag) {
     putc('\n');
 #endif
   }
+  enable_interrupt();
 }
 
 void print(const char *s) {

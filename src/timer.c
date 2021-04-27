@@ -36,7 +36,7 @@ void core_timer_enable() {
       : "=r"(timer_frq));
 
   enable_interrupt();
-  log_hex("core timer frequency", timer_frq, LOG_PRINT);
+  log_hex("core timer frequency", timer_frq, LOG_DEBUG);
 
   *CORE0_TIMER_IRQ_CTRL = 2;  // nCNTPNSIRQ IRQ control enable
 }
@@ -106,4 +106,10 @@ unsigned long get_timer_cnt() {
   unsigned long cnt;
   asm volatile("mrs %0, cntpct_el0;" : "=r"(cnt));
   return cnt;
+}
+
+double tick_rate;
+
+void tick() {
+  add_timer(tick_rate, &tick, NULL);
 }

@@ -10,6 +10,8 @@
 int strcmp(const char *s1, const char *s2);
 int strcmp_n(const char *s1, const char *s2, size_t n);
 void *memcpy(void *dst, const void *src, size_t len);
+void *memcpy_ul(void *dst, const void *src, size_t len);
+void *memset_ul(void *dst, unsigned long data, size_t len);
 char *strcpy(char *dst, const char *src);
 char *strcpy_n(char *dst, const char *src, size_t len);
 size_t strlen(const char *str);
@@ -38,6 +40,13 @@ static inline void push_cdl_list(cdl_list *l, cdl_list *chunk) {
   chunk->fd = l->fd;
   l->fd->bk = chunk;
   l->fd = chunk;
+}
+
+static inline void push_back_cdl_list(cdl_list *l, cdl_list *chunk) {
+  chunk->fd = l;
+  chunk->bk = l->bk;
+  l->bk->fd = chunk;
+  l->bk = chunk;
 }
 
 static inline void *pop_cdl_list(cdl_list *chunk) {

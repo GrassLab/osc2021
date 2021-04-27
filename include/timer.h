@@ -13,4 +13,7 @@ void _add_timer(unsigned long exp_time, void *callback, void *data);
 unsigned long get_timer_cnt();
 extern unsigned long timer_frq;
 
+void tick();
+extern double tick_rate;
+
 #endif

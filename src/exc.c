@@ -35,14 +35,6 @@ void disable_interrupt() {
   interrupt_status++;
 }
 
-void get_interrupt() { interrupt_status = 1; }
-
-void ret_interrupt() {
-  if (interrupt_status == 0) {
-    asm volatile("msr DAIFSet, 0xf;");
-  }
-  interrupt_status = 0;
-}
 
 void exec_usr(void *addr, void *sp, unsigned long pstate) {
   disable_interrupt();
@@ -85,4 +77,12 @@ void add_task(void *task, void *data, unsigned long priority) {
     new_task->next = tp_itr->next;
     tp_itr->next = new_task;
   }
+}
+
+unsigned long get_int_stat() {
+  return interrupt_status;
+}
+
+void set_int_stat(unsigned long stat) {
+  interrupt_status = stat;
 }
