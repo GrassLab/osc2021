@@ -39,6 +39,6 @@ fork:
 
 .global get_time
 get_time:
-  mov x8, get_time
+  mov x8, GET_TIME
   svc #0
   ret

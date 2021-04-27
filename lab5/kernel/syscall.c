@@ -126,6 +126,7 @@ int do_exec(const char* name, char* const argv[]) {
   void* addr, *start, *stack;
   char *arg;
   int argc;
+  struct trapframe* current_tf;
   printf("do_exec\n");
   
   //load program from initrootfs
@@ -170,13 +171,21 @@ int do_exec(const char* name, char* const argv[]) {
                "r"(argc),
                "r"(stack + sizeof(int))
                 :"x0");*/
-  struct trapframe* current_tf;
+
+ 
   current_tf = get_trapframe(get_current());
+  
+  printf("current_tf: 0x%x\n", current_tf);
   current_tf->x0 = argc;
-  current_tf->x1 = (size_t)stack + sizeof(int);
+  current_tf->x1 = (size_t)stack + 0x10;
   current_tf->sp_el0 = (size_t)stack;
   current_tf->elr_el1 = (size_t)start;
+
+  disable_interrupt();
+
   asm volatile("mov sp, %0\n" "blr %1\n"::"r"(current_tf), "r"((void* )kernel_exit));
+  
+  enable_interrupt();
   return 0;
 }
 
@@ -197,17 +206,17 @@ void* exec_set_argv(void* stack, int argc, char* const argv[]) {
 
   //set argv[i] content
   for(int i = argc - 1; i >= 0; i--) {
-    r = (strlen(argv[i])+ 1) % 8;
+    r = (strlen(argv[i])+ 1) % 16;
     //padding
     if(r != 0) 
-      stack -= 8 - r;
+      stack -= 16 - r;
       
     stack -= strlen(argv[i]) + 1;
     //record argv[i] address
     argv_addr[i] = stack;
 
     memcpy((char *)stack, argv[i], strlen(argv[i]) + 1);
-    memset((char *)stack + (strlen(argv[i])+ 1), 8 - r, 0);
+    memset((char *)stack + (strlen(argv[i])+ 1), 16 - r, 0);
   }
 
   //set null
@@ -224,6 +233,7 @@ void* exec_set_argv(void* stack, int argc, char* const argv[]) {
   *(char** )stack = (char*)stack + sizeof(char **);*/
 
   //set argc
+  stack -= 16 - sizeof(int) % 16;
   stack -= sizeof(int);
   *(int *)stack = argc;
   

@@ -51,13 +51,10 @@ void core_timer_print_message_callback(char *message, size_t size) {
  size_t do_get_time() {
   size_t count, freq;
   float time;
-  disable_interrupt();
 
   asm volatile("mrs  %[result], cntpct_el0": [result]"=r"(count));
   asm volatile("mrs  %[result], cntfrq_el0": [result]"=r"(freq));
   time = (1000 * count) / freq;
-  
-  enable_interrupt();
    
    return time;
  }

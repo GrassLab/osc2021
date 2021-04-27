@@ -111,10 +111,11 @@ exception_handler:
   str x0, [sp, #16 * 0]
   b kernel_exit
 not_syscall:
-  bl exception_level_info
+  #bl exception_level_info
 kernel_exit:
   bl schedule
   restore_context
+  #bl exception_level_info
   eret
 
 irq_handler:
