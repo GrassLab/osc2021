@@ -8,23 +8,29 @@ CFLAGS = -Wall -nostartfiles -ffreestanding
 
 HELLO = hello_world.out
 GETPID = get_pid.out
-all: $(HELLO) $(GETPID)
+ARGV = argv_test.out
+all: $(HELLO) $(GETPID) $(ARGV)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 HELLO_DEPS = lib.o hello_world.o
 HELLO_ELF = hello_world.elf
-hello_world.out: $(HELLO_DEPS)
+$(HELLO): $(HELLO_DEPS)
 	$(LD) $(HELLO_DEPS) -T linker.ld -o $(HELLO_ELF)
 	$(OBJCOPY) -O binary $(HELLO_ELF) $(HELLO)
 
-
 GETPID_DEPS = lib.o get_pid.o
 GETPID_ELF = get_pid.elf
-get_pid.out: $(GETPID_DEPS)
+$(GETPID): $(GETPID_DEPS)
 	$(LD) $(GETPID_DEPS) -T linker.ld -o $(GETPID_ELF)
 	$(OBJCOPY) -O binary $(GETPID_ELF) $(GETPID)
+
+ARGV_DEPS = lib.o argv_test.o
+ARGV_ELF = argv_test.elf
+$(ARGV): $(ARGV_DEPS)
+	$(LD) $(ARGV_DEPS) -T linker.ld -o $(ARGV_ELF)
+	$(OBJCOPY) -O binary $(ARGV_ELF) $(ARGV)
 
 
 .PHONY: clean

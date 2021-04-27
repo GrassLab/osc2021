@@ -33,6 +33,9 @@ struct task_struct {
   struct cpu_context cpu_context;
   unsigned long id;
   int status;
+
+  // address of the program code allocaed in memory
+  void *entry_point;
   //
   // stack
   //
@@ -51,4 +54,8 @@ static inline struct task_struct *get_current() {
   unsigned long cur;
   asm volatile("mrs %0, tpidr_el1 \n" : "=r"(cur) :);
   return (struct task_struct *)cur;
+}
+
+static inline void set_current(struct task_struct *task) {
+  asm volatile("msr tpidr_el1, %0 \n" ::"r"(task) :);
 }

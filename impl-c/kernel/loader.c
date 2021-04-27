@@ -7,10 +7,8 @@
 #include "timer.h"
 #include "uart.h"
 
-static void *load_program(const char *name, int argc, const char **argv);
-
 // load program into a seperate memory space
-void *load_program(const char *name, int argc, const char **argv) {
+void *load_program(const char *name) {
   unsigned long size;
   uint8_t *file = (uint8_t *)cpioGetFile((void *)RAMFS_ADDR, name, &size);
   if (file == NULL) {
@@ -24,8 +22,9 @@ void *load_program(const char *name, int argc, const char **argv) {
   return load_addr;
 }
 
+// Run program without interacting with scheduling mechanism
 void exec(const char *name, int argc, const char **argv) {
-  void *load_addr = load_program(name, argc, argv);
+  void *load_addr = load_program(name);
   if (load_addr == NULL) {
     uart_println("exec failed");
     return;

@@ -36,7 +36,8 @@ void main() {
   // KAllocManager_show_status();
 
   init_sys("Init Proc subsystem", proc_init);
-  run_shell();
+  test_tasks();
+  // run_shell();
 }
 // =====
 

@@ -67,6 +67,9 @@ void kill_zombies() {
     list_del(entry);
     kfree(task);
     kfree(entry);
+    if (task->entry_point != NULL) {
+      kfree(task->entry_point);
+    }
   }
 }
 
