@@ -17,7 +17,9 @@ void main()
     // echo everything back
     int el = get_el();
     uart_printf("Exception level: %d\n",el);
-    test();
+    task_struct* a = my_alloc(sizeof(task_struct));
+    a->context.lr = 0;
+    uart_printf("%x\n",&(a->context.x20));
     while(1) {
         shell();
     }

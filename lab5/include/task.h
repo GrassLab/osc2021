@@ -26,6 +26,7 @@ typedef struct _task_struct{
 typedef struct _RUN_Q_NODE{
   task_struct* task;
   struct _RUN_Q_NODE *next;
+  struct _RUN_Q_NODE *prev;
 }RUN_Q_NODE;
 
 typedef struct _RUN_Q{

@@ -121,6 +121,80 @@ void loadprog(){
     asm volatile("eret    \n");
 }
 
+unsigned long argvPut(char** argv,unsigned long ret){
+	int cnt1=0,cnt2=0;
+	for(int i=0;;++i){
+		cnt1++;//with null
+		if(!argv[i])break;
+
+		for(int j=0;;++j){
+			cnt2++;//with null
+			if(!argv[i][j])break;
+		}
+	}
+
+	int sum=8+8+8*cnt1+cnt2;
+	ret=(ret-sum);
+	//alignment
+	ret=ret-(ret&15);
+
+	char* tmp=(char*)ret;
+	*(unsigned long*)tmp=cnt1-1;
+	tmp+=8;
+	*(unsigned long*)tmp=(unsigned long)(tmp+8);
+	tmp+=8;
+	char* buffer=tmp+8*cnt1;
+	for(int i=0;i<cnt1;++i){
+		if(i+1==cnt1){
+			*(unsigned long*)tmp=0;
+		}else{
+			*(unsigned long*)tmp=(unsigned long)buffer;
+			tmp+=8;
+			for(int j=0;;++j){
+				*buffer=argv[i][j];
+				buffer++;
+				if(!argv[i][j])break;
+			}
+		}
+	}
+	return ret;
+}
+
+void loadProgWithArgv(char *path, unsigned long a_addr, char **argv, unsigned long *task_addr){
+    cpio_t *file_addr = findFile((cpio_t*)0x8000000, path);
+    if(!file_addr){
+        uart_puts("Prog not found\n");
+        return;
+    }
+
+    unsigned long psize=hexToDex(file_addr->namesize),dsize=hexToDex(file_addr->filesize);
+    unsigned long HPP = sizeof(cpio_t) + psize;
+    Align_4(&HPP);
+    Align_4(&dsize);
+
+    char *data = (char*)((char*)file_addr + HPP);
+    *task_addr = a_addr;
+    unsigned char* tar = (unsigned char*)a_addr;
+    while(dsize--){
+        *tar = *data;
+        tar++;
+        data++;
+    }
+
+    unsigned long sp_addr = argvPut(argv, a_addr);
+
+    asm volatile("mov x0, 0x340			\n");//enable interrupt
+	asm volatile("msr spsr_el1, x0		\n");
+	asm volatile("msr elr_el1, %0		\n"::"r"(a_addr));
+	asm volatile("msr sp_el0, %0		\n"::"r"(sp_addr));
+
+	asm volatile("mrs x3, sp_el0		\n"::);
+	asm volatile("ldr x0, [x3, 0]		\n"::);
+	asm volatile("ldr x1, [x3, 8]		\n"::);
+
+	asm volatile("eret					\n");
+}
+
 /**
  * List the contents of an archive
  */

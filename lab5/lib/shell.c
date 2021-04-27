@@ -4,6 +4,9 @@
 #include "../include/utils.h"
 #include "../include/initrd.h"
 #include "../include/memAlloc.h"
+#include "../include/task.h"
+#include "../include/switch.h"
+
 #define MAX_BUF_SIZE 128
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC (volatile unsigned int*)0x3F10001c
@@ -11,7 +14,7 @@
 
 
 
-static char* commanlist[] = {"help" , "hello", "reboot", "loadimg", "find", "my_alloc", "my_free","mem_status_dump", "dy_mem_status_dump", "loadprog" };
+static char* commanlist[] = {"help" , "hello", "reboot", "loadimg", "find", "my_alloc", "my_free","mem_status_dump", "dy_mem_status_dump", "loadprog" ,"req1", "req2"};
 
 void read_input(char *buffer){
     int size = 0;
@@ -113,6 +116,10 @@ static void parse_input(char *buffer){
         dy_mem_status_dump();
     }else if(compString("loadprog", buffer) == 0){
         loadprog();
+    }else if(compString("req1",buffer) == 0){
+        test1();
+    }else if(compString("req2",buffer) == 0){
+     //   test2();
     }else{
         uart_puts("No Such Command\n");
     }

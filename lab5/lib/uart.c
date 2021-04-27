@@ -91,6 +91,23 @@ unsigned char uart_getb(){//for data transfer
 	return r;
 }
 
+int uart_gets(char* s,int size,int display){
+	for(int i=0;;++i){
+		if(i==size){
+			uart_puts("buffer overflow!\n");
+			return i;
+		}
+
+		s[i]=uart_getc();
+		if(display)uart_send(s[i]);
+
+		if(s[i]=='\n'){
+			s[i]=0;
+			return i;
+		}
+	}
+}
+
 void uart_hex(unsigned int d) {
     unsigned int n;
     int c;
