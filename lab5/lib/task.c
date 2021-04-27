@@ -17,7 +17,7 @@ static RUN_Q exit_q;
 static int tid = 0;
 
 void dump_q(RUN_Q* q){
-    for(RUN_Q_NODE* i = q->beg; i!=q->end; i = i->next){
+    for(RUN_Q_NODE* i = q->beg;i!=0 ; i = i->next){
         uart_printf("%x\n",i->task);
     }
 }
@@ -26,10 +26,13 @@ void list_push(RUN_Q* q,RUN_Q_NODE *tmp){
     if(q->beg == 0){
         q->beg = q->end = tmp;
     }else{
-        tmp->prev = q->end;
-        tmp->next = q->beg;
+        //tmp->prev = q->end;
+        //tmp->next = q->beg;
+        //q->end->next = tmp;
+        //q->beg->prev = tmp;
+        //q->end = tmp;
         q->end->next = tmp;
-        q->beg->prev = tmp;
+        tmp->prev = q->end;
         q->end = tmp;
     }
 
@@ -39,7 +42,7 @@ RUN_Q_NODE* list_pop(RUN_Q *q){
     if((q->beg) == 0){
         return 0;
     }else{
-        if((q->beg->next) == q){
+        if((q->beg->next) == 0){
             RUN_Q_NODE *tmp = q->beg;
             q->beg = q->end = 0;
             tmp->next = tmp->prev = 0;
@@ -47,8 +50,7 @@ RUN_Q_NODE* list_pop(RUN_Q *q){
         }else{
             RUN_Q_NODE *tmp = q->beg;
             q->beg = q->beg->next;
-            q->beg->prev = q->end;
-            q->end->next = q->beg;
+            q->beg->prev = 0;
             tmp->next= 0;
             tmp->prev = 0;
             return tmp;
@@ -68,7 +70,7 @@ task_struct* threadCreate(void *func){
 
     RUN_Q_NODE* tmp = (RUN_Q_NODE*)my_alloc(sizeof(RUN_Q_NODE));
     tmp->task = new_task;
-    tmp->next = tmp->prev = new_task;
+    tmp->next = tmp->prev = 0;
 
     list_push(&run_q,tmp);
 
@@ -81,13 +83,18 @@ void threadSchedule(){
     if(next_node){
         if((next_node->task->state) == TASK_ALIVE){
             list_push(&run_q,next_node);
+            //uart_puts("runq:\n");
+            //dump_q(&run_q);
             switch_to(cur,next_node->task);
         }else{
             list_push(&exit_q,next_node);
+            //uart_puts("runq:\n");
+            //dump_q(&run_q);
+            //uart_puts("exitq:\n");
+            //dump_q(&exit_q);
         }
     }
-
-}
+ }
 
 void zombiekill(){
     while(1){
@@ -104,7 +111,7 @@ void zombiekill(){
 void cur_exit(){
     task_struct *cur = get_current();
     cur->state = TASK_DEAD;
-    //threadSchedule();
+    threadSchedule();
 }
 
 void idle(){
@@ -135,6 +142,5 @@ void test1(){
     threadCreate(foo1);
     //dump_q(&run_q);
     idle();
-
 
 }
