@@ -78,6 +78,16 @@ to_el0:
     eret
 
 
+.globl run_sighand
+run_sighand:
+    msr    elr_el1,  x0    // user handler address
+    msr    SP_EL0, x1
+    ldr    x0, =0x0        // enable irq in el0 (e.g. =0x3c0 is disable)
+    msr    spsr_el1, x0    // set to EL0
+    mov    x30, x2         // set elr_el0 to signal trampoline (TODO: x30 v.s. X14)
+    eret
+
+
 .globl get_x8
 get_x8:
     mov x0, x8

@@ -12,6 +12,7 @@ extern unsigned int get_spsr_el2(void);
 extern unsigned int get_cntfrq_el0(void);
 extern unsigned long set_user_program(char *start, char *usp, int argc, char**argv, char *ksp_reset_location);
 extern void to_el0(void);
+extern void run_sighand(unsigned long handler, char *sigaltstack, unsigned long sigtramp_addr);
 extern unsigned long get_x8(void);
 extern void enable_irq(void);
 extern void disable_irq(void);

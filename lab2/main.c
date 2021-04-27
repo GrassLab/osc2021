@@ -398,13 +398,32 @@ extern struct task task_pool[];
 extern struct task *current;
 
 
+void udh_1()
+{
+    uart_send_string("From udh_1\r\n");
+}
+
 void test_thread_1(char arg[])
+{
+    signal(0, (unsigned long)udh_1);
+    while (1) {
+        for(int i = 0; i < 10; ++i) {
+            uart_write(arg, 5);
+            delay(1000000);
+        }
+        // schedule();
+    }
+    exit();
+}
+
+void test_thread_2(char arg[])
 {
     while (1) {
         for(int i = 0; i < 10; ++i) {
             uart_write(arg, 5);
-            delay(10000000);
+            delay(1000000);
         }
+        sleep(10);
         // schedule();
     }
     exit();
@@ -461,6 +480,8 @@ void user_logic(int argc, char **argv)
         uart_send_string(argv[i]);
         uart_send_string("\r\n");
     }
+    kill(2, 0);
+    useless();
     // exit();
     char *fork_argv[2];
     fork_argv[0] = "fork_test";
@@ -481,16 +502,34 @@ void user_thread()
 
     // argv = {"user_logic", "hello1", "-aux", 0};
     exec("bin/argv_test", argv);
-    // exec((unsigned long)user_logic, argv);
     // exit();
 }
+
+
+void user_thread_2()
+{ // test function version exec
+    uart_send_string("From user_thread_2\r\n");
+    char *argv[7];
+    argv[0] = "argv_test";
+    argv[1] = "aux";
+    argv[2] = "-o";
+    argv[3] = "-tsk";
+    argv[4] = "haha";
+    argv[5] = "shutup\r\n";
+    argv[6] = 0;
+    // current->sig.sigpend = 1; // DEMO: raise signal itself
+    // current->sig.user_handler[0] = (unsigned long)udh_1;
+    exec((unsigned long)user_logic, argv);
+}
+
 
 void idle()
 {
     struct task *walk;
 
     while (1) {
-        uart_send_string("From idle\r\n");
+        // uart_send_string("From idle\r\n");
+        // delay(10000000);
         for (int i = 0; i < MAX_TASK_NR; ++i) {
             walk = &task_pool[i];
             if (walk->free == 0 && walk->status == TASK_ZOMBIE) {
@@ -500,6 +539,7 @@ void idle()
                 walk->free = 1;
             }
         }
+
         schedule();
     }
 }
@@ -594,6 +634,60 @@ delay(10000000);
     return argc;  // Geniusly
 }
 
+// sys_exec(unsigned long func_addr, char *const argv[])
+// {
+//     int argc, len;
+//     char *user_sp;
+//     char **argv_fake, **argv_fake_start;
+//     struct trap_frame *cur_trap_frame;
+// delay(10000000);
+//     /* Get argc, not include null terminate */
+//     argc = 0;
+//     while (argv[argc])
+//         argc++;
+//     // argv_fake = kmalloc(argc*sizeof(char*));
+//     argv_fake = (char**)kmalloc(0x1000);
+//     user_sp = current->user_stack_page + 0x1000;
+//     for (int i = argc - 1; i >= 0; --i) {
+//         len = strlen(argv[i]) + 1; // including '\0'
+//         user_sp -= len;
+//         argv_fake[i] = user_sp;
+//         memcpy(user_sp, argv[i], len);
+//     }
+//     user_sp -= sizeof(char*); // NULL pointer
+//     user_sp = align_down(user_sp, 0x8); // or pi will fail
+//     *((char**)user_sp) = (char*)0;
+//     for (int i = argc - 1; i >= 0; --i) {
+//         user_sp -= sizeof(char*);
+//         *((char**)user_sp) = argv_fake[i];
+//     }
+//     // TODO: argv_fake_start: this is
+//     // temporary. cause now  I don't
+//     // have solution to conquer the
+//     // pushing stack issue when
+//     // starting of function call.
+//     argv_fake_start = (char**)user_sp;
+//     user_sp -= sizeof(char**); // char** argv
+//     *((char**)user_sp) = user_sp + sizeof(char**);
+//     user_sp -= sizeof(int); // argc
+//     *((int*)user_sp) = argc;
+//     kfree((char*)argv_fake);
+//     current->usp = align_down(user_sp, 0x10);
+
+//     cur_trap_frame = get_trap_frame(current);
+//     cur_trap_frame->regs[0] = (unsigned long)argc;
+//     cur_trap_frame->regs[1] = (unsigned long)argv_fake_start;
+//     cur_trap_frame->sp_el0 = (unsigned long)current->usp;
+//     cur_trap_frame->elr_el1 = func_addr;
+//     cur_trap_frame->spsr_el1 = 0x0; // enable_irq
+
+//     // set_user_program((char*)func_addr, current->usp, argc,
+//     //     argv_fake_start, current->kernel_stack_page + 0x1000);
+//     // never come back again.
+//     return argc;  // Geniusly
+// }
+
+
 int shell()
 {
     char cmd_buf[CMD_SIZE];
@@ -617,18 +711,23 @@ int kernel_main(char *sp)
     timerPool_init();
     enable_irq();
     core_timer_enable();
-    // put32(ENABLE_IRQS_1, 1 << 29); // Enable AUX interrupt
+    put32(ENABLE_IRQS_1, 1 << 29); // Enable AUX interrupt
+    init_wait_pool();
+    init_sleepQueue();
+    init_uartQueue();
+
     wait_for_interrupt();
     uart_send_string("Welcome to RPI3-OS\r\n");
 
     init_ts_pool();
     current = new_ts();
     current->ctx.sp = (unsigned long)kmalloc(4096);
-    thread_create((unsigned long)shell, 0);
-    thread_create((unsigned long)test_thread_1, "CCC\r\n");
-    // thread_create((unsigned long)test_thread_1, "DDD\r\n");
     thread_create((unsigned long)idle, 0);
+    // thread_create((unsigned long)shell, 0);
+    // thread_create((unsigned long)test_thread_1, "CCC\r\n");
+    // thread_create((unsigned long)test_thread_2, "DDD\r\n");
     thread_create((unsigned long)user_thread, 0);
+    // thread_create((unsigned long)user_thread_2, 0);
 
     schedule();
 

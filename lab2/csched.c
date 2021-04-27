@@ -2,11 +2,165 @@
 #include "include/entry.h"
 #include "include/csched.h"
 #include "include/mini_uart.h"
+#include "include/cirq.h"
 #include "utils.h"
 
 struct task task_pool[MAX_TASK_NR];
 struct task *readyQueue;
 struct task *current = 0;
+
+
+struct wait_h wait_h_pool[MAX_WAIT_NR];
+struct wait_args wait_args_pool[MAX_WAIT_ARGS_NR];
+
+
+void set_ksp(char* sp_el1)
+{
+    current->ksp = sp_el1;
+}
+
+char *get_ksp()
+{
+    return current->ksp;
+}
+
+void sigtramp()
+{
+    uart_send_string("From sigtramp\r\n");
+    sigreturn(0);
+}
+
+void chk_sigpend()
+{
+    unsigned long signal_pending, user_handler;
+    struct sig_struct *cur_sigs;
+    char *sp;
+    // uart_send_string("From chk_sigpend\r\n");
+
+    cur_sigs = &(current->sig);
+
+    signal_pending = cur_sigs->sigpend;
+    // For easy, handle only one kind signal.
+    if (signal_pending & SIG_INT_MASK) {
+        if ((user_handler = cur_sigs->user_handler[SIG_INT_NUM])) {
+            cur_sigs->sigaltstack = kmalloc(0x1000);
+            sp = cur_sigs->sigaltstack + 0x1000;
+            run_sighand(user_handler, sp, (unsigned long)sigtramp);
+        } else { // default handler
+            uart_send_string("From chk_sigpend: SIGINT default handling.\r\n");
+            sys_exit();
+        }
+    }
+    else if (signal_pending & SIG_KILL_MASK) {
+        if ((user_handler = cur_sigs->user_handler[SIG_KILL_NUM])) {
+            cur_sigs->sigaltstack = kmalloc(0x1000);
+            sp = cur_sigs->sigaltstack + 0x1000;
+            run_sighand(user_handler, sp, (unsigned long)sigtramp);
+        } else { // default handler
+            uart_send_string("From chk_sigpend: SIGKILL default handling.\r\n");
+            sys_exit();
+        }
+    }
+    // If user defined handler matches, then it won't come to here.
+    return;
+}
+
+void init_wait_pool()
+{
+    for (int i = 0; i < MAX_WAIT_NR; ++i)
+        wait_h_pool[i].free = 1;
+    for (int i = 0; i < MAX_WAIT_ARGS_NR; ++i)
+        wait_args_pool[i].free = 1;
+}
+
+struct wait_h *new_wait()
+{
+    for (int i = 0; i < MAX_WAIT_NR; ++i) {
+        if (wait_h_pool[i].free) {
+            wait_h_pool[i].free = 0;
+            wait_h_pool[i].head = 0;
+            return &wait_h_pool[i];
+        }
+    }
+    return 0; // NULL
+}
+
+struct wait_args *new_wait_args()
+{
+    for (int i = 0; i < MAX_WAIT_NR; ++i) {
+        if (wait_args_pool[i].free) {
+            wait_args_pool[i].free = 0;
+            return &wait_args_pool[i];
+        }
+    }
+    return 0; // NULL
+}
+
+struct wait_h *sleepQueue = 0;
+
+void init_sleepQueue()
+{
+    sleepQueue = new_wait();
+}
+
+
+int add_to_waitQueue(struct task *new, struct wait_h *waitQueue)
+{ // Add new to waitQueue's tail.
+    new->status = TASK_BLOCK;
+    if (!waitQueue->head) {
+        waitQueue->head = new;
+        new->next = new;
+        new->prev = new;
+        return 0;
+    }
+    new->next = waitQueue->head;
+    new->prev = waitQueue->head->prev;
+    waitQueue->head->prev->next = new;
+    waitQueue->head->prev = new;
+
+    return 0;
+}
+
+int rm_from_queue(void* args)
+{
+    struct wait_args *wa = (struct wait_args*)args;
+    struct task *old = wa->old;
+    struct wait_h *waitQueue = wa->waitQueue;
+
+    if (old->next == old) { // old is the only one
+        waitQueue->head = 0; // NULL
+        old->next = 0;
+        old->prev = 0;
+        add_to_ready(old);
+        wa->free = 1; // release struct wait_args
+        return;
+    }
+    old->prev->next = old->next;
+    old->next->prev = old->prev;
+    if (old == waitQueue->head)
+        waitQueue->head = old->next;
+    old->next = 0;
+    old->prev = 0;
+    add_to_ready(old);
+    wa->free = 1; // release struct wait_args
+    return 0;
+}
+
+int sleep(int seconds)
+{
+    struct wait_args *wa;
+
+    wa = new_wait_args();
+    wa->old = current;
+    wa->waitQueue = sleepQueue;
+
+    rm_from_ready(current);
+    add_to_waitQueue(current, sleepQueue);
+    tqe_add(seconds * TICKS_FOR_ITR, rm_from_queue, (void*)wa);
+    schedule();
+
+    return 0;
+}
 
 void init_ts_pool()
 {
@@ -44,12 +198,15 @@ int add_to_ready(struct task *new)
     return 0;
 }
 
-int rm_from_queue(struct task *old)
+int rm_from_ready(struct task *old)
 {
-    if (old->next == old)
+    if (old->next == old) {
         return -1; // readyQueue can't be empty.
+    }
     old->prev->next = old->next;
     old->next->prev = old->prev;
+    old->next = 0;
+    old->prev = 0;
     return 0;
 }
 
@@ -73,7 +230,10 @@ struct task *thread_create(unsigned long func_addr, unsigned long args)
     new->priority = 3;
     new->counter = new->priority;
     new->preemptable = 0;
-
+    new->sig.sigpend = 0;
+    for (int i = 0; i < MAX_SIG_NR; ++i)
+        new->sig.user_handler[i] = 0;
+    
     add_to_ready(new);
     return new;
 }
@@ -107,7 +267,7 @@ int schedule()
 
 int sys_exit()
 {
-    if (rm_from_queue(current) == -1)
+    if (rm_from_ready(current) == -1)
         return -1;
     current->status = TASK_ZOMBIE;
     // Release all resources, except stack and struct task.

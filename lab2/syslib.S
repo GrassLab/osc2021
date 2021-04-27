@@ -35,3 +35,27 @@ uart_write:
   mov x8, SYS_UART_WRITE
   svc 0
   ret
+
+.global sigreturn
+sigreturn:
+  mov x8, SYS_SIGRETURN
+  svc 0
+  ret
+
+.global kill
+kill:
+  mov x8, SYS_KILL
+  svc 0
+  ret
+
+.global signal
+signal:
+  mov x8, SYS_SIGNAL
+  svc 0
+  ret
+
+.global useless
+useless:
+  mov x8, SYS_USELESS
+  svc 0
+  ret

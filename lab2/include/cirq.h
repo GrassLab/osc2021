@@ -39,7 +39,7 @@ struct tqe {
     struct task *proc; // pointer to requesting process
     int tick; // expiration time count
     void *(*action)(void*);    // action function = twakeup
-    char args[10]; // lab4demo
+    void *args;
 };
 
 int timerPool_init();
@@ -62,3 +62,10 @@ int irq_btm_q_insert(int priority, void *(*btm_handler)(void*));
 void do_uart_handler();
 void invalid_handler();
 int chk_sched();
+
+void init_wait_pool();
+struct wait_h *new_wait();
+struct wait_args *new_wait_args();
+void init_sleepQueue();
+int add_to_waitQueue(struct task *new, struct wait_h *waitQueue);
+int rm_from_queue(void* args);

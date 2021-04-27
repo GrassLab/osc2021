@@ -99,7 +99,6 @@ el0_sync:
     mov    x26, x0
     mov    x27, x1                 // set_trap_frame will polute x1 too
     mov    x0,  sp                 // borrow x0 as arg of set_trap_frame
-    //bl imhere
     bl     set_trap_frame
     mov    x0,  x26                    // restore x0 as syscall arg
     mov    x1,  x27
@@ -112,8 +111,11 @@ el0_sync:
 .globl irq_entry
 irq_entry:
     save_all
+    mov x0, sp
+    bl  set_ksp
     bl  irq_handler
     bl  chk_sched
+    bl  chk_sigpend
     load_all
     eret
 
@@ -132,5 +134,15 @@ ret_from_fork:
 ret_to_user:
     load_all
     eret
+
+
+// existed for user defined signal handler
+.globl back_to_entry
+back_to_entry:
+    bl get_ksp
+    mov sp, x0
+    load_all
+    eret
+
 
 //[0] https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson04/src/entry.S#L146

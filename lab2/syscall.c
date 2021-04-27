@@ -7,6 +7,7 @@
 #include "include/mm.h"
 
 extern struct task *current;
+extern struct task task_pool[];
 
 
 struct trap_frame* get_trap_frame(struct task *tsk)
@@ -36,6 +37,56 @@ int sys_uart_read(char buf[], int size)
     }
 
     return cnt;
+}
+
+struct wait_h *uartQueue = 0;
+
+void init_uartQueue()
+{
+    uartQueue = new_wait();
+}
+
+#define UART_BUF_SIZE 3
+extern char uart_recv_buf[];
+extern int uart_recv_buf_in;
+extern int uart_recv_buf_out;
+
+int uart_read_block(char buf[], int size)
+{
+    int tmp, left;
+
+    left = size;
+    while (left > 0){
+        while ((tmp = uart_read_nonblock(buf+size-left, left)) == EAGAIN) {
+            rm_from_ready(current);
+            add_to_waitQueue(current, uartQueue);
+            schedule();
+        }
+        left -= tmp;
+    }
+    return size;
+}
+
+int uart_read_nonblock(char buf[], int size)
+{
+    int read_cnt;
+    char ch;
+    char *buf_ptr;
+
+    if (uart_recv_buf_in == uart_recv_buf_out)
+        return EAGAIN;
+
+    read_cnt = 0;
+    buf_ptr = buf;
+    while (uart_recv_buf_in != uart_recv_buf_out) {
+        ch = uart_recv_buf[uart_recv_buf_out];
+        uart_recv_buf_out = (uart_recv_buf_out + 1) % UART_BUF_SIZE;
+        *buf_ptr++ = ch;
+        read_cnt++;
+        if (read_cnt >= size)
+            break;
+    }
+    return read_cnt;
 }
 
 int sys_uart_write(const char buf[], int size)
@@ -76,100 +127,52 @@ int sys_fork(void)
     new->counter = new->priority;
     new->preemptable = 0;
     child_tf->regs[0] = 0;
-
+    new->sig.sigpend = 0;
+    
     add_to_ready(new);
     return new->pid;
 }
 
-// int sys_exec(unsigned long func_addr, char *const argv[])
-// int sys_exec(char *filename, char *const argv[])
-// {
-//     unsigned long func_addr;
-//     struct cpio_newc_header* ent;
-//     int filesize, namesize;
-//     char *name_start, *data_start;
 
-//     ent = (struct cpio_newc_header*)INITRAMFS_BASE;
-//     while (1)
-//     {
-//         namesize = hex_string_to_int(ent->c_namesize, 8);
-//         filesize = hex_string_to_int(ent->c_filesize, 8);
-//         name_start = ((char *)ent) + sizeof(struct cpio_newc_header);
-//         data_start = align_upper(name_start + namesize, 4);
-//         if (!strcmp(filename, name_start)) {
-//             func_addr = (unsigned long)data_start;
-//             break;
-//             if (!filesize)
-//                 return 0;
-//             // load file to user_stack_page.
-//             char *code_start = current->user_stack_page;
-//             for (int i = 0; i < filesize; ++i)
-//                 code_start[i] = data_start[i];
-//             run_user_program(code_start, current->usp);
-//             // never come back again.
-//             uart_send_string("Should never print out.\r\n");
-//             return 0;
-//         }
-//         ent = (struct cpio_newc_header*)align_upper(data_start + filesize, 4);
 
-//         if (!strcmp(name_start, "TRAILER!!!"))
-//             break;
-//     }
-//     // uart_send_string("do_exec: ");
-//     // uart_send_string(filename);
-//     // uart_send_string(": No such file or directory\r\n");
-//     // return 1;
+int sys_sigreturn(unsigned long __unused)
+{
+    uart_send_string("From sys_sigreturn\r\n");
+    current->sig.sigpend = 0;
+    kfree(current->sig.sigaltstack);
+    back_to_entry();
+    return 0 ; // Never return
+}
 
-//     int argc, len;
-//     char *user_sp;
-//     char **argv_fake, **argv_fake_start;
-//     struct trap_frame *cur_trap_frame;
-// delay(10000000);
-//     /* Get argc, not include null terminate */
-//     argc = 0;
-//     while (argv[argc])
-//         argc++;
-//     // argv_fake = kmalloc(argc*sizeof(char*));
-//     argv_fake = (char**)kmalloc(0x1000);
-//     user_sp = current->user_stack_page + 0x1000;
-//     for (int i = argc - 1; i >= 0; --i) {
-//         len = strlen(argv[i]) + 1; // including '\0'
-//         user_sp -= len;
-//         argv_fake[i] = user_sp;
-//         memcpy(user_sp, argv[i], len);
-//     }
-//     user_sp -= sizeof(char*); // NULL pointer
-//     user_sp = align_down(user_sp, 0x8); // or pi will fail
-//     *((char**)user_sp) = (char*)0;
-//     for (int i = argc - 1; i >= 0; --i) {
-//         user_sp -= sizeof(char*);
-//         *((char**)user_sp) = argv_fake[i];
-//     }
-//     // TODO: argv_fake_start: this is
-//     // temporary. cause now  I don't
-//     // have solution to conquer the
-//     // pushing stack issue when
-//     // starting of function call.
-//     argv_fake_start = (char**)user_sp;
-//     user_sp -= sizeof(char**); // char** argv
-//     *((char**)user_sp) = user_sp + sizeof(char**);
-//     user_sp -= sizeof(int); // argc
-//     *((int*)user_sp) = argc;
-//     kfree((char*)argv_fake);
-//     current->usp = align_down(user_sp, 0x10);
+int sys_kill(int pid, int signal)
+{
+    struct task *target;
 
-//     cur_trap_frame = get_trap_frame(current);
-//     cur_trap_frame->regs[0] = (unsigned long)argc;
-//     cur_trap_frame->regs[1] = (unsigned long)argv_fake_start;
-//     cur_trap_frame->sp_el0 = (unsigned long)current->usp;
-//     cur_trap_frame->elr_el1 = func_addr;
-//     cur_trap_frame->spsr_el1 = 0x0; // enable_irq
+    target = &task_pool[pid];
+    if (target->free)
+        return -1;
+    target->sig.sigpend |= (1 << signal);
+    return 0;
+}
 
-//     // set_user_program((char*)func_addr, current->usp, argc,
-//     //     argv_fake_start, current->kernel_stack_page + 0x1000);
-//     // never come back again.
-//     return argc;  // Geniusly
-// }
+int sys_signal(int signal, unsigned long handler)
+{
+    current->sig.user_handler[signal] = handler;
+    return 0;
+}
+
+int sys_useless()
+{
+    enable_irq();
+    int cnt = 0;
+    while (cnt < 10) {
+        delay(10000000);
+        uart_send_int(cnt++);
+        uart_send_string("\r\n");
+    }
+    disable_irq();
+    return 0;
+}
 
 // DDI0487C_a_armv8_arm.pdf p.2438
 unsigned long get_syscall_type()
@@ -199,10 +202,23 @@ unsigned long syscall_handler(unsigned long x0, unsigned long x1,
             ret = sys_exit();
             break;
         case SYS_UART_READ:
-            ret = sys_uart_read((char*)x0, (int)x1);
+            // ret = sys_uart_read((char*)x0, (int)x1);
+            ret = uart_read_block((char*)x0, (int)x1);
             break;
         case SYS_UART_WRITE:
             ret = sys_uart_write((char*)x0, (int)x1);
+            break;
+        case SYS_SIGRETURN:
+            ret = sys_sigreturn(0);
+            break;
+        case SYS_KILL:
+            ret = sys_kill((int)x0, (int)x1);
+            break;
+        case SYS_SIGNAL:
+            ret = sys_signal((int)x0, x1);
+            break;
+        case SYS_USELESS:
+            ret = sys_useless();
             break;
         default:
             uart_send_string("Error: Unknown syscall type.");
