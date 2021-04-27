@@ -1,4 +1,4 @@
-
+#include "printf.h"
 int getpid(){
 	long ret;
 	asm volatile("\
@@ -48,7 +48,6 @@ int exec(char* name,char** argv){
 
 void exit(){
 	asm volatile("svc 5\n"::);
-	while(1){}
 }
 
 int fork(){
@@ -58,4 +57,8 @@ int fork(){
 		mov %0, x0\n\
 	":"=r"(ret):);
 	return ret;
+}
+void delay(int cnt){
+	while(cnt--){
+	}
 }

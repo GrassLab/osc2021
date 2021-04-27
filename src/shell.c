@@ -22,6 +22,7 @@ void shell(){
             cmd_flag = 0;
             uart_puts("$ ");
         }
+        schedule();
     }
     // shell_welcome();
     // while(uart_get() == '\0');
@@ -37,6 +38,7 @@ void shell(){
     //         uart_puts("$ ");
     //         buf_ptr = input_buffer;
     //         __memset(buf_ptr, '\0', INPUT_SIZE);
+    //         schedule();
     //     }
     //     else if(c == '\b'){
     //         if(buf_ptr > input_buffer){

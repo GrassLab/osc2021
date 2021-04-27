@@ -13,7 +13,7 @@ void main(void){
     buddy_init();
     dynamic_allocator_init();
     init_thread();
-    printf("hahaha %d\n", 123);
+    //printf("hahaha %d\n", 123);
     // core_timer_enable();
     // while(uart_get() == '\0');
     shell();    

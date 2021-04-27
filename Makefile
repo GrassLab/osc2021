@@ -1,5 +1,5 @@
 CC = aarch64-linux-gnu-gcc
-CFLAG = -g -fPIC -Iinclude -fno-stack-protector -nostdlib -nostartfiles -ffunction-sections -fno-builtin
+CFLAG = -fPIC -Iinclude -fno-stack-protector -nostdlib -nostartfiles -ffunction-sections -fno-builtin
 
 SRC_DIR = src/
 BUILD_DIR = build/
@@ -45,11 +45,11 @@ check:
 	aarch64-linux-gnu-readelf -s kernel8.elf
 
 user_program:
-	cd ./user_code && make
-	$(CC) $(CFLAG) -c user_program.S -o user_program.elf
-	aarch64-linux-gnu-objcopy -O binary user_program.elf user_program.img
 	-rm initramfs.cpio
-	cp ./user_program.img ./user_code/rootfs/
+	cd ./user_code/prog1 && make
+	cd ./user_code/prog2 && make
+	cp ./user_code/prog1/argv_test ./user_code/rootfs/
+	cp ./user_code/prog2/fork_test ./user_code/rootfs/
 	cd ./user_code/rootfs/ && find . | cpio -o -H newc > ../../initramfs.cpio
 	
 	

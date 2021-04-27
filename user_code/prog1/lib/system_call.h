@@ -5,3 +5,4 @@ unsigned int uart_printf(char *fmt, ...);
 int exec(char *name, char **argv);
 void exit();
 int fork();
+void delay(int);

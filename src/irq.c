@@ -4,7 +4,7 @@
 void set_x0(unsigned long val){
 	unsigned long* task;
 	asm volatile("mrs %0, tpidr_el1	\n":"=r"(task):);
-	task[13] = val; //user reg[0]
+	task[16] = val; //user reg[0]
 }
 
 void handle_sync_el1(unsigned long esr_el1, unsigned long elr_el1){
@@ -55,12 +55,18 @@ void sync_el0_handler(){
             exit();
             return;
         }
+        else if(svc == 6){
+            int pid = fork();
+            set_x0(pid);
+            return;
+        }
         else{
             uart_puts("hh\r\n");
         }
 	}else{
-		printf("???? esr_el1...\n");
-		while(1){}
+        // uart_printhex(esr);
+		// printf("???? esr_el1...\n");
+		// while(1){}
 	}
 }
 void handle_el1_irq(){
