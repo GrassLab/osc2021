@@ -181,7 +181,7 @@ el0_svc:
     blr    x16                       // call sys_* routine
     b      ret_from_syscall
 ni_sys: // non-existent syscall
-    handle_invalid_entry 0, SYSCALL_ERROR // TODO: Implement for EL to EL1
+    handle_invalid_entry 0, SYSCALL_ERROR 
 ret_from_syscall:
     bl    disable_irq
     str   x0, [sp, #S_X0]             // save returned x0
@@ -197,7 +197,7 @@ ret_from_fork:
 	bl	schedule_tail // enabled preemption
     cbz x19, ret_to_user            // not a kernel thread
 	mov	x0, x20
-	blr	x19 		//should never return
+	blr	x19 		
 ret_to_user:
     bl disable_irq
     kernel_exit 0

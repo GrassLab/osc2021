@@ -5,6 +5,7 @@
 #include "sched.h"
 #include "uart.h"
 #include "fork.h"
+#include "exception.h"
 
 void sys_write(char * buf) 
 {
@@ -64,6 +65,7 @@ int sys_exec(const char* name, char* const argv[])
     
     void *target_addr = cpio_move_file((void *) INITRAMFS_ADDR, "kernel8.img");
     printf("[sys_exec] target_addr = 0x%x\n", target_addr);
+    
     // count argv until terminated by a null pointer
     int argc_count = 0;
     while (argv[argc_count] != 0) {
@@ -94,7 +96,6 @@ int sys_exec(const char* name, char* const argv[])
     regs->regs[1] = (unsigned long)regs->sp;
 
     preempt_enable();
-
     return argc_count;
 }
 

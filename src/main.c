@@ -72,7 +72,7 @@ int exec_argv_test(int argc, char **argv) {
 
 void user_process(){
     /* Test syscall write */
-	// call_sys_write("[user_process]User process started\n");
+    // call_sys_write("[user_process]User process started\n");
     
     // /* Test syscall getPID */
     // int current_pid = call_sys_gitPID();
@@ -97,21 +97,21 @@ void user_process(){
     // printf("[malloc] Allocated starting address of page = 0x%x\n", malloc_return);
 
     /* Test syscall exec with argument passing */
-    char* argv[] = {"argv_test", "-o", "arg2", 0};
+    char* argv[] = {"argv_test", 0};
     call_sys_exec(exec_argv_test, argv);
-    
+
     /* syscall exit */
     printf("[exit] Task%d exit\n", call_sys_gitPID());
-	call_sys_exit();
+    call_sys_exit();
 }
 
 
 void kernel_process(){
-	printf("[kernel_process]Kernel process started. EL %d\r\n", get_el());
-	int err = move_to_user_mode((unsigned long)&user_process);
-	if (err < 0){
-		printf("Error while moving process to user mode\n\r");
-	} 
+    printf("[kernel_process]Kernel process started. EL %d\r\n", get_el());
+    int err = move_to_user_mode((unsigned long)&user_process);
+    if (err < 0){
+        printf("Error while moving process to user mode\n\r");
+    } 
 }
 
 int main()
@@ -135,30 +135,30 @@ int main()
     enable_irq();
 
     /* Test cases */
-	// Requirement 1 - Implement the thread mechanism. 
+    // Requirement 1 - Implement the thread mechanism. 
     // for(int i = 0; i < 2; ++i) { // N should
     //     int res = copy_process(PF_KTHREAD, (unsigned long)&foo, 0, 0);
-	// 	if (res < 0) {
-	// 		printf("error while starting kernel process");
-	// 		return 0;
-	// 	}
+    //     if (res < 0) {
+    //      printf("error while starting kernel process");
+    //      return 0;
+    //    }
     // }
 
     // cpio_move_file((void *)INITRAMFS_ADDR, "kernel8.img");
 
     // Requirement 2 
     int res = copy_process(PF_KTHREAD, (unsigned long)&kernel_process, 0, 0);
-	if (res < 0) {
-		printf("error while starting kernel process");
-		return 0;
-	}
+    if (res < 0) {
+        printf("error while starting kernel process");
+        return 0;
+    }
     
 
-	while (1) {
-		printf("In kernel main()\n");
-		dumpTasksState();
+    while (1) {
+        printf("In kernel main()\n");
+        dumpTasksState();
         kill_zombies(); // reclaim threads marked as DEAD
-		schedule();
+        schedule();
         delay(10000000);
     }
 
@@ -177,6 +177,6 @@ void process(char *array)
             uart_send(array[i]);
             delay(1000000000);
         }
-		schedule();
+        schedule();
     }
 }

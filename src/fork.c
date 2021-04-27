@@ -40,18 +40,18 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
     
     p->flags = clone_flags;
     p->priority = current->priority;
-	p->state = TASK_RUNNING;
-	p->counter = p->priority;
+    p->state = TASK_RUNNING;
+    p->counter = p->priority;
     // disable preemption until schedule_tail, 
     // meaning that after the task is executed it should not be rescheduled
     // until it completes some initialization work.
     p->preempt_count = 1; 
     
-	p->cpu_context.pc = (unsigned long)ret_from_fork;
-	p->cpu_context.sp = (unsigned long)childregs;
+    p->cpu_context.pc = (unsigned long)ret_from_fork;
+    p->cpu_context.sp = (unsigned long)childregs;
     
     int pid = nr_tasks++;
-	task[pid] = p;	
+    task[pid] = p;	
     task[pid]->pid = pid;
 
     preempt_enable();
