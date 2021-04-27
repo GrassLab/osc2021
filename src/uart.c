@@ -227,5 +227,5 @@ void uart_puts(char *s)
 // This function is required by printf function
 void putc ( void* p, char c)
 {
-	uart_send(c);
+    uart_send(c);
 }

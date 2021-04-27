@@ -72,7 +72,7 @@ void command_reboot ()
     *PM_WDOG = PM_PASSWORD | 0x20;
     *PM_RSTC = PM_PASSWORD | 100;
     
-	while(1);
+    while(1);
 }
 
 void command_cpio_ls(void *initramfs_addr) {

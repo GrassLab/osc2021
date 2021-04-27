@@ -15,10 +15,10 @@
 #define PSR_MODE_EL3h	0x0000000d
 
 struct pt_regs {
-	unsigned long regs[31];
-	unsigned long sp;
-	unsigned long pc;
-	unsigned long pstate;
+    unsigned long regs[31];
+    unsigned long sp;
+    unsigned long pc;
+    unsigned long pstate;
 };
 
 int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg, unsigned long stack);

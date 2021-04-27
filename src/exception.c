@@ -8,28 +8,28 @@
 extern int isTimerMultiplexingEventIRQ;
 
 const char *entry_error_messages[] = {
-	"SYNC_INVALID_EL1t",
-	"IRQ_INVALID_EL1t",		
-	"FIQ_INVALID_EL1t",		
-	"ERROR_INVALID_EL1T",		
+    "SYNC_INVALID_EL1t",
+    "IRQ_INVALID_EL1t",		
+    "FIQ_INVALID_EL1t",		
+    "ERROR_INVALID_EL1T",		
 
-	"SYNC_INVALID_EL1h",		
-	"IRQ_INVALID_EL1h",		
-	"FIQ_INVALID_EL1h",		
-	"ERROR_INVALID_EL1h",		
+    "SYNC_INVALID_EL1h",		
+    "IRQ_INVALID_EL1h",		
+    "FIQ_INVALID_EL1h",		
+    "ERROR_INVALID_EL1h",		
 
-	"SYNC_INVALID_EL0_64",		
-	"IRQ_INVALID_EL0_64",		
-	"FIQ_INVALID_EL0_64",		
-	"ERROR_INVALID_EL0_64",	
+    "SYNC_INVALID_EL0_64",		
+    "IRQ_INVALID_EL0_64",		
+    "FIQ_INVALID_EL0_64",		
+    "ERROR_INVALID_EL0_64",	
 
-	"SYNC_INVALID_EL0_32",		
-	"IRQ_INVALID_EL0_32",		
-	"FIQ_INVALID_EL0_32",		
-	"ERROR_INVALID_EL0_32",
+    "SYNC_INVALID_EL0_32",		
+    "IRQ_INVALID_EL0_32",		
+    "FIQ_INVALID_EL0_32",		
+    "ERROR_INVALID_EL0_32",
 
     "SYNC_ERROR",
-	"SYSCALL_ERROR"
+    "SYSCALL_ERROR"
 };
 
 void show_invalid_entry_message(int type, unsigned long esr, unsigned long address)
@@ -44,15 +44,15 @@ void sync_exc_router(unsigned long spsr, unsigned long elr, unsigned long esr)
     printf("elr:  0x%x\n", elr);
     printf("esr:  0x%x\n\n", esr);
 
-	int EC = esr >> 26; // Read exception class in bits[31:26] (Excpetion source)
-	switch (EC) {
+    int EC = esr >> 26; // Read exception class in bits[31:26] (Excpetion source)
+    switch (EC) {
     case 0b010101: // SVC instruction execution in AArch64 state
         sync_svc_handler(spsr, elr, esr);
         break;
     default:
         printf("Unknow synchronous exception source!\n");
         break;
-	};
+    };
 }
 
 void sync_svc_handler(unsigned long spsr, unsigned long elr, unsigned long esr)
@@ -75,7 +75,7 @@ void sync_svc_handler(unsigned long spsr, unsigned long elr, unsigned long esr)
 
 void irq_exc_router()
 {
-	// Identify IRQ source (check p16 in QA7_rev3.4)
+    // Identify IRQ source (check p16 in QA7_rev3.4)
     unsigned int src = *CORE0_IRQ_SRC;
     unsigned int irq_basic1_pending  = *IRQ_PENDING_1;
     // printf("In IRQ exception router\n");
@@ -106,7 +106,7 @@ void irq_exc_router()
 
 void print_timestamp()
 {
-	unsigned long int cnt_freq, cnt_tpct;
+    unsigned long int cnt_freq, cnt_tpct;
     asm volatile(
         "mrs %0, cntfrq_el0 \n\t"
         "mrs %1, cntpct_el0 \n\t"
