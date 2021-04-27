@@ -21,8 +21,8 @@ SECTIONS
   }
   _end = .;
   
-  . = 0x20000000;
+  . = 0x8000000;
   cpio_buf = .;
 }
-
+__stack_top = 0xA0000;
 __bss_size = (__bss_end - __bss_start) >> 3;

@@ -56,13 +56,12 @@ _start:
 
 2:
 	bl from_el2_to_el1
+	
 	ldr x0, =exception_table
-	msr vbar_el1, x0 
+	msr VBAR_EL1, x0 
 
 
-    //let stack point  set to a proper address
-    ldr x1, =_start
-    mov sp, x1
+    
 
     //clean bss
 
@@ -75,7 +74,10 @@ _start:
     //loop until bss clean
     
     //go to main function
-4:  bl main
+4:  
+	ldr x1, =__stack_top
+    mov sp, x1
+	bl main
     b 1b
 
 from_el2_to_el1:
@@ -83,13 +85,14 @@ from_el2_to_el1:
 	mov x0, (1 << 31)
 	msr hcr_el2, x0
 	mov x0, 0x3c5
-	msr spsr_el2, lr 
+	msr spsr_el2, x0 
 	msr elr_el2, x30
 	//執行 floating point 相關的指令時 就會進到 Synchronous Exception要清 CPACR_EL1.FPEN
 	
 	mov x0, #(3 << 20)
 	msr cpacr_el1, x0
 	eret
+
 
 
 //exception table
@@ -102,8 +105,8 @@ exception_table:
 	b TODO
 	.align 7
 	b TODO
+	.align 7
 
-	.align 7
 	b TODO
 	.align 7
 	b TODO
@@ -111,8 +114,8 @@ exception_table:
 	b TODO
 	.align 7
 	b TODO
+	.align 7
 
-	.align 7
 	b syn
 	.align 7
 	b irq
@@ -120,8 +123,8 @@ exception_table:
 	b TODO
 	.align 7
 	b TODO
+	.align 7
 
-	.align 7
 	b TODO
 	.align 7
 	b TODO
@@ -129,6 +132,7 @@ exception_table:
 	b TODO
 	.align 7
 	b TODO
+	.align 7
 
 
 syn:

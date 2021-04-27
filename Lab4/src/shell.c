@@ -2,7 +2,7 @@
 #include "uart.h"
 #include "utli.h"
 #include "cpio.h"
-
+#include "time.h"
 extern char cpio_buf[];
 enum ANSI_ESC {
     Unknown,
@@ -138,6 +138,10 @@ void shell_controller(char* cmd) {
     }
     else if(!strcmp(cmd, "load")){
         load(cpio_buf);
+    }
+    else if(!strcmp(cmd, "timer")){
+        time();
+        
     }
     else if (!strcmp(cmd, "reboot")) {
         uart_printf("Rebooting...");
