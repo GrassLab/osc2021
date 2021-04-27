@@ -31,6 +31,7 @@ void shell_start ()
     // read input
     while(1)
     {
+        //input_char = uart_getc();
         input_char = read_transmit_asynchronous_procoessing(buffer, &buffer_counter);
         
         input_parse = parse ( input_char );

@@ -1,3 +1,9 @@
+
+/**
+ * The file name fork.c is a little bit confusing, maybe need to fix it
+ * Because this file is not actual fork process(No copy original process), see syscall fork()
+ * for real fork() 
+ */
 #include "mm.h"
 #include "sched.h"
 #include "fork.h"
@@ -24,8 +30,12 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
         p->cpu_context.x19 = fn;
         p->cpu_context.x20 = arg;
     } else {
-        // TODO:
-        //    Clone user process
+        // Sysclone and fork, initalize stage for clone and fork user process
+        struct pt_regs * cur_regs = task_pt_regs(current);
+        *childregs = *cur_regs;
+        childregs->regs[0] = 0; // for distinguish it as new child process
+        childregs->sp = stack + PAGE_SIZE;
+        p->stack = stack;
     }
     
     p->flags = clone_flags;
@@ -38,14 +48,31 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
     p->preempt_count = 1; 
     
 	p->cpu_context.pc = (unsigned long)ret_from_fork;
-	p->cpu_context.sp = (unsigned long)p + THREAD_SIZE;
-
+	p->cpu_context.sp = (unsigned long)childregs;
+    
     int pid = nr_tasks++;
 	task[pid] = p;	
     task[pid]->pid = pid;
 
     preempt_enable();
     return pid;
+}
+
+int move_to_user_mode(unsigned long pc) 
+{
+    struct pt_regs *regs = task_pt_regs(current);
+    memzero((unsigned long)regs, sizeof(* regs));
+    regs->pc = pc;
+    regs->pstate = PSR_MODE_EL0t;
+    unsigned long stack = (unsigned long) kmalloc(PAGE_SIZE);
+    if (!stack) { // NULL
+        printf("[copy_process] Allocate memory fail");
+        return -1;
+    }
+    
+    regs->sp = stack + PAGE_SIZE;
+    current->stack = stack;
+    return 0;
 }
 
 struct pt_regs *task_pt_regs(struct task_struct *tsk) {

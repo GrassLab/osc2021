@@ -26,12 +26,15 @@ const char *entry_error_messages[] = {
 	"SYNC_INVALID_EL0_32",		
 	"IRQ_INVALID_EL0_32",		
 	"FIQ_INVALID_EL0_32",		
-	"ERROR_INVALID_EL0_32"	
+	"ERROR_INVALID_EL0_32",
+
+    "SYNC_ERROR",
+	"SYSCALL_ERROR"
 };
 
 void show_invalid_entry_message(int type, unsigned long esr, unsigned long address)
 {
-    printf("%s, ESR: %x, address: %x\r\n", entry_error_messages[type], esr, address);
+    printf("%s, ESR: 0x%x, elr_el1: 0x%x\r\n", entry_error_messages[type], esr, address);
 }
 
 void sync_exc_router(unsigned long spsr, unsigned long elr, unsigned long esr)
@@ -81,7 +84,7 @@ void irq_exc_router()
 
     // irq_basic1_pending
     if (irq_basic1_pending & AUX_IRQ) {
-        //printf("irq_basic1_pending\n");
+        printf("irq_basic1_pending\n");
         uart_irq_handler();
     }
     // ARM Core Timer Interrupt
@@ -93,7 +96,7 @@ void irq_exc_router()
         else {
             printf("Core timer interrupt!\n");
             core_timer_handler();
-            print_timestamp();
+            //print_timestamp();
             
         }
     } else {

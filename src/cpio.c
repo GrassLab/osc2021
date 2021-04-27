@@ -145,5 +145,19 @@ void cpio_ls(void *archive) {
     }
 }
 
+void *cpio_move_file(void *archive, const char *name)
+{
+    unsigned long fileSize = 5920;
+    char *result = cpio_get_file(archive, name, &fileSize);
 
+    char *target_addr = (char *)0x10A0000;
+    printf("[cpio_move_file] result = 0x%x\n", result);
+    printf("fileSize = %d\n", fileSize);
 
+    // copy file to proper address 
+    for (int i = 0;i < fileSize;i++) {
+        *(target_addr + i) = *(result + i);
+    }
+
+    return target_addr;
+}
