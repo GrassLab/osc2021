@@ -5,7 +5,6 @@
 
 #include "thread.h"
 
-void sys_schedule();
 void do_schedule();
 
 int enqueue(struct Thread * t);

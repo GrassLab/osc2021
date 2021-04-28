@@ -20,5 +20,16 @@ void exception_handler(int svc_num)
         case 0:
             // schedule
             do_schedule();
+            break;
+        case 1:
+            // uart read
+            // do_uart_read();
+            break;
+        case 2:
+            // uart write
+            // do_uart_write();
+            break;
+        default:
+            break;
     }
 }

@@ -8,9 +8,8 @@
 #include "def.h"
 #include "dynamic_alloc.h"
 #include "io.h"
-
-
 #include "thread.h"
+#include "system_call.h"
 
 void exec_command(char *input)
 {
@@ -41,7 +40,12 @@ void exec_command(char *input)
         // ilde();
 
     } else if (strcmp(input, "thread") == 0) {
-
+        for(int i = 0; i < 10; ++i) { // N should > 2
+            create_thread(foo);
+        }
+        while ( 1 ) {
+            sys_schedule();
+        }
     } else {
         printf("Try another command\r\n");
     }
@@ -147,4 +151,14 @@ void demo2()
 
 
     mem_stat();
+}
+
+
+void foo() {
+    for(int i = 0; i < 10; ++i) {
+        struct Thread *current_thread = get_current_thread();
+        printf("Thread id: %d %d\n", current_thread->tid, i);
+        wait(100000000);
+        sys_schedule();
+    }
 }

@@ -9,5 +9,5 @@ void exec_command(char *input);
 void reboot(int tick);
 void demo1();
 void demo2();
-
+void foo();
 #endif

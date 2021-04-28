@@ -1,7 +1,7 @@
 #include "shell.h"
 #include "pf_alloc.h"
 #include "thread.h"
-#include "scheduler.h"
+#include "system_call.h"
 #include "kernel.h"
 #include "base_ops.h"
 
@@ -15,28 +15,14 @@ void idle()
     }
 }
 
-void foo(){
-    for(int i = 0; i < 10; ++i) {
-        struct Thread *current_thread = get_current_thread();
-        printf("Thread id: %d %d\n", current_thread->tid, i);
-        wait(100000000);
-        sys_schedule();
-    }
-}
-
-
 void kernel_main()
 {
     // initialization
     init_page_frame();
     init_thread_pool();
 
-    for(int i = 0; i < 10; ++i) { // N should > 2
-        create_thread(foo);
-    }
-
     // create shell and idle threads
-    // create_thread(shell);
+    create_thread(shell);
     create_thread(idle);
 
     // default pseudo thread to set first tpidr
