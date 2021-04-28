@@ -52,8 +52,7 @@ void command_controller(char *cmd) {
     else if (!strcmp("meminfo -u"      , cmd))     { command_meminfo(2); }
     else if (!strcmp("kmalloc"         , cmd))     { command_kmalloc(); }
     else if (!strcmp("kfree"           , cmd))     { command_kfree(); }
-    else if (!strcmp("load_program"    , cmd))     { command_load_user_program_to_addr(); }
-    else if (!strcmp("run_program"     , cmd))     { command_run_user_program(); }
+    else if (!strcmp("load_p"    , cmd))     { command_load_user_program_to_addr(); }
     else if (!strcmp("currentel"       , cmd))     { command_get_currentel(); }
     else if (!strcmp("test"            , cmd))     { command_test(); }
     else    { command_not_found(); }
@@ -74,8 +73,7 @@ void command_help() {
     uart_puts("  kmalloc\t:\tmalloc memory for kernel.\n");
     uart_puts("  kfree\t:\tfree memory for kernel.\n");
     uart_puts("  test\t\t:\ttesting kmalloc and kfree.\n");
-    uart_puts("  load_program\t:\tload user program to specific address.\n");
-    uart_puts("  run_program\t:\trun user program at specific address.\n");
+    uart_puts("  load_p\t:\tload user program to specific address.\n");
     uart_puts("  currentel\t:\tget current execption level.\n");
     uart_puts("========================================\n");
 }
@@ -354,7 +352,7 @@ void command_load_user_program_to_addr() {
             }
 
             uart_puts("[debug] user program load completed\n");
-
+            command_run_user_program();
             break;
         }
     }
@@ -368,12 +366,11 @@ void command_run_user_program() {
                  "msr spsr_el1, x0;"); 
 
     // set elr_el1 to user program's address
-    asm volatile("mov x0, 0x20800000;"
+    asm volatile("ldr x0, =0x20800000;"
                  "msr elr_el1, x0;"); 
 
     // set sp_el0 to user program's stack address
-    asm volatile("mov x0, 0x20800000;"
-                 "msr sp_el0, x0;"); 
+    asm volatile("msr sp_el0, x0;"); 
 
     asm volatile("eret"); 
 

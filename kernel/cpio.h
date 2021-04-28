@@ -1,7 +1,7 @@
 #ifndef _LCD_CPIO_H_
 #define _LCD_CPIO_H_
 
-#define CPIO_ARCHIVE_LOCATION 0x20000000
+#define CPIO_ARCHIVE_LOCATION 0x8000000
 
 /* Magic identifiers for the "cpio" file format. */
 #define CPIO_HEADER_MAGIC "070701"

@@ -20,6 +20,13 @@ void exception_entry() {
     uart_puts("[debug]    esr_el1: 0x");
     uart_puti(esr_el1, 16);
     uart_puts("\n");
+
+    /*
+    unsigned long currentel = get_current_exception_level();
+    uart_puts("[debug]    currentel: ");
+    uart_puti(currentel, 10);
+    uart_puts("\n");
+    */
 }
 
 unsigned long get_current_exception_level() {

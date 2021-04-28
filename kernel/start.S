@@ -1,5 +1,7 @@
 #include "exception.h"
 
+#define CORE0_TIMER_IRQ_CTRL 0x40000040
+
 .section ".text.boot"
 
 _start:
@@ -29,56 +31,64 @@ _start:
     cbnz w2, 3b
 
 4:  
+    mov x0, 1
+    msr cntp_ctl_el0, x0     // enable timer’s interrupt
+    mrs x0, cntfrq_el0
+    msr cntp_tval_el0, x0    // set expired timer’s
+    mov x0, 2
+    ldr x1, =CORE0_TIMER_IRQ_CTRL
+    str w0, [x1]             // unmask timer interrupt
+
+
     bl main
     b 1b
 
 from_el2_to_el1:
     mov x0, (1 << 31)    // EL1 uses aarch64
     msr hcr_el2, x0
-    mov x0, 0x3c5        // EL1h (SPSel = 1) with interruopt disabled
+    mov x0, 0x3c5        // EL1h (SPSel = 1) with interrupt disabled
     msr spsr_el2, x0
     msr elr_el2, lr      // restore program counter to link register
     eret                 // return to EL1
 
-
 // vector table
 .align 11                // vector table should be aligned to 0x800
 exception_vector_table:
-    b exception_handler  // branch to a handler function.
-    .align 7             // entry size is 0x80, .align will pad 0
-    b exception_handler
-    .align 7 // 0x100
-    b exception_handler
-    .align 7 // 0x180
-    b exception_handler
+    b exception_handler  // 0x000, Exception fron the current EL while using SP_EL0
+    .align 7             
+    b exception_handler  // 0x080
+    .align 7 
+    b exception_handler  // 0x100
+    .align 7 
+    b exception_handler  // 0x180
     .align 7 // 0x200
 
-    b exception_handler
-    .align 7 // 0x280
-    b exception_handler
-    .align 7 // 0x300
-    b exception_handler
-    .align 7 // 0x380
-    b exception_handler
-    .align 7 // 0x400
+    b exception_handler  // 0x200, Exception from the current EL while using SP_ELx
+    .align 7 
+    b exception_handler  // 0x280
+    .align 7 
+    b exception_handler  // 0x300
+    .align 7 
+    b exception_handler  // 0x380
+    .align 7
 
-    b exception_handler
-    .align 7 // 0x480
-    b exception_handler
-    .align 7 // 0x500
-    b exception_handler
-    .align 7 // 0x580
-    b exception_handler
-    .align 7 // 0x600
+    b exception_handler  // 0x400, Exception fron a lower EL and at least one lower EL is AArch64
+    .align 7 
+    b interrupt_handler  // 0x480
+    .align 7 
+    b exception_handler  // 0x500
+    .align 7 
+    b exception_handler  // 0x580
+    .align 7 
 
-    b exception_handler
-    .align 7 // 0x680
-    b exception_handler
-    .align 7 // 0x700
-    b exception_handler
-    .align 7 // 0x780
-    b exception_handler
-    .align 7 // 0x800
+    b exception_handler  // 0x600, Exception from a lower EL and all lower ELs are AArch32
+    .align 7 
+    b exception_handler  // 0x680
+    .align 7 
+    b exception_handler  // 0x700
+    .align 7
+    b exception_handler  // 0x780
+    .align 7 
 
 // save general registers to stack
 .macro save_all
@@ -125,5 +135,11 @@ exception_vector_table:
 exception_handler:
     save_all
     bl exception_entry
+    load_all
+    eret
+
+interrupt_handler:
+    save_all
+    bl timer_interrupt_entry
     load_all
     eret
