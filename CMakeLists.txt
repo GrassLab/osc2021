@@ -20,8 +20,11 @@ include_directories(lib/include)
 
 ## asm file
 set_property(SOURCE ${LIB_DIR}/src/base_ops.S PROPERTY LANGUAGE C)
+set_property(SOURCE ${LIB_DIR}/src/system_call.S PROPERTY LANGUAGE C)
 
 add_library(base_ops STATIC ${LIB_DIR}/src/base_ops.S)
+add_library(system_call STATIC ${LIB_DIR}/src/system_call.S)
+
 add_library(io STATIC ${LIB_DIR}/src/io.c)
 add_library(math STATIC ${LIB_DIR}/src/math.c)
 add_library(mini_uart STATIC ${LIB_DIR}/src/mini_uart.c)

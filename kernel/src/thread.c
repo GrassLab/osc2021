@@ -47,7 +47,7 @@ void create_thread(void(*thread_func)())
 
     // create and set stack initial value
     alloc_page((void **)&t->kernel_sp, THREAD_STACK_SIZE);
-    t->user_sp = (uint64_t)t->kernel_sp - int_pow(2, THREAD_STACK_SIZE - 1); // half for user sp
+    t->user_sp = t->kernel_sp - int_pow(2, THREAD_STACK_SIZE - 1); // half for user sp
     
 
     // preserved for register restoring
@@ -55,11 +55,9 @@ void create_thread(void(*thread_func)())
     struct context *ctx = (struct context *)t->kernel_sp;
     ctx->lr = (uint64_t)thread_func;
     ctx->fp = t->kernel_sp;
-
-
     
     // TODO: get pid from parent's pid
-
+    thread_pool_add(t);
     // enqueue into run queue
     enqueue(t);
 }

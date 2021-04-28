@@ -1,0 +1,18 @@
+.section ".text"
+
+.global sys_schedule
+sys_schedule:
+    svc 0
+
+.global sys_uart_read
+sys_uart_read:
+    svc 1
+
+.global sys_uart_write
+sys_uart_write:
+    svc 2
+
+.global sys_exec
+sys_exec:
+    // x0 is name, x1 is argv and will be saved into kernel stack
+    svc 3

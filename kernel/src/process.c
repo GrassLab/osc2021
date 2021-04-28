@@ -5,6 +5,8 @@
 
 #include "math.h"
 #include "io.h"
+#include "cpio.h"
+#include "scheduler.h"
 
 int distribute_pid = 1;
 
@@ -37,18 +39,27 @@ struct Thread * create_process(void *source_addr, int size)
 
     // create process' default thread
     struct Thread *t = malloc(sizeof(struct Thread));
-    printf("here");
 
     t->pid = get_new_pid(); // since this is a process
     t->tid = get_new_tid();
     t->state = RUNNING;
-
     t->code = start_addr;
 
     // // create thread stack
     alloc_page((void **)&t->kernel_sp, THREAD_STACK_SIZE);
     t->user_sp = (uint64_t)t->kernel_sp - int_pow(2, THREAD_STACK_SIZE - 1); // half for user sp
 
+    t->kernel_sp -= 256;
+    struct context *ctx = (struct context *)t->kernel_sp;
+    ctx->lr = (uint64_t)start_addr;
+    ctx->fp = t->kernel_sp;
+
     thread_pool_add(t);
+    enqueue(t);
     return t;
+}
+
+void do_exec(char *name, char *argv[])
+{
+    cpio_exec(name);
 }

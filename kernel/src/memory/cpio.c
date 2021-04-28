@@ -14,9 +14,7 @@ void cpio_exec(char *path)
         printf("could not find the file. \r\n");
     } else {
         int filesize = cpio_attr_value(targetAddr, C_FILESIZE);
-        struct Thread * t = create_process(cpio_content_addr(targetAddr), filesize);
-
-        exec_in_el0(t->code, (void *)t->user_sp);
+        create_process(cpio_content_addr(targetAddr), filesize);
     }
 }
 

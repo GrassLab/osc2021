@@ -32,7 +32,6 @@ void kernel_main()
     t.kernel_sp = KERNEL_STACK_TOP;
 
     set_current_thread(&t);
-
     // start scheduling
     sys_schedule();
 }

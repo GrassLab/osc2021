@@ -1,4 +1,9 @@
-int app()
+#include "io.h"
+#include "system_call.h"
+
+void main(int argc, char *argv[])
 {
-    return 0;
+    printf("arg\n");
+        
+    sys_schedule();
 }

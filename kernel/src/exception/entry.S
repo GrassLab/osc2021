@@ -6,6 +6,7 @@
     ldr     x1, [x0]
 .endm
 
+
 // save general registers to stack
 .macro save_reg
     // it's sp_el1
@@ -28,11 +29,15 @@
     stp x30, fp, [sp, 16 * 15]
     str lr, [sp, 16 * 16]
 
-
     // update kernel sp
     get_current_kernel_sp
     sub     x1, x1, 16 * 17
     str     x1, [x0]
+
+    // update user sp
+    mrs     x0, TPIDR_EL0
+    mrs     x1, SP_EL0
+    str     x1, [x0, 8]
 .endm
 
 // load general registers from stack
@@ -41,7 +46,6 @@
     get_current_kernel_sp
     add     x1, x1, 16 * 17
     str     x1, [x0]
-
 
     ldp x0, x1, [sp ,16 * 0]
     ldp x2, x3, [sp ,16 * 1]
@@ -113,3 +117,21 @@ irq_entry:
 
     load_reg
     eret
+
+
+.global get_syscall_args
+get_syscall_args:
+    get_current_kernel_sp
+    mov     x4, x1
+    ldp     x0, x1, [x4 ,16 * 0]
+    ldp     x2, x3, [x4 ,16 * 1]
+    ret
+
+
+// for exec sys call
+.global get_arg_and_do_exec
+get_arg_and_do_exec:
+    mov     x10, lr
+    bl      get_syscall_args
+    bl      do_exec
+    ret     x10

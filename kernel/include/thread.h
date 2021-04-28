@@ -1,7 +1,7 @@
 #ifndef _THREAT_H
 #define _THREAT_H
 
-#define THREAD_STACK_SIZE (11) // 2 ^ exp
+#define THREAD_STACK_SIZE (12) // 2 ^ exp
 
 #include "def.h"
 typedef enum {

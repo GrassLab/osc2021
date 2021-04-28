@@ -25,4 +25,5 @@ target_link_libraries(
     string
     math
     io
+    system_call
 )

@@ -35,20 +35,24 @@ void exec_command(char *input)
     } else if (strcmp(input, "demo2") == 0) {
         demo2();
     } else if (strcmp(input, "load") == 0) {
-        // load app
-        cpio_exec("app");
-        // ilde();
-
+        char * argv[2] = {"arg1", "arg2"};
+        sys_exec("app", argv);
+        // while ( 1 ) {
+            sys_schedule();
+        // }
     } else if (strcmp(input, "thread") == 0) {
         for(int i = 0; i < 10; ++i) { // N should > 2
             create_thread(foo);
         }
+        
         while ( 1 ) {
             sys_schedule();
         }
     } else {
         printf("Try another command\r\n");
     }
+
+    printf("hello\n");
 }
 
 
