@@ -1,6 +1,7 @@
 #include "../include/uart.h"
 #include "../include/cpio.h"
 #include "../include/string.h"
+#include "../include/mm.h"
 
 struct cpio_header_info {
     const char *filename;
@@ -26,6 +27,7 @@ void command(char buf[]){
     else if(!strcmp(buf, "reboot")) command_reboot();
     else if(!strcmp(buf, "cpio")) command_cpio();
     else if(!strcmp(buf, "cpio-ls")) command_cpiols();
+    else if(!strcmp(buf, "mm")) command_mm();
     else if(strlen(buf)>5) command_cpiofile(buf);
     else command_notfound();
 }
@@ -40,6 +42,7 @@ void command_help(){
     uart_puts("cpio\t:\tparse cpio archive.\n");
     uart_puts("cpio-ls\t:\tlist files.\n");
     uart_puts("cpio-<file>\t:\tget the content of files.\n");
+    uart_puts("mm\t:\tmemory management.\n");
     uart_puts("\n========================================\n");
 }
 
@@ -131,6 +134,58 @@ void command_cpiofile(char buf[]){
     uart_puts("File Content : ");
     uart_puts(content);
     uart_send('\r');
+
+}
+
+void command_mm(){
+
+    memory_init();
+    struct page *alloc_1 = page_alloc(0);
+    struct page *alloc_2 = page_alloc(1);
+    struct page *alloc_3 = page_alloc(0);
+    
+    page_free(alloc_2);
+    page_free(alloc_1);
+    page_free(alloc_3);
+
+    unsigned long *adr[32];
+    for(int i=0;i<32;i++){
+        unsigned long *addr = kmalloc(128);
+        adr[i] = addr;
+        uart_hex(addr);
+        uart_puts("\n");
+    }
+    
+    unsigned long *addr = kmalloc(128);
+    uart_hex(addr);
+    uart_puts("\n");
+
+    for(int i=0;i<32;i++){
+        kfree(adr[i]);
+    }
+    kfree(addr);
+    
+    // addr2 = kmalloc(64);
+    // uart_hex(addr2);
+    // uart_puts("\n");
+
+    // addr3 = kmalloc(63);
+    // uart_hex(addr3);
+    // uart_puts("\n");
+    
+    // addr4 = kmalloc(2049);
+    // uart_hex(addr4);
+    // uart_puts("\n");
+
+    // addr5 = kmalloc(2049);
+    // uart_hex(addr5);
+    // uart_puts("\n");
+
+    // kfree(addr1);
+    // kfree(addr2);
+    // kfree(addr3);
+    // kfree(addr4);
+    // kfree(addr5);
 
 }
 

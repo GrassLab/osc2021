@@ -1,5 +1,6 @@
 #include "../include/string.h"
 #include "../include/type.h"
+#include "../include/uart.h"
 
 int strcmp ( char * s1, char * s2 )
 {
@@ -41,18 +42,30 @@ int strlen ( char * s )
 void itoa (int x, char str[], int d) 
 { 
     int i = 0; 
-    while (x) { 
+    if(x == 0){
+        str[i]='0';
+        str[i+1]='\0';
+    }
+    else if(x < 0){
+        str[i]='-';
+        str[i+1]=x+'2';
+        str[i+2]='\0';
+    }
+    else{
+        while (x) { 
         str[i++] = (x % 10) + '0'; 
         x = x / 10; 
-    } 
-  
-    // If number of digits required is more, then 
-    // add 0s at the beginning 
-    while (i < d) 
-        str[i++] = '0'; 
+        } 
     
-    str[i] = '\0'; 
-    reverse(str); 
+        // If number of digits required is more, then 
+        // add 0s at the beginning 
+        while (i < d) 
+            str[i++] = '0'; 
+        
+        str[i] = '\0'; 
+        reverse(str);
+    }
+     
 } 
 
 void itohex_str ( uint64_t d, int size, char * s )
@@ -93,4 +106,44 @@ void reverse ( char * s )
         s[strlen(s) - i - 1] = s[0];
         s[0] = temp;
     }
+}
+
+/* output hex representation of pointer p, assuming 8-bit bytes */
+void write_ptr(void *p) {
+
+    int x = (int)p;
+    char buf[2 + sizeof(x) * 2];
+    int i;
+
+    buf[0] = '0';
+    buf[1] = 'x';
+    for (i = 0; i < sizeof(x) * 2; i++) {
+        buf[i + 2] = "0123456789abcdef"[(x >> ((sizeof(x) * 2 - 1 - i) * 4)) & 0xf];
+    }
+    uart_puts(buf);
+}
+
+int exp(int num){
+
+    int ord = 0;
+    while(num>1){
+        num/=2;
+        ord++;
+    }
+    return ord;
+}
+
+int pow(int base, int exponent) {
+    int result = 1;
+    for(int e = exponent; e > 0; e--) 
+        result = result * base;
+    
+    return result;
+}
+
+int ceil(double x) {
+    if(x == (int)x) 
+        return (int)x;
+    else 
+        return ((int)x) + 1;
 }
