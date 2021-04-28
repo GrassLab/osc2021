@@ -84,7 +84,7 @@ void irq_exc_router()
 
     // irq_basic1_pending
     if (irq_basic1_pending & AUX_IRQ) {
-        printf("irq_basic1_pending\n");
+        //printf("irq_basic1_pending\n");
         uart_irq_handler();
     }
     // ARM Core Timer Interrupt

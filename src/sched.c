@@ -105,6 +105,7 @@ void kill_zombies(void) {
 }
 
 void dumpTasksState() {
+    printf("=========Tasks state=========\n");
     for (int i = 0;i < nr_tasks;i++) {
         printf("Task %d: ", i);
 
