@@ -5,7 +5,7 @@ kernel = open('./kernel/kernel8.img', 'rb').read()
 
 print("Start sending img...")
 
-#device = '/dev/ttys001'
+#device = '/dev/ttys004'
 device = '/dev/cu.SLAB_USBtoUART'
 
 with open(device, "wb", buffering = 0) as tty:
