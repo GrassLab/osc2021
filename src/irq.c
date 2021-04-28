@@ -22,9 +22,11 @@ void sync_el0_handler(){
 		ldr %1,[sp,-16]\n\
 	":"=r"(x0),"=r"(x1):);
 
-    unsigned long esr,svc;
+    unsigned long esr,svc, sp_addr;
 	asm volatile("mrs %0, esr_el1\n":"=r"(esr):);
 	if(((esr>>26)&0x3f)==0x15){
+        // asm volatile("ldr %0, [sp]\n":"=r"(sp_addr):);
+        // printf("svc, sp: %x\n", sp_addr);
         svc = esr & 0x0ffff;
         if(svc == 0){
             printf("svc 0\n");

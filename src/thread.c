@@ -17,13 +17,10 @@ void init_thread(){
     //p_addr_generator.addr[1] = USER_PROGRAM_ADDR + 0x400000; 
     p_addr_generator.current = 0;
     thread_pflag = 0;
-    // thread_info *idle_t = Thread(shell);
-    // asm volatile("msr tpidr_el1, %0\n"::"r"((unsigned long)idle_t));
-    // schedule();
 }
 thread_info* Thread(void* func){
     thread_info* ptr = (thread_info*)malloc(THREAD_SIZE);
-    uart_printhex((unsigned long)ptr); uart_puts("\r\n");
+    // uart_printhex((unsigned long)ptr); uart_puts("\r\n");
     // void *sp_ptr = malloc(PAGE_SIZE);
     ptr->context[10] = (unsigned long)ptr + THREAD_SIZE;
     ptr->context[11] = (unsigned long)func;
@@ -34,32 +31,6 @@ thread_info* Thread(void* func){
     ptr->p_addr = ptr->p_size = ptr->child_pid = 0;
     add_to_run_queue(ptr);
     return ptr;
-}
-void threadSwitch(){
-	asm volatile("\
-_threadSwitch:\n\
-		stp x19, x20, [x0, 16 * 0]\n\
-		stp x21, x22, [x0, 16 * 1]\n\
-		stp x23, x24, [x0, 16 * 2]\n\
-		stp x25, x26, [x0, 16 * 3]\n\
-		stp x27, x28, [x0, 16 * 4]\n\
-		stp x29, x30, [x0, 16 * 5]\n\
-		mov x9, sp\n\
-		str x9, [x0, 16 * 6]\n\
-		\n\
-		ldp x19, x20, [x1, 16 * 0]\n\
-		ldp x21, x22, [x1, 16 * 1]\n\
-		ldp x23, x24, [x1, 16 * 2]\n\
-		ldp x25, x26, [x1, 16 * 3]\n\
-		ldp x27, x28, [x1, 16 * 4]\n\
-		ldp x29, x30, [x1, 16 * 5]\n\
-		ldr x9, [x1, 16 * 6]\n\
-		mov sp, x9\n\
-		\n\
-		msr tpidr_el1, x1\n\
-		\n\
-		ret\n\
-	"::);
 }
 
 void schedule(){
@@ -82,6 +53,9 @@ void schedule(){
             run_queue.head = run_queue.head->next;
             run_queue.end->next = nullptr;
         } while(run_queue.head->status);
+        // unsigned long sp_addr;
+        // asm volatile("ldr %0, [sp]\n":"=r"(sp_addr):);
+        // printf("[schedule]svc, sp: %x\n", sp_addr);
         switch_to(get_current(), (unsigned long)(run_queue.head->context));
         return;
     }
@@ -217,14 +191,15 @@ void copy_program(thread_info* parent, thread_info* child){
     child->child_pid = 0;
     child->tid = org_tid;
     child->p_addr = __generate_user_addr();
+    child->p_size = parent->p_size;
     long reg_addr_diff = (long)child - (long)parent;
     long p_diff = (long)child->p_addr - (long)parent->p_addr;
     child->context[10] += reg_addr_diff; // fp
     child->context[12] += reg_addr_diff; // sp
     child->context[14] += p_diff; //elr_el1
     child->context[15] += p_diff; //sp_el0
-    child->context[45] += p_diff;
-    child->context[46] += p_diff;
+    child->context[45] += p_diff; //user_fp
+    child->context[46] += p_diff; //user_lr
     // copy stack
     // uart_printhex(parent->p_addr); uart_puts("\r\n");
     // uart_printhex(child->p_addr); uart_puts("\r\n");
@@ -237,7 +212,7 @@ void copy_program(thread_info* parent, thread_info* child){
     for(int i = 0; i < st_size; ++i, ++dst, ++src){
         *dst = *src;
     }
-    printf("copy done\n");
+    //printf("copy done\n");
     return;
 }
 void do_fork(){
@@ -291,6 +266,9 @@ void exec_test(){
 }
 void thread_test2(){
     thread_pflag = 1;
+    // unsigned long sp_addr;
+    // asm volatile("ldr %0, [sp]\n":"=r"(sp_addr):);
+    // printf("[bef]svc, sp: %x\n", sp_addr);
     thread_info *idle_t = Thread(nullptr);
     asm volatile("msr tpidr_el1, %0\n"::"r"((unsigned long)idle_t));
     Thread(exec_test);

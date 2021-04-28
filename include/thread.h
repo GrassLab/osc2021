@@ -8,10 +8,9 @@ typedef struct thread_info
 {
     unsigned long context[13 + 3 + 31]; // context: (10(reg), fp, lr, sp), (spsr_el1, elr_el1, sp_el0)(user reg)
     int tid;
+    struct thread_info *next;
     int status;
     unsigned long p_addr, p_size, child_pid;
-    struct thread_info *next;
-
 } thread_info;
 
 typedef struct
