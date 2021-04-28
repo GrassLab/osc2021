@@ -6,7 +6,7 @@
 #include "math.h"
 #include "io.h"
 
-int distribute_pid = 0;
+int distribute_pid = 1;
 
 int get_new_pid()
 {
