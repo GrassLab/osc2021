@@ -6,6 +6,7 @@
 #include "type.h"
 #include "buddy.h"
 #include "slab.h"
+#include "exception.h"
 
 void shell_welcome_message() {
     uart_puts(" _   _      _ _       \n");
@@ -51,6 +52,9 @@ void command_controller(char *cmd) {
     else if (!strcmp("meminfo -u"      , cmd))     { command_meminfo(2); }
     else if (!strcmp("kmalloc"         , cmd))     { command_kmalloc(); }
     else if (!strcmp("kfree"           , cmd))     { command_kfree(); }
+    else if (!strcmp("load_program"    , cmd))     { command_load_user_program_to_addr(); }
+    else if (!strcmp("run_program"     , cmd))     { command_run_user_program(); }
+    else if (!strcmp("currentel"       , cmd))     { command_get_currentel(); }
     else if (!strcmp("test"            , cmd))     { command_test(); }
     else    { command_not_found(); }
 }
@@ -70,6 +74,9 @@ void command_help() {
     uart_puts("  kmalloc\t:\tmalloc memory for kernel.\n");
     uart_puts("  kfree\t:\tfree memory for kernel.\n");
     uart_puts("  test\t\t:\ttesting kmalloc and kfree.\n");
+    uart_puts("  load_program\t:\tload user program to specific address.\n");
+    uart_puts("  run_program\t:\trun user program at specific address.\n");
+    uart_puts("  currentel\t:\tget current execption level.\n");
     uart_puts("========================================\n");
 }
 
@@ -293,6 +300,91 @@ void command_kfree() {
     else
         uart_puts("[debug] error!\n");
 
+}
+
+void command_load_user_program_to_addr() {
+    char input_buffer[32] = { 0 };
+
+    uart_puts("Enter file name to load: ");
+
+    int i = 0;
+    while(1) {
+        char c = uart_getc();
+        uart_send(c);
+        if(c == '\n') {
+            input_buffer[i] = 0x00;
+            break;
+        } else {
+            input_buffer[i] = c;
+            i++;
+        }
+    }
+
+    input_buffer[31] = 0x00;
+
+
+    // Search file in cpio archive
+    uint64_t current_ptr = CPIO_ARCHIVE_LOCATION;
+
+    while(1) {
+        struct cpio_header *cpio_ptr = (struct cpio_header *)current_ptr;
+
+        int name_size = hextoint64(cpio_ptr->c_namesize);
+        int file_size = hextoint64(cpio_ptr->c_filesize);
+
+        current_ptr = current_ptr + sizeof(struct cpio_header);
+
+        char *file_name = (char *)current_ptr;
+
+        if(!strcmp(file_name, "TRAILER!!!"))
+            break;
+
+        current_ptr = current_ptr + name_size;
+        char *file_content = (char *)current_ptr;
+
+        current_ptr = current_ptr + file_size;
+
+        if(!strcmp(file_name, input_buffer)) {
+            unsigned char *target_address = (unsigned char *)0x20800000;
+
+            while(file_content != (char *)current_ptr) {
+                *target_address = *file_content;
+                file_content += 1;
+                target_address += 1;
+            }
+
+            uart_puts("[debug] user program load completed\n");
+
+            break;
+        }
+    }
+}
+
+void command_run_user_program() {
+    uart_puts("[debug] running user program at 0x20800000\n");
+
+    // set spsr_el1 to 0x3c0
+    asm volatile("mov x0, 0x3c0;"
+                 "msr spsr_el1, x0;"); 
+
+    // set elr_el1 to user program's address
+    asm volatile("mov x0, 0x20800000;"
+                 "msr elr_el1, x0;"); 
+
+    // set sp_el0 to user program's stack address
+    asm volatile("mov x0, 0x20800000;"
+                 "msr sp_el0, x0;"); 
+
+    asm volatile("eret"); 
+
+    uart_puts("[debug] user program execute completed\n");
+}
+
+void command_get_currentel() {
+    unsigned long currentel = get_current_exception_level();
+    uart_puts("currentel: ");
+    uart_puti(currentel, 10);
+    uart_puts("\n");
 }
 
 void command_test() {

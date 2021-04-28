@@ -89,6 +89,23 @@ int hextoi(const char *str) {
     return res;
 }
 
+int hextoint8(char hex) {
+    if(hex >= '0' && hex <= '9')
+        return hex-'0';
+    else if(hex >= 'A' && hex <= 'Z')
+        return hex-'A'+10;
+    else if(hex >= 'a' && hex <= 'z')
+        return hex-'a'+10;
+    return 0;
+}
+
+int hextoint64(char *hex) {
+    uint64_t res = 0;
+    for(int i = 0; i < 8; i++) 
+        res = (res << 4) + hextoint8(hex[i]);
+    return res;
+}
+
 
 void print_memory_with_uart(void *address, int size) {
     int printed = 0;
