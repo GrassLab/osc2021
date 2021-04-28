@@ -24,6 +24,7 @@ from_el1_to_el0:
 eret_initramfs:
     msr elr_el1, x0
     msr sp_el0, x1
+    mov x29, x2//fp
     mov x0, 0x340
     msr spsr_el1, x0
     mrs x3, sp_el0

@@ -118,9 +118,9 @@ void taskUpdate(Task* p,Task* c){
 	c->context[45]+=a_delta;//user fp
 	c->context[46]+=a_delta;//user lr
 
-	src=(char*)(p->context[15]);//user sp
-	dst=(char*)(c->context[15]);//user sp
-	for(int i=0,ii=p->a_addr+p->a_size-(p->context[15]);i<ii;++i){//stack copy
+	src=(char*)p->a_addr;
+	dst=(char*)c->a_addr;
+	for(int i=0; i< p->a_size; i++){//program copy
 		*dst=*src;
 		dst++;
 		src++;
@@ -211,7 +211,7 @@ void foo2(){
 
 void threadTest2(){
 	Task* cur=threadCreate(0);//use startup stack (not kernel stack)
-	asm volatile("msr tpidr_el1, %0\n"::"r"((unsigned long)cur));//TODO
+	asm volatile("msr tpidr_el1, %0\n"::"r"((unsigned long)cur));
 
 	threadCreate(foo2);
 

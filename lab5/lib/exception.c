@@ -97,9 +97,9 @@ void interrupt_handler(){
 	uart_printf("Time Elapsed: %d.%ds\n",tmp/10,tmp%10);
 	uart_printf("--------------------\n");
 	*/
-	uart_printf("--------------------\n");
-	uart_printf("timer interrupt\n");
-	uart_printf("--------------------\n");
+	// uart_printf("--------------------\n");
+	// uart_printf("timer interrupt\n");
+	// uart_printf("--------------------\n");
 	asm volatile("mrs x0, cntfrq_el0	\n");
 	asm volatile("asr x0, x0, 7			\n");// 1/128 second
 	asm volatile("msr cntp_tval_el0, x0	\n");

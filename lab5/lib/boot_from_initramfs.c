@@ -43,13 +43,13 @@ void boot_from_initramfs(char* path,unsigned long a_addr,char** argv,unsigned lo
 
         if(!strcmp(kernel + 0x6E, path)){
             *task_a_addr=a_addr;
-	        *task_a_size=file_size;
+	        *task_a_size=file_size/0x1000*0x1000+0x1000;// align
             for(int i=0; i<file_size; i++){
                 prog[i] = *(kernel + name_size + i);
             }
 	        uart_puts("loading...\n");
-	        unsigned long sp_addr=argvPut(argv,a_addr);            
-            eret_initramfs(a_addr, sp_addr);   
+	        unsigned long sp_addr=argvPut(argv,a_addr + *task_a_size);            
+            eret_initramfs(a_addr, sp_addr, a_addr + *task_a_size);   
         }
 
         kernel += file_size + name_size ;
@@ -61,11 +61,11 @@ unsigned long argvPut(char** argv,unsigned long ret){
 	int cnt1=0,cnt2=0;
 	for(int i=0;;++i){
 		cnt1++;//with null
-		if(!argv[i])break;
+		if(argv[i] == NULL)break;
 
 		for(int j=0;;++j){
 			cnt2++;//with null
-			if(!argv[i][j])break;
+			if(argv[i][j] == NULL)break;
 		}
 	}
 

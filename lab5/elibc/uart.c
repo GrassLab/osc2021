@@ -193,5 +193,5 @@ int uart_writes(char* s,int size){
             uart_send('\r');
         uart_send(*s++);
     }
-    uart_printf(" uart_write %d size byte\n", i);
+    //uart_printf("uart_write %d size byte\n", i);
 }
