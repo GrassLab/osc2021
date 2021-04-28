@@ -126,7 +126,7 @@ int main()
     mm_init();
 
     // Initialize timer list for timeout events
-    timer_list_init();
+    //timer_list_init();
 
     // say hello
     printf(init_logo);

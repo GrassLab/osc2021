@@ -38,7 +38,7 @@ void setNextTimerEventInterrupt();
 
 void dumpTimerEvent(timer_event_t *timerEvent);
 
-void dumpyTimerEventList();
+void dumpTimerEventList();
 
 void print_timeoutEventInfo(timer_event_t *timeout_event);
 
