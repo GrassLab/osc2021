@@ -5,7 +5,7 @@
 #include "sched.h"
 #include "uart.h"
 #include "fork.h"
-#include "exception.h"
+#include "string.h"
 
 void sys_write(char * buf) 
 {
@@ -59,23 +59,35 @@ int sys_fork()
     return pid;
 }
 
-int sys_exec(const char* name, char* const argv[])
+int sys_exec(const char *name, char* const argv[])
 {
     preempt_disable();
     
-    void *target_addr = cpio_move_file((void *) INITRAMFS_ADDR, "kernel8.img");
-    printf("[sys_exec] target_addr = 0x%x\n", target_addr);
+    // concatenate filename and extension
+    // Read cpio file and move target file in cpio to proper starting memory address
+    // corresponding to definition of it's starting memory address in linker sciprt 
+    char filename_buf[30];
+    char extension[] = ".img";
+    int i;
+    unsigned long move_address = 0x10A0000;
+    for (i = 0;i < strlen((char *)name);i ++) {
+        filename_buf[i] = name[i];
+    }
+    for (int temp = i;i < strlen(extension) + temp;i++) {
+        filename_buf[i] = extension[i - temp];
+    }
+    void *target_addr = cpio_move_file((void *) INITRAMFS_ADDR, filename_buf, move_address);
+    //void *target_addr = cpio_get_file((void *) INITRAMFS_ADDR, "fork_test.img", &unused); // why cause error?
     
-    // count argv until terminated by a null pointer
+    // count argv[] until terminated by a null pointer
     int argc_count = 0;
     while (argv[argc_count] != 0) {
         argc_count++;
     }
     
-    struct pt_regs *regs = task_pt_regs(current);
-
-    // Reset user sp and move argv to user stack
+    // Reset user sp and move argv to user stack(for argument passing)
     // Note that sp must 16 byte alignment
+    struct pt_regs *regs = task_pt_regs(current);
     char **backup = kmalloc(PAGE_SIZE);
     for (int i = 0;i < argc_count;i++) {
         *(backup + i) = argv[i];
@@ -87,15 +99,12 @@ int sys_exec(const char* name, char* const argv[])
         *(temp + i)  = *(backup + i);
     }
 
-    // set pc to new function(user program), and starting address of arg
-    // FIXME:
-    //   Can't read program from cpio, but using built in function(test case)
-    //   in shell.c is ok
+    // set pc(elr_el) to new function(user program), and starting address of argv[]
     regs->pc = (unsigned long)target_addr;
-    printf("[sys_exec] regs->pc = 0x%x\n", regs->pc);
     regs->regs[1] = (unsigned long)regs->sp;
 
     preempt_enable();
+
     return argc_count;
 }
 

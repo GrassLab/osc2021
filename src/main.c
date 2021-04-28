@@ -66,7 +66,7 @@ int exec_argv_test(int argc, char **argv) {
     }
     
     char *fork_argv[] = {"fork_test", 0};
-    call_sys_exec((unsigned long)&fork_test, fork_argv);
+    call_sys_exec("fork_test", fork_argv);
     return -1;
 }
 
@@ -97,8 +97,8 @@ void user_process(){
     // printf("[malloc] Allocated starting address of page = 0x%x\n", malloc_return);
 
     /* Test syscall exec with argument passing */
-    char* argv[] = {"argv_test", 0};
-    call_sys_exec(exec_argv_test, argv);
+    char* argv[] = {"argv_test", "-o", "arg2", 0};
+    call_sys_exec("argv_test", argv);
 
     /* syscall exit */
     printf("[exit] Task%d exit\n", call_sys_gitPID());
@@ -136,22 +136,20 @@ int main()
 
     /* Test cases */
     // Requirement 1 - Implement the thread mechanism. 
-    // for(int i = 0; i < 2; ++i) { // N should
-    //     int res = copy_process(PF_KTHREAD, (unsigned long)&foo, 0, 0);
-    //     if (res < 0) {
-    //      printf("error while starting kernel process");
-    //      return 0;
-    //    }
-    // }
-
-    // cpio_move_file((void *)INITRAMFS_ADDR, "kernel8.img");
+    for(int i = 0; i < 2; ++i) { // N should
+        int res = copy_process(PF_KTHREAD, (unsigned long)&foo, 0, 0);
+        if (res < 0) {
+         printf("error while starting kernel process");
+         return 0;
+       }
+    }
 
     // Requirement 2 
     int res = copy_process(PF_KTHREAD, (unsigned long)&kernel_process, 0, 0);
     if (res < 0) {
         printf("error while starting kernel process");
         return 0;
-    }
+    }.
     
 
     while (1) {
@@ -165,7 +163,7 @@ int main()
 
     
     // start shell
-    // shell_start();
+    //shell_start();
 
     return 0;
 }
