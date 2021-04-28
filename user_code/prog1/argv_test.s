@@ -4,10 +4,10 @@
 	.section	.rodata
 	.align	3
 .LC0:
-	.string	"Argv Test, pid %d\n"
+	.string	"Argv Test, pid %d\r\n"
 	.align	3
 .LC1:
-	.string	"%s\n"
+	.string	"%s\r\n"
 	.align	3
 .LC2:
 	.string	"fork_test"

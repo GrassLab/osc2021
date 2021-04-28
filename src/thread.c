@@ -23,6 +23,7 @@ void init_thread(){
 }
 thread_info* Thread(void* func){
     thread_info* ptr = (thread_info*)malloc(THREAD_SIZE);
+    uart_printhex((unsigned long)ptr); uart_puts("\r\n");
     // void *sp_ptr = malloc(PAGE_SIZE);
     ptr->context[10] = (unsigned long)ptr + THREAD_SIZE;
     ptr->context[11] = (unsigned long)func;
@@ -34,9 +35,40 @@ thread_info* Thread(void* func){
     add_to_run_queue(ptr);
     return ptr;
 }
+void threadSwitch(){
+	asm volatile("\
+_threadSwitch:\n\
+		stp x19, x20, [x0, 16 * 0]\n\
+		stp x21, x22, [x0, 16 * 1]\n\
+		stp x23, x24, [x0, 16 * 2]\n\
+		stp x25, x26, [x0, 16 * 3]\n\
+		stp x27, x28, [x0, 16 * 4]\n\
+		stp x29, x30, [x0, 16 * 5]\n\
+		mov x9, sp\n\
+		str x9, [x0, 16 * 6]\n\
+		\n\
+		ldp x19, x20, [x1, 16 * 0]\n\
+		ldp x21, x22, [x1, 16 * 1]\n\
+		ldp x23, x24, [x1, 16 * 2]\n\
+		ldp x25, x26, [x1, 16 * 3]\n\
+		ldp x27, x28, [x1, 16 * 4]\n\
+		ldp x29, x30, [x1, 16 * 5]\n\
+		ldr x9, [x1, 16 * 6]\n\
+		mov sp, x9\n\
+		\n\
+		msr tpidr_el1, x1\n\
+		\n\
+		ret\n\
+	"::);
+}
+
 void schedule(){
-    if(run_queue.head == nullptr) return;
+    if(run_queue.head == nullptr) {
+    
+        return;
+    }
     if(run_queue.head == run_queue.end) {
+        // uart_puts("??\r\n");
         free(run_queue.head);
         run_queue.head = run_queue.end = nullptr;
         thread_cnt = 0;
@@ -50,10 +82,8 @@ void schedule(){
             run_queue.head = run_queue.head->next;
             run_queue.end->next = nullptr;
         } while(run_queue.head->status);
-        printf("switch to :");
-        uart_printhex(run_queue.head->context);
-        printf("\n");
-        switch_to(get_current(), (uint64_t)run_queue.head->context);
+        switch_to(get_current(), (unsigned long)(run_queue.head->context));
+        return;
     }
 }
 void add_to_run_queue(thread_info *t){
@@ -80,13 +110,14 @@ void exit(){
     cur->status |= THREAD_DEAD;
     // printf("thread %d marked as DEAD\n", cur->tid);
     schedule();
+    return;
 }
 void kill_zombies(){
     if(run_queue.head == nullptr) return;
     for(thread_info* ptr = run_queue.head; ptr->next != nullptr ; ptr = ptr->next){
         for(thread_info *cur = ptr->next; cur != nullptr && ((cur->status) & THREAD_DEAD) > 0;){
             thread_info *tmp = cur->next;
-            // printf("find dead thread %d\n", cur->tid);
+            //printf("find dead thread %d\n", cur->tid);
             free((void*)cur);
             ptr->next = tmp;
             cur = tmp;
@@ -96,7 +127,8 @@ void kill_zombies(){
             break;
         }
     }
-    
+    //printf("leave kill_zombie\n");
+    return;
 }
 unsigned long pass_argument(char** argv,unsigned long addr){
     int argc = 0, byte_cnt = 0;
@@ -205,7 +237,8 @@ void copy_program(thread_info* parent, thread_info* child){
     for(int i = 0; i < st_size; ++i, ++dst, ++src){
         *dst = *src;
     }
-    // printf("copy done\n");
+    printf("copy done\n");
+    return;
 }
 void do_fork(){
    // printf("do_fork\n");
@@ -216,6 +249,7 @@ void do_fork(){
             // schedule();
         }
     }
+    return;
 }
 void idle(){
     int cnt = 0;
@@ -224,14 +258,17 @@ void idle(){
         do_fork();
         schedule();
     }
+    return;
 }
-void foo(){
+void foo(){ 
     for(int i = 0; i < 5; ++i){
-        printf("Thread id: %d, %d\n", current_thread()->tid, i);
-        delay(100000000);
+        //uart_printint(get_pid());
+        printf("Thread id: %d, %d\r\n", current_thread()->tid, i);
+        delay(1000000);
         schedule();
     }
     exit();
+    return;
 }
 void thread_test(){
     thread_pflag = 1;
@@ -240,8 +277,9 @@ void thread_test(){
     for(int i = 0; i < 4; ++i){
         Thread(foo);
     }
-    printf("before idle\n");
+    //printf("before idle\n");
     idle();
+    return;
 }
 void exec_test(){
     char* argv[] = {"argv_test", "-o", "arg2", 0};
@@ -249,11 +287,13 @@ void exec_test(){
     // exec("user_program.img", argv);
     exec("argv_test", argv);
     //exec("fork_test", argv);
+    return;
 }
 void thread_test2(){
     thread_pflag = 1;
-    thread_info *idle_t = Thread(shell);
+    thread_info *idle_t = Thread(nullptr);
     asm volatile("msr tpidr_el1, %0\n"::"r"((unsigned long)idle_t));
     Thread(exec_test);
     idle();
+    return;
 }

@@ -202,11 +202,13 @@ void swap(int* a, int* b){
     *b = tmp;
 }
 void* malloc(int size){
-    return dynamic_alloc(size);
+    return (void*)(buddy_alloc(size)->addr); 
+    //return dynamic_alloc(size);
     // return (void*)(ptr->addr);
 }
 void free(void* addr){
-    dynamic_free(addr);
+    //dynamic_free(addr);
+    buddy_free((char*)addr);
 }
 void sys_help(char* args){
     uart_puts("[Command] : [Description]\r\n");

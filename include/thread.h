@@ -7,10 +7,11 @@
 typedef struct thread_info
 {
     unsigned long context[13 + 3 + 31]; // context: (10(reg), fp, lr, sp), (spsr_el1, elr_el1, sp_el0)(user reg)
-    uint64_t tid;
-    struct thread_info *next;
+    int tid;
     int status;
     unsigned long p_addr, p_size, child_pid;
+    struct thread_info *next;
+
 } thread_info;
 
 typedef struct
@@ -24,7 +25,7 @@ typedef struct
 
 extern void delay(int);
 extern uint64_t get_current();
-extern void switch_to(uint64_t, uint64_t);
+extern void switch_to(unsigned long, unsigned long);
 
 thread_info *Thread(void *);
 void add_to_run_queue(thread_info *);

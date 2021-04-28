@@ -4,13 +4,13 @@
 	.section	.rodata
 	.align	3
 .LC0:
-	.string	"Fork Test, pid %d\n"
+	.string	"Fork Test, pid %d\r\n"
 	.align	3
 .LC1:
-	.string	"pid: %d, cnt: %d, ptr: %x\n"
+	.string	"pid: %d, cnt: %d, ptr: %x\r\n"
 	.align	3
 .LC2:
-	.string	"parent here, pid %d, child %d\n"
+	.string	"parent here, pid %d, child %d\r\n"
 	.text
 	.align	2
 	.global	main
