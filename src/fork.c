@@ -10,6 +10,7 @@
 #include "entry.h"
 #include "exception.h"
 #include "printf.h"
+#include "sched.h"
 
 int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg, unsigned long stack) {
     preempt_disable();
@@ -50,7 +51,7 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
     p->cpu_context.pc = (unsigned long)ret_from_fork;
     p->cpu_context.sp = (unsigned long)childregs;
     
-    int pid = nr_tasks++;
+    int pid = assignPID();
     task[pid] = p;	
     task[pid]->pid = pid;
 
@@ -78,4 +79,16 @@ int move_to_user_mode(unsigned long pc)
 struct pt_regs *task_pt_regs(struct task_struct *tsk) {
     unsigned long p = (unsigned long)tsk + THREAD_SIZE - sizeof(struct pt_regs);
     return (struct pt_regs *)p;
+}
+
+long assignPID() 
+{
+    for (long i = 0;i < NR_TASKS;i++) {
+        if (task[i] == NULL) {
+            nr_tasks++;
+            return i;
+        }
+    }    
+
+    return -1;
 }

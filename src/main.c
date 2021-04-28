@@ -135,7 +135,6 @@ int main()
     // say hello
     printf(init_logo);
 
-    
 
     /* Test cases */
     // Requirement 1 - Implement the thread mechanism. 
@@ -148,36 +147,25 @@ int main()
     }
 
     // Requirement 2 
-    // int res = copy_process(PF_KTHREAD, (unsigned long)&kernel_process, 0, 0);
-    // if (res < 0) {
-    //     printf("error while starting kernel process");
-    //     return 0;
-    // }
+    int res = copy_process(PF_KTHREAD, (unsigned long)&kernel_process, 0, 0);
+    if (res < 0) {
+        printf("error while starting kernel process");
+        return 0;
+    }
     
 
-    // while (1) {
-    //     printf("In kernel main()\n");
-    //     dumpTasksState();
-    //     kill_zombies(); // reclaim threads marked as DEAD
-    //     schedule();
-    //     delay(10000000);
-    // }
+    while (1) {
+        printf("In kernel main()\n");
+        dumpTasksState();
+        kill_zombies(); // reclaim threads marked as DEAD
+        schedule();
+        delay(1000000);
+    }
 
 
     
     // start shell
-    shell_start();
+    // shell_start();
 
     return 0;
-}
-
-void process(char *array)
-{
-    while (1){
-        for (int i = 0; i < 5; i++){
-            uart_send(array[i]);
-            delay(1000000000);
-        }
-        schedule();
-    }
 }
