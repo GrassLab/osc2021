@@ -5,6 +5,7 @@
 #include "exception.h"
 #include "uart.h"
 #include "timer.h"
+#include "sched.h"
 
 extern int isTimerMultiplexingEventIRQ;
 
@@ -97,8 +98,7 @@ void irq_exc_router()
         else {
             printf("Core timer interrupt!, timestamp: %u\n", get_system_time());
             core_timer_handler();
-            
-            //print_timestamp();
+            timer_tick(); // schedule 
             
         }
     } else {

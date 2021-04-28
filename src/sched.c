@@ -45,7 +45,7 @@ void _schedule(void)
         }
     }
     
-    
+    printf("[_schedule] next scheduled - pid = %d\n", next);
     switch_to(task[next], next);
 
     preempt_enable();
@@ -80,10 +80,9 @@ void timer_tick()
     }
     current->counter=0;
 
-    enable_irq();
+    enable_irq();   // Enter by intterupt so default irq is off
     _schedule();
     disable_irq();
-
 }
 
 void exit_process(void) {

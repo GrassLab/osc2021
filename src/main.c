@@ -31,7 +31,8 @@ void foo(){
         delay(1000000);
         schedule();
     }
-    
+    while (1);
+
     exit_process();
 }
 
@@ -125,24 +126,26 @@ int main()
     // Initialize memory allcoator
     mm_init();
 
-    // Initialize timer list for timeout events
-    //timer_list_init();
-
-    // say hello
-    printf(init_logo);
+    // Turn on core timer interrupt
+    core_timer_enable();
 
     // enable IRQ interrupt
     enable_irq();
+    
+    // say hello
+    printf(init_logo);
+
+    
 
     /* Test cases */
     // Requirement 1 - Implement the thread mechanism. 
-    // for(int i = 0; i < 2; ++i) { // N should
-    //     int res = copy_process(PF_KTHREAD, (unsigned long)&foo, 0, 0);
-    //     if (res < 0) {
-    //      printf("error while starting kernel process");
-    //      return 0;
-    //    }
-    // }
+    for(int i = 0; i < 2; ++i) { // N should
+        int res = copy_process(PF_KTHREAD, (unsigned long)&foo, 0, 0);
+        if (res < 0) {
+         printf("error while starting kernel process");
+         return 0;
+       }
+    }
 
     // Requirement 2 
     // int res = copy_process(PF_KTHREAD, (unsigned long)&kernel_process, 0, 0);
