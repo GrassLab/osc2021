@@ -18,17 +18,18 @@ _start:
     orr     x1, x1, (3 << 20)
     msr     CPACR_EL1, x1
 
+
+    bl      from_el1_to_el0
+    /* !!! EL0 start here !!! */
+
     // clear bss and set stack top before c function call
     ldr     x0, = bss_begin
     ldr     x1, = bss_end
     sub     x1, x1, x0
     bl      clear_bss
-
-    ldr     x0, = KERNEL_STACK_TOP
-    mov     sp, x0
     
     #bl      idle
-    bl      kernel_main
+    b      kernel_main
 
 from_el2_to_el1:
     /*
@@ -37,6 +38,10 @@ from_el2_to_el1:
      */
     mov     x0, (1 << 31) 
     msr     HCR_EL2, x0
+
+    // set up sp address of el1
+    ldr     x0, = KERNEL_STACK_TOP
+    msr     SP_EL1, x0
 
     /*
      * SPSR_EL2 holds the saved process state when an exception is taken to EL2.
@@ -47,4 +52,16 @@ from_el2_to_el1:
     msr     SPSR_EL2, x0
     msr     ELR_EL2, lr
     
+    eret
+
+from_el1_to_el0:
+    // set sp of el0 (first 512 bytes is for el1)
+    ldr     x0, = KERNEL_STACK_TOP
+    sub     x0, x0, 512
+    msr     SP_EL0, x0
+
+    mov     x0, 0
+    msr     SPSR_EL1, x0
+    msr     ELR_EL1, lr // execute start from this address
+
     eret

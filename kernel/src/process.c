@@ -3,6 +3,7 @@
 #include "pf_alloc.h"
 #include "dynamic_alloc.h"
 
+#include "math.h"
 #include "io.h"
 
 int distribute_pid = 0;
@@ -26,8 +27,6 @@ struct Thread * create_process(void *source_addr, int size)
      * (fork is okay since bss is already clean)
     */
     alloc_page(&start_addr, 17); // FIXIT: hardcoded
-
-    void *sp_addr = (void *)((uint64_t)start_addr + (2^17));
     
     char *dest_tmp = (char *)start_addr;
 
@@ -46,8 +45,9 @@ struct Thread * create_process(void *source_addr, int size)
 
     t->code = start_addr;
 
-    t->user_sp = t->fp = (uint64_t)sp_addr; // 256 for user sp
-    t->kernel_sp = (uint64_t)sp_addr + 256; // 256 for kernel sp
+    // // create thread stack
+    alloc_page((void **)&t->kernel_sp, THREAD_STACK_SIZE);
+    t->user_sp = (uint64_t)t->kernel_sp - int_pow(2, THREAD_STACK_SIZE - 1); // half for user sp
 
     thread_pool_add(t);
     return t;

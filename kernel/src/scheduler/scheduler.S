@@ -1,5 +1,5 @@
 .section ".text"
 
-.global schedule
-schedule:
-    svc 2
+.global sys_schedule
+sys_schedule:
+    svc 0

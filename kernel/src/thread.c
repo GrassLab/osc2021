@@ -1,10 +1,14 @@
 #include "thread.h"
 #include "dynamic_alloc.h"
+#include "pf_alloc.h"
 #include "def.h"
 #include "io.h"
+#include "scheduler.h"
+#include "math.h"
+
 
 struct Thread_pool thread_pool;
-int distribute_tid = 0;
+int distribute_tid = 1;
 
 void init_thread_pool() {
     thread_pool.head = NULL;
@@ -41,14 +45,22 @@ void create_thread(void(*thread_func)())
     t->state = RUNNING;
     t->code = thread_func;
 
-    // // create thread stack
-    void * stack = malloc(256);
-    t->user_sp = (uint64_t)stack; // 256 for user sp
-    t->kernel_sp = (uint64_t)stack + 128; // 256 for kernel sp
+    // create and set stack initial value
+    alloc_page((void **)&t->kernel_sp, THREAD_STACK_SIZE);
+    t->user_sp = (uint64_t)t->kernel_sp - int_pow(2, THREAD_STACK_SIZE - 1); // half for user sp
+    
+
+    // preserved for register restoring
+    t->kernel_sp -= 256;
+    struct context *ctx = (struct context *)t->kernel_sp;
+    ctx->lr = (uint64_t)thread_func;
+    ctx->fp = t->kernel_sp;
+
+
     
     // TODO: get pid from parent's pid
 
-    
-    distribute_tid++;
+    // enqueue into run queue
+    enqueue(t);
 }
 

@@ -1,6 +1,14 @@
 #ifndef _SCHEDULER_H
 #define _SCHEDULER_H
 
-void schedule();
+#define RUNQ_SIZE (100)
+
+#include "thread.h"
+
+void sys_schedule();
+void do_schedule();
+
+int enqueue(struct Thread * t);
+struct Thread * dequeue();
 
 #endif

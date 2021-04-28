@@ -2,16 +2,27 @@
 #include "pf_alloc.h"
 #include "thread.h"
 #include "scheduler.h"
+#include "kernel.h"
 
 #include "io.h"
 
 void idle()
 {
-    printf("idle\n");
-    // while ( 1 ) {
-        // schedule();
-    // }
+    while ( 1 ) {
+        printf("idle\n");
+        sys_schedule();
+    }
 }
+
+void foo(){
+    for(int i = 0; i < 10; ++i) {
+        struct Thread *current_thread = get_current_thread();
+        printf("Thread id: %d %d\n", current_thread->tid, i);
+        // delay(1000000);
+        sys_schedule();
+    }
+}
+
 
 void kernel_main()
 {
@@ -20,9 +31,20 @@ void kernel_main()
     init_thread_pool();
 
     // create shell and idle threads
-    create_thread(shell);
+    create_thread(foo);
+    create_thread(foo);
+    // create_thread(shell);
     create_thread(idle);
 
+    // default pseudo thread to set first tpidr
+    struct Thread t;
+    t.tid = 0;
+    t.kernel_sp = KERNEL_STACK_TOP;
+
+    set_current_thread(&t);
+
     // start scheduling
-    // schedule();
+    sys_schedule();
+
+    while (1);
 }

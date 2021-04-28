@@ -1,12 +1,15 @@
 #define CORE0_IRQ_SOURCE (0x40000060)
 
-.global exception_entry
-.global irq_entry
-
+// x0 is thread addr, x1 is kernel sp addr
+.macro get_current_kernel_sp
+    mrs     x0, TPIDR_EL0
+    ldr     x1, [x0]
+.endm
 
 // save general registers to stack
-.macro save_all
-    sub sp, sp, 32 * 8
+.macro save_reg
+    // it's sp_el1
+    sub sp, sp, 16 * 17
     stp x0, x1, [sp ,16 * 0]
     stp x2, x3, [sp ,16 * 1]
     stp x4, x5, [sp ,16 * 2]
@@ -22,11 +25,24 @@
     stp x24, x25, [sp ,16 * 12]
     stp x26, x27, [sp ,16 * 13]
     stp x28, x29, [sp ,16 * 14]
-    str x30, [sp, 16 * 15]
+    stp x30, fp, [sp, 16 * 15]
+    str lr, [sp, 16 * 16]
+
+
+    // update kernel sp
+    get_current_kernel_sp
+    sub     x1, x1, 16 * 17
+    str     x1, [x0]
 .endm
 
 // load general registers from stack
-.macro load_all
+.macro load_reg
+    // update kernel sp
+    get_current_kernel_sp
+    add     x1, x1, 16 * 17
+    str     x1, [x0]
+
+
     ldp x0, x1, [sp ,16 * 0]
     ldp x2, x3, [sp ,16 * 1]
     ldp x4, x5, [sp ,16 * 2]
@@ -42,28 +58,58 @@
     ldp x24, x25, [sp ,16 * 12]
     ldp x26, x27, [sp ,16 * 13]
     ldp x28, x29, [sp ,16 * 14]
-    ldr x30, [sp, 16 * 15]
-    add sp, sp, 32 * 8
+    ldp x30, fp, [sp, 16 * 15]
+    ldr lr, [sp, 16 * 16]
+    add sp, sp, 16 * 17
 .endm
 
 
+.global exception_entry
 exception_entry:
-    save_all
-    // get the svc number, stored in lower 16 bit of ESR_ELx
+    // temporary save x0 x1 to set sp
+    stp     x0, x1, [sp]
+    mrs     x0, TPIDR_EL0
+    mov     x1, sp
+
+    // set sp to current thread's kernel sp
+    ldr     x0, [x0]
+    mov     sp, x0
+
+    // restore x0 x1 from original sp
+    ldp     x0, x1, [x1]
+
+    save_reg
+
+
+    // get the svc number, which is stored in lower 16 bit of ESR_ELx
     mrs     x0, ESR_EL1
     and     x0, x0, #0xFFFF
     bl      exception_handler
 
-    load_all
-    
+    /* restore registers from current thread
+     * current thread might be different if schedule exception is taken
+     */
+    mrs     x0, TPIDR_EL0
+    ldr     x1, [x0]
+    mov     sp, x1
+
+    // set user sp_el0
+    ldr     x0, [x0, 8]
+    msr     SP_EL0, x0
+
+    load_reg
+
+    msr     ELR_EL1, lr
+
     eret
 
+.global irq_entry
 irq_entry:
-    save_all
+    save_reg
 
     ldr     x0, = CORE0_IRQ_SOURCE
     mrs     x1, cntpct_el0
     bl      irq_parser
 
-    load_all
+    load_reg
     eret

@@ -1,7 +1,10 @@
 #include "io.h"
 #include "timer.h"
+#include "scheduler.h"
+
 void irq_parser(void *source_addr, long int cntpct_el0)
 {
+    printf("irq!");
     int source = *((int *)source_addr);
     if (source == 2) {
         core_timer_disable();
@@ -13,5 +16,9 @@ void irq_parser(void *source_addr, long int cntpct_el0)
 
 void exception_handler(int svc_num)
 {
-    printf("svc number is: %d\n", svc_num);
+    switch ( svc_num ) {
+        case 0:
+            // schedule
+            do_schedule();
+    }
 }
