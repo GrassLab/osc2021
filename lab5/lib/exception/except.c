@@ -1,5 +1,7 @@
 #include "../../include/except.h"
 #include "../../include/uart.h"
+#include "../../include/task.h"
+
 void dumpState(){
 	unsigned long esr,elr,spsr;
 	asm volatile("mrs %0, esr_el1	\n":"=r"(esr):);
@@ -22,60 +24,39 @@ void x0Set(unsigned long v){
 }
 
 void _except_handler(){
-asm volatile("\
-		str x0,[sp,-8]\n\
-		str x1,[sp,-16]\n\
-		str x2,[sp,-24]\n\
-	"::);
-	unsigned long x0,x1,x2;
-	asm volatile("\
-		ldr %0,[sp,-8]\n\
-		ldr %1,[sp,-16]\n\
-		ldr %2,[sp,-24]\n\
-	":"=r"(x0),"=r"(x1),"=r"(x2):);
+    uart_printf("Sync Exception\n");
+    unsigned long esr, svc;
+    asm volatile("mrs %0, esr_el1  \n":"=r"(esr):);
 
-	unsigned long esr,svc;
-	asm volatile("mrs %0, esr_el1	\n":"=r"(esr):);
-	if(((esr>>26)&0x3f)==0x15){
-		svc=esr&0x1ffffff;
-		if(svc==0){
-			dumpState();
-			return;
-		}else if(svc==1){//getpid
-			//unsigned long ret=tidGet();
+    unsigned long x0,x1,x2;
+   // asm volatile("str x0,[sp, 0]  \n"::);
+   // asm volatile("str x0,[sp, 8]  \n"::);
+   // asm volatile("str x0,[sp, 16]  \n"::);
 
-			//x0Set(ret);
-			return;
-		}else if(svc==2){//uart_read
-			unsigned long ret=uart_gets((char*)x0,(int)x1,1);
+   // asm volatile("ldr %0,[sp, 16]  \n":"=r"(x0):);
+   // asm volatile("ldr %0,[sp, 16]  \n":"=r"(x1):);
+   // asm volatile("ldr %0,[sp, 16]  \n":"=r"(x2):);
 
-			x0Set(ret);
-			return;
-		}else if(svc==3){//uart_write
-			uart_puts((char*)x0);
+    if(((esr>>26)&0x3f) == 0x15){
+        svc = esr & 0x1ffffff;
+        switch(svc){
+            case 0:
+                dumpState();
+                break;
+            case 1:
+                cur_exit();
+                break;
+            case 2:
+                exec((char*)x0,(char**)x1);
+                break;
+        }
 
-			x0Set(x1);
-			return;
-		}else if(svc==4){//exec
-			//exec((char*)x0,(char**)x1);
 
-			//x0Set(0);
-			return;
-		}else if(svc==5){//exit
-			cur_exit();
+    }
+}
 
-			while(1){}
-			return;
-		}else if(svc == 6){
-            //unsigned long ret = fork();
-            //x0Set(ret);
-            return;
-        }else{
-			uart_printf("TODO\n");
-			return;
-		}
-	}else{
-		uart_printf("unknown esr_el1...\n");
-		while(1){}
-	}
+
+void _TODO_(){
+    dumpState();
+    while(1){}
 }

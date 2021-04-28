@@ -1,6 +1,6 @@
 SECTIONS
 {
-    . = 0x70000;
+    . = 0x700000;
     __prog_start = .;
     .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
     .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }

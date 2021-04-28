@@ -1,6 +1,11 @@
 #include "syscall.h"
 #include "printf.h"
 
+void dumpState(){
+    asm volatile("svc 0 \n"::);
+    return;
+
+}
 int getpid(){
 	long ret;
 	asm volatile("\
@@ -40,16 +45,13 @@ unsigned int uart_printf(char* fmt,...){
 }
 
 int exec(char* name,char** argv){
-	long ret;
-	asm volatile("\
-		svc 4\n\
-		mov %0, x0\n\
-	":"=r"(ret):);
-	return ret;
+    asm volatile("svc 2   \n"::);
+
+    while(1){}
 }
 
 void exit(){
-	asm volatile("svc 5\n"::);
+	asm volatile("svc 1\n"::);
 	while(1){}
 }
 

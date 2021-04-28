@@ -2,31 +2,22 @@
 	.file	"syscall.c"
 	.text
 	.align	2
-	.global	delay
-	.type	delay, %function
-delay:
+	.global	dumpState
+	.type	dumpState, %function
+dumpState:
 .LFB0:
 	.cfi_startproc
-	sub	sp, sp, #16
-	.cfi_def_cfa_offset 16
-	str	w0, [sp, 12]
-	b	.L2
-.L3:
-	ldr	w0, [sp, 12]
-	sub	w0, w0, #1
-	str	w0, [sp, 12]
-.L2:
-	ldr	w0, [sp, 12]
-	cmp	w0, 0
-	bgt	.L3
+#APP
+// 5 "inc/syscall.c" 1
+	svc 0 
+
+// 0 "" 2
+#NO_APP
 	nop
-	nop
-	add	sp, sp, 16
-	.cfi_def_cfa_offset 0
 	ret
 	.cfi_endproc
 .LFE0:
-	.size	delay, .-delay
+	.size	dumpState, .-dumpState
 	.align	2
 	.global	getpid
 	.type	getpid, %function
@@ -36,7 +27,7 @@ getpid:
 	sub	sp, sp, #16
 	.cfi_def_cfa_offset 16
 #APP
-// 10 "inc/syscall.c" 1
+// 11 "inc/syscall.c" 1
 			svc 1
 		mov x0, x0
 	
@@ -61,7 +52,7 @@ uart_read:
 	str	x0, [sp, 8]
 	str	w1, [sp, 4]
 #APP
-// 19 "inc/syscall.c" 1
+// 20 "inc/syscall.c" 1
 			svc 2
 		mov x0, x0
 	
@@ -86,7 +77,7 @@ uart_write:
 	str	x0, [sp, 8]
 	str	w1, [sp, 4]
 #APP
-// 28 "inc/syscall.c" 1
+// 29 "inc/syscall.c" 1
 			svc 3
 		mov x0, x0
 	
@@ -167,42 +158,38 @@ uart_printf:
 exec:
 .LFB5:
 	.cfi_startproc
-	sub	sp, sp, #32
-	.cfi_def_cfa_offset 32
+	sub	sp, sp, #16
+	.cfi_def_cfa_offset 16
 	str	x0, [sp, 8]
 	str	x1, [sp]
 #APP
 // 48 "inc/syscall.c" 1
-			svc 4
-		mov x0, x0
-	
+	svc 2   
+
 // 0 "" 2
 #NO_APP
-	str	x0, [sp, 24]
-	ldr	x0, [sp, 24]
-	add	sp, sp, 32
-	.cfi_def_cfa_offset 0
-	ret
+.L12:
+	b	.L12
 	.cfi_endproc
 .LFE5:
 	.size	exec, .-exec
 	.align	2
-	.global	exit
-	.type	exit, %function
-exit:
+	.global	cur_exit
+	.type	cur_exit, %function
+cur_exit:
 .LFB6:
 	.cfi_startproc
 #APP
-// 56 "inc/syscall.c" 1
-	svc 5
+// 53 "inc/syscall.c" 1
+	svc 1
 
 // 0 "" 2
 #NO_APP
-.L15:
-	b	.L15
+.L14:
+	b	.L14
 	.cfi_endproc
 .LFE6:
-	.size	exit, .-exit
+	.size	cur_exit, .-cur_exit
 	.align	2
 	.global	fork
 	.type	fork, %function
@@ -212,7 +199,7 @@ fork:
 	sub	sp, sp, #16
 	.cfi_def_cfa_offset 16
 #APP
-// 62 "inc/syscall.c" 1
+// 59 "inc/syscall.c" 1
 			svc 6
 		mov x0, x0
 	

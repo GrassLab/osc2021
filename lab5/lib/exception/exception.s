@@ -5,40 +5,40 @@
 .align 11 // aligned to 0x800 (2^11)
 .global _exception_vector_table
 _exception_vector_table:
-    b _exception_handler // branch to a handler function.
+    b TODO // branch to a handler function.
     .align 7 // entry size is 0x80 (2^7), .align will pad 0
-    b _exception_handler
+    b TODO
     .align 7
-    b _exception_handler
+    b TODO
     .align 7
-    b _exception_handler
+    b TODO
     .align 7
 
-    b _exception_handler
+    b TODO
     .align 7
-    b _exception_handler
+    b TODO
     .align 7
-    b _exception_handler
+    b TODO
     .align 7
-    b _exception_handler
+    b TODO
     .align 7
 
     b _exception_handler
     .align 7
     b _irq_handler
     .align 7
-    b _exception_handler
+    b TODO
     .align 7
-    b _exception_handler
+    b TODO
     .align 7
 
-    b _exception_handler
+    b TODO
     .align 7
-    b _exception_handler
+    b TODO
     .align 7
-    b _exception_handler
+    b TODO
     .align 7
-    b _exception_handler
+    b TODO
     .align 7
 
 
@@ -140,19 +140,18 @@ add sp, sp, #256
 
 .global _exception_handler
 _exception_handler:
-    save_task
-
+    _kernel_entry
     bl _except_handler
-    restore_task
-
+    _kernel_exit
     eret
 
 .global _irq_handler
 _irq_handler:
-    save_task
-
+    _kernel_entry
     bl _timer_handler
-
-    restore_task
-
+    _kernel_exit
     eret
+
+.global TODO
+TODO:
+    bl _TODO_

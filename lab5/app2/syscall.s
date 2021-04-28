@@ -2,15 +2,32 @@
 	.file	"syscall.c"
 	.text
 	.align	2
+	.global	dumpState
+	.type	dumpState, %function
+dumpState:
+.LFB0:
+	.cfi_startproc
+#APP
+// 5 "inc/syscall.c" 1
+	svc 0 
+
+// 0 "" 2
+#NO_APP
+	nop
+	ret
+	.cfi_endproc
+.LFE0:
+	.size	dumpState, .-dumpState
+	.align	2
 	.global	getpid
 	.type	getpid, %function
 getpid:
-.LFB0:
+.LFB1:
 	.cfi_startproc
 	sub	sp, sp, #16
 	.cfi_def_cfa_offset 16
 #APP
-// 6 "inc/syscall.c" 1
+// 11 "inc/syscall.c" 1
 			svc 1
 		mov x0, x0
 	
@@ -22,20 +39,20 @@ getpid:
 	.cfi_def_cfa_offset 0
 	ret
 	.cfi_endproc
-.LFE0:
+.LFE1:
 	.size	getpid, .-getpid
 	.align	2
 	.global	uart_read
 	.type	uart_read, %function
 uart_read:
-.LFB1:
+.LFB2:
 	.cfi_startproc
 	sub	sp, sp, #32
 	.cfi_def_cfa_offset 32
 	str	x0, [sp, 8]
 	str	w1, [sp, 4]
 #APP
-// 15 "inc/syscall.c" 1
+// 20 "inc/syscall.c" 1
 			svc 2
 		mov x0, x0
 	
@@ -47,20 +64,20 @@ uart_read:
 	.cfi_def_cfa_offset 0
 	ret
 	.cfi_endproc
-.LFE1:
+.LFE2:
 	.size	uart_read, .-uart_read
 	.align	2
 	.global	uart_write
 	.type	uart_write, %function
 uart_write:
-.LFB2:
+.LFB3:
 	.cfi_startproc
 	sub	sp, sp, #32
 	.cfi_def_cfa_offset 32
 	str	x0, [sp, 8]
 	str	w1, [sp, 4]
 #APP
-// 24 "inc/syscall.c" 1
+// 29 "inc/syscall.c" 1
 			svc 3
 		mov x0, x0
 	
@@ -72,13 +89,13 @@ uart_write:
 	.cfi_def_cfa_offset 0
 	ret
 	.cfi_endproc
-.LFE2:
+.LFE3:
 	.size	uart_write, .-uart_write
 	.align	2
 	.global	uart_printf
 	.type	uart_printf, %function
 uart_printf:
-.LFB3:
+.LFB4:
 	.cfi_startproc
 	stp	x29, x30, [sp, -400]!
 	.cfi_def_cfa_offset 400
@@ -133,42 +150,21 @@ uart_printf:
 	.cfi_def_cfa_offset 0
 	ret
 	.cfi_endproc
-.LFE3:
+.LFE4:
 	.size	uart_printf, .-uart_printf
 	.align	2
 	.global	exec
 	.type	exec, %function
 exec:
-.LFB4:
+.LFB5:
 	.cfi_startproc
-	sub	sp, sp, #32
-	.cfi_def_cfa_offset 32
+	sub	sp, sp, #16
+	.cfi_def_cfa_offset 16
 	str	x0, [sp, 8]
 	str	x1, [sp]
 #APP
-// 44 "inc/syscall.c" 1
-			svc 4
-		mov x0, x0
-	
-// 0 "" 2
-#NO_APP
-	str	x0, [sp, 24]
-	ldr	x0, [sp, 24]
-	add	sp, sp, 32
-	.cfi_def_cfa_offset 0
-	ret
-	.cfi_endproc
-.LFE4:
-	.size	exec, .-exec
-	.align	2
-	.global	exit
-	.type	exit, %function
-exit:
-.LFB5:
-	.cfi_startproc
-#APP
-// 52 "inc/syscall.c" 1
-	svc 5
+// 48 "inc/syscall.c" 1
+	svc 2   
 
 // 0 "" 2
 #NO_APP
@@ -176,17 +172,34 @@ exit:
 	b	.L12
 	.cfi_endproc
 .LFE5:
+	.size	exec, .-exec
+	.align	2
+	.global	exit
+	.type	exit, %function
+exit:
+.LFB6:
+	.cfi_startproc
+#APP
+// 54 "inc/syscall.c" 1
+	svc 1
+
+// 0 "" 2
+#NO_APP
+.L14:
+	b	.L14
+	.cfi_endproc
+.LFE6:
 	.size	exit, .-exit
 	.align	2
 	.global	fork
 	.type	fork, %function
 fork:
-.LFB6:
+.LFB7:
 	.cfi_startproc
 	sub	sp, sp, #16
 	.cfi_def_cfa_offset 16
 #APP
-// 58 "inc/syscall.c" 1
+// 60 "inc/syscall.c" 1
 			svc 6
 		mov x0, x0
 	
@@ -198,7 +211,7 @@ fork:
 	.cfi_def_cfa_offset 0
 	ret
 	.cfi_endproc
-.LFE6:
+.LFE7:
 	.size	fork, .-fork
 	.ident	"GCC: (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0"
 	.section	.note.GNU-stack,"",@progbits

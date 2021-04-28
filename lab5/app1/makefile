@@ -7,8 +7,8 @@ OBJS:=$(APP).o $(LIBS:.c=.o)
 
 all:
 	make $(APP)
-	#cp $(APP) ../rootfs/$(APP)
-	#cd ..&&make
+#	cp $(APP) ../rootfs/$(APP)
+#	cd ..&&make
 
 $(APP):$(OBJS)
 	aarch64-linux-gnu-ld -T $(LINKER) -o tmp.elf $(OBJS)

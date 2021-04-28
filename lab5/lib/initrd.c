@@ -160,7 +160,7 @@ unsigned long argvPut(char** argv,unsigned long ret){
 	return ret;
 }
 
-void loadProgWithArgv(char *path, unsigned long a_addr, char **argv, unsigned long *task_addr){
+unsigned long loadprogWithArgv(char *path, unsigned long a_addr, char **argv){
     cpio_t *file_addr = findFile((cpio_t*)0x8000000, path);
     if(!file_addr){
         uart_puts("Prog not found\n");
@@ -173,7 +173,7 @@ void loadProgWithArgv(char *path, unsigned long a_addr, char **argv, unsigned lo
     Align_4(&dsize);
 
     char *data = (char*)((char*)file_addr + HPP);
-    *task_addr = a_addr;
+    //*task_addr = a_addr;
     unsigned char* tar = (unsigned char*)a_addr;
     while(dsize--){
         *tar = *data;
@@ -182,17 +182,17 @@ void loadProgWithArgv(char *path, unsigned long a_addr, char **argv, unsigned lo
     }
 
     unsigned long sp_addr = argvPut(argv, a_addr);
+    return sp_addr;
+    //asm volatile("mov x0, 0x340			\n");//enable interrupt
+	//asm volatile("msr spsr_el1, x0		\n");
+	//asm volatile("msr elr_el1, %0		\n"::"r"(a_addr));
+	//asm volatile("msr sp_el0, %0		\n"::"r"(sp_addr));
 
-    asm volatile("mov x0, 0x340			\n");//enable interrupt
-	asm volatile("msr spsr_el1, x0		\n");
-	asm volatile("msr elr_el1, %0		\n"::"r"(a_addr));
-	asm volatile("msr sp_el0, %0		\n"::"r"(sp_addr));
+	//asm volatile("mrs x3, sp_el0		\n"::);
+	//asm volatile("ldr x0, [x3, 0]		\n"::);
+	//asm volatile("ldr x1, [x3, 8]		\n"::);
 
-	asm volatile("mrs x3, sp_el0		\n"::);
-	asm volatile("ldr x0, [x3, 0]		\n"::);
-	asm volatile("ldr x1, [x3, 8]		\n"::);
-
-	asm volatile("eret					\n");
+	//asm volatile("eret					\n");
 }
 
 /**

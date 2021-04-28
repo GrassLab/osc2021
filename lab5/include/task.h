@@ -1,5 +1,10 @@
 #ifndef _TASK_H
 #define _TASK_H
+
+typedef struct _trap_frame{
+  unsigned long regs[32];
+}trap_frame;
+
 typedef struct _cpu_context{
   unsigned long x19;
   unsigned long x20;
@@ -40,4 +45,5 @@ void foo();
 void cur_exit();
 void threadSchedule();
 void idle();
+int getpid();
 #endif

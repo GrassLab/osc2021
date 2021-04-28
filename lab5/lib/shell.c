@@ -119,7 +119,7 @@ static void parse_input(char *buffer){
     }else if(compString("req1",buffer) == 0){
         test1();
     }else if(compString("req2",buffer) == 0){
-     //   test2();
+        test2();
     }else{
         uart_puts("No Such Command\n");
     }

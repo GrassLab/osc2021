@@ -5,6 +5,7 @@
 #include "../include/shell.h"
 #include "../include/switch.h"
 #include "../include/list.h"
+#include "../include/interrupt.h"
 
 
 #define BUF_MAX_SIZE 128
@@ -14,7 +15,7 @@
 
 static RUN_Q run_q;
 static RUN_Q exit_q;
-static int tid = 0;
+static int tidd = 0;
 
 void dump_q(RUN_Q* q){
     for(RUN_Q_NODE* i = q->beg;i!=0 ; i = i->next){
@@ -66,13 +67,15 @@ task_struct* threadCreate(void *func){
     new_task->context.sp = (unsigned long)new_task+TASKSIZE;
 
     new_task->state = TASK_ALIVE;
-    new_task->id = tid++;
+    new_task->id = tidd++;
 
     RUN_Q_NODE* tmp = (RUN_Q_NODE*)my_alloc(sizeof(RUN_Q_NODE));
     tmp->task = new_task;
     tmp->next = tmp->prev = 0;
+    //uart_printf("id:%d\n",tidd);
 
     list_push(&run_q,tmp);
+    return new_task;
 
 }
 
@@ -80,12 +83,26 @@ void threadSchedule(){
     RUN_Q_NODE *next_node = list_pop(&run_q);
     task_struct *cur = get_current();
 
+    //uart_printf("cur task:%x\n",cur);
+    //uart_printf("next id:%d\n",next_node->task->id);
+    //uart_printf("next task:%x\n",next_node->task);
+
     if(next_node){
         if((next_node->task->state) == TASK_ALIVE){
             list_push(&run_q,next_node);
+    //uart_printf("cur id:%x\n",cur->id);
+    //uart_printf("next id:%x\n",next_node->task->id);
+    //uart_printf("task size:%x\n",sizeof(task_struct));
+    //uart_printf("context size:%x\n",sizeof(cpu_context));
+    //uart_puts("enter to resume\n");
+    //char buf[100];
+    //read_input(buf);
             //uart_puts("runq:\n");
             //dump_q(&run_q);
             switch_to(cur,next_node->task);
+    //uart_printf("test id:%d\n",next_node->task->id);
+
+
         }else{
             list_push(&exit_q,next_node);
             //uart_puts("runq:\n");
@@ -115,12 +132,37 @@ void cur_exit(){
 }
 
 void idle(){
+    //uart_printf("in idle\n");
     while(1){
         zombiekill();
         threadSchedule();
     }
 }
 
+void exec(char *path, char** argv){
+    unsigned long a_addr;
+    char buf[BUF_MAX_SIZE];
+    uart_puts("please enter app load address:\n");
+    read_input(buf);
+    a_addr = getHexFromString(buf);
+    unsigned long sp_addr;
+    sp_addr = loadprogWithArgv(path, a_addr, argv);
+    uart_printf("loadsuce\n");
+    task_struct *cur = get_current();
+    cur->context.lr = a_addr;
+
+    asm volatile("mov x0, 0x340   \n"::);
+    asm volatile("msr spsr_el1, x0   \n"::);
+    asm volatile("msr elr_el1, %0   \n"::"r"(cur->context.lr));
+    asm volatile("msr sp_el0, %0   \n"::"r"(sp_addr));
+    core_timer_enable();
+    asm volatile("eret   \n");
+}
+
+int getpid(trap_frame* tf){
+    task_struct *cur = get_current();
+    tf->regs[0] = cur->id;
+}
 void foo1(){
     task_struct *cur = get_current();
     for(int i = 0; i<2 ; ++i){
@@ -131,16 +173,39 @@ void foo1(){
     cur_exit();
 }
 
-void test1(){
+void foo2(){
+    char* argv[] = {"argv_test", "-o", "arg2", 0};
+    exec("app1", argv);
+}
 
+void test1(){
+    tidd = 0;
+ //   uart_printf("tidd:%d\n",tidd);
     run_q.beg = run_q.end = 0;
     exit_q.beg = exit_q.end = 0;
 
-    //threadCreate(idle);
+    task_struct* root_task = threadCreate(idle);
+    asm volatile("msr tpidr_el1, %0\n" ::"r"(root_task));
+
+//    threadCreate(foo2);
     threadCreate(foo1);
     threadCreate(foo1);
     threadCreate(foo1);
     //dump_q(&run_q);
     idle();
 
+}
+
+void test2(){
+    tidd = 0;
+    run_q.beg = run_q.end = 0;
+    exit_q.beg = exit_q.end = 0;
+    task_struct* root_task = threadCreate(idle);
+    asm volatile("msr tpidr_el1, %0\n" ::"r"(root_task));
+
+    threadCreate(foo2);
+    threadCreate(foo1);
+    threadCreate(foo1);
+    threadCreate(foo1);
+    idle();
 }
