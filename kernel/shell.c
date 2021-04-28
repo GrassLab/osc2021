@@ -362,7 +362,8 @@ void command_run_user_program() {
     uart_puts("[debug] running user program at 0x20800000\n");
 
     // set spsr_el1 to 0x3c0
-    asm volatile("mov x0, 0x3c0;"
+    // 
+    asm volatile("mov x0, 0x340;"
                  "msr spsr_el1, x0;"); 
 
     // set elr_el1 to user program's address
