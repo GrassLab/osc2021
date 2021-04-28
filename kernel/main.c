@@ -3,6 +3,8 @@
 #include "string.h"
 #include "allocator.h"
 #include "cpio.h"
+#include "xcpt_func.h"
+#include "demo_func.h"
 
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC (volatile unsigned int*)0x3F10001c
@@ -35,25 +37,22 @@ void reboot() {
     reset(100);
 }
 
-
-void alloc() {
-    init_buckets();
-    void *test1 = malloc(16);
-    void *test2 = malloc(40);
-    void *test3 = malloc(1<<12);
-    void *test4 = malloc(1<<10);
-
-    free_page(test3, 1<<12);
-    free_page(test4, 1<<10);
-    free_page(test2, 40);
-    free_page(test1, 16);
+/*
+int getpid(){
+	long ret;
+	asm volatile("\
+		mov w8, 1 \n\
+		svc #0 \n");
+	return;
 }
+*/
 
 void main() {
     uart_init();
+    init_buckets();
+
     char *welcome = "\\                             .       .\n \\                           / `.   .\' \" \n \\                  .---.  <    > <    >  .---.\n   \\                 |   \\  \\ - ~ ~ - /  /    |\n         _____          ..-~             ~-..-~\n        |     |  \\~~~\\.\'                    `./~~~/\n       ---------  \\__/                        \\__/\n      .\'  O    \\     /               /       \\  \" \n     (_____,    `._.\'               |         }  \\/~~~/\n      `----.          /       }     |        /    \\__/\n            `-.      |       /      |       /      `. ,~~|\n                ~-.__|      /_ - ~ ^|      /- _      `..-\'   \n                     |     /        |     /     ~-.     `-. _  _  _\n                     |_____|        |_____|         ~ - . _ _ _ _ _>\n";
     uart_puts(welcome);
-
     while(1) {
         uart_puts("#");
         char input[20];
@@ -72,8 +71,8 @@ void main() {
         else if(!strcmp(input, "ls")) {
             list_file();
         }
-        else if(!strcmp(input, "alloc")) {
-            alloc();
+        else if(!strcmp(input, "lab3")) {
+            lab3();
         }
         else if(!strcmp(input, "load")) {
             load_user_program();
@@ -82,6 +81,15 @@ void main() {
             core_timer_enable();
             from_el1_to_el0();
         }
+        else if(!strcmp(input, "lab5-1")) {
+            lab5_required_1(2);
+        }
+        else if(!strcmp(input, "lab5-2")) {
+            core_timer_enable();
+            lab5_required_2();
+            //from_el1_to_el0();
+            //int i = getpid();
+        }
         else {
             uart_puts("Error: ");
             uart_puts(input);
@@ -89,3 +97,4 @@ void main() {
         }
     }
 }
+

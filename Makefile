@@ -5,6 +5,7 @@ LD = aarch64-linux-gnu-ld
 LDFLAGS = -T scripts/linker.ld
 
 OBJCOPY = aarch64-linux-gnu-objcopy
+OBJDUMP = aarch64-linux-gnu-objdump
 OBJCOPYFLAGS = -O binary
 
 GDB = gdb-multiarch
@@ -25,6 +26,7 @@ all:
 kernel8:
 	$(LD) $(LDFLAGS) -o $(BUILD_DIR)/$(ELF) $(OBJ)
 	$(OBJCOPY) $(OBJCOPYFLAGS) $(BUILD_DIR)/$(ELF) $(BUILD_DIR)/$(IMG)
+	$(OBJDUMP) -D $(BUILD_DIR)/$(ELF) > $(BUILD_DIR)/kernel.objdump
 	rm $(OBJ)
 
 debug:
@@ -36,14 +38,6 @@ debug:
 		-S -s\
 		-initrd archive/initramfs.cpio\
 
-debug_cpio:
-	qemu-system-aarch64 -M raspi3\
-		-kernel $(BUILD_DIR)/$(IMG)\
-		-display none\
-		-serial null\
-		-serial stdio\
-		-S -s\
-		-initrd archive/initramfs.cpio
 run:
 	qemu-system-aarch64 -M raspi3\
 		-kernel $(BUILD_DIR)/$(IMG)\

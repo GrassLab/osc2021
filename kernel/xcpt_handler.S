@@ -1,6 +1,10 @@
+#include "arm/sysregs.h"
+#include "sys.h"
+
 // save general registers to stack
-.macro save_all
-    sub sp, sp, 32 * 8
+.macro save_all, el
+
+    sub sp, sp, #S_FRAME_SIZE
     stp x0, x1, [sp ,16 * 0]
     stp x2, x3, [sp ,16 * 1]
     stp x4, x5, [sp ,16 * 2]
@@ -16,11 +20,33 @@
     stp x24, x25, [sp ,16 * 12]
     stp x26, x27, [sp ,16 * 13]
     stp x28, x29, [sp ,16 * 14]
-    str x30, [sp, 16 * 15]
+    
+    .if	\el == 0
+	mrs	x21, sp_el0
+	.else
+	add	x21, sp, #S_FRAME_SIZE
+	.endif /* \el == 0 */
+
+	mrs	x22, elr_el1
+	mrs	x23, spsr_el1
+
+	stp	x30, x21, [sp, #16 * 15] 
+	stp	x22, x23, [sp, #16 * 16]
+
 .endm
 
 // load general registers from stack
-.macro load_all
+.macro load_all, el
+
+	ldp	x22, x23, [sp, #16 * 16]
+	ldp	x30, x21, [sp, #16 * 15] 
+
+	.if	\el == 0
+	msr	sp_el0, x21
+	.endif /* \el == 0 */
+
+	msr	elr_el1, x22			
+	msr	spsr_el1, x23
     ldp x0, x1, [sp ,16 * 0]
     ldp x2, x3, [sp ,16 * 1]
     ldp x4, x5, [sp ,16 * 2]
@@ -36,20 +62,49 @@
     ldp x24, x25, [sp ,16 * 12]
     ldp x26, x27, [sp ,16 * 13]
     ldp x28, x29, [sp ,16 * 14]
-    ldr x30, [sp, 16 * 15]
-    add sp, sp, 32 * 8
+    add sp, sp, #S_FRAME_SIZE 
 .endm
 
 exception_handler:
-    save_all
+    save_all 0
     bl dumpState
-    load_all
+    load_all 0
     eret
 
 core_timer_handler:
-    save_all
+    save_all 0
     bl dumpTimer
-    load_all
+    load_all 0
+    eret
+
+el0_sync:
+	save_all 0
+	mrs	x25, esr_el1				// read the syndrome register
+	lsr	x24, x25, #ESR_ELx_EC_SHIFT		// exception class
+	cmp	x24, #ESR_ELx_EC_SVC64			// SVC in 64-bit state
+	b.eq	el0_svc
+	//exception_handler 0, SYNC_ERROR
+
+sc_nr	.req	x25					// number of system calls
+scno	.req	x26					// syscall number
+stbl	.req	x27					// syscall table pointer
+
+el0_svc:
+	adr	stbl, sys_call_table			// load syscall table pointer
+	uxtw	scno, w8				// syscall number in w8
+	mov	sc_nr, #__NR_syscalls
+	// bl	enable_irq
+	cmp     scno, sc_nr                     	// check upper syscall limit
+	// b.hs	ni_sys
+
+	ldr	x16, [stbl, scno, lsl #3]		// address in the syscall table
+	blr	x16					// call sys_* routine
+	b	ret_from_syscall
+
+ret_from_syscall:
+	// bl	disable_irq				
+	str	x0, [sp, #S_X0]				// returned x0
+	load_all 0
     eret
 
 .align 11 // vector table should be aligned to 0x800
@@ -73,7 +128,7 @@ exception_vector_table:
     b exception_handler
     .align 7
 
-    b exception_handler
+    b el0_sync
     .align 7
     b core_timer_handler
     .align 7
