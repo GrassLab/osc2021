@@ -136,34 +136,34 @@ int main()
 
     /* Test cases */
     // Requirement 1 - Implement the thread mechanism. 
-    for(int i = 0; i < 2; ++i) { // N should
-        int res = copy_process(PF_KTHREAD, (unsigned long)&foo, 0, 0);
-        if (res < 0) {
-         printf("error while starting kernel process");
-         return 0;
-       }
-    }
+    // for(int i = 0; i < 2; ++i) { // N should
+    //     int res = copy_process(PF_KTHREAD, (unsigned long)&foo, 0, 0);
+    //     if (res < 0) {
+    //      printf("error while starting kernel process");
+    //      return 0;
+    //    }
+    // }
 
     // Requirement 2 
-    int res = copy_process(PF_KTHREAD, (unsigned long)&kernel_process, 0, 0);
-    if (res < 0) {
-        printf("error while starting kernel process");
-        return 0;
-    }.
+    // int res = copy_process(PF_KTHREAD, (unsigned long)&kernel_process, 0, 0);
+    // if (res < 0) {
+    //     printf("error while starting kernel process");
+    //     return 0;
+    // }
     
 
-    while (1) {
-        printf("In kernel main()\n");
-        dumpTasksState();
-        kill_zombies(); // reclaim threads marked as DEAD
-        schedule();
-        delay(10000000);
-    }
+    // while (1) {
+    //     printf("In kernel main()\n");
+    //     dumpTasksState();
+    //     kill_zombies(); // reclaim threads marked as DEAD
+    //     schedule();
+    //     delay(10000000);
+    // }
 
 
     
     // start shell
-    //shell_start();
+    shell_start();
 
     return 0;
 }

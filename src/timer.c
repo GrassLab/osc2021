@@ -206,7 +206,7 @@ void print_timeoutEventInfo(timer_event_t *timeout_event)
     printf("---End Info---\n");
 }
 
-
+// core0 time
 uint64_t get_system_time()
 {
     uint64_t cnt_freq, cnt_tpct;
@@ -219,6 +219,20 @@ uint64_t get_system_time()
     uint64_t system_timestamp = cnt_tpct / cnt_freq;
     // printf("timestamp: %u\n", system_timestamp);
     return system_timestamp;
+}
+
+void print_timestamp()
+{
+    unsigned long int cnt_freq, cnt_tpct;
+    asm volatile(
+        "mrs %0, cntfrq_el0 \n\t"
+        "mrs %1, cntpct_el0 \n\t"
+        : "=r" (cnt_freq),  "=r" (cnt_tpct)
+        :
+    );
+    unsigned long int timestamp = cnt_tpct / cnt_freq;
+    printf("timestamp: %u\n", timestamp);
+    return;
 }
 
 /**

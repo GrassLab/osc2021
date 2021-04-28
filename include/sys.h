@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-#define __NR_syscalls	        9
+#define __NR_syscalls	        11
 
 #define SYS_WRITE_NUMBER        0 		// syscal numbers 
 #define SYS_UARTWRITE_NUMBER    1
@@ -14,6 +14,8 @@
 #define SYS_EXIT_NUMBER         6
 #define SYS_MALLOC_NUMBER       7 	
 #define SYS_CLONE_NUMBER        8
+#define SYS_CORETIMER_On        9
+#define SYS_CORETIMER_OFF       10
 #ifndef __ASSEMBLER__
 
 void sys_write(char * buf);
@@ -25,6 +27,8 @@ int sys_exec(const char* name, char* const argv[]);
 void sys_exit();
 void *sys_malloc(int bytes);
 int sys_clone();
+void sys_coreTimer_on();
+void sys_coreTimer_off();
 
 void call_sys_write(char * buf);
 int call_sys_uart_write(char buf[], size_t size);
@@ -34,6 +38,8 @@ int call_sys_fork();
 int call_sys_exec(const char* name, char* const argv[]);
 void call_sys_exit();
 void *call_sys_malloc();
+void call_sys_coreTimer_on();
+void call_sys_coreTimer_off();
 
 #endif
 #endif  /*_SYS_H */

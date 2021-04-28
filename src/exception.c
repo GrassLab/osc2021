@@ -4,6 +4,7 @@
 #include "entry.h"
 #include "exception.h"
 #include "uart.h"
+#include "timer.h"
 
 extern int isTimerMultiplexingEventIRQ;
 
@@ -94,28 +95,15 @@ void irq_exc_router()
             timerEvents_irq_handler();
         }
         else {
-            printf("Core timer interrupt!\n");
+            printf("Core timer interrupt!, timestamp: %u\n", get_system_time());
             core_timer_handler();
+            
             //print_timestamp();
             
         }
     } else {
         printf("Unknown IRQ source\n");
     }
-}
-
-void print_timestamp()
-{
-    unsigned long int cnt_freq, cnt_tpct;
-    asm volatile(
-        "mrs %0, cntfrq_el0 \n\t"
-        "mrs %1, cntpct_el0 \n\t"
-        : "=r" (cnt_freq),  "=r" (cnt_tpct)
-        :
-    );
-    unsigned long int timestamp = cnt_tpct / cnt_freq;
-    printf("timestamp: %u\n", timestamp);
-    return;
 }
 
 void print_pstate_interrupt_mask_bits()

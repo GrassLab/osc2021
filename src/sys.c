@@ -6,6 +6,7 @@
 #include "uart.h"
 #include "fork.h"
 #include "string.h"
+#include "timer.h"
 
 void sys_write(char * buf) 
 {
@@ -125,7 +126,20 @@ int sys_clone()
     return 0;
 }
 
+void sys_coreTimer_on()
+{
+    core_timer_enable();
+    printf("[Core timer] interrupt enabled\n");
+}
+
+void sys_coreTimer_off()
+{
+    core_timer_disable();
+    printf("[Core timer] interrupt disabled\n");
+}
+
 void * const sys_call_table[] = 
     {sys_write, sys_uart_write, sys_uart_read, 
      sys_gitPID, sys_fork, sys_exec, 
-     sys_exit, sys_malloc, sys_clone};
+     sys_exit, sys_malloc, sys_clone,
+     sys_coreTimer_on, sys_coreTimer_off};

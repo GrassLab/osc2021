@@ -48,3 +48,15 @@ call_sys_malloc:
     svc #0
     ret
 
+.globl call_sys_coreTimer_on
+call_sys_coreTimer_on:
+    mov w8, #SYS_CORETIMER_On
+    svc #0
+    ret
+
+.globl call_sys_coreTimer_off
+call_sys_coreTimer_off:
+    mov w8, #SYS_CORETIMER_OFF
+    svc #0
+    ret
+

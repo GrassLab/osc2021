@@ -92,7 +92,7 @@ exception_vector_table:
     ventry	error_invalid_el1t			// Error EL1t
 
     // Current EL with SPx
-    ventry	sync_invalid_el1h			// Synchronous EL1h
+    ventry	sync_exc_handler			// Synchronous EL1h
     ventry	irq_exc_handler				// IRQ EL1h
     ventry	fiq_invalid_el1h			// FIQ EL1h
     ventry	error_invalid_el1h			// Error EL1h

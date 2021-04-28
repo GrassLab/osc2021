@@ -5,7 +5,7 @@
 #include "printf.h"
 #include "utils.h"
 #include "timer.h"
-
+#include "sys.h"
 void input_buffer_overflow_message ( char cmd[] )
 {
     uart_puts("Follow command: \"");
@@ -135,12 +135,12 @@ void command_current_el()
 
 void commnad_coreTimerOn()
 {
-    asm volatile("svc #2");
+    call_sys_coreTimer_on();
 }
 
 void commnad_coreTimerOff()
 {
-    asm volatile("svc #3");
+    call_sys_coreTimer_off();
 }
 
 void coomand_setTimeout(char *buf)
