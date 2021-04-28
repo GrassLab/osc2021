@@ -31,9 +31,9 @@ struct task_struct *task_create(void *func, int tid) {
 
   // Normal task is a kernel function, which has already been loaded to memory
   t->entry_point = NULL;
-  t->cpu_context.fp = (unsigned long)t + FRAME_SIZE;
-  t->cpu_context.lr = (unsigned long)func;
-  t->cpu_context.sp = (unsigned long)t + FRAME_SIZE;
+  t->cpu_context.fp = (uint64_t)t + FRAME_SIZE;
+  t->cpu_context.lr = (uint64_t)func;
+  t->cpu_context.sp = (uint64_t)t + FRAME_SIZE;
   t->status = TASK_STATUS_ALIVE;
   t->id = tid;
 
@@ -58,7 +58,7 @@ void sys_getpid(struct trap_frame *tf) {
 // note: int exec(const char *name, char *const argv[]);
 void sys_exec(struct trap_frame *tf) {
   struct task_struct *task = get_current();
-  const char *name = tf->regs[0];
+  const char *name = (const char *)tf->regs[0];
   uart_println("sys exec called");
   // do not get argv in mvp version
 
@@ -66,9 +66,9 @@ void sys_exec(struct trap_frame *tf) {
   void *entry_point = load_program(name);
   task->entry_point = entry_point;
 
-  task->cpu_context.fp = (unsigned long)task + FRAME_SIZE;
-  task->cpu_context.lr = entry_point;
-  task->cpu_context.sp = (unsigned long)task + FRAME_SIZE;
+  task->cpu_context.fp = (uint64_t)task + FRAME_SIZE;
+  task->cpu_context.lr = (uint64_t)entry_point;
+  task->cpu_context.sp = (uint64_t)task + FRAME_SIZE;
   uart_println("thread info replaced");
 
   // finish process replacement
@@ -121,9 +121,9 @@ void user_startup() {
   void *entry_point = load_program(name);
   uart_println("program loaded: %x", entry_point);
 
-  task->cpu_context.fp = (unsigned long)task + FRAME_SIZE;
-  task->cpu_context.lr = entry_point;
-  task->cpu_context.sp = (unsigned long)task + FRAME_SIZE;
+  task->cpu_context.fp = (uint64_t)task + FRAME_SIZE;
+  task->cpu_context.lr = (uint64_t)entry_point;
+  task->cpu_context.sp = (uint64_t)task + FRAME_SIZE;
 
   task->entry_point = entry_point;
 
@@ -150,7 +150,7 @@ void test_tasks() {
 
   struct task_struct *root_task;
   root_task = task_create(idle, 0);
-  asm volatile("msr tpidr_el1, %0\n" ::"r"((unsigned long)root_task));
+  asm volatile("msr tpidr_el1, %0\n" ::"r"((uint64_t)root_task));
 
   task_create(user_startup, 1);
   // task_create(foo, 1);
