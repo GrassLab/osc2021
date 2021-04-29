@@ -3,6 +3,7 @@
 
 void InputBufferOverflowMessage(char []);
 
+void CommandInit();
 void CommandHelp();
 void CommandHello();
 void CommandCpiols();
@@ -16,6 +17,7 @@ void CommandBuddyLogTable();
 void CommandBuddyFree(int section);
 void CommandBuddyFreePool(int pool, int index);
 void CommandBuddyAlloc(int size);
+void CommandThreadTest(int test_id);
 void CommandNotFound(char *);
 void CommandReboot();
 

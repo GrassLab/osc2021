@@ -1,4 +1,5 @@
 #include "command.h"
+#include "thread.h"
 #include "reader.h"
 #include "allocator.h"
 #include "../lib/uart.h"
@@ -11,6 +12,11 @@ void InputBufferOverflowMessage(char cmd[])
     uart_puts("\"... is too long to process.\n");
 
     uart_puts("The maximum length of input is 64.");
+}
+
+void CommandInit()
+{
+    thread_init();
 }
 
 void CommandHelp()
@@ -112,6 +118,11 @@ void CommandBuddyFreePool(int pool, int index)
 void CommandBuddyAlloc(const int size)
 {
     buddy_alloc(size);
+}
+
+void CommandThreadTest(int test_id)
+{
+    thread_test(test_id);
 }
 
 void CommandNotFound(char *s)
