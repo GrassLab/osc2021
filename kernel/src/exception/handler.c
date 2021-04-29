@@ -2,6 +2,8 @@
 #include "timer.h"
 #include "scheduler.h"
 #include "exception.h"
+#include "process.h"
+
 
 void irq_parser(void *source_addr, long int cntpct_el0)
 {
@@ -33,6 +35,10 @@ void exception_handler(int svc_num)
         case 3:
             // exec
             get_arg_and_do_exec();
+            break;
+        case 4:
+            // exec
+            do_getpid();
             break;
         default:
             break;

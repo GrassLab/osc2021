@@ -3,7 +3,8 @@
 
 void main(int argc, char *argv[])
 {
-    // printf("Argv Test, pid %d\n", getpid());
+    int pid = sys_getpid();
+    printf("Argv Test, pid %d\n", pid);
     for (int i = 0; i < argc; ++i) {
         printf("argv[%d]: %s\n", i, argv[i]);
     }

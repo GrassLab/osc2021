@@ -16,3 +16,7 @@ sys_uart_write:
 sys_exec:
     // x0 is name, x1 is argv and will be saved into kernel stack
     svc 3
+
+.global sys_getpid
+sys_getpid:
+    svc 4

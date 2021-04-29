@@ -5,7 +5,7 @@
 #include "io.h"
 #include "scheduler.h"
 #include "math.h"
-
+#include "system_call.h"
 
 struct Thread_pool thread_pool;
 int distribute_tid = 1;
@@ -42,6 +42,7 @@ void create_thread(void(*thread_func)())
     struct Thread *t = malloc(sizeof(struct Thread));
     
     t->tid = get_new_tid();
+    t->pid = sys_getpid();
     t->state = RUNNING;
     t->code = thread_func;
 

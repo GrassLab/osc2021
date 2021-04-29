@@ -8,6 +8,7 @@
 #include "cpio.h"
 #include "scheduler.h"
 #include "string.h"
+#include "exception.h"
 
 int distribute_pid = 1;
 
@@ -57,10 +58,8 @@ struct Thread * create_process(void *source_addr, int size, int argc, char *argv
 
     uint64_t tmp_user_sp = t->user_sp;
     for (int i = 0; i < argc; i++) {
-        printf("copying \"%s\"...\n", argv[i]);
         t->user_sp -= (strlen(argv[i]) + 1);
         strcpy((char *)t->user_sp, argv[i]);
-        printf("copyied \"%s\"...\n", (char *)t->user_sp);
     }
 
     t->user_sp -= (8 * argc);
@@ -72,14 +71,6 @@ struct Thread * create_process(void *source_addr, int size, int argc, char *argv
 
     ctx->reg[0] = argc;
     ctx->reg[1] = t->user_sp;
-    
-
-
-    
-
-
-
-    // *((int *)t->user_sp) = argc;
 
 
     thread_pool_add(t);
@@ -97,4 +88,12 @@ void do_exec(char *name, char *argv[])
     }
 
     cpio_exec(name, argc, argv);
+}
+
+void do_getpid()
+{
+    struct Thread *current = get_current_thread();
+    struct context *ctx = (struct context *)current->kernel_sp;
+    ctx->reg[0] = current->pid;
+    // send_pid_to_user(current->pid);
 }

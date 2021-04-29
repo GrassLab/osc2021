@@ -21,10 +21,6 @@ void kernel_main()
     init_page_frame();
     init_thread_pool();
 
-    // create shell and idle threads
-    create_thread(shell);
-    create_thread(idle);
-
     // default pseudo thread to set first tpidr
     struct Thread t;
     t.tid = 0;
@@ -32,6 +28,11 @@ void kernel_main()
     t.kernel_sp = KERNEL_STACK_TOP;
 
     set_current_thread(&t);
+    
+    // create shell and idle threads
+    create_thread(shell);
+    create_thread(idle);
+
     // start scheduling
     sys_schedule();
 }

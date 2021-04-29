@@ -1,3 +1,4 @@
 /.vscode
 /build
 /assets/rootfs/app
+/assets/rootfs/argv_test
