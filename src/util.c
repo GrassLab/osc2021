@@ -111,7 +111,7 @@ size_t atol_n(const char *s, size_t len, size_t base) {
   return num;
 }
 
-char *new_str(char *src) {
+char *new_str(const char *src) {
   size_t len = strlen(src);
   char *str = (char *)kmalloc(len + 1);
   strcpy(str, src);
@@ -129,4 +129,15 @@ char *split_str(char *s) {
     s++;
   }
   return right;
+}
+
+size_t cnt_white(const char *s) {
+  unsigned long cnt = 0;
+  while (*s) {
+    if (*s == ' ') {
+      cnt++;
+    }
+    s++;
+  }
+  return cnt;
 }

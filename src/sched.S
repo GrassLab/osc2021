@@ -6,6 +6,7 @@
 .global thread_start
 .global switch_exec
 .global switch_exec_clone
+.global execve_refresh_stack
 
 .macro save_pres
     stp x19, x20, [sp, #-16]!
@@ -71,3 +72,8 @@ switch_exec_clone:
     mov sp, x4
     load_pres
     ret
+
+execve_refresh_stack:
+    sub x2, x2, #256
+    mov sp, x2
+    bl _execve

@@ -199,15 +199,23 @@ void new_pd(unsigned long slab_idx) {
   slab[slab_idx]->pd_cnt++;
 }
 
+void *alloc_slab(unsigned long size);
+
 void *pop_slab_cache(slab_cache *sc) {
   if (sc->cache_pd->free_list.next == NULL) {
     page_descriptor *pd_itr = sc->head_pd;
-    while (pd_itr->free_list.next == NULL) {
+    while (pd_itr != NULL && pd_itr->free_list.next == NULL) {
       pd_itr = pd_itr->next_pd;
     }
     sc->cache_pd = pd_itr;
   }
   page_descriptor *pd = sc->cache_pd;
+  if(pd == NULL) {
+    sc->free_cnt = 0;
+    sc->cache_pd = sc->head_pd;
+    // log("wa\n", LOG_ERROR);
+    return alloc_slab(idx_to_size(sc->head_pd->slab_idx));
+  }
   void *chunk = pop_l_list(&(pd->free_list));
   pd->free_cnt--;
   sc->free_cnt--;

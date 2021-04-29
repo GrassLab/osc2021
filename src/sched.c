@@ -1,5 +1,6 @@
 #include "sched.h"
 
+#include "cpio.h"
 #include "exc.h"
 #include "io.h"
 #include "mem.h"
@@ -15,7 +16,6 @@ typedef struct mem_seg {
   void *base;
   // real size (copy use)
   unsigned long size;
-  // seg referrence count
   unsigned long ref_cnt;
 } mem_seg;
 
@@ -250,4 +250,136 @@ void exc_lvl_consume() {
 void clear_task_timer() {
   task_struct *ts = sp_to_ts(get_sp());
   ts->st_timer_cnt = get_timer_cnt();
+}
+
+unsigned long wait() {
+  cdl_list *reap_list = &(sp_to_ts(get_sp())->dead);
+  while (cdl_list_empty(reap_list)) {
+    schedule();
+  }
+  task_struct *ts = pop_cdl_list(reap_list->fd);
+  unsigned long pid = ts->pid;
+  log_hex("rip", pid, LOG_PRINT);
+  kfree((void *)ts);
+  return pid;
+}
+
+typedef struct arg_stack {
+  unsigned long argc;
+  char **argv;
+  char *args[2];
+} arg_stack;
+
+mem_seg *get_usr_prog(const char *fn) {
+  void *cpio_file = get_cpio_file(fn);
+  if (cpio_file != NULL) {
+    unsigned long file_size = get_file_size(cpio_file);
+    void *file_data = get_file_data(cpio_file);
+    void *usr_prog = kmalloc(pad(file_size, 4096));
+    memcpy(usr_prog, file_data, file_size);
+    mem_seg *prog_seg = kmalloc(sizeof(mem_seg));
+    prog_seg->base = usr_prog;
+    prog_seg->ref_cnt = 1;
+    prog_seg->size = file_size;
+    return prog_seg;
+  } else {
+    print("program not found\n");
+    return NULL;
+  }
+}
+
+mem_seg *get_usr_stack(char *const argv[]) {
+  void *user_sp = kmalloc(USR_STACK_SIZE) + USR_STACK_SIZE;
+  int i = 0;
+  unsigned long argv_total_size = 0;
+  while (argv[i] != NULL) {
+    argv_total_size += (strlen(argv[i]) + 1);
+    i++;
+  }
+  argv_total_size = pad(argv_total_size, 8);
+  unsigned long sp_size = argv_total_size + 16 + 8 * (i + 1);
+  sp_size = pad(sp_size, 16);
+  arg_stack *as = (arg_stack *)(user_sp - sp_size);
+  as->argc = i;
+  as->argv = &(as->args[0]);
+  char *argv_itr = user_sp - argv_total_size;
+  for (int j = 0; j < i; j++) {
+    as->args[j] = argv_itr;
+    strcpy(argv_itr, argv[j]);
+    argv_itr += (strlen(argv[j]) + 1);
+  }
+  as->args[i] = NULL;
+  mem_seg *sp_seg = kmalloc(sizeof(mem_seg));
+  sp_seg->base = user_sp - USR_STACK_SIZE;
+  sp_seg->size = sp_size;
+  sp_seg->ref_cnt = 1;
+  return sp_seg;
+}
+
+void execve(const char *filename, char *const argv[]) {
+  mem_seg *prog_seg = get_usr_prog(filename);
+  if(prog_seg == NULL) {
+    die();
+  }
+  mem_seg *sp_seg = get_usr_stack(argv);
+  void *sp = sp_high(get_sp());
+  execve_refresh_stack(prog_seg, sp_seg, sp);
+}
+
+void exec(const char *path) {
+  char *p = new_str(path);
+  unsigned long arg_cnt = cnt_white(path) + 1;
+  char **argv = kmalloc(sizeof(char *) * (arg_cnt + 1));
+  char *p_itr = p;
+  for (int i = 0; i < arg_cnt; i++) {
+    argv[i] = p_itr;
+    p_itr = split_str(p_itr);
+  }
+  argv[arg_cnt] = NULL;
+
+  mem_seg *prog_seg = get_usr_prog(argv[0]);
+  if(prog_seg == NULL) {
+    kfree((void *)argv);
+    kfree((void *)p);
+    die();
+  }
+  mem_seg *sp_seg = get_usr_stack(&(argv[0]));
+  void *sp = sp_high(get_sp());
+  kfree((void *)argv);
+  kfree((void *)p);
+  execve_refresh_stack(prog_seg, sp_seg, sp);
+}
+
+void _execve(void *usr_prog, void *usr_sp, void *sp) {
+  mem_seg *prog = usr_prog;
+  mem_seg *stack = usr_sp;
+  saved_reg *sr = sp;
+  task_struct *ts = sp_to_ts(sp);
+  disable_interrupt();
+  if (ts->usr_sp != NULL) {
+    ts->usr_sp->ref_cnt--;
+    if (ts->usr_sp->ref_cnt == 0) {
+      kfree(ts->usr_sp->base);
+      kfree(ts->usr_sp);
+    }
+    ts->usr_sp = NULL;
+  }
+  enable_interrupt();
+  disable_interrupt();
+  if (ts->usr_prog != NULL) {
+    ts->usr_prog->ref_cnt--;
+    if (ts->usr_prog->ref_cnt == 0) {
+      kfree(ts->usr_prog->base);
+      kfree(ts->usr_prog);
+    }
+    ts->usr_prog = NULL;
+  }
+  enable_interrupt();
+  ts->usr_prog = prog;
+  ts->usr_sp = stack;
+  ts->exc_lvl = 0;
+  memset_ul(sr, 0, sizeof(saved_reg));
+  disable_interrupt();
+  set_int_stat(0);
+  ret_exc(prog->base, stack->base + USR_STACK_SIZE - stack->size, 0, sp);
 }

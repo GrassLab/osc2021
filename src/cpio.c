@@ -26,7 +26,7 @@ typedef struct cpio_newc_header {
   char data[2];
 } cpio_newc_header;
 
-void *get_cpio_file(char *name) {
+void *get_cpio_file(const char *name) {
   cpio_newc_header *cpio_itr = (cpio_newc_header *)initramfs;
   while (strcmp_n(cpio_itr->c_magic, "070701", 6) == 0) {
     unsigned long mode = atol_n(cpio_itr->c_mode, 8, 16);
@@ -61,11 +61,11 @@ void reserve_cpio() {
   }
 }
 
-unsigned long get_file_size(void *cpio_file) {
+unsigned long get_file_size(const void *cpio_file) {
   return atol_n(((cpio_newc_header *)cpio_file)->c_filesize, 8, 16);
 }
 
-void *get_file_data(void *cpio_file) {
+void *get_file_data(const void *cpio_file) {
   unsigned long namesize =
       atol_n(((cpio_newc_header *)cpio_file)->c_namesize, 8, 16);
   return &(((cpio_newc_header *)cpio_file)->data[2 + pad(namesize - 2, 4)]);

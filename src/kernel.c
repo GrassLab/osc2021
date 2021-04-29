@@ -29,6 +29,11 @@ void shell() {
         print("file not found\n");
       }
     } else if (!strcmp_n(cmd_buf, "exec ", 5)) {
+      if (clone() == 0) {
+        exec(cmd_buf + 5);
+      } else {
+        wait();
+      }
     } else if (strcmp(cmd_buf, "")) {
       print("command not found: ");
       puts(cmd_buf);
@@ -46,9 +51,9 @@ void print_pid() {
   // wait_clock(1000000);
 
   if (cid) {
-    sleep(4);
-    // wait();
-    // wait();
+    sleep(1);
+    wait();
+    wait();
   } else {
     pid = get_pid();
     log_hex("st", pid, LOG_PRINT);
@@ -82,7 +87,7 @@ void kernel() {
   tick_rate = 0.001;
   tick();
 
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 3; i++) {
     thread_create(&print_pid);
   }
   thread_create(&shell);

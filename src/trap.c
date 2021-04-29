@@ -26,7 +26,7 @@ void syn_handler(unsigned long el1_esr, void *el1_elr, void *el0_sp,
   log("SYN\n", LOG_DEBUG);
   switch (el1_esr & EC_MASK) {
     case SVC_AARCH64:
-      log_hex("svc", el1_esr & SVC_MASK, LOG_DEBUG);
+      log_hex("svc", el1_esr & SVC_MASK, LOG_PRINT);
       switch (el1_esr & SVC_MASK) {
         case SYS_EXIT:
           die();
@@ -36,7 +36,13 @@ void syn_handler(unsigned long el1_esr, void *el1_elr, void *el0_sp,
       }
       break;
     default:
-      log_hex("SYN NI\n", (unsigned long)el1_elr, LOG_ERROR);
+      nonblock = 0;
+      // flush();
+      log_hex("SYN NI", el1_esr, LOG_ERROR);
+      log_hex("lr", (unsigned long)el1_elr, LOG_ERROR);
+      log_hex("spsr", el1_spsr, LOG_ERROR);
+      log_hex("x0", el1_sp->x0, LOG_ERROR);
+      log_hex("x5", el1_sp->x0, LOG_ERROR);
       die();
       break;
   }
