@@ -3,7 +3,7 @@
 #include <types.h>
 #include <time.h>
 
-int main(int argc, char **argv) {
+/*int main(int argc, char **argv) {
   printf("Argv Test, pid %d\n", getpid());
   for (int i = 0; i < argc; ++i) {
     printf("%s\n", argv[i]);
@@ -12,8 +12,8 @@ int main(int argc, char **argv) {
   delay(2);
   exec("fork_test", fork_argv);
   return 0;
-}
-/*
+}*/
+
 int main(void) {
     printf("Fork Test, pid %d\n", getpid());
     int cnt = 1;
@@ -32,4 +32,3 @@ int main(void) {
     }
   return 0;
 }
-*/

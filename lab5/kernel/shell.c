@@ -10,6 +10,7 @@
 #include <printf.h>
 #include <timer.h>
 #include <test.h>
+#include <sched.h>
 
 void shell() {
   uart_puts("*****************************Hello World*****************************\r\n");
@@ -67,6 +68,8 @@ void do_command(char* command) {
     printf("variedtest: varied malloc test\n");
     printf("enabtimer: enable core timer interrupt.\n");
     printf("disatimer: disable core timer interrupt.\n");
+    printf("lab5_test1: kernel thread test\n");
+    printf("lab5_test2: argv, fork test\n");
   } 
   else if(strncmp(command, "hello", 6) == 0) {
     printf("Hello World!\n");
@@ -156,7 +159,6 @@ void do_command(char* command) {
     test_varied_main();
   }
   else if(strncmp(command, "enabtimer", 9) == 0) {
-    extern void* core_timer_enable;
     
     asm volatile("blr %0\n"::"r"(&core_timer_enable));
   }
@@ -166,6 +168,14 @@ void do_command(char* command) {
   }
   else if(strncmp(command, "backdoor", 8) == 0) {
     printf("This is a backdoor\n");
+  }
+  else if(strncmp(command, "lab5_test1", 10) == 0) {
+    core_timer_enable();
+    task_test1_init();
+  }
+  else if(strncmp(command, "lab5_test2", 10) == 0) {
+    core_timer_enable();
+    task_test2_init();
   }
   else {
     printf("unknown command\n");

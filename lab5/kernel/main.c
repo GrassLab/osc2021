@@ -18,8 +18,8 @@ void main(void* dtb_address) {
   cpio_parse_newc_header((void *)CPIO_ADDRESS);
   buddy_init();
   dynamic_init();
-  core_timer_enable();
-  task_init();
+  //core_timer_enable();
+  //task_init();
   shell();
 }
 

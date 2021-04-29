@@ -10,5 +10,5 @@ void shell();
 void do_command(char* command);
 void loadimg();
 __attribute__((__section__ (".bootloader"))) void readimg_jump(void* load_address, size_t img_size, size_t dtb_address);
-
+extern void core_timer_enable();
 #endif

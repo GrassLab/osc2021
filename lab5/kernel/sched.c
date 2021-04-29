@@ -2,7 +2,6 @@
 #include <printf.h>
 #include <string.h>
 
-
 void schedule() {
   struct task_struct* current_task, *next_task;
   

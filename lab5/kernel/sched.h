@@ -79,4 +79,7 @@ void* load_program(const char* name);
 void* fork_memcpy();
 void* exec_set_argv(void* stack, int argc, char* const argv[]);
 extern int exit();
+
+void task_test1_init();
+void task_test2_init();
 #endif
