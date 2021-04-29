@@ -11,8 +11,19 @@ int main(int argc, char* argv[]){
     //int pid = getpid();
     //uart_printf("Your pid:%d\n",pid);
     //dumpState();
-    char *fork_argv[] = {"fork_test", 0 };
-    exec("app2", fork_argv);
+    //for(int i =0 ;i<argc ; ++i){
+    //    uart_printf("argv: %s\n",argv[i]);
+    //}
+    //char *fork_argv[] = {"fork_test", 0 };
+    //exec("app2", fork_argv);
+    //cur_exit();
+        
+    uart_printf("Argv Test, pid %d\n",getpid());
+    for(int i = 0; i <argc; ++i){
+        uart_printf("%s\n",argv[i]);
+    }
+    char *fork_argv[] = {"fork_test", 0};
+    exec("app2",fork_argv);
     cur_exit();
     return 0;
 }

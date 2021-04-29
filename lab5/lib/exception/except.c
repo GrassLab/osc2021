@@ -24,7 +24,7 @@ void x0Set(unsigned long v){
 }
 
 void _except_handler(trap_frame *tf){
-    uart_printf("Sync Exception\n");
+    //uart_printf("Sync Exception\n");
     unsigned long esr, svc;
     asm volatile("mrs %0, esr_el1  \n":"=r"(esr):);
 
@@ -80,6 +80,12 @@ void _except_handler(trap_frame *tf){
                 int pid = cur->id;
                 tf->regs[0] = pid;
                 return ;
+                }
+            case 6:
+                {
+                //uart_printf("parent elr:%x\n",tf->elr_el1);
+                sys_fork(tf);
+                return;
                 }
         }
 

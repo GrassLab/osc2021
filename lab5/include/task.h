@@ -1,8 +1,13 @@
 #ifndef _TASK_H
 #define _TASK_H
 
+void ALLMIGHTYLOG(void);
+
 typedef struct _trap_frame{
   unsigned long regs[32];
+  unsigned long sp_el0;
+  unsigned long elr_el1;
+  unsigned long spsr_el1;
 }trap_frame;
 
 typedef struct _cpu_context{
@@ -46,4 +51,6 @@ void cur_exit();
 void threadSchedule();
 void idle();
 int getpid();
+
+void _child_return_from_fork(void);
 #endif

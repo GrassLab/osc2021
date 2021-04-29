@@ -33,6 +33,12 @@ int uart_write(char* buf,int size){
 	return ret;
 }
 
+void junk(void) {
+    long imjunk = 0;
+    uart_printf("addr of imjunk: %x\n", &imjunk);
+    return;
+}
+
 unsigned int uart_printf(char* fmt,...){
 	char dst[100];
     //__builtin_va_start(args, fmt): "..." is pointed by args
@@ -55,8 +61,9 @@ void cur_exit(){
 	while(1){}
 }
 
-int fork(){
+int sys_fork(){
 	long ret;
+//    junk();
 	asm volatile("\
 		svc 6\n\
 		mov %0, x0\n\

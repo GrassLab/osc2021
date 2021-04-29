@@ -1,16 +1,22 @@
 #include "inc/syscall.h"
 
 int main(int argc, char* argv[]){
-    int len = uart_printf("argc: %d\n",argc);
-    //int len = uart_write("test\n",5);
-    //uart_printf("len %d\n",len);
-    //char buf[128];
-    //uart_printf("%s\n","Please enter read context");
-    //uart_read(buf,128);
-    //uart_printf("Your context:%s\n",buf);
-    //int pid = getpid();
-    //uart_printf("Your pid:%d\n",pid);
-    //dumpState();
+    uart_printf("Fork Test, pid:%d\n",getpid());
+    int ret = 0;
+    int cnt = 1;
+
+    //uart_printf("addr of len:%x\n", &len);
+    if((ret=sys_fork()) == 0){
+        uart_printf("pid:%d, cnt:%d, ptr:%x\n",getpid(), cnt, &cnt);
+        ++cnt;
+        sys_fork();
+        while(cnt < 5){
+            uart_printf("pid:%d, cnt:%d, ptr:%x\n",getpid(), cnt, &cnt);
+            ++cnt;
+        }
+    }else{
+        uart_printf("parent here, pid: %d\n",getpid());
+    }
     cur_exit();
     return 0;
 }

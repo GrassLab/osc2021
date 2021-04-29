@@ -5,4 +5,4 @@ unsigned int uart_printf(char* fmt,...);
 int exec(char* name,char** argv);
 void dumpState();
 void cur_exit();
-int fork();
+int sys_fork();
