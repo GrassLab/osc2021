@@ -48,7 +48,7 @@ void create_thread(void(*thread_func)())
 
     // create and set stack initial value
     alloc_page((void **)&t->kernel_sp, THREAD_STACK_SIZE);
-    t->user_sp = t->kernel_sp - int_pow(2, THREAD_STACK_SIZE - 1); // half for user sp
+    t->user_sp = t->kernel_sp - (int_pow(2, THREAD_STACK_SIZE - 1) * PHY_PF_SIZE); // half for user sp
     
 
     // preserved for register restoring

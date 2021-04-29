@@ -22,6 +22,7 @@ int get_new_pid()
 
 struct Thread * create_process(void *source_addr, int size, int argc, char *argv[])
 {
+    // printf("creating process %s...\n", argv[0]);
     char *content_addr = (char *)source_addr;
     void *start_addr = NULL;
     
@@ -30,7 +31,7 @@ struct Thread * create_process(void *source_addr, int size, int argc, char *argv
      * of that program when creation, in order to clear bss at the right address
      * (fork is okay since bss is already clean)
     */
-    alloc_page(&start_addr, 17); // FIXIT: hardcoded
+    alloc_page(&start_addr, 5); // FIXIT: hardcoded
     
     char *dest_tmp = (char *)start_addr;
 
@@ -38,6 +39,7 @@ struct Thread * create_process(void *source_addr, int size, int argc, char *argv
     for (int i = 0; i < size; i++, content_addr++, dest_tmp++) {
         *dest_tmp = *content_addr;
     }
+    // printf("process %s is created\n", argv[0]);
 
     // create process' default thread
     struct Thread *t = malloc(sizeof(struct Thread));
@@ -49,7 +51,7 @@ struct Thread * create_process(void *source_addr, int size, int argc, char *argv
 
     // // create thread stack
     alloc_page((void **)&t->kernel_sp, THREAD_STACK_SIZE);
-    t->user_sp = t->kernel_sp - int_pow(2, THREAD_STACK_SIZE - 1); // half for user sp
+    t->user_sp = t->kernel_sp - (int_pow(2, THREAD_STACK_SIZE - 1) * PHY_PF_SIZE); // half for user sp
 
     t->kernel_sp -= 256;
     struct context *ctx = (struct context *)t->kernel_sp;
@@ -75,6 +77,7 @@ struct Thread * create_process(void *source_addr, int size, int argc, char *argv
 
     thread_pool_add(t);
     enqueue(t);
+
     return t;
 }
 
@@ -87,7 +90,9 @@ void do_exec(char *name, char *argv[])
         i++;
     }
 
+    // printf("do_exec %s...\n", argv[0]);
     cpio_exec(name, argc, argv);
+    // printf("finish of do_exec...\n");
 }
 
 void do_getpid()

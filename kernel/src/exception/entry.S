@@ -71,6 +71,7 @@
 .global exception_entry
 exception_entry:
     // temporary save x0 x1 to set sp
+    sub     sp, sp, 16
     stp     x0, x1, [sp]
     mrs     x0, TPIDR_EL0
     mov     x1, sp
@@ -88,6 +89,7 @@ exception_entry:
     // get the svc number, which is stored in lower 16 bit of ESR_ELx
     mrs     x0, ESR_EL1
     and     x0, x0, #0xFFFF
+
     bl      exception_handler
 
     /* restore registers from current thread
@@ -134,4 +136,5 @@ get_arg_and_do_exec:
     mov     x10, lr
     bl      get_syscall_args
     bl      do_exec
-    ret     x10
+    mov     lr, x10
+    ret     

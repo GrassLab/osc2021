@@ -15,6 +15,7 @@ void cpio_exec(char *path, int argc, char *argv[])
     } else {
         int filesize = cpio_attr_value(targetAddr, C_FILESIZE);
         create_process(cpio_content_addr(targetAddr), filesize, argc, argv);
+        // printf("cpio executed. \r\n");
     }
 }
 

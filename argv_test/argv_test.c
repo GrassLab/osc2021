@@ -9,10 +9,12 @@ void main(int argc, char *argv[])
         printf("argv[%d]: %s\n", i, argv[i]);
     }
 
-    // char *fork_argv[] = {"fork_test", 0};
-    // exec("fork_test", fork_argv);
+    // printf("1\n");
+    char *fork_argv[] = {"fork_test", 0};
+    sys_exec("fork_test", fork_argv);
+    // printf("2\n");
     
     while (1) {
-        // sys_schedule();
+        sys_schedule();
     }
 }

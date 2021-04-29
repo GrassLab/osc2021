@@ -34,6 +34,7 @@ void exception_handler(int svc_num)
             break;
         case 3:
             // exec
+            // printf("exec handler...\n");
             get_arg_and_do_exec();
             break;
         case 4:
@@ -43,4 +44,6 @@ void exception_handler(int svc_num)
         default:
             break;
     }
+
+    return;
 }

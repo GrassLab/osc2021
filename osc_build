@@ -20,6 +20,7 @@ aarch64-linux-gnu-objcopy $CMAKE_DIR/bootloader/bootloader.elf -O binary $BUILD_
 aarch64-linux-gnu-objcopy $CMAKE_DIR/kernel/kernel8.elf -O binary $BUILD_DIR/kernel8.img
 aarch64-linux-gnu-objcopy $CMAKE_DIR/app/app.elf -O binary assets/rootfs/app
 aarch64-linux-gnu-objcopy $CMAKE_DIR/argv_test/argv_test.elf -O binary assets/rootfs/argv_test
+aarch64-linux-gnu-objcopy $CMAKE_DIR/fork_test/fork_test.elf -O binary assets/rootfs/fork_test
 
 # copy to build
 cd assets/rootfs
