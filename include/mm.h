@@ -11,7 +11,7 @@
 #define MAX_ORDER                  9 
 #define MAX_ORDER_SIZE             (1 << MAX_ORDER)
 
-#define LOW_MEMORY                 0x90000
+#define LOW_MEMORY                 0x200000
 
 #define FIND_BUDDY_PFN(pfn, order) ((pfn) ^ (1<<(order)))
 #define FIND_LBUDDY_PFN(pfn, order)((pfn) & (~(1<<(order))))
