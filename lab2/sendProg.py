@@ -1,7 +1,7 @@
 import os
 
-PORT = '/dev/pts/27'
-prog_path = '../ch/lab2/kernel8.img'
+PORT = '/dev/pts/25'
+prog_path = 'kernel8.img'
 file_size = os.path.getsize(prog_path) # bytes
 #print(file_size)
 #print(file_size)

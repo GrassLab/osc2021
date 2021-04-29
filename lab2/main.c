@@ -46,7 +46,7 @@ void input(char *command) {
 
 int main() {
     uart_init();
-    uart_puts("uart initialize successful!\n");
+    uart_puts("--------------------lab2--------------------\n");
     char buf[10];
     char *help = "help";
     char *hello = "hello";
@@ -112,9 +112,9 @@ int main() {
             
         }
         else {
-            uart_puts("Unrecognized command: ");
+            uart_puts("Error: ");
             uart_puts(buf);
-            uart_puts("\nUse <help> to find commands\n");
+            uart_puts(" command not found! Try <help> to check all available commands\n");
         }
     }
 }
