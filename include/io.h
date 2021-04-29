@@ -28,4 +28,6 @@ void init_nonblock_io();
 
 void uart_handler();
 
+unsigned long recv_buf_empty();
+
 #endif

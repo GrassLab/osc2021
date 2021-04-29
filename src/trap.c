@@ -26,8 +26,23 @@ void syn_handler(unsigned long el1_esr, void *el1_elr, void *el0_sp,
   log("SYN\n", LOG_DEBUG);
   switch (el1_esr & EC_MASK) {
     case SVC_AARCH64:
-      log_hex("svc", el1_esr & SVC_MASK, LOG_PRINT);
+      log_hex("svc", el1_esr & SVC_MASK, LOG_DEBUG);
       switch (el1_esr & SVC_MASK) {
+        case SYS_READ:
+          el1_sp->x0 = sys_read(el1_sp->x0, (char *)(el1_sp->x1), el1_sp->x2);
+          break;
+        case SYS_WRITE:
+          el1_sp->x0 = sys_write(el1_sp->x0, (char *)(el1_sp->x1), el1_sp->x2);
+          break;
+        case SYS_GETPID:
+          el1_sp->x0 = get_pid();
+          break;
+        case SYS_FORK:
+          fork(&el0_sp, &el1_sp);
+          break;
+        case SYS_EXECVE:
+          execve((char *)(el1_sp->x0), (char **)(el1_sp->x1));
+          break;
         case SYS_EXIT:
           die();
           break;

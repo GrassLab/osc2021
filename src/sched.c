@@ -318,7 +318,7 @@ mem_seg *get_usr_stack(char *const argv[]) {
 
 void execve(const char *filename, char *const argv[]) {
   mem_seg *prog_seg = get_usr_prog(filename);
-  if(prog_seg == NULL) {
+  if (prog_seg == NULL) {
     die();
   }
   mem_seg *sp_seg = get_usr_stack(argv);
@@ -338,7 +338,7 @@ void exec(const char *path) {
   argv[arg_cnt] = NULL;
 
   mem_seg *prog_seg = get_usr_prog(argv[0]);
-  if(prog_seg == NULL) {
+  if (prog_seg == NULL) {
     kfree((void *)argv);
     kfree((void *)p);
     die();
@@ -382,4 +382,61 @@ void _execve(void *usr_prog, void *usr_sp, void *sp) {
   disable_interrupt();
   set_int_stat(0);
   ret_exc(prog->base, stack->base + USR_STACK_SIZE - stack->size, 0, sp);
+}
+
+void wait_on_list(cdl_list *l) {
+  task_struct *ts = sp_to_ts(get_sp());
+  disable_interrupt();
+  push_cdl_list(l, &(ts->ts_list));
+  _schedule(ts);
+  enable_interrupt();
+}
+void wake_list(cdl_list *l) {
+  while (!cdl_list_empty(l)) {
+    disable_interrupt();
+    cdl_list *t = pop_cdl_list(l->fd);
+    push_back_cdl_list(&run_queue, t);
+    enable_interrupt();
+  }
+}
+
+void fork(void **el0_sp, saved_reg **el1_sp) {
+  void *sp = get_sp();
+  task_struct *ts = sp_to_ts(sp);
+  void *sp_base = sp_low(sp);
+  unsigned long el0_sp_s = ((void *)el0_sp) - sp_base;
+  unsigned long el1_sp_s = ((void *)el1_sp) - sp_base;
+  unsigned long el1_sp_ss = (*(void **)el1_sp) - sp_base;
+
+  mem_seg *new_sp_seg = NULL;
+  mem_seg *sp_seg = ts->usr_sp;
+  if (sp_seg != NULL) {
+    new_sp_seg = kmalloc(sizeof(mem_seg));
+    new_sp_seg->base = kmalloc(USR_STACK_SIZE);
+    new_sp_seg->ref_cnt = 1;
+    new_sp_seg->size = sp_seg->base + USR_STACK_SIZE - *el0_sp;
+    memcpy_ul(new_sp_seg->base + USR_STACK_SIZE - new_sp_seg->size, *el0_sp,
+              new_sp_seg->size);
+  }
+  unsigned long pid = clone();
+  if (pid == 0) {
+    void *csp = get_sp();
+    task_struct *cts = sp_to_ts(csp);
+    disable_interrupt();
+    if (sp_seg != NULL) {
+      sp_seg->ref_cnt--;
+      if (sp_seg->ref_cnt == 0) {
+        kfree(sp_seg->base);
+        kfree(sp_seg);
+      }
+    }
+    enable_interrupt();
+    cts->usr_sp = new_sp_seg;
+    sp_base = sp_low(csp);
+    el0_sp = (void **)(el0_sp_s + sp_base);
+    *el0_sp = cts->usr_sp->base + USR_STACK_SIZE - cts->usr_sp->size;
+    el1_sp = (saved_reg **)(el1_sp_s + sp_base);
+    *el1_sp = (saved_reg *)(el1_sp_ss + sp_base);
+  }
+  (*el1_sp)->x0 = pid;
 }

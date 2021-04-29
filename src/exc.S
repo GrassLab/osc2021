@@ -1,3 +1,4 @@
+#define ASM
 #include "syscall.h"
 #define CPACR_EL1_VAL ((0b11 << 20) | (0b11 << 16))
 

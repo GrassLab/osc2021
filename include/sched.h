@@ -2,6 +2,7 @@
 #define SCHED_H
 
 #include "util.h"
+#include "trap.h"
 
 #define KERN_STACK_SIZE (PAGE_SIZE * 2)
 #define KERN_STACK_SIZE_CTZ (PAGE_SIZE_CTZ + 1)
@@ -34,5 +35,10 @@ void execve(const char *filename, char *const argv[]);
 void exec(const char *path);
 void execve_refresh_stack(void *usr_prog, void *usr_sp, void *sp);
 void _execve(void *usr_prog, void *usr_sp, void *sp);
+
+void wait_on_list(cdl_list *l);
+void wake_list(cdl_list *l);
+
+void fork(void **el0_sp, saved_reg **el1_sp);
 
 #endif

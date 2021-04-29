@@ -49,7 +49,8 @@ $(BDIR)/%.asmo: $(SDIR)/%.S
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(BDIR)/*.asmo $(BDIR)/*.o *.elf $(BL).img $(INITRAMFS) $(UDIR)/*.o $(UDIR)/*.asmo $(UDIR)/*.elf $(UDIR)/*.img
+	rm -f $(BDIR)/*.asmo $(BDIR)/*.o *.elf $(BL).img $(INITRAMFS)
+	$(MAKE) -C $(UDIR) clean
 
 run: all
 	qemu-system-aarch64 -M raspi3 -kernel $(BL).img -initrd $(INITRAMFS) \
