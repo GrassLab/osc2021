@@ -3,6 +3,7 @@
 #include "cpio.h"
 #include "type.h"
 #include "mm.h"
+#include "exception.h"
 
 #define CMD_LEN 128
 
@@ -17,6 +18,10 @@
 #define TAB             (char)9
 #define ESC             (char)27
 
+#define EXEC_ADDR      0x1000000
+/* Timer */
+#define CORE0_TIMER_IRQ_CTRL ((volatile unsigned int*)0x40000040)
+
 void *addr[100];
 int addr_count;
 int addr_pos;
@@ -29,6 +34,28 @@ static void reset(int tick) {
 static void cancel_reset() {
     *PM_RSTC = PM_PASSWORD | 0;
     *PM_WDOG = PM_PASSWORD | 0;
+}
+
+static void execute_file(const char *file_name) {
+    for (int i = 0; i < file_count; i++) {
+        if (!strcmp(file_list[i].file_name, file_name)) {
+            if (file_list[i].executable) {
+                print("Loading user program\n\n");
+                char *exec_addr = (char*)EXEC_ADDR;
+                for (int j = 0; j < file_list[i].file_size; j++)
+                    *(exec_addr + j) = *(file_list[i].file_content + j);
+                from_el1_to_el0(EXEC_ADDR);
+            } else {
+                print("exec: ");
+                print(file_name);
+                print(": File is not executable\n");
+            }
+            return ;
+        }
+    }
+    print("exec: ");
+    print(file_name);
+    print(": No such file or directory\n");
 }
 
 static void free_mem(const char *num) {
@@ -119,6 +146,14 @@ static void cmd_controler(char *cmd) {
         allocate_mem(cmd_list[1]);
     } else if (!strcmp(cmd_list[0], "free")) {
         free_mem(cmd_list[1]);
+    } else if (!strcmp(cmd_list[0], "exec")) {
+        execute_file(cmd_list[1]);
+    } else if (!strcmp(cmd_list[0], "en_timer")) {
+        print("Timer interrupt enable\n");
+        *CORE0_TIMER_IRQ_CTRL = 2;
+    } else if (!strcmp(cmd_list[0], "dis_timer")) {
+        print("Timer interrupt disable\n");
+        *CORE0_TIMER_IRQ_CTRL = 0;
     } else if (!strcmp(cmd_list[0], "pm")) {
         for (int i = 0; i < addr_count; i++) {
             if (addr[i] != NULL) {
@@ -182,9 +217,9 @@ static void get_cmd(char *s) {
 void run_shell() {
     char cmd[CMD_LEN];
     /* Print enter information */
-    print("==================================\n");
-    print("=== Raspberry Pi 3 Model b+ OS ===\n");
-    print("==================================\n");
+    async_write("==================================\n");
+    async_write("=== Raspberry Pi 3 Model b+ OS ===\n");
+    async_write("==================================\n");
 
     for(int i = 0; i < 100; i++)
         addr[i] = NULL;
@@ -192,8 +227,9 @@ void run_shell() {
     addr_pos = 0;
 
     while (1) {
-        print("% ");
-        get_cmd(cmd);
+        async_write("% ");
+        //get_cmd(cmd);
+        async_read(cmd);
         cmd_controler(cmd);
     }
 }

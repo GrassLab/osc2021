@@ -1,9 +1,13 @@
 #ifndef _CPIO_H_
 #define  _CPIO_H_
 
+#include "type.h"
+
 typedef struct {
-    char file_name[20];
-    char file_content[100];
+    char *file_name;
+    char *file_content;
+    unsigned int file_size;
+    bool_t executable;
 } cpio_t;
 
 extern cpio_t file_list[20];

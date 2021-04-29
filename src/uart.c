@@ -1,6 +1,57 @@
+#include "uart.h"
+#include "queue.h"
 #include "gpio.h"
 #include "aux.h"
 #include "utils.h"
+#include "config.h"
+
+#define BUFF_SIZE 128
+
+char read_buff[BUFF_SIZE];
+char write_buff[BUFF_SIZE];
+queue_t read_queue;
+queue_t write_queue;
+
+io_t *uart_in = &read_buff;
+io_t *uart_out = &write_buff;
+
+bool_t end_of_input;
+
+void uart_init() {
+    register unsigned int r = *GPFSEL1;
+
+    *AUX_ENABLE |= 1;   /* Enable mini uart */
+    *AUX_MU_CNTL = 0;   /* Disable tx rx */
+    *AUX_MU_LCR = 3;    /* 8-bit mode */
+    *AUX_MU_MCR = 0;
+    *AUX_MU_IIR = 6;    /* No fifo */
+    *AUX_MU_BAUD = 270; /*Set baud rate */
+
+    /* Set interrupts */
+    *AUX_MU_IER = 0;
+    #ifdef UART_INTERRUPT_ENABLE
+        *AUX_MU_IER |= 0x1;
+        *IRQ_S1 |= (1 << 29);
+    #endif
+
+    /* Initial read, write buffer */
+    queue_init(&read_queue, read_buff, BUFF_SIZE);
+    queue_init(&write_queue, write_buff, BUFF_SIZE);
+
+    /* Change GPIO 14 15 to alternate function -> P92 */
+    r &= ~((7 << 12)|(7 << 15)); /* Reset GPIO 14, 15 */
+    r |= (2 << 12)|(2 << 15);    /* Set ALT5 */
+    *GPFSEL1 = r;
+
+    /* Disable GPIO pull up/down -> P101 */
+    *GPPUD = 0; /* Set control signal to disable */
+    delay(150);
+    /* Clock the control signal into the GPIO pads */
+    *GPPUDCLK0 = (1 << 14)|(1 << 15);
+    delay(150);
+    *GPPUDCLK0 = 0; /* Remove the clock */
+    *AUX_MU_CNTL = 3; /* Enable tx rx */
+}
 
 char uart_getc() {
     char c;
@@ -14,6 +65,65 @@ void uart_putc(char c) {
     *AUX_MU_IO = c;
 }
 
+void async_write(const char *s) {
+    while (*s != (char)0) {
+        if (*s == '\n')
+            buffer_push('\r', uart_out);
+        if (buffer_push(*s, uart_out) < 0)
+            break;
+        s++;
+    }
+    /* Enable tx interrupt */
+    *AUX_MU_IER |= 0x2;
+}
+
+void async_read(char *s) {
+    if (buffer_empty(uart_in) == true)
+        end_of_input = false;
+
+    /* Enable rx interrupt */
+    *AUX_MU_IER |= 0x1;
+    while (end_of_input == false) {}
+    /* Disable rx interrupt */
+    *AUX_MU_IER &= 0x2;
+
+    char c;
+    unsigned int count = 0;
+    while ((c = buffer_pop(uart_in)) == (char)32) {}
+    while (c != (char)0) { //&& c != (char)32) {
+        *(s + count++) = c;
+        c = buffer_pop(uart_in);
+    }
+    *(s + count) = '\0';
+}
+
+int buffer_push(char c, io_t *io) {
+    if (queue_push(io) >= 0) {
+        *((char*)(io->buffer + io->back -1)) = c;
+        return 0;
+    }
+    return -1;
+}
+
+char buffer_pop(io_t *io) {
+    if (queue_pop(io) >= 0)
+        return *((char*)(io->buffer + io->front - 1));
+    return (char)0;
+}
+
+void buffer_flush(io_t *io) {
+    while (queue_pop(io) >= 0) {}
+}
+
+bool_t buffer_empty(io_t *io) {
+    return queue_empty(io);
+}
+
+bool_t buffer_full(io_t *io) {
+    return queue_full(io);
+}
+
+//=======================================
 void print(const char *s) {
     while (*s) {
         if (*s == '\n')
@@ -30,67 +140,49 @@ void print_int(unsigned long long num) {
     int buffer[25];
     int count = 0;
     while (num) {
-        buffer[count++] = num%10;
-        num/=10;
+        buffer[count++] = num % 10;
+        num /= 10;
     }
-    for (int i = count-1; i >= 0; i--) {
-				switch (buffer[i]) {
-					case 0:
-							uart_putc('0');
-							break;
-					case 1:
-							uart_putc('1');
-							break;
-					case 2:
-							uart_putc('2');
-							break;
-					case 3:
-							uart_putc('3');
-							break;
-					case 4:
-							uart_putc('4');
-							break;
-					case 5:
-							uart_putc('5');
-							break;
-					case 6:
-							uart_putc('6');
-							break;
-					case 7:
-							uart_putc('7');
-							break;
-					case 8:
-							uart_putc('8');
-							break;
-					case 9:
-							uart_putc('9');
-							break;
-				}
-		}
+    for (int i = count-1; i >= 0; i--)
+        uart_putc((char)(buffer[i] + 48));
 }
 
-void uart_init() {
-    register unsigned int r = *GPFSEL1;
+static void print_hex(unsigned long long num) {
+    if (!num) {
+        uart_putc('0');
+        return ;
+    }
+    int buffer[25];
+    int count = 0;
+    while (num) {
+        buffer[count++] = num % 16;
+        num /= 16;
+    }
+    for (int i = count-1; i >= 0; i--)
+        if (buffer[i] < 10) {
+            uart_putc((char)(buffer[i] + 48));
+        } else {
+            uart_putc((char)(buffer[i] + 55));
+        }
+}
 
-    *AUX_ENABLE |= 1;   /* Enable mini uart */
-    *AUX_MU_CNTL = 0;   /* Disable tx rx */
-    *AUX_MU_LCR = 3;    /* 8-bit mode */
-    *AUX_MU_MCR = 0;
-    *AUX_MU_IER = 0;    /* Disable interrupts */
-    *AUX_MU_IIR = 6;    /* No fifo */
-    *AUX_MU_BAUD = 270; /*Set baud rate */
+void print_sysreg(unsigned long long spsr,
+                  unsigned long long elr,
+                  unsigned long long esr) {
+    print("Spsr: ");
+    print_hex(spsr);
+    print("\n");
+    print("Elr: ");
+    print_hex(elr);
+    print("\n");
+    print("Esr: ");
+    print_hex(esr);
+    print("\n\n");
+}
 
-    /* Change GPIO 14 15 to alternate function -> P92 */
-    r &= ~((7 << 12)|(7 << 15)); /* Reset GPIO 14, 15 */
-    r |= (2 << 12)|(2 << 15);    /* Set ALT5 */
-    *GPFSEL1 = r;
-
-    /* Disable GPIO pull up/down -> P101 */
-    *GPPUD = 0; /* Set control signal to disable */
-    delay(150);
-    /* Clock the control signal into the GPIO pads */
-    *GPPUDCLK0 = (1 << 14)|(1 << 15);
-    delay(150);
-    *GPPUDCLK0 = 0; /* Remove the clock */
-    *AUX_MU_CNTL = 3; /* Enable tx rx */
+void print_timer(unsigned long long cntpct,
+                 unsigned long long cntfrq) {
+    print("Time: ");
+    print_int(cntpct / cntfrq);
+    print(" seconds\n\n");
 }

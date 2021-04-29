@@ -7,8 +7,8 @@ SRC_DIR = src
 OUT_DIR = out
 
 LINKER_FILE = $(SRC_DIR)/linker.ld
-ENTRY = $(SRC_DIR)/boot.s
-ENTRY_OBJS = $(OUT_DIR)/boot.o
+ASM_SRCS = $(wildcard $(SRC_DIR)/*.S)
+ASM_OBJS = $(ASM_SRCS:$(SRC_DIR)/%.S=$(OUT_DIR)/%.o)
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 
@@ -18,14 +18,14 @@ CFLAGS = -Wall -I include -c
 
 all: directories kernel8.img
 
-$(ENTRY_OBJS): $(ENTRY)
+$(OUT_DIR)/%.o: $(SRC_DIR)/%.S
 	$(CC) $(CFLAGS) $< -o $@
 
 $(OUT_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) $< -o $@
 
-kernel8.img: $(OBJS) $(ENTRY_OBJS)
-	$(LD) $(ENTRY_OBJS) $(OBJS) -T $(LINKER_FILE) -o kernel8.elf
+kernel8.img: $(OBJS) $(ASM_OBJS)
+	$(LD) $(ASM_OBJS) $(OBJS) -T $(LINKER_FILE) -o kernel8.elf
 	$(OBJCPY) -O binary kernel8.elf kernel8.img
 
 asm:
@@ -35,7 +35,7 @@ run: all
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -initrd initramfs.cpio
 
 debug: all
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -S -s
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -S -s -initrd initramfs.cpio
 
 tty: all
 	sudo python send_img.py /dev/ttyUSB0 kernel8.img
