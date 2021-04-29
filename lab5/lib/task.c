@@ -156,6 +156,13 @@ void exec(char *path, char** argv){
     asm volatile("msr elr_el1, %0   \n"::"r"(cur->context.lr));
     asm volatile("msr sp_el0, %0   \n"::"r"(sp_addr));
     core_timer_enable();
+    asm volatile("mrs x3, sp_el0   \n"::);
+    asm volatile("ldr x0, [x3, 0]   \n"::);
+    asm volatile("ldr x1, [x3, 8]   \n"::);
+    unsigned long x0,x1;
+    //asm volatile("ldr %0, [x3, 0]   \n":"=r"(x0):);
+    //asm volatile("ldr %0, [x3, 0]   \n":"=r"(x1):);
+    //uart_printf("%d\n",x0);
     asm volatile("eret   \n");
 }
 
@@ -167,7 +174,7 @@ void foo1(){
     task_struct *cur = get_current();
     for(int i = 0; i<2 ; ++i){
         uart_printf("Thread id:%d, loop:%d\n",cur->id,i);
-        for(int j =0 ; j < (1<<27);++j){}
+//        for(int j =0 ; j < (1<<27);++j){}
         threadSchedule();
     }
     cur_exit();

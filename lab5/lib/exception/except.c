@@ -23,32 +23,64 @@ void x0Set(unsigned long v){
 	task[16]=v;
 }
 
-void _except_handler(){
+void _except_handler(trap_frame *tf){
     uart_printf("Sync Exception\n");
     unsigned long esr, svc;
     asm volatile("mrs %0, esr_el1  \n":"=r"(esr):);
 
     unsigned long x0,x1,x2;
-   // asm volatile("str x0,[sp, 0]  \n"::);
-   // asm volatile("str x0,[sp, 8]  \n"::);
-   // asm volatile("str x0,[sp, 16]  \n"::);
+    //asm volatile("str x0,[sp, -8]  \n"::);
+    //asm volatile("str x1,[sp, -16]  \n"::);
+    //asm volatile("str x2,[sp, -24]  \n"::);
 
-   // asm volatile("ldr %0,[sp, 16]  \n":"=r"(x0):);
-   // asm volatile("ldr %0,[sp, 16]  \n":"=r"(x1):);
-   // asm volatile("ldr %0,[sp, 16]  \n":"=r"(x2):);
+    //asm volatile("ldr %0,[sp, 0] \n":"=r"(x0):);
+    //asm volatile("ldr %0,[sp, 8]  \n":"=r"(x1):);
+    //asm volatile("ldr %0,[sp, 16]  \n":"=r"(x2):);
 
+
+    //uart_puts(x0);
     if(((esr>>26)&0x3f) == 0x15){
         svc = esr & 0x1ffffff;
         switch(svc){
             case 0:
+                {
+     //           uart_printf("svc = %d \n",svc);
                 dumpState();
                 break;
+                }
             case 1:
+                {
+      //          uart_printf("svc = %d \n",svc);
                 cur_exit();
                 break;
+                }
             case 2:
-                exec((char*)x0,(char**)x1);
+                {
+       //         uart_printf("svc = %d \n",svc);
+                exec(tf->regs[0], tf->regs[1]);
                 break;
+                }
+            case 3:
+                {
+        //        uart_printf("svc = %d \n",svc);
+                uart_puts(tf->regs[0]);
+                tf->regs[0] = tf->regs[1];
+                return;
+                }
+            case 4:
+                {
+                unsigned long ret;
+                ret = uart_gets(tf->regs[0],tf->regs[1],1);
+                tf->regs[0] = ret;
+                return ;
+                }
+            case 5:
+                {
+                task_struct *cur = get_current();
+                int pid = cur->id;
+                tf->regs[0] = pid;
+                return ;
+                }
         }
 
 

@@ -40,9 +40,10 @@
 void uart_init();
 void uart_send(unsigned int c);
 char uart_getc();
+int uart_gets(char* buf, int size, int display);
 void uart_puts(char *s);
 void sendHexUART(unsigned int hex);
 void uart_hex(unsigned int d);
 unsigned char uart_getb();
 unsigned int uart_printf(char* fmt,...);
- #endif
+#endif

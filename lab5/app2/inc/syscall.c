@@ -9,7 +9,7 @@ void dumpState(){
 int getpid(){
 	long ret;
 	asm volatile("\
-		svc 1\n\
+		svc 5\n\
 		mov %0, x0\n\
 	":"=r"(ret):);
 	return ret;
@@ -18,7 +18,7 @@ int getpid(){
 int uart_read(char* buf,int size){
 	long ret;
 	asm volatile("\
-		svc 2\n\
+		svc 4\n\
 		mov %0, x0\n\
 	":"=r"(ret):);
 	return ret;
@@ -40,17 +40,17 @@ unsigned int uart_printf(char* fmt,...){
     __builtin_va_list args;
     __builtin_va_start(args,fmt);
     unsigned int ret=vsprintf(dst,fmt,args);
-    uart_write(dst,ret);
-    return ret;
+    int x;
+    x = uart_write(dst,ret);
+    return x;
 }
 
 int exec(char* name,char** argv){
     asm volatile("svc 2   \n"::);
-
     while(1){}
 }
 
-void exit(){
+void cur_exit(){
 	asm volatile("svc 1\n"::);
 	while(1){}
 }
