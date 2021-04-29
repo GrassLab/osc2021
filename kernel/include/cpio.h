@@ -5,7 +5,7 @@
 #ifdef EMU
 #define RAMFS_ADDR (0x8000000)
 #else
-#define RAMFS_ADDR (0x100000)
+#define RAMFS_ADDR (0x1000000)
 #endif
 
 typedef struct cpio_newc_header CPIO_NEWC_HEADER;

@@ -161,7 +161,7 @@ void foo() {
     for(int i = 0; i < 10; ++i) {
         struct Thread *current_thread = get_current_thread();
         printf("Thread id: %d %d\n", current_thread->tid, i);
-        wait(100000000);
+        wait(1000000);
         sys_schedule();
     }
 }
