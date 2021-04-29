@@ -164,5 +164,5 @@ void do_exit()
     // get next
     struct Thread *next = dequeue();
     set_current_thread( next );
-    printf("pid: %d has exited\n", current->pid);
+    // printf("pid: %d has exited\n", current->pid);
 }

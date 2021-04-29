@@ -164,4 +164,5 @@ void foo() {
         wait(1000000);
         sys_schedule();
     }
+    sys_exit();
 }
