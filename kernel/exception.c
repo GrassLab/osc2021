@@ -10,15 +10,15 @@ void exception_entry() {
     asm volatile("mrs %0, esr_el1":"=r"(esr_el1):);
 
     uart_puts("[debug]    spsr_el1: 0x");
-    uart_puti(spsr_el1, 16);
+    uart_putul(spsr_el1, 16);
     uart_puts("\n");
 
     uart_puts("[debug]    elr_el1: 0x");
-    uart_puti(elr_el1, 16);
+    uart_putul(elr_el1, 16);
     uart_puts("\n");
 
     uart_puts("[debug]    esr_el1: 0x");
-    uart_puti(esr_el1, 16);
+    uart_putul(esr_el1, 16);
     uart_puts("\n");
 
     /*

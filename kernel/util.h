@@ -4,6 +4,8 @@
 #include "type.h"
 
 char* itoa(int num, char* str, int base);
+char *ultoa(unsigned long value, char* buffer, int base);
+
 void itohexstr(uint64_t d, int size, char * s);
 
 int atoi(const char *str);

@@ -71,7 +71,7 @@ void command_help() {
     uart_puts("  freei\t\t:\tfree memory by index.\n");
     uart_puts("  meminfo\t:\tlist memory info.\n");
     uart_puts("  kmalloc\t:\tmalloc memory for kernel.\n");
-    uart_puts("  kfree\t:\tfree memory for kernel.\n");
+    uart_puts("  kfree\t\t:\tfree memory for kernel.\n");
     uart_puts("  test\t\t:\ttesting kmalloc and kfree.\n");
     uart_puts("  load_p\t:\tload user program to specific address.\n");
     uart_puts("  currentel\t:\tget current execption level.\n");
@@ -362,7 +362,25 @@ void command_run_user_program() {
     uart_puts("[debug] running user program at 0x20800000\n");
 
     // set spsr_el1 to 0x3c0
-    // 
+
+    // In the required part, you only need to enable interrupt in EL0. 
+    // You can do it by setting spsr_el1 to 0 before returning to EL0.
+    //
+    //
+    // Process state PSTATE
+    //     I, bit [7], IRQ mask bit
+    //
+    // SPSR_EL1, Saved Program Status Register (EL1)
+    //     I, bit [7]
+    //     IRQ interrupt mask. 
+    //     Set to the value of PSTATE.I on taking an exception to EL1, 
+    //     and copied to PSTATE.I on executing an exception return operation in EL1.
+    //
+    // Therefore,
+    //   0x3c0 = 0b1111000000
+    //   0x340 = 0b1101000000
+    //
+
     asm volatile("mov x0, 0x340;"
                  "msr spsr_el1, x0;"); 
 

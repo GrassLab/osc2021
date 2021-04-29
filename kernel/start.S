@@ -1,6 +1,11 @@
 #include "exception.h"
 
+// https://www.raspberrypi.org/documentation/hardware/raspberrypi/bcm2836/QA7_rev3.4.pdf p.19 Appendix A: Defines
 #define CORE0_TIMER_IRQ_CTRL 0x40000040
+#define CORE1_TIMER_IRQ_CTRL 0x40000044
+#define CORE2_TIMER_IRQ_CTRL 0x40000048
+#define CORE3_TIMER_IRQ_CTRL 0x4000004c
+
 
 .section ".text.boot"
 
@@ -31,14 +36,14 @@ _start:
     cbnz w2, 3b
 
 4:  
+    // Core Timer Interrupt
     mov x0, 1
     msr cntp_ctl_el0, x0     // enable timer’s interrupt
     mrs x0, cntfrq_el0
-    msr cntp_tval_el0, x0    // set expired timer’s
+    msr cntp_tval_el0, x0    // set expired timer’s to counter's frequency
     mov x0, 2
     ldr x1, =CORE0_TIMER_IRQ_CTRL
     str w0, [x1]             // unmask timer interrupt
-
 
     bl main
     b 1b
