@@ -9,3 +9,4 @@ initramfs.cpio
 *.dtb
 *.asmo
 *.o
+kernel.s

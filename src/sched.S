@@ -3,8 +3,8 @@
 .global get_pid
 .global set_pid
 .global get_sp
-.global switch_exec
 .global thread_start
+.global switch_exec
 .global switch_exec_clone
 
 .macro save_pres
@@ -37,34 +37,37 @@ get_sp:
     mov x0, sp
     ret
 
+thread_start:
+    mov x0, #1
+    bl set_int_stat
+    bl clear_task_timer
+    bl enable_interrupt
+    ldr x30, =die
+    br x20
+
 switch_exec:
     save_pres
     mov x3, sp
     str x3, [x2]
     msr tpidr_el1, x1
-    mov sp, x0
+    ldr x3, [x0]
+    mov sp, x3
     load_pres
-    ret
-
-thread_start:
-    mov x0, #1
-    bl set_int_stat
-    bl enable_interrupt
-    bl clear_task_timer
-    mov x30, x20
     ret
 
 switch_exec_clone:
     save_pres
-    mov x5, sp
-    str x5, [x2]
+    mov x4, sp
+    str x4, [x2]
     
-    mov sp, x3
+    ldr x4, [x3]
+    mov sp, x4
     save_pres
-    mov x5, sp
-    str x5, [x4]
+    mov x4, sp
+    str x4, [x3]
 
     msr tpidr_el1, x1
-    mov sp, x0
+    ldr x4, [x0]
+    mov sp, x4
     load_pres
     ret

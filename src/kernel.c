@@ -29,21 +29,6 @@ void shell() {
         print("file not found\n");
       }
     } else if (!strcmp_n(cmd_buf, "exec ", 5)) {
-      void *cpio_file = get_cpio_file(cmd_buf + 5);
-      if (cpio_file != NULL) {
-        if (clone()) {
-          unsigned long file_size = get_file_size(cpio_file);
-          void *file_data = get_file_data(cpio_file);
-          void *usr_prog = kmalloc(pad(file_size, 4096));
-          void *usr_stack = kmalloc(KERN_STACK_SIZE) + KERN_STACK_SIZE;
-          memcpy(usr_prog, file_data, file_size);
-          exec_usr(usr_prog, usr_stack, 0);
-          kfree(usr_stack);
-          kfree(usr_prog);
-        }
-      } else {
-        print("program not found\n");
-      }
     } else if (strcmp(cmd_buf, "")) {
       print("command not found: ");
       puts(cmd_buf);
@@ -52,12 +37,24 @@ void shell() {
 }
 
 void print_pid() {
-  clone();
   unsigned long pid = get_pid();
   log_hex("st", pid, LOG_PRINT);
+  unsigned long cid = clone();
+  if (cid) {
+    cid = clone();
+  }
   // wait_clock(1000000);
-  sleep(5);
-  die();
+
+  if (cid) {
+    sleep(4);
+    // wait();
+    // wait();
+  } else {
+    pid = get_pid();
+    log_hex("st", pid, LOG_PRINT);
+    sleep(2);
+  }
+  // sleep(3);
 }
 
 void kernel() {

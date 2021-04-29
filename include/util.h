@@ -23,6 +23,7 @@ size_t atol_n(const char *s, size_t len, size_t base);
 
 char *new_str(char *src);
 char *split_str(char *str);
+size_t cnt_white(const char *s);
 
 // circular double linked list
 typedef struct cdl_list {
@@ -56,6 +57,19 @@ static inline void *pop_cdl_list(cdl_list *chunk) {
 }
 
 static inline int cdl_list_empty(cdl_list *l) { return l->fd == l; }
+
+static inline void concat_cdl_list(cdl_list *l1, cdl_list *l2) {
+  if(!cdl_list_empty(l2)) {
+    // l1 tail bk = l2 head
+    l1->fd->bk = l2->bk;
+    // l2 head fd = l1 tail
+    l2->bk->fd = l1->fd;
+    // l1 tail = l2 tail
+    l1->fd = l2->fd;
+    // l2 tail bk = l1 
+    l2->fd->bk = l1;
+  }
+}
 
 // linked list
 typedef struct l_list {
