@@ -213,7 +213,7 @@ void buddy_initialize()
         allocated_table[i].index = EMPTY;
         allocated_table[i].page_num = 0;
     }
-
+    
     pool_16.ptr = buddy_contiguous_alloc(4096);
     pool_16.num = 256;
     for (int i = 0; i < pool_16.num; ++i)

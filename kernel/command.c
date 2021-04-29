@@ -16,6 +16,7 @@ void InputBufferOverflowMessage(char cmd[])
 
 void CommandInit()
 {
+    buddy_initialize();
     thread_init();
 }
 

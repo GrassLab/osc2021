@@ -13,7 +13,16 @@ enum Thread_State
 };
 
 struct Context {
-    unsigned long regs[10];
+    unsigned long x19;
+    unsigned long x20;
+    unsigned long x21;
+    unsigned long x22;
+    unsigned long x23;
+    unsigned long x24;
+    unsigned long x25;
+    unsigned long x26;
+    unsigned long x27;
+    unsigned long x28;
     unsigned long fp;
     unsigned long lr;
     unsigned long sp;
@@ -23,7 +32,7 @@ struct Thread {
     struct Context context;
 
     int id;
-    bool used;
+    int used;
 
     enum Thread_State state;
 
@@ -38,7 +47,10 @@ struct RunQueue {
 void thread_init();
 void thread_test(int test_id);
 
+void log_runqueue();
+
 // start.S
-void switch_to(struct Thread * prev, struct Thread * next);
+//void switch_to(struct Context * prev, struct Context * next);
+void switch_to();
 
 #endif

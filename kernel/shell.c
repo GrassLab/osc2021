@@ -16,7 +16,7 @@ void ShellStart()
 
     uart_puts("# ");
 	// thread test by default
-	CommandThreadTest(1);
+	//CommandThreadTest(1);
 
     while(1)
     {

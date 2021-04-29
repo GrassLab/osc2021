@@ -1,9 +1,10 @@
 #include "thread.h"
+#include "allocator.h"
 #include "../lib/uart.h"
 
-#define THREAD_MAX 100
+#define THREAD_MAX 5
 
-struct Thread thread_table[THREAD_MAX];
+struct Thread * thread_table[THREAD_MAX];
 struct RunQueue run_queue;
 
 void thread_init()
@@ -13,10 +14,16 @@ void thread_init()
 
     for (int i = 0; i < THREAD_MAX; ++i)
     {
-        thread_table[i].id = i;
-        thread_table[i].used = false;
-        thread_table[i].state = Thread_Wait;
-        thread_table[i].next = NULL;
+        thread_table[i] = (struct Thread *)buddy_alloc(THREAD_SIZE);
+
+
+        thread_table[i]->id = i;
+        thread_table[i]->used = false;
+        uart_puts_h("??");
+        
+        thread_table[i]->state = Thread_Wait;
+        
+        thread_table[i]->next = NULL;
     }
 }
 
@@ -24,9 +31,9 @@ struct Thread * thread_create(void * fun_ptr)
 {
     for (int i = 0; i < THREAD_MAX; ++i)
     {
-        if (thread_table[i].used == false)
+        if (thread_table[i]->used == false)
         {
-            struct Thread * current = &thread_table[i];
+            struct Thread * current = thread_table[i];
 
             current->used = true;
             current->context.lr = (unsigned long)fun_ptr;
@@ -62,12 +69,45 @@ struct Thread * current_thread()
     return current;
 }
 
+void switch_to()
+{
+    asm volatile("_switch_to:");
+
+    asm volatile("  stp x19, x20, [x0, 16 * 0]");
+    asm volatile("  stp x21, x22, [x0, 16 * 1]");
+    asm volatile("  stp x23, x24, [x0, 16 * 2]");
+    asm volatile("  stp x25, x26, [x0, 16 * 3]");
+    asm volatile("  stp x27, x28, [x0, 16 * 4]");
+    asm volatile("  stp fp, lr, [x0, 16 * 5]");
+    asm volatile("  mov x9, sp");
+    asm volatile("  str x9, [x0, 16 * 6]");
+
+    asm volatile("  ldp x19, x20, [x1, 16 * 0]");
+    asm volatile("  ldp x21, x22, [x1, 16 * 1]");
+    asm volatile("  ldp x23, x24, [x1, 16 * 2]");
+    asm volatile("  ldp x25, x26, [x1, 16 * 3]");
+    asm volatile("  ldp x27, x28, [x1, 16 * 4]");
+    asm volatile("  ldp fp, lr, [x1, 16 * 5]");
+    asm volatile("  ldr x9, [x1, 16 * 6]");
+    asm volatile("  mov sp, x9");
+    asm volatile("  msr tpidr_el1, x1");
+
+    asm volatile("  ret");
+
+
+    //unsigned long test;
+    //asm volatile("  mov %0, sp":"=r"(test));
+    //uart_puts_h(test);
+    //asm volatile("  mov sp, %0"::"r"(test));
+}
+
 void schedule()
 {
+  //  uart_puts("--schedule\n");
     struct Thread * current = current_thread();
     struct Thread * next = current->next;
-    //uart_puts("--schedule\n");
 
+    if (run_queue.begin == run_queue.end) return;
     if (current == run_queue.end) next = run_queue.begin;
 
     while (next->state != Thread_Wait)
@@ -77,6 +117,7 @@ void schedule()
             next = run_queue.begin;
         }
 
+        // already go through the whole queue
         if (current == next)
         {
             return;
@@ -87,9 +128,18 @@ void schedule()
         }
     }
     
-    //uart_puts("--switch to\n");
+    if (next->state != Thread_Wait) return;
+
+    //uart_puts("--switch to ");
+    //uart_puts_h(next->context.lr);
+    //uart_puts("\n");
     
-    switch_to(current, next);
+    asm volatile("\
+        mov x1, %0\n\
+        mrs x0, tpidr_el1\n\
+        bl _switch_to"::"r"(&next->context));
+
+    switch_to(&current->context, &next->context);
 }
 
 void kill_zombies()
@@ -97,32 +147,39 @@ void kill_zombies()
     struct Thread * current = run_queue.begin;
 
     //uart_puts("---kill\n");
-    while(current->next != NULL)
+    
+    while(current != run_queue.end)
     {
         if (current->next->state == Thread_Exit)
         {
-            struct Thread * temp = current->next->next;
-            
             if (current->next == run_queue.end)
             {
                 run_queue.end = current;
+                current->next = NULL;
+            }
+            else
+            {
+                current->next = current->next->next;
             }
 
             current->next->used = false;
+            uart_puts("??");
             current->next->state = Thread_Wait;
-            
-            current->next = temp;
         }
-
-        current = current->next;
+        else
+        {
+            current = current->next;
+        }
     }
 }
+
+void delay
 
 void idle()
 {
     while(1)
     {
-        //uart_puts("---Idle\n");
+   //     uart_puts("---Idle\n");
 
         kill_zombies();
         schedule();
@@ -161,7 +218,7 @@ void log_runqueue()
 
 void foo1()
 {
-    for (int i = 0; i < 5; ++i)
+    for (int i = 0; i < 3; ++i)
     {
         uart_puts("Thread id: ");
         uart_puts_i(current_thread()->id);
