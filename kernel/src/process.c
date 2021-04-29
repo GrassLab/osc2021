@@ -7,6 +7,7 @@
 #include "io.h"
 #include "cpio.h"
 #include "scheduler.h"
+#include "string.h"
 
 int distribute_pid = 1;
 
@@ -18,7 +19,7 @@ int get_new_pid()
     return tmp;
 }
 
-struct Thread * create_process(void *source_addr, int size)
+struct Thread * create_process(void *source_addr, int size, int argc, char *argv[])
 {
     char *content_addr = (char *)source_addr;
     void *start_addr = NULL;
@@ -47,12 +48,39 @@ struct Thread * create_process(void *source_addr, int size)
 
     // // create thread stack
     alloc_page((void **)&t->kernel_sp, THREAD_STACK_SIZE);
-    t->user_sp = (uint64_t)t->kernel_sp - int_pow(2, THREAD_STACK_SIZE - 1); // half for user sp
+    t->user_sp = t->kernel_sp - int_pow(2, THREAD_STACK_SIZE - 1); // half for user sp
 
     t->kernel_sp -= 256;
     struct context *ctx = (struct context *)t->kernel_sp;
     ctx->lr = (uint64_t)start_addr;
-    ctx->fp = t->kernel_sp;
+    ctx->fp = t->user_sp;
+
+    uint64_t tmp_user_sp = t->user_sp;
+    for (int i = 0; i < argc; i++) {
+        printf("copying \"%s\"...\n", argv[i]);
+        t->user_sp -= (strlen(argv[i]) + 1);
+        strcpy((char *)t->user_sp, argv[i]);
+        printf("copyied \"%s\"...\n", (char *)t->user_sp);
+    }
+
+    t->user_sp -= (8 * argc);
+    uint64_t **tmp = (uint64_t **)t->user_sp;
+    for (int i = 0; i < argc; i++) {
+        tmp_user_sp -= (strlen(argv[i]) + 1);
+        tmp[i] = (uint64_t *)tmp_user_sp;
+    }   
+
+    ctx->reg[0] = argc;
+    ctx->reg[1] = t->user_sp;
+    
+
+
+    
+
+
+
+    // *((int *)t->user_sp) = argc;
+
 
     thread_pool_add(t);
     enqueue(t);
@@ -61,5 +89,12 @@ struct Thread * create_process(void *source_addr, int size)
 
 void do_exec(char *name, char *argv[])
 {
-    cpio_exec(name);
+    // calculate argc
+    int argc = 0, i = 0;
+    while (argv[i] != 0) {
+        argc++;
+        i++;
+    }
+
+    cpio_exec(name, argc, argv);
 }

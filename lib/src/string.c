@@ -21,6 +21,16 @@ int strcmp(char *str1, char *str2)
     return result;
 }
 
+int strcpy(char *str1, char *str2)
+{
+    int length = strlen(str2);
+    for (int i = 0; i < length; i++) {
+        str1[i] = str2[i];
+    }
+
+    return 0;
+}
+
 int strlen(char *str) 
 {
     int len = 0;

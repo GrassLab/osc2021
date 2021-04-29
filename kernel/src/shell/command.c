@@ -35,11 +35,12 @@ void exec_command(char *input)
     } else if (strcmp(input, "demo2") == 0) {
         demo2();
     } else if (strcmp(input, "load") == 0) {
-        char * argv[2] = {"arg1", "arg2"};
-        sys_exec("app", argv);
-        // while ( 1 ) {
+        char * argv[] = {"argv_test", "-o", "arg2", 0};
+        sys_exec("argv_test", argv);
+        
+        while ( 1 ) {
             sys_schedule();
-        // }
+        }
     } else if (strcmp(input, "thread") == 0) {
         for(int i = 0; i < 10; ++i) { // N should > 2
             create_thread(foo);
@@ -51,8 +52,6 @@ void exec_command(char *input)
     } else {
         printf("Try another command\r\n");
     }
-
-    printf("hello\n");
 }
 
 

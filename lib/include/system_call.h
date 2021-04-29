@@ -4,6 +4,6 @@
 void sys_schedule();
 void sys_uart_read();
 void sys_uart_write();
-void sys_exec(char *name, char **argv);
+void sys_exec(char *name, char *argv[]);
 
 #endif

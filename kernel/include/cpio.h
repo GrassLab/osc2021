@@ -49,7 +49,7 @@ enum CPIO_ATTR {
 CPIO_NEWC_HEADER * cpio_find_addr(CPIO_NEWC_HEADER *pCurrentFile, char *targetName);
 int cpio_attr_value(CPIO_NEWC_HEADER *pRoot, CPIO_ATTR attr);
 void cpio_read(char *path);
-void cpio_exec(char *path);
+void cpio_exec(char *path, int argc, char *argv[]);
 void * cpio_content_addr(CPIO_NEWC_HEADER *targetAddr);
 
 #endif

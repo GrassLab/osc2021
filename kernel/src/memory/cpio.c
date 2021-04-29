@@ -7,14 +7,14 @@
 #include "process.h"
 #include "thread.h"
 
-void cpio_exec(char *path)
+void cpio_exec(char *path, int argc, char *argv[])
 {
     CPIO_NEWC_HEADER *targetAddr = cpio_find_addr((CPIO_NEWC_HEADER *)RAMFS_ADDR ,path);
     if (targetAddr == 0) {
         printf("could not find the file. \r\n");
     } else {
         int filesize = cpio_attr_value(targetAddr, C_FILESIZE);
-        create_process(cpio_content_addr(targetAddr), filesize);
+        create_process(cpio_content_addr(targetAddr), filesize, argc, argv);
     }
 }
 
