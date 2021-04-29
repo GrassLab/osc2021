@@ -1,24 +1,28 @@
 #include "io.h"
 #include "system_call.h"
+#include "base_ops.h"
 
 void main(int argc, char *argv[])
 {
     int pid = sys_getpid();
     printf("Fork Test, pid %d\n", pid);
-    // int cnt = 1;
-    // int ret = 0;
-    // if ((ret = fork()) == 0) { // child
-    //     printf("pid: %d, cnt: %d, ptr: %p\n", getpid(), cnt, &cnt);
-    //     ++cnt;
-    //     fork();
-    //     while (cnt < 5) {
-    //         printf("pid: %d, cnt: %d, ptr: %p\n", getpid(), cnt, &cnt);
-    //         delay(1000000);
-    //         ++cnt;
-    //     }
-    // } else {
-    //     printf("parent here, pid %d, child %d\n", getpid(), ret);
-    // }
+    int cnt = 1;
+    int ret = sys_fork();
 
-    while (1) {}
+    if (ret == 0) { // child
+        int pid = sys_getpid();
+        printf("pid: %d, cnt: %d, ptr: %ld\n", pid, cnt, &cnt);
+        ++cnt;
+        sys_fork();
+        while (cnt < 5) {
+            int pid = sys_getpid();
+            printf("pid: %d, cnt: %d, ptr: %ld\n", pid, cnt, &cnt);
+            wait(100000000);
+            
+            ++cnt;
+        }
+    } else {
+        int pid = sys_getpid();
+        printf("parent here, pid %d, child %d\n", pid, ret);
+    }
 }

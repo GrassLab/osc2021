@@ -7,7 +7,7 @@
 typedef enum {
     RUNNING,
     WAITING,
-    DEAD
+    EXIT
 } STATE;
 
 struct context {

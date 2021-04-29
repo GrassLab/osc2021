@@ -51,11 +51,12 @@ void create_thread(void(*thread_func)())
     t->user_sp = t->kernel_sp - (int_pow(2, THREAD_STACK_SIZE - 1) * PHY_PF_SIZE); // half for user sp
     
 
+    uint64_t kernel_fp = t->kernel_sp;
     // preserved for register restoring
     t->kernel_sp -= 256;
     struct context *ctx = (struct context *)t->kernel_sp;
     ctx->lr = (uint64_t)thread_func;
-    ctx->fp = t->kernel_sp;
+    ctx->fp = kernel_fp;
     
     // TODO: get pid from parent's pid
     thread_pool_add(t);

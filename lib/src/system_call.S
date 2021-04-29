@@ -20,3 +20,11 @@ sys_exec:
 .global sys_getpid
 sys_getpid:
     svc 4
+
+.global sys_fork
+sys_fork:
+    svc 5
+
+.global sys_exit
+sys_exit:
+    svc 6

@@ -12,6 +12,7 @@ void idle()
     while ( 1 ) {
         printf("idle\n");
         sys_schedule();
+        wait(100000000);
     }
 }
 

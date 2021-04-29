@@ -2,4 +2,4 @@
 .global _start
 _start:
     bl      main
-    #b       sys_exit
+    b       sys_exit

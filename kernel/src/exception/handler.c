@@ -38,8 +38,16 @@ void exception_handler(int svc_num)
             get_arg_and_do_exec();
             break;
         case 4:
-            // exec
+            // getpid
             do_getpid();
+            break;
+        case 5:
+            // fork
+            do_fork();
+            break;
+        case 6:
+            // exit
+            do_exit();
             break;
         default:
             break;

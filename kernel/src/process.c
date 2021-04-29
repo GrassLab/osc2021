@@ -53,10 +53,11 @@ struct Thread * create_process(void *source_addr, int size, int argc, char *argv
     alloc_page((void **)&t->kernel_sp, THREAD_STACK_SIZE);
     t->user_sp = t->kernel_sp - (int_pow(2, THREAD_STACK_SIZE - 1) * PHY_PF_SIZE); // half for user sp
 
+    uint64_t kernel_fp = t->kernel_sp;
     t->kernel_sp -= 256;
     struct context *ctx = (struct context *)t->kernel_sp;
     ctx->lr = (uint64_t)start_addr;
-    ctx->fp = t->user_sp;
+    ctx->fp = kernel_fp;
 
     uint64_t tmp_user_sp = t->user_sp;
     for (int i = 0; i < argc; i++) {
@@ -101,4 +102,67 @@ void do_getpid()
     struct context *ctx = (struct context *)current->kernel_sp;
     ctx->reg[0] = current->pid;
     // send_pid_to_user(current->pid);
+}
+
+
+void do_fork()
+{
+    struct Thread *current = get_current_thread();
+    struct Thread *forked = malloc(sizeof(struct Thread));
+
+    // copy thread structure
+    char *srcTmp = (char *)current;
+    char *dstTmp = (char *)forked;
+
+    for (int i = 0; i < sizeof(struct Thread); i++) {
+        dstTmp[i] = srcTmp[i];
+    }
+
+
+    // copy stack
+    void *sp_space = NULL;
+    alloc_page(&sp_space, THREAD_STACK_SIZE);
+
+    struct context *current_ctx = (struct context *)current->kernel_sp;
+    srcTmp = (char *)current_ctx->fp;
+    dstTmp = (char *)sp_space;
+    int stack_size = (int_pow(2, THREAD_STACK_SIZE) * PHY_PF_SIZE);
+
+    for (int i = 0; i < stack_size; i++) {
+        dstTmp[i] = srcTmp[i];
+    }
+
+    uint64_t sp_addr = (uint64_t)sp_space;
+    sp_addr -= (current_ctx->fp - current->kernel_sp);
+    // switch to copied one
+    forked->kernel_sp = sp_addr;
+    forked->user_sp = (forked->kernel_sp - (current->kernel_sp - current->user_sp));
+    forked->tid = get_new_tid();
+    forked->pid = get_new_pid();
+
+    struct context *forked_ctx = (struct context *)sp_addr;
+    forked_ctx->fp = (sp_addr + (current_ctx->fp - current->kernel_sp));
+    
+    // set fork return value
+    current_ctx->reg[0] = forked->pid;
+    forked_ctx->reg[0] = 0;
+
+
+    thread_pool_add(forked);
+    enqueue(forked);
+
+
+    // printf("source: pid: %d, tid: %d\n", current->pid, current->tid);
+    // printf("forked: pid: %d, tid: %d\n", forked->pid, forked->tid);
+}
+
+void do_exit()
+{
+    struct Thread *current = get_current_thread();
+    current->state = EXIT;
+
+    // get next
+    struct Thread *next = dequeue();
+    set_current_thread( next );
+    printf("pid: %d has exited\n", current->pid);
 }
