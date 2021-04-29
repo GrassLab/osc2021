@@ -12,6 +12,13 @@
 ```
 cd kernel
 make
+cd ../user_program
+make
+```
+
+### ramdisk
+```
+./run.sh
 ```
 
 ## How to run

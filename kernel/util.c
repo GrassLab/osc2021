@@ -14,13 +14,46 @@ char* itoa(int value, char* buffer, int base)
     int i = 0;
     while (n)
     {
-        int r = n % base;
- 
+        int r = n % base; 
         if (r >= 10) 
             buffer[i++] = 65 + (r - 10);
-        else
+        else 
             buffer[i++] = 48 + r;
+        n = n / base;
+    }
  
+    // if number is 0
+    if (i == 0)
+        buffer[i++] = '0';
+ 
+    // If base is 10 and value is negative, the resulting string 
+    // is preceded with a minus sign (-)
+    // With any other base, value is always considered unsigned
+    if (value < 0 && base == 10)
+        buffer[i++] = '-';
+ 
+    buffer[i] = '\0'; // null terminate string
+ 
+    // reverse the string and return it
+    return reverse(buffer, 0, i - 1);
+}
+
+char *ultoa(unsigned long value, char* buffer, int base) {
+    // invalid input
+    if (base < 2 || base > 32)
+        return buffer;
+ 
+    // consider absolute value of number
+    unsigned long n = value;
+ 
+    int i = 0;
+    while (n)
+    {
+        int r = n % base; 
+        if (r >= 10) 
+            buffer[i++] = 65 + (r - 10);
+        else 
+            buffer[i++] = 48 + r;
         n = n / base;
     }
  
@@ -86,6 +119,23 @@ int hextoi(const char *str) {
             res = res * 16 + str[i] - '0';
     }
 
+    return res;
+}
+
+int hextoint8(char hex) {
+    if(hex >= '0' && hex <= '9')
+        return hex-'0';
+    else if(hex >= 'A' && hex <= 'Z')
+        return hex-'A'+10;
+    else if(hex >= 'a' && hex <= 'z')
+        return hex-'a'+10;
+    return 0;
+}
+
+int hextoint64(char *hex) {
+    uint64_t res = 0;
+    for(int i = 0; i < 8; i++) 
+        res = (res << 4) + hextoint8(hex[i]);
     return res;
 }
 

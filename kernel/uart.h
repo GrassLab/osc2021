@@ -13,5 +13,6 @@ void uart_send(unsigned int c);
 char uart_getc();
 void uart_puts(char *s);
 void uart_puti(int val, int base);
+void uart_putul(unsigned long val, int base);
 
 #endif
