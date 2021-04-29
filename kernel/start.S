@@ -22,7 +22,7 @@ _start:
     bl from_el2_to_el1
 
     ldr x0, =exception_vector_table
-    msr VBAR_EL1, x0     // set vector table address
+    msr VBAR_EL1, x0          // set vector table address
 
     ldr x1, =_start
     mov sp, x1
