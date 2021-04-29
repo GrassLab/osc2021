@@ -14,19 +14,21 @@ all: $(HELLO) $(GETPID) $(ARGV)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-HELLO_DEPS = lib.o hello_world.o
+libs = lib.o stdio.o
+
+HELLO_DEPS = $(libs) hello_world.o
 HELLO_ELF = hello_world.elf
 $(HELLO): $(HELLO_DEPS)
 	$(LD) $(HELLO_DEPS) -T linker.ld -o $(HELLO_ELF)
 	$(OBJCOPY) -O binary $(HELLO_ELF) $(HELLO)
 
-GETPID_DEPS = lib.o get_pid.o
+GETPID_DEPS = $(libs) get_pid.o
 GETPID_ELF = get_pid.elf
 $(GETPID): $(GETPID_DEPS)
 	$(LD) $(GETPID_DEPS) -T linker.ld -o $(GETPID_ELF)
 	$(OBJCOPY) -O binary $(GETPID_ELF) $(GETPID)
 
-ARGV_DEPS = lib.o argv_test.o
+ARGV_DEPS = $(libs) argv_test.o
 ARGV_ELF = argv_test.elf
 $(ARGV): $(ARGV_DEPS)
 	$(LD) $(ARGV_DEPS) -T linker.ld -o $(ARGV_ELF)

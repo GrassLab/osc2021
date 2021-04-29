@@ -1,6 +1,5 @@
 #include "lib.h"
 int main() {
-  char *msg = "Hello, world!\n";
-  uart_write(msg, 15);
+  printf("Hello %s: %d!\n", "ian", 123);
   return 0;
 }
