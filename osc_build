@@ -11,7 +11,7 @@ fi
 mkdir -p $BUILD_DIR
 
 # build in CMAKE_DIR
-cmake -S . -B $CMAKE_DIR -DDEBUG=ON &&
+cmake -S . -B $CMAKE_DIR -DDEBUG=OFF &&
 cd $CMAKE_DIR
 make &&
 
