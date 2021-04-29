@@ -15,7 +15,7 @@ int main(void) {
         call_sys_fork();
         while (cnt < 5) {
             printf("pid: %d, cnt: %d, cnt_adress: 0x%x\n", call_sys_gitPID(), cnt, &cnt);
-            for(int i = 0;i < 9999999;i++);
+            for(int i = 0;i < 100000;i++);
             ++cnt;
         }
     } else {
