@@ -90,7 +90,8 @@ exception_vector_table:
     .align 7
     vector_block aarch64_sync
     .align 7
-    vector_block aarch64_irq
+    save_kernel_reg
+    b aarch64_irq
     .align 7
     todo_vector_block 10
     .align 7
@@ -136,14 +137,16 @@ aarch64_sync:
     eret
 1:
     mov x0, #8
-    b error_handler
+    b exc_error
 process_exit:
     load_basic_reg /* drop process context */
     load_basic_reg
     ret
 
 aarch64_irq:
-    b irq_lower_el
+    bl aarch64_irq_handler
+    load_kernel_reg
+    eret
 aarch64_fiq:
 aarch64_vserror:
 aarch32_sync:
@@ -156,27 +159,15 @@ error_handler:
 1:
     b 1b
 
-irq_lower_el:
-    bl disable_DAIF
-    mrs x0, cntfrq_el0
-    add x0, x0, x0
-    msr cntp_tval_el0, x0
-    bl kprint_time
-    load_basic_reg
-    eret
-    b irq_lower_el
 
 .global from_el1_to_el0
 from_el1_to_el0:
     save_basic_reg
-    msr elr_el1, x0
-    //mov x0, 0x340
+    msr elr_el1, x0 // program start address
     mov x0, 0x3c0
     msr spsr_el1, x0
     mov x0, #0x70000
     msr sp_el0, x0
-    bl enable_irq_system_timer1
-    bl enable_DAIF_irq
     bl core_timer_enable
     eret
 

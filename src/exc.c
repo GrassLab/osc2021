@@ -9,9 +9,19 @@ void print_el1_exc () {
     kprintf("esr_el1: %x\n\n", get_esr_el1());
 }
 
+void set_timer1 (float second) {
+    u64 value = second * time_freq();
+    set_cntp_tval_el0(value);
+}
+
 #include "uart.h"
 void irq_uart_handler () {
     push_read_buffer ();
+}
+
+void irq_timer1_handler () {
+    kprint_time();
+    set_timer1(2);
 }
 
 void sp_elx_irq_handler () {
@@ -37,7 +47,7 @@ void sp_elx_irq_handler () {
         case IRQ_TABLE_SPI_INT:
         case IRQ_TABLE_PCM_INT:
         default:
-            kprintf("Error: Unsupport irq %x\n", pending);
+            kprintf("Error: sp_elx unsupport irq %x\n", pending);
     }
     while (1); /* trap */
 }
@@ -64,6 +74,50 @@ int sys_call_handler () {
             kprintf("Unsupported syscall: %d\n", sys_num);
     }
     return 1;
+}
+
+#define CNTPNSIRQ_INTERRUPT 0x2
+void aarch64_irq_handler () {
+    u32 core0_source = *mmio(CORE0_INTERRUPT_SOURCE);
+    /* first level interrupt */
+    switch (core0_source) {
+        case CNTPNSIRQ_INTERRUPT:
+            irq_timer1_handler();
+            return;
+    }
+
+    /* second level interrupt */
+    u64 pending = *mmio(IRQ1_PENDING);
+    pending |= (u64)(*mmio(IRQ2_PENDING)) << 32;
+    u32 basic_pending = *mmio(IRQ_BASIC_PENDING);
+    kprintf("basic: %x\n", basic_pending);
+    kprintf("irq1: %x\n", *mmio(IRQ1_PENDING));
+    kprintf("irq2: %x\n", *mmio(IRQ2_PENDING));
+    switch (pending) {
+        case IRQ_TABLE_AUX_INT:
+            irq_uart_handler();
+            return;
+        case IRQ_TABLE_SYSTEM_TIMER1:
+            irq_timer1_handler();
+            return;
+        case IRQ_TABLE_UART_INT:
+        case IRQ_TABLE_SYSTEM_TIMER2:
+        case IRQ_TABLE_USB_CONTROLLER:
+        case IRQ_TABLE_I2C_SPI_SLV_INT:
+        case IRQ_TABLE_PWA0:
+        case IRQ_TABLE_PWA1:
+        case IRQ_TABLE_SMI:
+        case IRQ_TABLE_GPIO_INT0:
+        case IRQ_TABLE_GPIO_INT1:
+        case IRQ_TABLE_GPIO_INT2:
+        case IRQ_TABLE_GPIO_INT3:
+        case IRQ_TABLE_I2C_INT:
+        case IRQ_TABLE_SPI_INT:
+        case IRQ_TABLE_PCM_INT:
+        default:
+            kprintf("Error: aarch64 unsupport irq %x\n", pending);
+    }
+    while (1); /* trap */
 }
 
 void exc_error (int error) {
@@ -129,5 +183,13 @@ void exc_error (int error) {
 
 void enable_irq_system_timer1 () {
     *mmio(ENABLE_IRQS1) = system_timer_match1;
+}
+
+void enable_core_timer () {
+    set_cntp_ctl_el0(1); /* enable */
+    u64 freq = time_freq();
+    set_cntp_tval_el0(freq);
+    //*mmio(CORE0_TIMER_IRQ_CTRL) = 2;
+    set_spsr_el1(0x340);
 }
 

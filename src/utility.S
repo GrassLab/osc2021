@@ -25,6 +25,21 @@ time_counter:
     mrs x0, CNTPCT_EL0
     ret
 
+.global set_cntp_tval_el0
+set_cntp_tval_el0:
+    msr cntp_tval_el0, x0
+    ret
+
+.global set_cntp_ctl_el0
+set_cntp_ctl_el0:
+    msr cntp_ctl_el0, x0
+    ret
+
+.global set_spsr_el1
+set_spsr_el1:
+    msr spsr_el1, x0
+    ret
+
 .global get__start
 get__start:
     ldr x0, =_start
@@ -98,3 +113,4 @@ disable_DAIF_debug:
 disable_DAIF:
     msr DAIFSet, #0xf
     ret
+

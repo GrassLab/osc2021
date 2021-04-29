@@ -263,7 +263,7 @@ void uart_init () {
 
     /* Disable interrupt */
     set(AUX_MU_IER, 0); /* enable receive interrupt */
-    set(ENABLE_IRQS1, 29);
+    set(ENABLE_IRQS1, 29); /* disable transmit interrupt */
 
     /* Set the data size to 8 bit */
     *aux(MU_LCR) = 3;
