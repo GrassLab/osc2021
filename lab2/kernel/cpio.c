@@ -3,7 +3,7 @@
 #include "string.h"
 #include "util.h"
 
-#define CPIO_ADDR   0x8000000
+#define CPIO_ADDR   0x2000000
 #define CPIO_HEADER_SIZE 110
 
 void list() {

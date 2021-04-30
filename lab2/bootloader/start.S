@@ -3,9 +3,7 @@
 .global _start
 
 _start:
-    adr     x5, DTB_HEADER
-    str     x0, [x5]
-    mov     x20, x0
+    mov    x22, x0
     /* let cores enter busy loop except core0 */
     mrs    x0, mpidr_el1
     and    x0, x1, 3
@@ -29,8 +27,3 @@ _start:
 1:
     bl main
     b 4b
-
-.global DTB_HEADER
-
-.data
-    DTB_HEADER: .dword  0

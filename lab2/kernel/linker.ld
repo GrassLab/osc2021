@@ -8,6 +8,7 @@ SECTIONS
     }
     .data :
     {
+        . = ALIGN(8);
         *(.data) 
     }
     .bss(NOLOAD) :
