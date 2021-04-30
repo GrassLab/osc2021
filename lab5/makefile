@@ -1,6 +1,6 @@
 KERNEL:=kernel8
 LINKER:=linker.ld
-CFLAGS:=-nostdinc -nostdlib -nostartfiles
+CFLAGS:=-nostdinc -nostdlib -nostartfiles -g3
 LIB = ./lib
 CPIO:=initramfs.cpio
 all: $(KERNEL).img
@@ -31,6 +31,8 @@ run:
 	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio -initrd ./initramfs.cpio -d int
 try: clean cpio all run
 
+debug: clean cpio all 
+	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio -initrd ./initramfs.cpio -d int -S -s
 onboard:
 	sudo screen /dev/ttyUSB0 115200
 

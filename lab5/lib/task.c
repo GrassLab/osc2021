@@ -163,8 +163,8 @@ void exec(char *path, char** argv){
     asm volatile("msr spsr_el1, x0   \n"::);
     asm volatile("msr elr_el1, %0   \n"::"r"(cur->context.lr));
     asm volatile("msr sp_el0, %0   \n"::"r"(sp_addr));
-    uart_printf("sp_el0:%x\n",sp_addr);
-    //core_timer_enable();
+    //uart_printf("sp_el0:%x\n",sp_addr);
+    core_timer_enable();
     asm volatile("mrs x3, sp_el0   \n"::);
     asm volatile("ldr x0, [x3, 0]   \n"::);
     asm volatile("ldr x1, [x3, 8]   \n"::);
@@ -227,10 +227,15 @@ void sys_fork(trap_frame *tf){
     //            "> parent task: %x\n"
     //            "=============================\n", parent);
     //spppp(parent->context.sp);
-
-    int parent_ustack = (0x700000)-(tf->sp_el0);
+    //uart_printf("child id: %d\n",child_id);
+    int parent_ustack;
+    if(child_id == 2){
+        parent_ustack = (0x700000)-(tf->sp_el0);
+    }else{
+        parent_ustack = (0x800000)-(tf->sp_el0);
+    }
 //    uart_printf("parent ustack size:%d\n",parent_ustack);
-//    uart_printf("parent sp_el0:%x\n",tf->sp_el0);
+    //uart_printf("parent sp_el0:%x\n",tf->sp_el0);
     if ((unsigned long)child > (unsigned long)parent) {
         child->context.sp = parent->context.sp + ((unsigned long)child - (unsigned long)parent);
     } else {
@@ -254,22 +259,26 @@ void sys_fork(trap_frame *tf){
     read_input(buf);
     unsigned long child_ustack = getHexFromString(buf);
 
+    //uart_printf("read done\n");
     //child_tf->elr_el1 = tf->elr_el1;
     char *src_stack = (char*)(tf->sp_el0);
     char *dst_stack = (char*)(child_ustack);
 
     //uart_printf("%x\n",tf->sp_el0);
+    //uart_printf("%x\n",parent_ustack);
     while(parent_ustack--){
         *dst_stack = *src_stack;
         src_stack++;
         dst_stack++;
     }
+    //uart_printf("copy done\n");
 
 //    uart_printf("parent elr:%x, child elr:%x", tf->elr_el1, child_tf->elr_el1);
     child_tf->sp_el0 = child_ustack;
     child_tf->regs[0] = 0;
     child_tf->regs[29] = (unsigned long)dst_stack;
     tf->regs[0] = child->id;
+    //uart_printf("forek done\n");
     return;
 
 }

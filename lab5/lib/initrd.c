@@ -122,7 +122,7 @@ void loadprog(){
 }
 
 unsigned long argvPut(char** argv,unsigned long ret){
-    uart_printf("before argvput:%x\n",ret);
+    //uart_printf("before argvput:%x\n",ret);
 	int cnt1=0,cnt2=0;
 	for(int i=0;;++i){
 		cnt1++;//with null
@@ -158,7 +158,7 @@ unsigned long argvPut(char** argv,unsigned long ret){
 			}
 		}
 	}
-    uart_printf("after argvput:%x\n",ret);
+    //uart_printf("after argvput:%x\n",ret);
 	return ret;
 }
 
