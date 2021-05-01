@@ -24,6 +24,7 @@
  */
 
 #include "../include/gpio.h"
+#include "../include/string.h"
 
 /* Auxilary mini UART registers */
 #define AUX_ENABLE      ((volatile unsigned int*)(MMIO_BASE+0x00215004))
@@ -102,4 +103,21 @@ void uart_puts(char *s) {
             uart_send('\r');
         uart_send(*s++);
     }
+}
+
+void uart_hex(unsigned long num){
+
+    int n = 2;
+    char buf[20] = "0x";
+    char *ptr = (char *)&num;
+    for (int i = sizeof(unsigned long) - 1; i >= 0; i--) {
+        int c = ptr[i] % 16;
+        buf[n+1] = c > 9 ? c - 10 + 'A' : c + '0';
+        c = ptr[i] >> 4;
+        buf[n] = c > 9 ? c - 10 + 'A' : c + '0';
+
+        n += 2;
+    }
+    buf[19] = '\0';
+    uart_puts(&buf);
 }

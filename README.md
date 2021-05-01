@@ -1,8 +1,10 @@
 # My OSC 2021
+
 ## Author
-| Student ID | GitHub ID | Name | Email |
-|------------|-----------|------|------------|
-|`A091513`|`naihsin`|`張乃心`|s109164507@m109.nthu.edu.tw|
+
+| 學號        | GitHub 帳號  | 姓名    | Email                      |
+| ---------- | ----------- | ------- | -------------------------- |
+| `A091513`  | `naihsin` | `張乃心` | s109164507@m109.nthu.edu.tw  |
 
 ## How to build loader
 ```bash
@@ -36,18 +38,16 @@ screen /dev/<dev_name>
 
 ## How to burn and run it into pi3
 - Copy bootloader.img to your SD card
-- Copy initramfs.cpio to your SD card
+- Copt initramfs.cpio to your SD card
 - Restart raspi3
 - Waiting bootloader shell
-- Type loadimg command
+- Type <loadimg> command
 - Open another terminal to send kernel.img
-```bash
-python3 sender.py 
-```
+- ```bash python3 sender.py ```
 - Tab to raspi3 console, check for the recving kernel.img
-- Type jumpimg commmand
+- Type <jumpimg> commmand
 - You will see the new kernel shell
-- Type cpio command
+- Type <cpio> command
 
 ## Directory structure
 

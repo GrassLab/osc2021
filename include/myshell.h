@@ -8,3 +8,4 @@ void command_reboot();
 void command_notfound();
 void command_cpio();
 void command_cpiols();
+void command_mm();
