@@ -24,10 +24,6 @@ void main() {
   uart_init();
   uart_println("uart initialized");
 
-#ifdef CFG_RUN_TEST
-  run_tests();
-#endif
-
   init_sys("Init Startup allocator", startup_init);
   init_sys("Reserve memory area", reserve_startup_area);
   init_sys("Init Memory Allocator", KAllocManager_init);
@@ -36,6 +32,11 @@ void main() {
   // KAllocManager_show_status();
 
   init_sys("Init Proc subsystem", proc_init);
+
+#ifdef CFG_RUN_TEST
+  run_tests();
+#endif
+
   test_tasks();
   // run_shell();
 }

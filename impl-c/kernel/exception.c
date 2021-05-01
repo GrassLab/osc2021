@@ -7,6 +7,7 @@
 #include "stdint.h"
 
 #define EC_SVC_AARCH64 0b010101
+#define EC_SVC_DATA_ABORT 0b100101
 
 // Get field inside an int
 // example: EC is at bit 29-24 in variable "ELR"
@@ -49,9 +50,17 @@ void syn_handler(struct trap_frame *tf) {
   case EC_SVC_AARCH64:
     syscall_routing(tf->regs[8], tf);
     break;
+  case EC_SVC_DATA_ABORT:
+    uart_println("Data abort taken, ec:%x iss:%x", exception.ec, exception.iss);
+    while (1) {
+      ;
+    }
   default:
-    uart_println("Unknown exception, ec:%d iss:%d", exception.ec,
+    uart_println("Unknown exception, ec:%x iss:%x", exception.ec,
                  exception.iss);
+    while (1) {
+      ;
+    }
   }
 }
 

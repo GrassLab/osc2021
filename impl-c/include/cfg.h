@@ -13,6 +13,7 @@
 // #define CFG_LOG_MEM_SLAB
 #define CFG_LOG_PROC_TASK
 #define CFG_LOG_PROC_SCHED
+#define CFG_LOG_PROC_ARGV
 
 /**
  *  TEST
@@ -25,3 +26,6 @@
 
 // Memory management
 // #define CFG_RUN_STATUP_ALLOC_TEST
+
+// PROC
+#define CFG_RUN_PROC_ARGV_TEST
