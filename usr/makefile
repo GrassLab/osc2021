@@ -4,7 +4,7 @@ LD = $(ARM)-ld
 OBJCOPY = $(ARM)-objcopy
 
 
-CFLAGS = -Wall -g -ffreestanding -march=armv8-a -O2
+CFLAGS = -Wall -g -ffreestanding -march=armv8-a
 
 SRCS = $(wildcard *.c)
 IMGS = $(SRCS:%.c=%.img)
@@ -24,3 +24,6 @@ all: $(IMGS)
 
 start.asmo: start.S
 	$(CC) $(CFLAGS) -c start.S -o start.asmo
+
+clean:
+	rm -f start.asmo *.img

@@ -26,6 +26,21 @@ void *memcpy(void *dst, const void *src, size_t len) {
   return dst;
 }
 
+void *memcpy_ul(void *dst, const void *src, size_t len) {
+  len /= sizeof(unsigned long);
+  unsigned long *d = dst;
+  const unsigned long *s = src;
+  while (len--) *d++ = *s++;
+  return dst;
+}
+
+void *memset_ul(void *dst, unsigned long data, size_t len) {
+  len /= sizeof(unsigned long);
+  unsigned long *d = dst;
+  while (len--) *d++ = data;
+  return dst;
+}
+
 char *strcpy(char *dst, const char *src) {
   if (dst == NULL) return NULL;
   char *ptr = dst;
@@ -96,7 +111,7 @@ size_t atol_n(const char *s, size_t len, size_t base) {
   return num;
 }
 
-char *new_str(char *src) {
+char *new_str(const char *src) {
   size_t len = strlen(src);
   char *str = (char *)kmalloc(len + 1);
   strcpy(str, src);
@@ -114,4 +129,15 @@ char *split_str(char *s) {
     s++;
   }
   return right;
+}
+
+size_t cnt_white(const char *s) {
+  unsigned long cnt = 0;
+  while (*s) {
+    if (*s == ' ') {
+      cnt++;
+    }
+    s++;
+  }
+  return cnt;
 }

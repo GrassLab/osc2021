@@ -7,6 +7,8 @@
 #define LOG_ERROR 1
 #define LOG_PRINT 2
 
+extern unsigned long nonblock;
+
 void putc(char c);
 void puts(const char *s);
 void puts_n(const char *s, unsigned long len);
@@ -25,5 +27,7 @@ void print_hex(unsigned long num);
 void init_nonblock_io();
 
 void uart_handler();
+
+unsigned long recv_buf_empty();
 
 #endif

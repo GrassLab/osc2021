@@ -10,6 +10,8 @@
 int strcmp(const char *s1, const char *s2);
 int strcmp_n(const char *s1, const char *s2, size_t n);
 void *memcpy(void *dst, const void *src, size_t len);
+void *memcpy_ul(void *dst, const void *src, size_t len);
+void *memset_ul(void *dst, unsigned long data, size_t len);
 char *strcpy(char *dst, const char *src);
 char *strcpy_n(char *dst, const char *src, size_t len);
 size_t strlen(const char *str);
@@ -19,8 +21,9 @@ long atoi_n(const char *s, size_t len, size_t base);
 size_t atol(const char *s);
 size_t atol_n(const char *s, size_t len, size_t base);
 
-char *new_str(char *src);
+char *new_str(const char *src);
 char *split_str(char *str);
+size_t cnt_white(const char *s);
 
 // circular double linked list
 typedef struct cdl_list {
@@ -40,6 +43,13 @@ static inline void push_cdl_list(cdl_list *l, cdl_list *chunk) {
   l->fd = chunk;
 }
 
+static inline void push_back_cdl_list(cdl_list *l, cdl_list *chunk) {
+  chunk->fd = l;
+  chunk->bk = l->bk;
+  l->bk->fd = chunk;
+  l->bk = chunk;
+}
+
 static inline void *pop_cdl_list(cdl_list *chunk) {
   chunk->fd->bk = chunk->bk;
   chunk->bk->fd = chunk->fd;
@@ -47,6 +57,15 @@ static inline void *pop_cdl_list(cdl_list *chunk) {
 }
 
 static inline int cdl_list_empty(cdl_list *l) { return l->fd == l; }
+
+static inline void concat_cdl_list(cdl_list *l1, cdl_list *l2) {
+  if (!cdl_list_empty(l2)) {
+    l1->fd->bk = l2->bk;
+    l2->bk->fd = l1->fd;
+    l1->fd = l2->fd;
+    l2->fd->bk = l1;
+  }
+}
 
 // linked list
 typedef struct l_list {

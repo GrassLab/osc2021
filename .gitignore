@@ -7,3 +7,6 @@ __pycache__
 initramfs.cpio
 *.dts
 *.dtb
+*.asmo
+*.o
+kernel.s

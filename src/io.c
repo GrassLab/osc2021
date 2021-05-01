@@ -2,6 +2,7 @@
 
 #include "exc.h"
 #include "mem.h"
+#include "sched.h"
 #include "timer.h"
 #include "uart.h"
 
@@ -29,10 +30,17 @@ typedef struct uart_buf {
 
 uart_buf recv_buf, send_buf;
 
+cdl_list read_wait;
+
+unsigned long recv_buf_empty() {
+  return recv_buf.flag == BUF_EMPTY;
+}
+
 unsigned char uart_read_buf(uart_buf *buffer) {
-  while (buffer->flag == BUF_EMPTY)
-    ;
   disable_interrupt();
+  while (buffer->flag == BUF_EMPTY) {
+    wait_on_list(&read_wait);
+  }
   unsigned char c = buffer->buf[buffer->head];
   buffer->head = (buffer->head + 1) % UART_BUF_SIZE;
   if (buffer->head == buffer->tail) {
@@ -74,16 +82,24 @@ void init_nonblock_io() {
   *AUX_MU_IER = UART_RECV_INT;
   *ENABLE_IRQ_1 = (1 << 29);
 
+  init_cdl_list(&read_wait);
   nonblock = 1;
   enable_interrupt();
 }
 
 // callback
 void uart_recv_cb() {
+  unsigned long wake = 0;
+  if(recv_buf.flag == BUF_EMPTY) {
+    wake = 1;
+  }
   while ((*AUX_MU_LSR & 0x1) != 0) {
     uart_write_buf((unsigned char)(*AUX_MU_IO), &recv_buf);
   }
   *AUX_MU_IER |= UART_RECV_INT;
+  if(wake) {
+    wake_list(&read_wait);
+  }
 }
 
 void uart_send_cb() {
@@ -112,7 +128,7 @@ void putc(char c) {
   if (nonblock) {
     // uart_send_c((unsigned char)(c));
     disable_interrupt();
-    if (send_buf.flag== BUF_EMPTY) {
+    if (send_buf.flag == BUF_EMPTY) {
       *AUX_MU_IER |= UART_SEND_INT;
     }
     uart_write_buf((unsigned char)(c), &send_buf);
@@ -160,6 +176,7 @@ void gets_n(char *buffer, unsigned long len) {
 }
 
 void log(const char *msg, int flag) {
+  disable_interrupt();
   if (flag == LOG_DEBUG) {
 #ifdef LOGGING_DEBUG
     print(msg);
@@ -173,9 +190,11 @@ void log(const char *msg, int flag) {
     print(msg);
 #endif
   }
+  enable_interrupt();
 }
 
 void log_hex(const char *msg, unsigned long num, int flag) {
+  disable_interrupt();
   if (flag == LOG_DEBUG) {
 #ifdef LOGGING_DEBUG
     print(msg);
@@ -198,6 +217,7 @@ void log_hex(const char *msg, unsigned long num, int flag) {
     putc('\n');
 #endif
   }
+  enable_interrupt();
 }
 
 void print(const char *s) {
