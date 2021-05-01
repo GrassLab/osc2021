@@ -119,8 +119,14 @@ void uart_puts(char *s) {
 }
 
 void uart_puti(int val, int base) {
-    char output_buffer[30] = { 0 };
+    char output_buffer[64] = { 0 };
     itoa(val, output_buffer, base);
+    uart_puts(output_buffer);
+}
+
+void uart_putul(unsigned long val, int base) {
+    char output_buffer[128] = { 0 };
+    ultoa(val, output_buffer, base);
     uart_puts(output_buffer);
 }
 
