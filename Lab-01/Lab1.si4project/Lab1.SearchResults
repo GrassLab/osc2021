@@ -1,0 +1,29 @@
+---- uart_puts Matches (22 in 5 files) ----
+input_buffer_overflow_message in command.c :     uart_puts("Follow command: \"");
+input_buffer_overflow_message in command.c :     uart_puts(cmd);
+input_buffer_overflow_message in command.c :     uart_puts("\"... is too long to process.\n");
+input_buffer_overflow_message in command.c :     uart_puts("The maximum length of input is 64.");
+command_help in command.c :     uart_puts("\n");
+command_help in command.c :     uart_puts("Valid Command:\n");
+command_help in command.c :     uart_puts("\thelp:\t\tprint help.\n");
+command_help in command.c :     uart_puts("\thello:\t\tprint \"Hello World!\".\n");
+command_help in command.c : 	uart_puts("\treboot:\t\treboot.\n");
+command_help in command.c : 	uart_puts("\tcancel:\t\tcancel reboot.\n");
+command_help in command.c :     uart_puts("\n");
+command_hello in command.c :     uart_puts("Hello World!!\n");
+command_not_found in command.c :     uart_puts("Err: command ");
+command_not_found in command.c :     uart_puts("not found, try <help>\n");
+reset in command.c :   uart_puts("Start Rebooting...\n");
+cancel_reset in command.c :   uart_puts("Cancel Rebooting...\n");
+main in main.c :     // uart_puts
+main in main.c :     uart_puts("rpi3 is already\n");
+shell_start in shell.c :     uart_puts("# ");
+command_controller in shell.c :         uart_puts("# ");
+uart.c line 101 : void uart_puts(char *s)
+uart.h line 38 : void uart_puts(char *s);
+---- _data Matches (1 in 1 files) ----
+linker.ld line 12 :     PROVIDE(_data = .);
+---- pow Matches (3 in 3 files) ----
+math.c line 1 : int pow(int base, int exponent)
+math.h line 4 : int pow(int base, int exponent);
+ftoa in string.c :         fpart = fpart * pow(10, afterpoint); 
