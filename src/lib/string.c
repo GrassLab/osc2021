@@ -66,7 +66,7 @@ int hextoi(char *hexStr)
     return value;
 }
 
-char *itoa(int value, char *str, int base)
+char *itoa(unsigned int value, char *str, int base)
 {   
     int i = 0;
     if (value == 0) {

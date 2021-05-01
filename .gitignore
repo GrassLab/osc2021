@@ -1,2 +1,4 @@
 /build
 /objs
+/rootfs/app
+/.vscode
