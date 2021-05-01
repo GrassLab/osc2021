@@ -1,0 +1,4 @@
+kernel=kernel8.img
+arm_64bit=1
+initramfs initramfs.cpio 0x30000000
+device_tree=bcm2710-rpi-3-b-plus.dtb
