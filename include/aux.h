@@ -15,5 +15,6 @@
 #define AUX_MU_CNTL       ((volatile unsigned int*)(MMIO_BASE+0x00215060))
 #define AUX_MU_STAT       ((volatile unsigned int*)(MMIO_BASE+0x00215064))
 #define AUX_MU_BAUD       ((volatile unsigned int*)(MMIO_BASE+0x00215068))
+#define IRQ_S1            ((volatile unsigned int*)(MMIO_BASE+0x0000B210))
 
 #endif
