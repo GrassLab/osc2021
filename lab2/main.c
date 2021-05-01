@@ -4,6 +4,8 @@
 #include "include/dtp.h"
 #include "include/test.h"
 #include "include/cirq.h"
+#include "include/csched.h"
+#include "include/syslib.h"
 // #include "include/initramfs.h"
 #include "utils.h"
 #define CMD_SIZE 64
@@ -117,8 +119,8 @@ int cat_file_initramfs()
     char *name_start, *data_start;
 
     uart_send_string("Please enter file path: ");
-    // read_line();
     read_line_low_power(file_name_buf, FILE_NAME_SIZE);
+    // read_line(file_name_buf, FILE_NAME_SIZE);
     ent = (struct cpio_newc_header*)INITRAMFS_BASE;
     while (1)
     {
@@ -170,42 +172,10 @@ int ls_initramfs()
 int run_initramfs()
 {
     char file_name_buf[FILE_NAME_SIZE];
-    struct cpio_newc_header* ent;
-    int filesize, namesize;
-    char *name_start, *data_start;
 
     uart_send_string("Please enter file path: ");
-    // read_line(file_name_buf, FILE_NAME_SIZE);
     read_line_low_power(file_name_buf, FILE_NAME_SIZE);
-
-    ent = (struct cpio_newc_header*)INITRAMFS_BASE;
-    while (1)
-    {
-        // uart_send_string("hey");
-        namesize = hex_string_to_int(ent->c_namesize, 8);
-        filesize = hex_string_to_int(ent->c_filesize, 8);
-        name_start = ((char *)ent) + sizeof(struct cpio_newc_header);
-        data_start = align_upper(name_start + namesize, 4);
-        if (!strcmp(file_name_buf, name_start)) {
-            if (!filesize)
-                return 0;
-            // Load file to page A
-            struct page *A = get_free_frames(1);
-            char *page_ptr = (char*)A;
-            for (int i = 0; i < filesize; ++i)
-                page_ptr[i] = data_start[i];
-            run_user_program(page_ptr, page_ptr + 4096 - 1);
-            // never come back again.
-            return 0;
-        }
-        ent = (struct cpio_newc_header*)align_upper(data_start + filesize, 4);
-
-        if (!strcmp(name_start, "TRAILER!!!"))
-            break;
-    }
-    uart_send_string("run: ");
-    uart_send_string(file_name_buf);
-    uart_send_string(": No such file or directory\r\n");
+    exec(file_name_buf, 0);
     return 1;
 }
 
@@ -251,6 +221,7 @@ void bootloader_relocate()
 
     uart_send_string("Please enter relocation address(hex without '0x'): ");
     address_len = read_line_low_power(buf, 100);
+    // address_len = read_line(buf, 100);
     bootloader_new_addr = hex_string_to_unsigned_long(buf, address_len);
     // uart_send_long(bootloader_new_addr);
     dest = (char*)bootloader_new_addr;
@@ -337,15 +308,15 @@ void *wakeup_mesg(void* arg)
     char *mesg = (char*)arg;
     uart_send_string("\r\n");
     uart_send_string(mesg);
+    
     return 0; // null
 }
 char globl_mesg[100];
 
 int do_setTimeout(char *cmd)
 { // setTimeout MESSAGE second
-    char *addr_ptr, *cmd_ptr, *arg1, *arg2;
+    char *cmd_ptr, *arg1, *arg2;
     int arg1_len, arg2_len, seconds;
-    unsigned long addr;
 
     cmd_ptr = cmd;
     while (*cmd_ptr++ != ' ');
@@ -423,50 +394,343 @@ int cmd_handler(char *cmd)
     return 0;
 }
 
-// int kernel_main(char *sp)
-// {
-//     char cmd_buf[CMD_SIZE];
+extern struct task task_pool[];
+extern struct task *current;
 
-//     do_dtp(uart_probe);
-//     // uart_init();
-//     rd_init();
-//     dynamic_mem_init();
-//     timerPool_init();
-//     // enable_irq();
-//     core_timer_enable();
-//     uart_send_string("Welcome to RPI3-OS\r\n");
-//     while (1) {
-//         uart_send_string("user@rpi3:~$ ");
-//         wait_for_interrupt(); // low power standby
-//         read_line(cmd_buf, CMD_SIZE);
-//         if (!strlen(cmd_buf))  // User input nothing but Enter
-//             continue;
-//         cmd_handler(cmd_buf);
+
+void udh_1()
+{
+    uart_send_string("From udh_1\r\n");
+}
+
+void test_thread_1(char arg[])
+{
+    signal(0, (unsigned long)udh_1);
+    while (1) {
+        for(int i = 0; i < 10; ++i) {
+            uart_write(arg, 5);
+            delay(1000000);
+        }
+        // schedule();
+    }
+    exit();
+}
+
+void test_thread_2(char arg[])
+{
+    while (1) {
+        for(int i = 0; i < 10; ++i) {
+            uart_write(arg, 5);
+            delay(1000000);
+        }
+        sleep(10);
+        // schedule();
+    }
+    exit();
+}
+
+int fork_test(void) {
+    uart_send_string("Fork Test, pid ");
+    uart_send_int(get_pid());
+    uart_send_string("\r\n");
+    int cnt = 1;
+    int ret = 0;
+    if ((ret = fork()) == 0) { // child
+        uart_send_string("pid: ");
+        uart_send_int(get_pid());
+        uart_send_string(", cnt: ");
+        uart_send_int(cnt);
+        uart_send_string(", ptr: ");
+        uart_send_ulong((unsigned long)&cnt);
+        uart_send_string("\r\n");
+        ++cnt;
+        fork();
+        while (cnt < 5) {
+            uart_send_string("pid: ");
+            uart_send_int(get_pid());
+            uart_send_string(", cnt: ");
+            uart_send_int(cnt);
+            uart_send_string(", ptr: ");
+            uart_send_ulong((unsigned long)&cnt);
+            uart_send_string("\r\n");
+            delay(1000000);
+            ++cnt;
+        }
+        uart_send_string("Child end\r\n");
+    } else {
+        uart_send_string("parent here, pid ");
+        uart_send_int(get_pid());
+        uart_send_string(", child ");
+        uart_send_int(ret);
+        uart_send_string("\r\n");
+        uart_send_string("Parent end\r\n");
+    }
+    exit();
+
+    while(1);
+}
+
+void user_logic(int argc, char **argv)
+{
+    int pid = get_pid();
+    uart_send_string("Argv Test, pid ");
+    uart_send_int(pid);
+    uart_send_string("\r\n");
+    for (int i = 0; i < argc; ++i) {
+        uart_send_string(argv[i]);
+        uart_send_string("\r\n");
+    }
+    kill(2, 0);
+    useless();
+    // exit();
+    char *fork_argv[2];
+    fork_argv[0] = "fork_test";
+    fork_argv[1] = 0;
+    exec((unsigned long)fork_test, fork_argv);
+}
+
+void user_thread()
+{
+    char *argv[7];
+    argv[0] = "argv_test";
+    argv[1] = "aux";
+    argv[2] = "-o";
+    argv[3] = "-tsk";
+    argv[4] = "haha";
+    argv[5] = "shutup\r\n";
+    argv[6] = 0;
+
+    // argv = {"user_logic", "hello1", "-aux", 0};
+    exec("bin/argv_test", argv);
+    // exit();
+}
+
+
+void user_thread_2()
+{ // test function version exec
+    uart_send_string("From user_thread_2\r\n");
+    char *argv[7];
+    argv[0] = "argv_test";
+    argv[1] = "aux";
+    argv[2] = "-o";
+    argv[3] = "-tsk";
+    argv[4] = "haha";
+    argv[5] = "shutup\r\n";
+    argv[6] = 0;
+    // current->sig.sigpend = 1; // DEMO: raise signal itself
+    // current->sig.user_handler[0] = (unsigned long)udh_1;
+    exec((unsigned long)user_logic, argv);
+}
+
+
+void idle()
+{
+    struct task *walk;
+
+    while (1) {
+        // uart_send_string("From idle\r\n");
+        // delay(10000000);
+        for (int i = 0; i < MAX_TASK_NR; ++i) {
+            walk = &task_pool[i];
+            if (walk->free == 0 && walk->status == TASK_ZOMBIE) {
+                uart_send_string("From idle: Find zombie and cleared.\r\n");
+                kfree(walk->kernel_stack_page);
+                kfree(walk->user_stack_page);
+                walk->free = 1;
+            }
+        }
+
+        schedule();
+    }
+}
+
+
+int sys_exec(char *filename, char *const argv[])
+{
+    unsigned long func_addr;
+    struct cpio_newc_header* ent;
+    int filesize, namesize;
+    char *name_start, *data_start;
+
+    ent = (struct cpio_newc_header*)INITRAMFS_BASE;
+    while (1)
+    {
+        namesize = hex_string_to_int(ent->c_namesize, 8);
+        filesize = hex_string_to_int(ent->c_filesize, 8);
+        name_start = ((char *)ent) + sizeof(struct cpio_newc_header);
+        data_start = align_upper(name_start + namesize, 4);
+        if (!strcmp(filename, name_start)) {
+            func_addr = (unsigned long)data_start;
+            break;
+            if (!filesize)
+                return 0;
+            // load file to user_stack_page.
+            char *code_start = current->user_stack_page;
+            for (int i = 0; i < filesize; ++i)
+                code_start[i] = data_start[i];
+            run_user_program(code_start, current->usp);
+            // never come back again.
+            uart_send_string("Should never print out.\r\n");
+            return 0;
+        }
+        ent = (struct cpio_newc_header*)align_upper(data_start + filesize, 4);
+
+        if (!strcmp(name_start, "TRAILER!!!"))
+            break;
+    }
+    // uart_send_string("do_exec: ");
+    // uart_send_string(filename);
+    // uart_send_string(": No such file or directory\r\n");
+    // return 1;
+
+    int argc, len;
+    char *user_sp;
+    char **argv_fake, **argv_fake_start;
+    struct trap_frame *cur_trap_frame;
+delay(10000000);
+    /* Get argc, not include null terminate */
+    argc = 0;
+    while (argv[argc])
+        argc++;
+    // argv_fake = kmalloc(argc*sizeof(char*));
+    argv_fake = (char**)kmalloc(0x1000);
+    user_sp = current->user_stack_page + 0x1000;
+    for (int i = argc - 1; i >= 0; --i) {
+        len = strlen(argv[i]) + 1; // including '\0'
+        user_sp -= len;
+        argv_fake[i] = user_sp;
+        memcpy(user_sp, argv[i], len);
+    }
+    user_sp -= sizeof(char*); // NULL pointer
+    user_sp = align_down(user_sp, 0x8); // or pi will fail
+    *((char**)user_sp) = (char*)0;
+    for (int i = argc - 1; i >= 0; --i) {
+        user_sp -= sizeof(char*);
+        *((char**)user_sp) = argv_fake[i];
+    }
+    // TODO: argv_fake_start: this is
+    // temporary. cause now  I don't
+    // have solution to conquer the
+    // pushing stack issue when
+    // starting of function call.
+    argv_fake_start = (char**)user_sp;
+    user_sp -= sizeof(char**); // char** argv
+    *((char**)user_sp) = user_sp + sizeof(char**);
+    user_sp -= sizeof(int); // argc
+    *((int*)user_sp) = argc;
+    kfree((char*)argv_fake);
+    current->usp = align_down(user_sp, 0x10);
+
+    cur_trap_frame = get_trap_frame(current);
+    cur_trap_frame->regs[0] = (unsigned long)argc;
+    cur_trap_frame->regs[1] = (unsigned long)argv_fake_start;
+    cur_trap_frame->sp_el0 = (unsigned long)current->usp;
+    cur_trap_frame->elr_el1 = func_addr;
+    cur_trap_frame->spsr_el1 = 0x0; // enable_irq
+
+    // set_user_program((char*)func_addr, current->usp, argc,
+    //     argv_fake_start, current->kernel_stack_page + 0x1000);
+    // never come back again.
+    return argc;  // Geniusly
+}
+
+// sys_exec(unsigned long func_addr, char *const argv[])
+// {
+//     int argc, len;
+//     char *user_sp;
+//     char **argv_fake, **argv_fake_start;
+//     struct trap_frame *cur_trap_frame;
+// delay(10000000);
+//     /* Get argc, not include null terminate */
+//     argc = 0;
+//     while (argv[argc])
+//         argc++;
+//     // argv_fake = kmalloc(argc*sizeof(char*));
+//     argv_fake = (char**)kmalloc(0x1000);
+//     user_sp = current->user_stack_page + 0x1000;
+//     for (int i = argc - 1; i >= 0; --i) {
+//         len = strlen(argv[i]) + 1; // including '\0'
+//         user_sp -= len;
+//         argv_fake[i] = user_sp;
+//         memcpy(user_sp, argv[i], len);
 //     }
-//     return 0;
+//     user_sp -= sizeof(char*); // NULL pointer
+//     user_sp = align_down(user_sp, 0x8); // or pi will fail
+//     *((char**)user_sp) = (char*)0;
+//     for (int i = argc - 1; i >= 0; --i) {
+//         user_sp -= sizeof(char*);
+//         *((char**)user_sp) = argv_fake[i];
+//     }
+//     // TODO: argv_fake_start: this is
+//     // temporary. cause now  I don't
+//     // have solution to conquer the
+//     // pushing stack issue when
+//     // starting of function call.
+//     argv_fake_start = (char**)user_sp;
+//     user_sp -= sizeof(char**); // char** argv
+//     *((char**)user_sp) = user_sp + sizeof(char**);
+//     user_sp -= sizeof(int); // argc
+//     *((int*)user_sp) = argc;
+//     kfree((char*)argv_fake);
+//     current->usp = align_down(user_sp, 0x10);
+
+//     cur_trap_frame = get_trap_frame(current);
+//     cur_trap_frame->regs[0] = (unsigned long)argc;
+//     cur_trap_frame->regs[1] = (unsigned long)argv_fake_start;
+//     cur_trap_frame->sp_el0 = (unsigned long)current->usp;
+//     cur_trap_frame->elr_el1 = func_addr;
+//     cur_trap_frame->spsr_el1 = 0x0; // enable_irq
+
+//     // set_user_program((char*)func_addr, current->usp, argc,
+//     //     argv_fake_start, current->kernel_stack_page + 0x1000);
+//     // never come back again.
+//     return argc;  // Geniusly
 // }
 
-int kernel_main(char *sp)
+
+int shell()
 {
     char cmd_buf[CMD_SIZE];
 
-    do_dtp(uart_probe);
-    // uart_init();
-    rd_init();
-    dynamic_mem_init();
-    timerPool_init();
-    enable_irq();
-    // core_timer_enable();
-    put32(ENABLE_IRQS_1, 1 << 29); // Enable AUX interrupt
-    uart_send_string("Welcome to RPI3-OS\r\n");
-
     while (1) {
         uart_send_string("user@rpi3:~$ ");
-        read_line_low_power(cmd_buf, CMD_SIZE);
+        // read_line_low_power(cmd_buf, CMD_SIZE);
+        read_line(cmd_buf, CMD_SIZE);
         if (!strlen(cmd_buf))  // User input nothing but Enter
             continue;
         cmd_handler(cmd_buf);
     }
-    return 0;
+}
+
+int kernel_main(char *sp)
+{
+    // do_dtp(uart_probe);
+    uart_init();
+    rd_init();
+    dynamic_mem_init();
+    timerPool_init();
+    enable_irq();
+    core_timer_enable();
+    put32(ENABLE_IRQS_1, 1 << 29); // Enable AUX interrupt
+    init_wait_pool();
+    init_sleepQueue();
+    init_uartQueue();
+
+    wait_for_interrupt();
+    uart_send_string("Welcome to RPI3-OS\r\n");
+
+    init_ts_pool();
+    current = new_ts();
+    current->ctx.sp = (unsigned long)kmalloc(4096);
+    thread_create((unsigned long)idle, 0);
+    // thread_create((unsigned long)shell, 0);
+    // thread_create((unsigned long)test_thread_1, "CCC\r\n");
+    // thread_create((unsigned long)test_thread_2, "DDD\r\n");
+    thread_create((unsigned long)user_thread, 0);
+    // thread_create((unsigned long)user_thread_2, 0);
+
+    schedule();
+
+    return 0; // Should never return.
 }
 

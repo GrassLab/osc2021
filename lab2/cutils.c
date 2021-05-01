@@ -6,6 +6,12 @@ char *align_upper(char *addr, int alignment)
     return res;
 }
 
+char *align_down(char *addr, int alignment)
+{
+    int r = (unsigned long)addr % alignment;
+    return addr - r;
+}
+
 int strlen(char *str)
 { // '\0' doesn't count.
     int cnt;
@@ -16,6 +22,13 @@ int strlen(char *str)
     while (*str_ptr++ != '\0')
         cnt++;
     return cnt;
+}
+
+void *memcpy(char *str1, const char *str2, int n)
+{
+    for (int i = 0; i < n; ++i)
+        str1[i] = str2[i];
+    return 0;
 }
 
 int strcmp(char *str1, char *str2)

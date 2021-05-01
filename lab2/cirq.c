@@ -2,6 +2,7 @@
 #include "include/mini_uart.h"
 #include "utils.h"
 #include "include/cirq.h"
+#include "include/csched.h"
 
 struct irq_btm_task irq_btm_q[MAX_NR_BOTTOM];
 int irq_btm_total = 0;
@@ -9,6 +10,9 @@ int irq_btm_total = 0;
 struct tqe *timerQueue = 0; // initialized to NUL
 struct tqe timerPool[MAX_NR_TQE];
 struct tqe *timerPool_h;
+
+extern struct task *current;
+
 
 void *core_timer_btm(void* arg)
 {
@@ -29,9 +33,13 @@ void do_core_timer_handler(void)
     // uart_send_ulong(core_timer_get_sec());
     // uart_send_string(" seconds have passed.\r\n");
     set_core_timer(TICKS_FOR_ITR);
+    if (--current->counter <= 0) {
+        current->resched = 1;
+        current->counter = current->priority;
+    }
     tqe_decr(TICKS_FOR_ITR);
     /* After top half, we have to set bottom half task. */
-    irq_btm_q_insert(PRIORITY_TIMER, core_timer_btm);
+    // irq_btm_q_insert(PRIORITY_TIMER, core_timer_btm);
 }
 
 /* btm_sched will only be called in 2 cases:
@@ -114,7 +122,7 @@ void irq_handler(void)
         if (second_level_irq_pend & (1 << i))
             second_level_irq_handler(i);
 
-    btm_sched();
+    // btm_sched();
 }
 
 int timerPool_init()
@@ -168,6 +176,8 @@ int tqe_add(unsigned int tick, void *(*action)(void *), void *args)
     new->tick = tick;
     new->action = action;
     new->args = args;
+    // for (int i = 0; i < 10 && ((char*)args)[i] != '\0'; ++i) // lab4demo
+        // ((char*)(new->args))[i] = ((char*)args)[i];
     // new->proc = current;
 
     /* Find appropriate position for new */
@@ -203,11 +213,11 @@ void wakeup(void)
     ;
 }
 
-void sleep(int duration)
-{
-    // return tqe_add(duration, wakeup);
-    ;
-}
+// void sleep(int duration)
+// {
+//     // return tqe_add(duration, wakeup);
+//     ;
+// }
 
 int irq_btm_q_adjust(int idx)
 { // idx: 1 ~ (MAX_NR_BOTTOM - 1)
@@ -258,26 +268,31 @@ int irq_btm_q_insert(int priority, void *(*btm_handler)(void*))
     return 0;
 }
 
-#define UART_BUF_SIZE 256
+#define UART_BUF_SIZE 3
 char uart_send_buf[UART_BUF_SIZE];
 int uart_send_buf_in = 0;
 int uart_send_buf_out = 0;
 char uart_recv_buf[UART_BUF_SIZE];
 int uart_recv_buf_idx = 0;
+int uart_recv_buf_in = 0;
+int uart_recv_buf_out = 0;
 int recv_ready = 0;
+extern struct wait_h *uartQueue;
+
 /* AUX_MU_IIR_REG: peripheral p.13 */
 void do_uart_handler()
 {
     char ch;
-    unsigned int iir;
+    unsigned int iir, lsr;
 
     iir = get32(AUX_MU_IIR_REG);
     if ((iir & 0x6) == 0x2)
     { // Transmit holding register empty 
-        while (get32(AUX_MU_LSR_REG) & 0x20) {
+        lsr = get32(AUX_MU_LSR_REG);
+        while ( lsr & 0xc0) {
             // 5th bit is set if the transmit FIFO can
             // accept at least one byte.
-            if (uart_send_buf_in == uart_send_buf_out){
+            if (uart_send_buf_in == uart_send_buf_out) {
                 put32(AUX_MU_IER_REG, 1); //Only enable receive interrupts
                 return;
             }
@@ -285,25 +300,69 @@ void do_uart_handler()
             uart_send_buf_out = (uart_send_buf_out + 1) % UART_BUF_SIZE;
             put32(AUX_MU_IO_REG, ch);
         }
-        put32(AUX_MU_IER_REG, 1); //Only enable receive interrupts
+        if (uart_send_buf_in == uart_send_buf_out)
+            put32(AUX_MU_IER_REG, 1); //Only enable receive interrupts
+
     }
     else if ((iir & 0x6) == 0x4)
     { // Receiver holds valid byte
-        if (recv_ready)
-            return;
         while (get32(AUX_MU_LSR_REG) & 0x1) {
-        // if (get32(AUX_MU_LSR_REG) & 0x1) {
             // The receive FIFO holds at least 1 symbol.
+            if ((uart_recv_buf_in + 1) % UART_BUF_SIZE == uart_recv_buf_out)
+                return;
             ch = get32(AUX_MU_IO_REG) & 0xFF;
-            if (ch != '\r') {
-                uart_send_async(ch);
-                uart_recv_buf[uart_recv_buf_idx++] = ch;
+            uart_send(ch);
+            if (uartQueue->head) {
+                uart_send_string("From do_uart_handler: A\r\n");
+                uart_recv_buf[uart_recv_buf_in] = ch;
+                uart_recv_buf_in = (uart_recv_buf_in + 1) % UART_BUF_SIZE;
             } else {
-                uart_recv_buf[uart_recv_buf_idx] = '\0';
-                recv_ready = 1;
-                uart_recv_buf_idx = 0;
+                uart_send_string("No wait\r\n");
+                return;
             }
-            // uart_recv_buf_idx = (uart_recv_buf_idx + 1) % UART_BUF_SIZE;
+        }
+        struct wait_args *wa = new_wait_args();
+        if (uartQueue->head) {
+            wa->old = uartQueue->head;
+            wa->waitQueue = uartQueue;
+            rm_from_queue((void*)wa);
         }
     }
+    // else if ((iir & 0x6) == 0x4)
+    // { // Receiver holds valid byte
+    //     if (recv_ready)
+    //         return;
+    //     while (get32(AUX_MU_LSR_REG) & 0x1) {
+    //     // if (get32(AUX_MU_LSR_REG) & 0x1) {
+    //         // The receive FIFO holds at least 1 symbol.
+    //         ch = get32(AUX_MU_IO_REG) & 0xFF;
+    //         if (ch != '\r') {
+    //             // uart_send_async(ch);
+    //             uart_send(ch);
+    //             uart_recv_buf[uart_recv_buf_idx++] = ch;
+    //         } else {
+    //             uart_recv_buf[uart_recv_buf_idx] = '\0';
+    //             recv_ready = 1;
+    //             uart_recv_buf_idx = 0;
+    //         }
+    //     }
+    // }
+}
+
+void invalid_handler()
+{
+    uart_send_string("From invalid_handler\r\n");
+    while (1);
+}
+
+
+int chk_sched()
+{ // if interrupt is not nested && current->resched:
+  //     schedule()
+  // But now assume interrupt won't nest
+    if (current->resched){
+        current->resched = 0;
+        schedule();
+    }
+    return 0;
 }

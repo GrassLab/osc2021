@@ -1,5 +1,6 @@
 #include "include/dtp.h"
 #include "include/cutils.h"
+#include "include/mini_uart.h"
 #define FDT_BEGIN_NODE 0x00000001 // each node begins with FDT_BEGIN_NODE
 #define FDT_END_NODE 0x00000002   // end with FDT_END_NODE. Node’s properties and subnodes are before the FDT_END_NOD
 #define FDT_PROP 0x00000003 // describe property
@@ -174,19 +175,17 @@ int do_dtp(int (*_probe_func)(struct dtn *node))
 {
     // unsigned long dt_base = 0x80000;
     char buf[128], *buf_ptr;
-    char *dt_struct_ptr, *prop_data_end, *node_name, *prop_name;
-    unsigned int token, prop_data_len, prop_name_off, dt_level;
+    char *dt_struct_ptr, *prop_data_end, *prop_name;
+    unsigned int token, prop_data_len, prop_name_off;
     struct dtn node;
     struct fdt_header *header;
 
     header = (struct fdt_header*)dt_base_g;
-    char *dt_memres_base = dt_base_g + get_uint_endian(&(header->off_mem_rsvmap));
     char *dt_struct_base = dt_base_g + get_uint_endian(&(header->off_dt_struct));
     char *dt_struct_end = dt_struct_base + get_uint_endian(&(header->size_dt_struct));
     char *dt_strings_base = dt_base_g + get_uint_endian(&(header->off_dt_strings));
 
     
-    dt_level = 0;
     dt_struct_ptr = dt_struct_base;
     while (dt_struct_ptr < dt_struct_end) {
         buf_ptr = buf;
@@ -215,14 +214,6 @@ int do_dtp(int (*_probe_func)(struct dtn *node))
                     if (!(_probe_func(&node)))
                         return 0;
                 }
-                // if (!strcmp_with_len("compatible", prop_name, 10)){
-                //     if (strstr(buf, "uart")) {
-                //         uart_send_string(node_name);
-                //         uart_send_string("\r\n    ");
-                //         uart_send_string(buf);
-                //         uart_send_string("\r\n");
-                //     }
-                // }
                 break;
             case FDT_NOP:
                 break;

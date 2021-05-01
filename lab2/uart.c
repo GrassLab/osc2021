@@ -50,7 +50,7 @@ void uart_send ( char c )
     put32(AUX_MU_IO_REG,c);
 }
 
-#define UART_BUF_SIZE 256
+#define UART_BUF_SIZE 3
 extern char uart_send_buf[];
 extern int uart_send_buf_in;
 extern int uart_send_buf_out;

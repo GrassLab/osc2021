@@ -26,8 +26,6 @@ master:
     msr    elr_el2, x0
     ldr    x0, =0x30000000     // Set EL1 sp in advance
     msr    SP_EL1, x0
-    //ldr    x0, =0xACA0           // 0x389ACA0
-    //msr    cntfrq_el0, x0
     eret
 
 el1_entry:

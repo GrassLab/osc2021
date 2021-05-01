@@ -1,3 +1,5 @@
+#define PAGE_SIZE 0x1000 // 4KB
+
 struct page {
     unsigned long addr;
     struct page *next;

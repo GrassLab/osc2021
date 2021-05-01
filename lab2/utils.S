@@ -18,6 +18,10 @@ delay:
 branch_to_address:
     br x1
 
+.globl _branch_to_address
+_branch_to_address:
+    br x0
+
 .globl lead_zero
 lead_zero:
     clz w0, w0
@@ -54,14 +58,40 @@ get_cntfrq_el0:
     mrs x0, cntfrq_el0
     ret
 
-.globl run_user_program
-run_user_program:
+.globl set_user_program
+set_user_program:
     msr    elr_el1,  x0    // user program address
     ldr    x0, =0x0        // enable irq in el0 (e.g. =0x3c0 is disable)
     msr    spsr_el1, x0    // set to EL0
     msr    sp_el0, x1      // set EL0 sp
-    //bl core_timer_enable
+    mov    x0, x2
+    mov    x1, x3
+    //msr    sp_el1, x4      // reset ksp
     eret
+
+.globl to_el0
+to_el0:
+    ldr    x0, =0x3c0      // enable irq in el0 (e.g. =0x3c0 is disable)
+    msr    spsr_el1, x0    // set to EL0
+    mrs    x0, SP_EL1
+    msr    SP_EL0, x0
+    eret
+
+
+.globl run_sighand
+run_sighand:
+    msr    elr_el1,  x0    // user handler address
+    msr    SP_EL0, x1
+    ldr    x0, =0x0        // enable irq in el0 (e.g. =0x3c0 is disable)
+    msr    spsr_el1, x0    // set to EL0
+    mov    x30, x2         // set elr_el0 to signal trampoline (TODO: x30 v.s. X14)
+    eret
+
+
+.globl get_x8
+get_x8:
+    mov x0, x8
+    ret
 
 .globl enable_irq
 enable_irq:
@@ -98,3 +128,8 @@ core_timer_disable:
 wait_for_interrupt:
     wfi
     ret
+
+//.globl get_syscall_type
+//get_syscall_type:
+//    mov x0, x8
+//    ret
