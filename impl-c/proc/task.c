@@ -1,17 +1,21 @@
 #include "proc/task.h"
+#include "proc.h"
+#include "proc/argv.h"
+#include "proc/sched.h"
+
 #include "bool.h"
 #include "exec.h"
 #include "list.h"
 #include "mm.h"
 #include "mm/frame.h"
-#include "proc.h"
-#include "proc/sched.h"
 #include "syscall.h"
 #include "timer.h"
 #include "uart.h"
 
 #include "cfg.h"
 #include "log.h"
+
+#include <stdint.h>
 
 #ifdef CFG_LOG_PROC_TASK
 static const int _DO_LOG = 1;
@@ -58,7 +62,8 @@ void sys_getpid(struct trap_frame *tf) {
 // note: int exec(const char *name, char *const argv[]);
 void sys_exec(struct trap_frame *tf) {
   struct task_struct *task = get_current();
-  const char *name = (const char *)tf->regs[0];
+  const char **argv = (const char **)tf->regs[0];
+  const char *name = argv[0];
   uart_println("sys exec called");
   // do not get argv in mvp version
 
@@ -71,23 +76,27 @@ void sys_exec(struct trap_frame *tf) {
   task->cpu_context.sp = (uint64_t)task + FRAME_SIZE;
   uart_println("thread info replaced");
 
+  // place args
+  uart_println("start printint args");
+  int argc;
+  char **user_argv;
+  uintptr_t new_sp;
+  place_args((void *)task->cpu_context.sp, argv, &argc, &user_argv, &new_sp);
+  uart_println("olg sp: %x", task->cpu_context.sp);
+  uart_println("new sp: %x", new_sp);
+  uart_println("newargv: %x", user_argv);
+  task->cpu_context.sp = (uint64_t)new_sp;
+
   // finish process replacement
   // wait for scheduler schedule this thread
   uart_println("finished, start switching");
   asm volatile("mov x0, 0x340  \n"); // enable core timer interrupt
   asm volatile("msr spsr_el1, x0  \n");
-  asm volatile("msr elr_el1, %0   \n" ::"r"(task->cpu_context.lr));
   asm volatile("msr sp_el0, %0    \n" ::"r"(task->cpu_context.sp));
+  asm volatile("msr elr_el1, %0   \n" ::"r"(task->cpu_context.lr));
 
-  // enable the core timer’s interrupt in el0
-  timer_el0_enable();
-  timer_el0_set_timeout();
-
-  // unmask timer interrupt
-  asm volatile("mov x0, 2             \n");
-  asm volatile("ldr x1, =0x40000040   \n");
-  asm volatile("str w0, [x1]          \n");
-
+  asm volatile("mov x1, %0 \n" ::"r"(user_argv));
+  asm volatile("mov x0, %0 \n" ::"r"(argc));
   asm volatile("eret              \n");
 }
 
