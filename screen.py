@@ -4,29 +4,8 @@ import os
 import serial
 import time
 import argparse
-
-parser = argparse.ArgumentParser()
-parser.add_argument('fd', type=str, help="fd's path")
-parser.add_argument('-rate', type=int, default=115200, help='baud rate')
-parser.add_argument('-load', action='store_true', help='load kernel rate automatically')
-args = parser.parse_args()
-ser = None
-
-#kernel = open('./kernel8.img', 'rb')
-if args.fd.find('ttyUSB') > 0:
-    ser = serial.Serial(args.fd, args.rate, timeout=0.1)
-#    try:
-#        ser = serial.Serial(args.fd, args.rate, timeout=0.1)
-#    except:
-#        print(f'Error: {args.fd} not found.')
-#        sys.exit(1)
-else:
-#    try:
-#        ser = serial.Serial(args.fd, timeout=0.1)
-#    except:
-#        print(f'Error: {args.fd} not found.')
-#        sys.exit(1)
-    ser = serial.Serial(args.fd, timeout=0.1)
+import threading
+import signal
 
 def nonblock_read ():
     while True:
@@ -66,7 +45,6 @@ def get_until (token):
     except:
         print(buf)
         return "okay"
-
 
 def send (message):
     message = str.encode(message + '\n')
@@ -151,33 +129,70 @@ def auto_load ():
     send('jump')
     print(get_until('$ '), end='')
 
+is_end = False
+def read_thread ():
+    global is_end
+    while not is_end:
+        try:
+            nonblock_read()
+        except:
+            is_end = True
+            os._exit(0)
 
-if args.load:
-    auto_load()
+def sig_handler (sig, frame):
+    if sig == signal.SIGINT:
+        is_end = True
+        os._exit(0)
 
-while True:
-    command = input()
-    if command == 'exit':
-        if args.load:
-            send('reboot')
-        break
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('fd', type=str, help="fd's path")
+    parser.add_argument('-rate', type=int, default=115200, help='baud rate')
+    parser.add_argument('-load', action='store_true', help='load kernel rate automatically')
+    args = parser.parse_args()
+    ser = None
 
-    if command == 'load':
+    if args.fd.find('ttyUSB') > 0:
+        try:
+            ser = serial.Serial(args.fd, args.rate, timeout=0.1)
+        except:
+            print(f'Error: {args.fd} not found.')
+            sys.exit(1)
+    else:
+        try:
+            ser = serial.Serial(args.fd, timeout=0.1)
+        except:
+            print(f'Error: Fail to open Serial.')
+            sys.exit(1)
+
+    if args.load:
         auto_load()
-        continue
 
-    if command == 'reboot':
-        send('reboot')
-        print(get_until('bootloader'), end='')
-        print(get_until('$ '), end='')
-        continue
+    signal.signal(signal.SIGINT, sig_handler)
+    t = threading.Thread(target = read_thread)
+    t.start()
 
-    if command.find('LOAD ') == 0:
-        load_kernel (command.split(" ")[1])
-        continue
+    while not is_end:
+        command = input()
+        if command == 'exit':
+            if args.load:
+                send('reboot')
+            is_end = True
+            break
 
-    command = str.encode(command + '\n')
-    ser.write(command)
-    nonblock_read()
+        if command == 'load':
+            print("load is forbidden~\n")
+            print("$ ", end="")
+            continue
 
-ser.close()
+        if command == 'reboot':
+            send('reboot')
+            #print(get_until('bootloader'), end='')
+            #print(get_until('$ '), end='')
+            continue
+
+        command = str.encode(command + '\n')
+        ser.write(command)
+        #nonblock_read()
+
+    ser.close()

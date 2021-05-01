@@ -6,6 +6,9 @@
 | --- | ----------- | --- | --- |
 |`309552002`| `jackhong12` | `黃振宏` | jackhuang1205@gmail.com |
 
+## TODO
+- [ ] switch from el2 to el1
+- [ ] Add a command that can load a user program in the initramfs. Then, use eret to jump to the start address.
 
 ## Support Feature
 - bootloader will relocate itself
@@ -47,4 +50,9 @@ $
 - When type `help`, it will list all support commands.
 ```
 $ help
+```
+
+## ttyUSB permission
+```
+$ sudo usermod -aG dialout $USER
 ```

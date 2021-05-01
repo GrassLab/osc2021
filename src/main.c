@@ -1,4 +1,5 @@
-#include "loader.h"
+#include "bootloader.h"
+#include "io.h"
 #include "uart.h"
 #include "string.h"
 #include "reboot.h"
@@ -9,6 +10,7 @@
 #include "fdt.h"
 #include "mm.h"
 #include "data_type.h"
+#include "utility.h"
 #define BUFFER_SIZE 64
 
 void parse_command (char *b) {
@@ -20,47 +22,47 @@ void parse_command (char *b) {
     token[i] = '\0';
 
     if (!strcmp(token, "hello")) {
-        print("Hello World!\n");
+        kprintf("Hello World!\n");
     }
     else if (!strcmp(b, "help")) {
-        print("hello: print Hello World!\n");
-        print("help: print all available commands\n");
-        print("reboot: reboot raspi\n");
-        print("time: show current time from boost\n");
-        print("version: show rapi version\n");
-        print("vcm: get vc memory\n");
-        print("x/[num]gx [address]: print value in memory\n");
-        print("fdt_info: show flattened device tree information\n");
-        print("show_fdt: show all flattened device tree nodes\n");
-        print("fdt [node]: search [node] information\n");
-        print("ls\n");
-        print("cat [file]\n");
+        kprintf("hello: kprintf Hello World!\n");
+        kprintf("help: kprintf all available commands\n");
+        kprintf("reboot: reboot raspi\n");
+        kprintf("time: show current time from boost\n");
+        kprintf("version: show rapi version\n");
+        kprintf("vcm: get vc memory\n");
+        kprintf("x/[num]gx [address]: kprintf value in memory\n");
+        kprintf("fdt_info: show flattened device tree information\n");
+        kprintf("show_fdt: show all flattened device tree nodes\n");
+        kprintf("fdt [node]: search [node] information\n");
+        kprintf("ls\n");
+        kprintf("cat [file]\n");
 
-        print("bs_bucket\n");
-        print("malloc_bins\n");
-        print("bs_free\n");
-        print("bs_malloc\n");
-        print("m_free\n");
-        print("m_malloc\n");
+        kprintf("bs_bucket\n");
+        kprintf("malloc_bins\n");
+        kprintf("bs_free\n");
+        kprintf("bs_malloc\n");
+        kprintf("m_free\n");
+        kprintf("m_malloc\n");
     }
     else if (!strcmp(b, "reboot")) {
-        print("reboot~~\n");
+        kprintf("reboot~~\n");
         reset(1000);
     }
     else if (!strcmp(b, "time")) {
-        print("%f (s)\r\n", get_time());
+        kprintf("%f (s)\r\n", get_time());
     }
     else if (!strcmp(b, "version")) {
-        print("board version: %x\n", (int)get_board_revision());
+        kprintf("board version: %x\n", (int)get_board_revision());
     }
     else if (!strcmp(b, "vcm")) {
         unsigned int base, size;
         if (get_vc_memory(&base, &size)) {
-            print("base: %x\n", base);
-            print("size: %x\n", size);
+            kprintf("base: %x\n", base);
+            kprintf("size: %x\n", size);
         }
         else
-            print("fail\n");
+            kprintf("fail\n");
     }
     else if (!strcmp(b, "ls")) {
         cpio_show_files();
@@ -79,7 +81,7 @@ void parse_command (char *b) {
     }
     /* TODO: delete */
     else if (!strcmp(b, "test")) {
-        show_list();
+        cpio_load_file_interface("./user-process");
     }
     else if (!strcmp(b, "malloc_bins")) {
         show_malloc_bins();
@@ -101,13 +103,18 @@ void parse_command (char *b) {
     }
     else if (mem_print(b)) {
     }
+    else if (mem_print(b)) {
+    }
+    else if (cpio_load_file_interface(b)) {
+    }
     else {
-        print("No such command.\n");
+        kprintf("No such command.\n");
     }
 }
 
 int main () {
     uart_init();
+    enable_DAIF_irq();
     startup_allocator_init();
     cpio_init();
     fdt_init();
@@ -118,16 +125,16 @@ int main () {
 
     char buffer[BUFFER_SIZE];
 
-    print("\n");
-    print("+========================+\n");
-    print("|       osdi shell       |\n");
-    print("+========================+\n");
-
+    kprintf("\n");
+    kprintf("+========================+\n");
+    kprintf("|       osdi shell       |\n");
+    kprintf("+========================+\n");
 
     while (1) {
-        print("$ ");
-        uart_getline(buffer, BUFFER_SIZE);
+        kprintf("$ ");
+        read_line(buffer, BUFFER_SIZE);
+        strip_newline(buffer);
         parse_command(buffer);
-        print("\n");
+        kprintf("\n");
     }
 }
