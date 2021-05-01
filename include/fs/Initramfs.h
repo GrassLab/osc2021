@@ -2,18 +2,21 @@
 #ifndef VALKYRIE_INITRAMFS_H_
 #define VALKYRIE_INITRAMFS_H_
 
+#include <Utility.h>
 #include <fs/CPIOArchive.h>
 
 namespace valkyrie::kernel {
 
 class Initramfs {
  public:
-  Initramfs();
+  static Initramfs& get_instance();
   ~Initramfs() = default;
 
-  const char* read(const char* pathname, size_t* size) const;
+  Pair<const char*, size_t> read(const char* name) const;
 
  private:
+  Initramfs();
+
   CPIOArchive _archive;
 };
 

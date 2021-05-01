@@ -2,9 +2,8 @@
 #ifndef VALKYRIE_MEMORY_MANAGER_H_
 #define VALKYRIE_MEMORY_MANAGER_H_
 
-#include <mm/PageFrameAllocator.h>
-#include <mm/SlobAllocator.h>
 #include <mm/AddressSanitizer.h>
+#include <mm/Zone.h>
 
 namespace valkyrie::kernel {
 
@@ -13,22 +12,31 @@ class MemoryManager {
   static MemoryManager& get_instance();
   ~MemoryManager() = default;
 
+  void* get_free_page();
   void* kmalloc(size_t size);
   void  kfree(void* p);
 
   void dump_page_frame_allocator_info() const;
   void dump_slob_allocator_info() const;
 
+  size_t get_ram_size() const;
+
  private:
   MemoryManager();
 
-  PageFrameAllocator _page_frame_allocator;
-  SlobAllocator _slob_allocator;
-  AddressSanitizer _asan;
+  Zone* initialize_zones();
+
+  const size_t _ram_size;
+  Zone _zones[1];
+  AddressSanitizer _kasan;
 };
 
 }  // namespace valkyrie::kernel
 
+
+extern "C" inline void* get_free_page() {
+  return valkyrie::kernel::MemoryManager::get_instance().get_free_page();
+}
 
 extern "C" inline void* kmalloc(const size_t requested_size) {
   return valkyrie::kernel::MemoryManager::get_instance().kmalloc(requested_size);

@@ -5,6 +5,7 @@
 #include <kernel/Kernel.h>
 #include <kernel/Syscall.h>
 #include <kernel/TimerMultiplexer.h>
+#include <proc/TaskScheduler.h>
 
 extern "C" void* evt;
 
@@ -16,35 +17,45 @@ ExceptionManager& ExceptionManager::get_instance() {
 }
 
 ExceptionManager::ExceptionManager()
-    : _tasklet_scheduler() {
+    : _is_enabled(),
+      _tasklet_scheduler() {
   // Install the address of exception vector table to VBAR_EL1.
   asm volatile("msr VBAR_EL1, %0" :: "r"(&evt));
 }
 
 
-void ExceptionManager::enable() {
-  asm volatile("msr DAIFCLR, 0b1111");
-}
-
-void ExceptionManager::disable() {
-  asm volatile("msr DAIFSET, 0b1111");
-}
-
-
-void ExceptionManager::handle_exception(const size_t number,
-                                        const size_t arg1,
-                                        const size_t arg2,
-                                        const size_t arg3,
-                                        const size_t arg4,
-                                        const size_t arg5,
-                                        const size_t arg6) {
-  printk("system call = 0x%x\n", number);
-
+void ExceptionManager::handle_exception(TrapFrame* trap_frame) {
   uint64_t spsr_el1;
-  asm volatile("mrs %0, SPSR_EL1" : "=r"(spsr_el1));
+  asm volatile("mrs %0, SPSR_EL1" : "=r" (spsr_el1));
 
-  const Exception ex = get_current_exception();
-  printk("Current exception lvl: %d\n", get_exception_level());
+  const Exception ex = ExceptionManager::get_instance().get_current_exception();
+
+  // Issuing `svc #0` will trigger a switch from user mode to kernel mode,
+  // where x8 is the system call id, and x0 ~ x5 are the arguments.
+  if (likely(ex.ec == 0b10101 && ex.iss == 0)) {
+    Task::get_current().set_trap_frame(trap_frame);
+
+    // A process may return from `do_syscall()`,
+    // e.g., a child task created by sys_fork(),
+    // so we should call `Task::get_current()` again
+    // to make sure that we are operating on the correct Task object.
+    Task::get_current().get_trap_frame()->x0 = do_syscall(trap_frame->x8,
+                                                          trap_frame->x0,
+                                                          trap_frame->x1,
+                                                          trap_frame->x2,
+                                                          trap_frame->x3,
+                                                          trap_frame->x4,
+                                                          trap_frame->x5);
+
+    // Handle pending POSIX signals.
+    Task::get_current().handle_pending_signals();
+
+    // User preemption.
+    TaskScheduler::get_instance().maybe_reschedule();
+    return;
+  }
+
+  printk("Current exception lvl: %d\n", ExceptionManager::get_instance().get_exception_level());
   printk("Saved Program Status Register: 0x%x\n", spsr_el1);
   printk("Exception return address: 0x%x\n", ex.ret_addr);
   printk("Exception class (EC): 0x%x\n", ex.ec);
@@ -52,12 +63,6 @@ void ExceptionManager::handle_exception(const size_t number,
 
   // For ec and iss, see ARMv8 manual p.1877
   switch (ex.ec) {
-    case 0b10101:  // SVC instruction execution in AArch64 state
-      if (ex.iss == 0) {
-        syscall(number, arg1, arg2, arg3, arg4, arg5, arg6);
-      }
-      break;
-
     case 0b11000:
       Kernel::panic("Trapped MSR, MRS, or System instruction execution\n");
 
@@ -78,6 +83,11 @@ void ExceptionManager::handle_irq() {
   } else {
     TimerMultiplexer::get_instance().tick();
 
+    auto& sched = TaskScheduler::get_instance();
+    sched.tick();
+    sched.maybe_reschedule();
+
+    /*
     auto task = []() { printf("ok\n"); };
     _tasklet_scheduler.add_tasklet(task);
 
@@ -85,6 +95,7 @@ void ExceptionManager::handle_irq() {
     // with interrupts enabled.
     enable();
     _tasklet_scheduler.finish_all();
+    */
   }
 }
 
@@ -96,51 +107,58 @@ uint8_t ExceptionManager::get_exception_level() const {
   return level >> 2;
 }
 
-void ExceptionManager::switch_to_exception_level(const uint8_t level,
+void ExceptionManager::downgrade_exception_level(const uint8_t level,
                                                  void* ret_addr,
-                                                 void* new_sp) {
-  uint64_t spsr;
+                                                 void* high_level_sp,
+                                                 void* low_level_sp) {
+  // If the user hasn't specified `ret_addr` (which means it is nullptr),
+  // then we will use the address out `out` as the new PC after `eret`
+  // so that the program will keep executing like a normal function.
   void* return_address = (ret_addr) ? ret_addr : &&out;
-  void* stack_pointer = (new_sp) ? new_sp : nullptr;
 
-  // If the user hasn't specified `new_sp` (which means it is nullptr),
+  // If the user hasn't specified `low_level_sp` (which means it is nullptr),
   // then we will use the current SP as the new SP after `eret`.
-  if (!stack_pointer) {
-    asm volatile("mov %0, sp" : "=r" (stack_pointer));
+  if (!low_level_sp) {
+    asm volatile("mov %0, sp" : "=r"(low_level_sp));
   }
 
   switch (level) {
     case 1:
-      // Setup EL1 stack
-      asm volatile("msr SP_EL1, %0" :: "r" (stack_pointer));
-      // Setup SPSR_EL2 (Saved Processor Status Register)
+      asm volatile("msr SP_EL1, %0" :: "r"(low_level_sp));
+      uint64_t spsr;
       spsr  = (1 << 0);       // use SP_ELx, not SP_EL0
       spsr |= (1 << 2);       // exception was taken from EL1
       spsr |= (0b1111 << 6);  // DAIF masked
-      asm volatile("msr SPSR_EL2, %0" :: "r" (spsr));
-      // Setup ELR_EL2
-      asm volatile("msr ELR_EL2, %0" :: "r" (return_address));
+      asm volatile("msr SPSR_EL2, %0" :: "r"(spsr));
+      asm volatile("msr ELR_EL2, %0" :: "r"(return_address));
       break;
 
     case 0:
-      // Setup EL0 stack
-      asm volatile("msr SP_EL0, %0" :: "r" (stack_pointer));
-      // Setup SPSR_EL1 (Saved Processor Status Register)
-      asm volatile("msr SPSR_EL1, %0" :: "r" (0x3c0));
-      // Setup ELR_EL1
-      asm volatile("msr ELR_EL1, %0" :: "r" (return_address));
+      asm volatile("msr SP_EL0, %0" :: "r"(low_level_sp));
+      asm volatile("msr SPSR_EL1, %0" :: "r"(0));
+      asm volatile("msr ELR_EL1, %0" :: "r"(return_address));
       break;
 
     default:
-      return;
+      goto out;
   }
 
-  // Execute `eret`
+  // Each user task will have a kernel stack and a user stack.
+  // The value of SP before `eret` will be the SP after the user task
+  // switches from EL0 to EL1.
+  if (high_level_sp) {
+    asm volatile("mov SP, %0" :: "r"(high_level_sp));
+  }
+
+  // Finally downgrade the exception level.
   asm volatile("eret");
 
 out:
-  // Do nothing.
-  ;
+  return;
+}
+
+bool ExceptionManager::is_enabled() const {
+  return _is_enabled;
 }
 
 

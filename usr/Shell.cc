@@ -10,11 +10,11 @@
 #include <libs/CString.h>
 #include <mm/MemoryManager.h>
 
-namespace valkyrie::kernel {
+using namespace valkyrie::kernel;
 
-Shell::Shell() : _buf() {}
+void run_shell() {
+  char _buf[256];
 
-void Shell::run() {
   while (true) {
     memset(_buf, 0, sizeof(_buf));
     printf("root# ");
@@ -67,12 +67,13 @@ void Shell::run() {
       MemoryManager::get_instance().dump_slob_allocator_info();
 
     } else if (!strcmp(_buf, "run")) {
+      /*
       printf("filename: ");
       gets(_buf);
       String filename = _buf;
  
       size_t filesize = 0;
-      const char* base = Kernel::get_instance().get_initramfs().read(_buf, &filesize);
+      const char* base = Initramfs::get_instance().read(_buf, &filesize);
       ELF elf(base, filesize);
       printf("filesize = %d\n", filesize);
 
@@ -80,13 +81,13 @@ void Shell::run() {
       gets(_buf);
       size_t dest_addr = atoi(_buf, 16);
       void* dest = reinterpret_cast<void*>(dest_addr);
-      void* entry = reinterpret_cast<void*>(dest_addr + sizeof(ELF::Header));
+      void* entry = reinterpret_cast<void*>(dest_addr + sizeof(ELF::FileHeader));
       memcpy(dest, base, filesize);
 
       printf("branching to 0x%x\n", entry);
       void* user_sp = reinterpret_cast<void*>(0x20000);
       ExceptionManager::get_instance().switch_to_exception_level(0, entry, user_sp);
-
+      */
     } else if (!strcmp(_buf, "set_timeout")) {
       printf("message: ");
       gets(_buf);
@@ -122,5 +123,3 @@ void Shell::run() {
     }
   }
 }
-
-}  // namespace valkyrie::kernel

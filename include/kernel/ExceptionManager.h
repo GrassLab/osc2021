@@ -4,6 +4,7 @@
 
 #include <dev/IO.h>
 #include <kernel/TaskletScheduler.h>
+#include <proc/TrapFrame.h>
 
 #define IRQ_BASIC_PENDING  (MMIO_BASE + 0x0000B200)
 #define IRQ_PENDING_1      (MMIO_BASE + 0x0000B204)
@@ -31,22 +32,26 @@ class ExceptionManager final {
   static ExceptionManager& get_instance();
   ~ExceptionManager() = default;
 
-  void enable();
-  void disable();
+  [[gnu::always_inline]] static void enable() {
+    asm volatile("msr DAIFCLR, #0b1111");
+    ExceptionManager::get_instance()._is_enabled = true;
+  }
 
-  void handle_exception(const size_t number,
-                        const size_t arg1,
-                        const size_t arg2,
-                        const size_t arg3,
-                        const size_t arg4,
-                        const size_t arg5,
-                        const size_t arg6);
-  void handle_irq();
+  [[gnu::always_inline]] static void disable() {
+    ExceptionManager::get_instance()._is_enabled = false;
+    asm volatile("msr DAIFSET, #0b1111");
+  }
+
+  static void handle_exception(TrapFrame* trap_frame);
+  static void handle_irq();
 
   uint8_t get_exception_level() const;
-  void switch_to_exception_level(const uint8_t level,
+  void downgrade_exception_level(const uint8_t level,
                                  void* ret_addr = nullptr,
-                                 void* new_sp = nullptr);
+                                 void* high_level_sp = nullptr,
+                                 void* low_level_sp = nullptr);
+
+  bool is_enabled() const;
 
  private:
   ExceptionManager();
@@ -59,6 +64,7 @@ class ExceptionManager final {
 
   Exception get_current_exception();
 
+  bool _is_enabled;
   TaskletScheduler _tasklet_scheduler;
 };
 

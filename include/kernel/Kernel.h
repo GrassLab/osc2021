@@ -9,6 +9,7 @@
 #include <kernel/ExceptionManager.h>
 #include <kernel/TimerMultiplexer.h>
 #include <mm/MemoryManager.h>
+#include <proc/TaskScheduler.h>
 
 namespace valkyrie::kernel {
 
@@ -22,8 +23,6 @@ class Kernel {
   template <typename... Args>
   [[noreturn]] static void panic(const char* fmt, Args&&... args);
 
-  Initramfs& get_initramfs();
-
  private:
   Kernel();
 
@@ -35,7 +34,8 @@ class Kernel {
   MemoryManager& _memory_manager;
   ExceptionManager& _exception_manager;
   TimerMultiplexer& _timer_multiplexer;
-  Initramfs _initramfs;
+  TaskScheduler& _task_scheduler;
+  Initramfs& _initramfs;
 };
 
 
@@ -51,7 +51,7 @@ template <typename... Args>
   console::set_color(console::Color::RED, /*bold=*/true);
   printf("Kernel panic: ");
   console::set_color(console::Color::YELLOW);
-  printf(fmt, args...);
+  printf(fmt, forward<Args>(args)...);
   console::clear_color();
 
   printk("SP = 0x%x\n", stack_pointer);
@@ -62,7 +62,7 @@ template <typename... Args>
   console::set_color(console::Color::RED, /*bold=*/true);
   printf("---[ end Kernel panic: ");
   console::set_color(console::Color::YELLOW);
-  printf(fmt, args...);
+  printf(fmt, forward<Args>(args)...);
   console::clear_color();
 
   ExceptionManager::get_instance().disable();

@@ -6,17 +6,45 @@ Lab Specification: https://grasslab.github.io/NYCU_Operating_System_Capstone/ind
 | --- | ----------- | --- | --- |
 | `309551004` | `aesophor` | `王冠中` | aesophor.cs09g@nctu.edu.tw |
 
-## Progress
+## Progress Overview
 
-- [x] Bootloader [see tag: lab2-bootloader](https://github.com/aesophor/valkyrie/tree/lab2-bootloader)
-- [x] Exception/Interrupt Handling
-- [x] System Calls
-- [x] Physical Page Allocator
-- [x] Optimized SLOB Allocator (a minimal version of ptmalloc)
-- [ ] Virtual Memory
-- [ ] Multitasking
-- [ ] Filesystem
-- [ ] Virtual Filesystem
+- [x] Lab1: Hello World
+- [x] Lab2: Booting ([bootloader](https://github.com/aesophor/valkyrie/tree/lab2-bootloader))
+- [x] Lab3: Allocator (pmm)
+- [x] Lab4: Exception and Interrupt Handling
+- [x] Lab5: Multitasking
+- [ ] Lab6: Virtual Filesystem
+- [ ] Lab7: Filesystem Meets Hardware
+- [ ] Lab8: Virtual Memory (vmm)
+
+## Kernel Features
+- [x] I/O: MiniUART (with optional r/w buffers and interrupts)
+- [x] ARM Mailbox
+- [x] Exception & interrupt handling (top/bottom halves)
+- [x] System calls
+- [x] Buddy allocator
+- [x] Dynamic allocator: my own optimized SLOB allocator (a simplified `ptmalloc`)
+- [ ] Boot memory allocator
+- [x] Preemptive multitasking (supports user/kernel threads)
+- [x] fork(), exec(), wait(), exit()
+- [ ] POSIX signals
+- [ ] ...
+
+## Kernel C++20 STL Progress
+
+- [ ] Algorithms
+- [ ] Concepts
+- [x] Functional
+- [x] Iterator (just a very basic one ...)
+- [x] UniquePtr + make_unique<>()
+- [x] SharedPtr + make_shared<>() + \*_pointer_cast<>()
+- [ ] WeakPtr
+- [x] DoublyLinkedList
+- [x] String
+- [ ] Vector (?)
+- [x] Deque (the performance is shit ...)
+- [x] Utility (move and forward)
+- [ ] ...
 
 ## Build and Deploy
 

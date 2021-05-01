@@ -5,11 +5,13 @@
 #include <dev/Console.h>
 #include <kernel/Compiler.h>
 #include <kernel/Kernel.h>
+#include <libs/Math.h>
+#include <mm/Page.h>
 
 namespace valkyrie::kernel {
 
-SlobAllocator::SlobAllocator(PageFrameAllocator* page_frame_allocator)
-    : _page_frame_allocator(page_frame_allocator),
+SlobAllocator::SlobAllocator(BuddyAllocator* page_frame_allocator)
+    : _buddy_allocator(page_frame_allocator),
       _page_frame_allocatable_begin(),
       _top_chunk(),
       _page_frame_allocatable_end(),
@@ -29,7 +31,7 @@ void* SlobAllocator::allocate(size_t requested_size) {
   Slob* victim = nullptr;
 
   // Search for an exact-fit free chunk from the corresponding bin.
-  if (index < NUM_OF_BINS && (victim = _bins[index])) {
+  if (index < NR_BINS && (victim = _bins[index])) {
     victim->set_allocated(true);
     bin_del_head(victim);
     goto out;
@@ -45,7 +47,7 @@ void* SlobAllocator::allocate(size_t requested_size) {
 
   // Search larger free chunks, and attempt to split an exact-fit chunk
   // from a larger free chunk.
-  for (; index < NUM_OF_BINS; index++) {
+  for (; index < NR_BINS; index++) {
     if (_bins[index]) {
       victim = split_chunk(_bins[index], requested_size);
       goto out;
@@ -126,7 +128,7 @@ void SlobAllocator::dump_slob_info() const {
 
   Slob* ptr = nullptr;
 
-  for (int i = 0; i < NUM_OF_BINS; i++) {
+  for (int i = 0; i < NR_BINS; i++) {
     printf("_bins[%d] (%d): ", i, CHUNK_SMALLEST_SIZE + CHUNK_SIZE_GAP * i);
     ptr = _bins[i];
     while (ptr) {
@@ -161,13 +163,13 @@ size_t SlobAllocator::get_chunk_header_size() {
 
 
 void SlobAllocator::request_new_page_frame() {
-  _page_frame_allocatable_begin = _page_frame_allocator->allocate_one_page_frame();
+  _page_frame_allocatable_begin = _buddy_allocator->allocate_one_page_frame();
 
   _top_chunk = _page_frame_allocatable_begin;
 
   _page_frame_allocatable_end = reinterpret_cast<char*>(_top_chunk) +
                                 PAGE_SIZE -
-                                PageFrameAllocator::get_block_header_size();
+                                BuddyAllocator::get_block_header_size();
 }
 
 bool SlobAllocator::is_first_chunk_in_page_frame(const Slob* chunk) const {
@@ -264,7 +266,7 @@ void SlobAllocator::bin_del_head(Slob* chunk) {
 
   // If `chunk` doesn't fit in regular bins,
   // we should use bin_del_entry() to remove it from the unsorted bin.
-  if (chunk->index >= NUM_OF_BINS) {
+  if (chunk->index >= NR_BINS) {
     bin_del_entry(chunk);
     return;
   }
@@ -285,8 +287,8 @@ void SlobAllocator::bin_add_head(Slob* chunk) {
 
   // If `chunk->index` >= NUM_OF_BINS,
   // then we add this chunk to the head of _unsorted_bin.
-  Slob** bin_first_chunk = (chunk->index >= NUM_OF_BINS) ? &_unsorted_bin
-                                                         : &_bins[chunk->index];
+  Slob** bin_first_chunk = (chunk->index >= NR_BINS) ? &_unsorted_bin
+                                                     : &_bins[chunk->index];
 
   if (*bin_first_chunk == chunk) {
     return;
@@ -309,8 +311,8 @@ void SlobAllocator::bin_del_entry(Slob* chunk) {
 
   // If `chunk->index` >= NUM_OF_BINS,
   // then need to look for `chunk` from the unsorted bin.
-  Slob** bin_first_chunk = (chunk->index >= NUM_OF_BINS) ? &_unsorted_bin
-                                                         : &_bins[chunk->index];
+  Slob** bin_first_chunk = (chunk->index >= NR_BINS) ? &_unsorted_bin
+                                                     : &_bins[chunk->index];
 
   if (*bin_first_chunk == chunk) {
     *bin_first_chunk = (*bin_first_chunk)->next;
@@ -339,15 +341,7 @@ int SlobAllocator::get_bin_index(size_t size) {
 }
 
 size_t SlobAllocator::normalize_size(size_t size) {
-  return round_up_to_multiple_of_16(max(size, CHUNK_SMALLEST_SIZE));
-}
-
-size_t SlobAllocator::round_up_to_multiple_of_16(size_t x) {
-  size_t result = 16;
-  while (result < x) {
-    result += 16;
-  }
-  return result;
+  return round_up_to_multiple_of_n(max(size, CHUNK_SMALLEST_SIZE), 16);
 }
 
 
