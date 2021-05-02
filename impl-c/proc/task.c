@@ -95,9 +95,10 @@ void sys_exec(struct trap_frame *tf) {
   asm volatile("msr sp_el0, %0    \n" ::"r"(task->cpu_context.sp));
   asm volatile("msr elr_el1, %0   \n" ::"r"(task->cpu_context.lr));
 
-  asm volatile("mov x1, %0 \n" ::"r"(user_argv));
-  asm volatile("mov x0, %0 \n" ::"r"(argc));
-  asm volatile("eret              \n");
+  asm volatile("mov x0, %0 \n\
+                mov x1, %1 \n\
+                eret" ::"r"(argc),
+               "r"(user_argv));
 }
 
 // note: void exit();
