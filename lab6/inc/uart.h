@@ -8,4 +8,4 @@ int uart_gets(char* s,int size,int display);
 void uart_puts(char *s);
 void uart_puthex(unsigned int hex);
 unsigned int uart_printf(char* fmt,...);
-int strcmp(char* a,char* b);
+int strcmp(const char* a,const char* b);

@@ -153,7 +153,7 @@ unsigned int uart_printf(char* fmt,...){
     return ret;
 }
 
-int strcmp(char* a,char* b){
+int strcmp(const char* a,const char* b){
 	while(*a){
 		if(*a!=*b)return 1;
 		a++;

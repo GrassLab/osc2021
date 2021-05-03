@@ -106,6 +106,71 @@ void dumpArchive(){
 	if(ret)dumpEntry(ret);
 }
 
+void* fbaseGet(){
+	return (void*)CPIO_BASE;
+}
+
+char* fdataGet(void* _addr,unsigned long* size){
+	cpio_header* addr=(cpio_header*)_addr;
+	unsigned long psize=strToU(addr->c_namesize),dsize=strToU(addr->c_filesize);
+	*size=dsize;
+	if((sizeof(cpio_header)+psize)&3)psize+=4-((sizeof(cpio_header)+psize)&3);
+	if(dsize&3)dsize+=4-(dsize&3);
+
+	char* path=(char*)(addr+1);
+	char* data=path+psize;
+
+	return data;
+}
+
+int fmodeGet(void* _addr){
+	cpio_header* addr=(cpio_header*)_addr;
+	unsigned long tmp=strToU(addr->c_mode)>>12;
+	if(tmp==4){
+		return 1;//dir
+	}else if(tmp==8){
+		return 2;//file
+	}
+	return -1;
+}
+
+char* fnameGet(void* _addr,unsigned long* size){
+	cpio_header* addr=(cpio_header*)_addr;
+	unsigned long psize=strToU(addr->c_namesize),dsize=strToU(addr->c_filesize);
+	*size=psize;
+	if((sizeof(cpio_header)+psize)&3)psize+=4-((sizeof(cpio_header)+psize)&3);
+	if(dsize&3)dsize+=4-(dsize&3);
+
+	char* path=(char*)(addr+1);
+	char* data=path+psize;
+
+	return path;
+}
+
+void* nextfGet(void* _addr){
+	cpio_header* addr=(cpio_header*)_addr;
+	unsigned long psize=strToU(addr->c_namesize),dsize=strToU(addr->c_filesize);
+	if((sizeof(cpio_header)+psize)&3)psize+=4-((sizeof(cpio_header)+psize)&3);
+	if(dsize&3)dsize+=4-(dsize&3);
+
+	char* path=(char*)(addr+1);
+	char* data=path+psize;
+
+	if(strcmp(path,"TRAILER!!!")==0)return 0;
+	addr=(cpio_header*)(data+dsize);
+	return addr;
+}
+
+void fDump(){
+	void* addr=CPIO_BASE;
+	while(addr){
+		unsigned long tmp;
+		char* str=fnameGet(addr,&tmp);
+		uart_printf("%d, %s\n",tmp,str);
+		addr=nextfGet(addr);
+	}
+}
+
 void loadApp(char* path,unsigned long a_addr,unsigned long a_size){
 	cpio_header* ret=findEntry(CPIO_BASE,path);
 	if(!ret){

@@ -1,5 +1,5 @@
 #include "allocator.h"
-#define debug 1
+#define debug 0
 #if debug
 #include "uart.h"
 #endif

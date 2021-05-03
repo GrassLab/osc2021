@@ -4,6 +4,7 @@
 #include "inc/cpio.h"
 #include "inc/allocator.h"
 #include "inc/thread.h"
+#include "inc/tmpfs.h"
 
 #define min(a,b) ((a)<(b)?(a):(b))
 
@@ -111,6 +112,7 @@ void shell(){
 			uart_puts("          loadapp\n");//current program will handle exceptions(not allow overlap)
 			uart_puts("          lab5-1\n");
 			uart_puts("          lab5-2\n");
+			uart_puts("          fdump\n");
 		}else if(strcmp(buffer,"hello")==0){
 			uart_puts("Hello World!\n");
 		}else if(strcmp(buffer,"reboot")==0){
@@ -150,6 +152,8 @@ void shell(){
 			threadTest1();
 		}else if(strcmp(buffer,"lab5-2")==0){
 			threadTest2();
+		}else if(strcmp(buffer,"fdump")==0){
+			fDump();
 		}else{
 			uart_puts("Error: No such command \"");
 			uart_puts(buffer);
@@ -179,5 +183,11 @@ void main(){
 	uart_init();
 	printHWInfo();
 	allocator_init();
+
+	mount m;
+	filesystem f;
+	tmpfs_Setup(&f,&m);
+	uart_printf("%s have been setup.\n\n",f.name);
+
 	shell();
 }
