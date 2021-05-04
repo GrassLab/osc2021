@@ -1,9 +1,9 @@
+#include "proc/exec.h"
 #include "shell/cmd.h"
 
 #include "bool.h"
 #include "cfg.h"
 #include "cpio.h"
-#include "exec.h"
 #include "log.h"
 #include "string.h"
 #include "test.h"
@@ -13,11 +13,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef CFG_LOG_SHELL_CMD
-static const int _DO_LOG = 1;
-#else
-static const int _DO_LOG = 0;
-#endif
+// #ifdef CFG_LOG_SHELL_CMD
+// static const int _DO_LOG = 1;
+// #else
+// static const int _DO_LOG = 0;
+// #endif
 
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC ((volatile unsigned int *)0x3F10001c)
@@ -26,15 +26,15 @@ static const int _DO_LOG = 0;
 static void cmdHello();
 static void cmdLs();
 static void cmdHelp();
-static void cmdLoadUser();
+// static void cmdLoadUser();
 static void cmdReboot();
 
 Cmd cmdList[5] = {
     {.name = "hello", .help = "Greeting", .func = cmdHello},
     {.name = "ls", .help = "List files", .func = cmdLs},
-    {.name = "load_user",
-     .help = "Load and run user program",
-     .func = cmdLoadUser},
+    // {.name = "load_user",
+    //  .help = "Load and run user program",
+    //  .func = cmdLoadUser},
     {.name = "help", .help = "Show avalible commands", .func = cmdHelp},
     {.name = "reboot", .help = "Reboot device", .func = cmdReboot},
 };
@@ -80,10 +80,12 @@ void cmdReboot() {
   *PM_WDOG = PM_PASSWORD | 100; // reboot after 100 watchdog ticks
 }
 
-void cmdLoadUser() {
-  log_println("load user program");
-  exec("./get_pid.out", 0, NULL);
-}
+// TODO: make this work with scheduling
+// void cmdLoadUser() {
+//   log_println("load user program");
+//   const char *argv[] = {NULL};
+//   exec("./get_pid.out", argv);
+// }
 
 #ifdef CFG_RUN_SHELL_CMD_TEST
 bool test_cmd_get() {

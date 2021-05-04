@@ -1,10 +1,10 @@
 #include "proc/task.h"
 #include "proc.h"
 #include "proc/argv.h"
+#include "proc/exec.h"
 #include "proc/sched.h"
 
 #include "bool.h"
-#include "exec.h"
 #include "list.h"
 #include "mm.h"
 #include "mm/frame.h"
@@ -61,45 +61,10 @@ void sys_getpid(struct trap_frame *tf) {
 // Overwrite current task
 // note: int exec(const char *name, char *const argv[]);
 void sys_exec(struct trap_frame *tf) {
-  struct task_struct *task = get_current();
   const char **argv = (const char **)tf->regs[1];
   const char *name = (const char *)tf->regs[0];
   uart_println("sys exec called");
-  // do not get argv in mvp version
-
-  // address of the program code in memory
-  void *entry_point = load_program(name);
-  task->entry_point = entry_point;
-
-  task->cpu_context.fp = (uint64_t)task + FRAME_SIZE;
-  task->cpu_context.lr = (uint64_t)entry_point;
-  task->cpu_context.sp = (uint64_t)task + FRAME_SIZE;
-  uart_println("thread info replaced");
-
-  // place args
-  uart_println("start printint args");
-  int argc;
-  char **user_argv;
-  uintptr_t new_sp;
-  place_args((uintptr_t)task->cpu_context.sp, name, argv, &argc, &user_argv,
-             &new_sp);
-  uart_println("olg sp: %x", task->cpu_context.sp);
-  uart_println("new sp: %x", new_sp);
-  uart_println("new argv: %x", user_argv);
-  task->cpu_context.sp = (uint64_t)new_sp;
-
-  // finish process replacement
-  // wait for scheduler schedule this thread
-  uart_println("finished, start switching");
-  asm volatile("mov x0, 0x340  \n"); // enable core timer interrupt
-  asm volatile("msr spsr_el1, x0  \n");
-  asm volatile("msr sp_el0, %0    \n" ::"r"(task->cpu_context.sp));
-  asm volatile("msr elr_el1, %0   \n" ::"r"(task->cpu_context.lr));
-
-  asm volatile("mov x0, %0 \n\
-                mov x1, %1 \n\
-                eret" ::"r"(argc),
-               "r"(user_argv));
+  exec(name, argv);
 }
 
 // note: void exit();

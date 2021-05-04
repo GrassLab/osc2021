@@ -1,5 +1,4 @@
 #include "cfg.h"
-#include "exec.h"
 #include "mm.h"
 #include "mm/startup.h"
 #include "proc.h"
