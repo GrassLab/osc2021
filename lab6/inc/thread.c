@@ -2,8 +2,11 @@
 #include "uart.h"
 #include "allocator.h"
 #include "cpio.h"
+#include "vfs.h"
+#include "error.h"
 
 #define TASKSIZE 4096
+#define FD_TABLE_SIZE 5
 #define TASKEXIT 1
 #define TASKFORK 2
 
@@ -12,6 +15,7 @@ typedef struct _Task{
 	int id;
 	int status;
 	unsigned long a_addr,a_size,child;
+	file* fd_table[FD_TABLE_SIZE];
 	struct _Task* next;
 	/*
 	task stack:this ~ this+TASKSIZE
@@ -91,6 +95,7 @@ Task* threadCreate(void* func){
 	new_task->id=task_cnter++;
 	new_task->status=0;
 	new_task->a_addr=new_task->a_size=new_task->child=0;
+	for(int i=0;i<FD_TABLE_SIZE;++i)new_task->fd_table[i]=0;
 	new_task->next=0;
 
 	if(rq.beg){
@@ -110,6 +115,11 @@ void zombiesKill(){//called by idle()
 	while(1){
 		while(tar->next&&(tar->next->status&TASKEXIT)){
 			Task* tmp=tar->next->next;
+			for(int i=0;i<FD_TABLE_SIZE;++i){
+				if(tar->next->fd_table[i]){
+					vfs_close(tar->next->fd_table[i]);
+				}
+			}
 			ffree((unsigned long)(tar->next));
 			tar->next=tmp;
 		}
@@ -140,6 +150,7 @@ void taskUpdate(Task* p,Task* c){
 	uart_puts("Please enter app load address (Hex): ");
 	c->a_addr=uart_getX(1);
 	c->child=0;
+	for(int i=0;i<FD_TABLE_SIZE;++i)c->fd_table[i]=0;//TODO: give child new fds
 	c->next=tmp;
 
 	long k_delta=(long)c-(long)p;
@@ -189,7 +200,7 @@ int tidGet(){
 	return cur->id;
 }
 
-void exec(char* path,char** argv){//will not reset sp...
+void exec(char* path,char** argv){//TODO: reset sp
 	unsigned long a_addr;
 	uart_puts("Please enter app load address (Hex): ");
 	a_addr=uart_getX(1);
@@ -214,7 +225,75 @@ int fork(){
 	return rq.beg->child;
 }
 
+int sys_open(const char *pathname,int flags){
+	Task* cur;
+	asm volatile("mrs %0, tpidr_el1\n":"=r"(cur):);
+	int ret=-1;
+	for(int i=0;i<FD_TABLE_SIZE;++i){
+		if(cur->fd_table[i]==0){
+			ret=i;
+			cur->fd_table[i]=vfs_open(pathname,flags);
+			break;
+		}
+	}
+	return ret;
+}
+
+int sys_close(int fd){
+	if(fd<0||fd>=FD_TABLE_SIZE)ERROR("invalid fd!!");
+	Task* cur;
+	asm volatile("mrs %0, tpidr_el1\n":"=r"(cur):);
+	if(cur->fd_table[fd]){
+		return vfs_close(cur->fd_table[fd]);
+	}
+	return 0;
+}
+
+int sys_write(int fd,const void *buf,int count){
+	if(fd<0||fd>=FD_TABLE_SIZE)ERROR("invalid fd!!");
+	Task* cur;
+	asm volatile("mrs %0, tpidr_el1\n":"=r"(cur):);
+	if(cur->fd_table[fd]){
+		return vfs_write(cur->fd_table[fd],buf,count);
+	}
+	return 0;
+}
+
+int sys_read(int fd,void *buf,int count){
+	if(fd<0||fd>=FD_TABLE_SIZE)ERROR("invalid fd!!");
+	Task* cur;
+	asm volatile("mrs %0, tpidr_el1\n":"=r"(cur):);
+	if(cur->fd_table[fd]){
+		return vfs_read(cur->fd_table[fd],buf,count);
+	}
+	return 0;
+}
+
 /*--------------------------------------------*/
+
+void foo(){
+	char buf[10][50];
+	char* argv[10];
+	for(int i=0;i<10;++i){
+		uart_printf("arg%d: ",i);
+		int n=uart_gets(buf[i],50,1);
+		argv[i]=buf[i];
+		if(n==0||i==9){
+			argv[i]=0;
+			break;
+		}
+	}
+	exec(argv[0],argv);
+}
+
+void threadTest(){
+	Task* cur=threadCreate(0);//use startup stack (not kernel stack)
+	asm volatile("msr tpidr_el1, %0\n"::"r"((unsigned long)cur));
+
+	threadCreate(foo);
+
+	idle();
+}
 
 void foo1(){
 	for(int i=0;i<10;++i){
@@ -244,7 +323,7 @@ void foo2(){
 
 void threadTest2(){
 	Task* cur=threadCreate(0);//use startup stack (not kernel stack)
-	asm volatile("msr tpidr_el1, %0\n"::"r"((unsigned long)cur));//TODO
+	asm volatile("msr tpidr_el1, %0\n"::"r"((unsigned long)cur));
 
 	threadCreate(foo2);
 

@@ -192,6 +192,8 @@ void shell(){
 				uart_printf("...%s\n",buf);
 			}
 			vfs_close(f);
+		}else if(strcmp(buffer,"lab6-2")==0){
+			threadTest();
 		}else{
 			uart_puts("Error: No such command \"");
 			uart_puts(buffer);

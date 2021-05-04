@@ -73,6 +73,26 @@ void exception_handler(){
 
 			x0Set(ret);
 			return;
+		}else if(svc==7){//open
+			unsigned long ret=sys_open((const char*)x0,(int)x1);
+
+			x0Set(ret);
+			return;
+		}else if(svc==8){//close
+			unsigned long ret=sys_close((int)x0);
+
+			x0Set(ret);
+			return;
+		}else if(svc==9){//write
+			unsigned long ret=sys_write((int)x0,(const void*)x1,(int)x2);
+
+			x0Set(ret);
+			return;
+		}else if(svc==10){//read
+			unsigned long ret=sys_read((int)x0,(void*)x1,(int)x2);
+
+			x0Set(ret);
+			return;
 		}else{
 			uart_printf("TODO\n");
 			return;
