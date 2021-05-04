@@ -5,13 +5,12 @@
 /**
  * @brief Place argv into user stack
  * @param src_sp the original user sp value
- * @param name name of the program
  * @param src_argv argv to copy from
  * @param ret_argc (total argc count)
  * @param ret_argv (alt)
  * @param ret_sp new sp value
  */
-void place_args(/*IN*/ uintptr_t src_sp, /*IN*/ const char *name,
+void place_args(/*IN*/ uintptr_t src_sp,
                 /*IN*/ const char **src_argv,
                 /*OUT*/ int *ret_argc,
                 /*OUT*/ char ***ret_argv,

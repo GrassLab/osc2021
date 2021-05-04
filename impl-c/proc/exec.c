@@ -46,8 +46,7 @@ void exec(const char *name, const char **argv) {
   int argc;
   char **user_argv;
   uintptr_t new_sp;
-  place_args((uintptr_t)task->cpu_context.sp, name, argv, &argc, &user_argv,
-             &new_sp);
+  place_args((uintptr_t)task->cpu_context.sp, argv, &argc, &user_argv, &new_sp);
   uart_println("olg sp: %x", task->cpu_context.sp);
   uart_println("new sp: %x", new_sp);
   uart_println("new argv: %x", user_argv);
