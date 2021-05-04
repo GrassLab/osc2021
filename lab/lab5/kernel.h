@@ -1,12 +1,13 @@
 #include "bootloader.h"
+#include "printf.h"
 #include "uart.h"
 #include "utils.h"
-#include "printf.h"
 
+void shell();
 void pause() {
-  uart_puts("Press any key to continue . . .");
+  printf("Press any key to continue . . .");
   uart_getc();
-  uart_puts("\r                                \r");
+  printf("\r                                \r");
 }
 /* cpio */
 #define CPIO_ARRD 0x8000000
@@ -144,15 +145,9 @@ void buddy_free(buddy_list *list) {
 void print_buddyList(buddy_list **lists) {
   for (int i = 0; i < BUDDY_INDEX; i++) {
     if (lists[i] != 0) {
-      uart_puts("index: ");
-      print_h((unsigned long int)i);
-      for (buddy_list *now = lists[i]; now != 0; now = now->next) {
-        uart_puts("    memory addr: ");
-        print_h((unsigned long int)now->addr);
-        // uart_puts("        allocate memory addr end: ");
-        // print_h((unsigned long int)now->addr + now->size * 4 * KB);
-      }
-      uart_puts("\r\n");
+      printf("index: %d", i);
+      for (buddy_list *now = lists[i]; now != 0; now = now->next)
+        printf("    memory addr: 0x%010x\n", now->addr);
     }
   }
 }
@@ -167,7 +162,7 @@ typedef struct dma {
 dma *free_pool, *used_pool;
 void dma_init() { free_pool = used_pool = 0; }
 
-void *malloc(int size) {
+void *kmalloc(int size) {
   size += align(size, 8);
   int dmaSize = sizeof(dma) + align(sizeof(dma), 8);
   /* get appropriate size*/
@@ -216,18 +211,22 @@ void *__dma_merge__(dma *now, dma *next, dma **before) {
   return (void *)now + dmaSize;
 }
 
-void free(void *addr) {
+void kfree(void *addr) {
   int dmaSize = sizeof(dma) + align(sizeof(dma), 8);
   dma *list = (dma *)(addr - dmaSize), *now = used_pool, **before = &used_pool;
   for (; now; before = &now->next, now = now->next)
     if (now == list) break;
+  // if (now == NULL) {
+  //   printf("kfree error: 0x%08x\n", addr);
+  //   return;
+  // }
   *before = list->next;
   now = free_pool;
   before = &free_pool;
   void *merge;
   for (; now; before = &now->next, now = now->next)
     if ((merge = __dma_merge__(list, now, before))) {
-      free(merge);
+      kfree(merge);
       return;
     }
   if (list->size + dmaSize == list->page->size * PAGE_SIZE) {
@@ -238,16 +237,10 @@ void free(void *addr) {
   free_pool = list;
 }
 void printDmaPool(dma *list) {
-  for (dma *now = list; now != 0; now = now->next) {
-    uart_puts("addr: ");
-    print_h((unsigned long int)((void *)now) + sizeof(dma));
-    uart_puts("\tsize: ");
-    print_h((unsigned long int)now->size);
-    uart_puts("\r\n");
-    // uart_puts("        allocate memory addr end: ");
-    // print_h((unsigned long int)now->addr + now->size * 4 * KB);
-  }
-  uart_puts("pool end\r\n");
+  for (dma *now = list; now != 0; now = now->next)
+    printf("addr: 0x%010x\tsize: 0x%010x\n", ((void *)now) + sizeof(dma),
+           now->size);
+  printf("pool end\n");
 }
 /*
   timer &  time's functions
@@ -289,17 +282,17 @@ void add_timer(void *return_addr, uint64_t after) {
   /* insert to queue */
   for (timer_list *now = timer_head; now; now = now->next)
     if (now->after < after && (after < now->next->after || now->next == 0)) {
-      timer_list *ptr = malloc(sizeof(timer_list));
+      timer_list *ptr = kmalloc(sizeof(timer_list));
       *ptr = (timer_list){
           .next = now->next, .return_addr = return_addr, .after = after};
       now->next = ptr;
     }
   if (timer_head == 0) {
-    timer_list *ptr = malloc(sizeof(timer_list));
+    timer_list *ptr = kmalloc(sizeof(timer_list));
     *ptr = (timer_list){.next = 0, .return_addr = return_addr, .after = after};
     timer_head = ptr;
   } else if (after < timer_head->after) {
-    timer_list *ptr = malloc(sizeof(timer_list));
+    timer_list *ptr = kmalloc(sizeof(timer_list));
     *ptr = (timer_list){
         .next = timer_head, .return_addr = return_addr, .after = after};
     timer_head = ptr;
@@ -312,7 +305,7 @@ void _timer_handler() {
     asm volatile("msr ELR_EL1, %0;" ::"r"(timer_head->return_addr));
   timer_list *ptr = timer_head;
   timer_head = timer_head->next;
-  free((void *)ptr);
+  kfree((void *)ptr);
   if (timer_head != 0) {
     _timer_enable();
     _update_afters();
@@ -320,154 +313,439 @@ void _timer_handler() {
   }
 }
 /* thread and process */
-#define DEAD (WAIT + 1)
-#define WAIT (ALIVE + 1)
-#define ALIVE (ACTIVE + 1)
-#define ACTIVE 0x0
-#define KERNEL_TPDIR_EL1 0x00000000
-// 0x30000000
+#define ACTIVE 0
+#define ALIVE 1
+#define WAIT 2
+#define DEAD 3
+#define FORK 4
 #define STACK_SIZE (PAGE_SIZE - sizeof(dma))
+
+void exit();
+struct thread_list;
+typedef struct process_list {
+  struct process_list *prev, *next;
+  struct thread_list *thread;
+  void *context_malloc;
+  uint64_t pid, context_size, context_count;
+} process_list;
+
+void print_process_q(process_list *);
 typedef struct thread_list {
   struct thread_list *next, *prev;
+  process_list *process;
+  void *el0_stack_malloc, *el1_stack_malloc, *sp_el0, *fp_el0;
   void *regs[10], *fp, *lr, *sp;
-  uint64_t status, pid, tid;
+  uint64_t status, tid;
 } thread_list;
 
-thread_list *run_q, *wait_q, *running;
-void *kernel_tpdir_el1;
+thread_list *run_q, kernel_shell;
 
 extern void switch_to(void *prev, void *next);
 extern void *get_current();
-void thread_init() {
-  running = run_q = wait_q = 0;
-  kernel_tpdir_el1 = get_current();
-}
-void print_q(thread_list *q) {
+void idle();
+void schedule2(thread_list *);
+
+void print_thread_q(thread_list *q) {
   if (q == 0) return;
-  thread_list *now = q;
-  for (; now->next != q; now = now->next) {
-    print_h((unsigned long int)now);
+  for (thread_list *now = q;; now = now->next) {
+    printf("tid: %d\tstatus: %d,\n", now->tid, now->status);
+    if (now->next == q) break;
   }
-  print_h((unsigned long int)now);
   return;
 }
+
+int thread_list_len(thread_list *q) {
+  if (q == 0) return 0;
+  int i = 1;
+  for (thread_list *now = q; now->next != q; now = now->next) ++i;
+  return i;
+}
+
 thread_list *find_tid(thread_list *q, uint64_t tid) {
   if (q == 0) return 0;
-  thread_list *now = q;
-  for (; now->next != q; now = now->next)
+  for (thread_list *now = q;; now = now->next) {
     if (tid == now->tid) return now;
-  if (tid == now->tid) return now;
+    if (now->next == q) break;
+  }
   return 0;
 }
-thread_list *get_current_thread() {
-  if (run_q == 0) return 0;
-  thread_list *now = run_q;
-  for (; now->next != run_q; now = now->next)
-    if (now->status == ACTIVE) break;
-  return now;
+thread_list *find_thread(thread_list *q, thread_list *thread) {
+  if (q == 0) return 0;
+  for (thread_list *now = q;; now = now->next) {
+    if (thread == now) return now;
+    if (now->next == q) break;
+  }
+  return 0;
 }
-uint64_t get_current_tid() { return get_current_thread()->tid; }
-uint64_t get_free_tid(thread_list *q, uint64_t i) {
-  for (uint64_t tid = i;; ++tid)
-    if (find_tid(q, tid) == 0) return tid;
+thread_list *get_current_thread() { return run_q; }
+uint64_t gettid() { return run_q->tid; }
+uint64_t get_free_tid() {
+  for (uint64_t tid = 0;; ++tid)
+    if (find_tid(run_q, tid) == 0) return tid;
 }
-void add_to_q(thread_list **q, thread_list *item) {
+
+void add_to_thread_q(thread_list **q, thread_list *item) {
   item->next = item->prev = item;
   if (*q) {
     item->next = (*q);
     item->prev = (*q)->prev;
     (*q)->prev->next = item;
     (*q)->prev = item;
-  }
-  *q = item;
+  } else
+    *q = item;  // here may change run_q
 }
-void pop(thread_list **q) {
-  thread_list *now = *q;
-  if (*q == (*q)->next) *q = 0;
-  (*q) = now->next;
-  now->prev->next = now->next;
-  now->next->prev = now->prev;
-}
-void del(thread_list **q, thread_list *item) {
-  if (*q == (*q)->next) *q = 0;
-  if (*q == item) *q = item->next;
+void del_thread(thread_list **q, thread_list *item) {
+  /* caller have to make sure iten is in q */
+  if (*q == item) *q = item->next;  // here may change run_q
+  if (*q == (*q)->next) *q = 0;     // here may change run_q
   item->prev->next = item->next;
   item->next->prev = item->prev;
+  // item->prev = item->next = item;
 }
-thread_list *thread_create(void *func_ptr) {
-  thread_list *new = malloc(sizeof(thread_list));
-  void *sp = malloc(STACK_SIZE);
+
+void pop_thread(thread_list **q) {
+  del_thread(q, *q);  // here may change run_q
+}
+void thread_delete(thread_list *item) {
+  /* caller have to make sure it is not in any queue */
+  kfree(item->sp);
+  kfree(item);
+}
+thread_list *thread_create(void (*func_ptr)()) {
+  thread_list *new = kmalloc(sizeof(thread_list));
+  void *el1_stack_malloc = kmalloc(STACK_SIZE);
   *new = (thread_list){.next = new,
                        .prev = new,
+                       .process = 0,
+                       .el0_stack_malloc = 0,
+                       .el1_stack_malloc = el1_stack_malloc,
+                       .sp_el0 = 0,
+                       .fp_el0 = 0,
                        .regs = {},
-                       .fp = sp + STACK_SIZE,
+                       .fp = el1_stack_malloc + STACK_SIZE,
                        .lr = func_ptr,
-                       .sp = sp + STACK_SIZE,
+                       .sp = el1_stack_malloc + STACK_SIZE,
                        .status = ALIVE,
-                       .tid = get_free_tid(wait_q, get_free_tid(run_q, 0)),
-                       .pid = 0};
-  add_to_q(&run_q, new);
+                       .tid = get_free_tid()};
+  add_to_thread_q(&run_q, new);
   return new;
 }
-void schedule() {
-  if (run_q == 0) return;
-  if (running) running->status = ALIVE;
-  delay();
-  running = run_q;
-  run_q = running->next;
-  running->status = ACTIVE;
+thread_list *thread_copy(thread_list *original) {
+  thread_list *new = kmalloc(sizeof(thread_list));
+  void *el0_stack_malloc = 0;
+  void *el1_stack_malloc = kmalloc(STACK_SIZE);
+  if (original->el0_stack_malloc) el0_stack_malloc = kmalloc(STACK_SIZE);
+  uint64_t delta_fp = original->fp - original->el1_stack_malloc,
+           delta_sp = original->sp - original->el1_stack_malloc,
+           delta_sp_el0 = original->sp_el0 - original->el0_stack_malloc,
+           delta_fp_el0 = original->fp_el0 - original->el0_stack_malloc;
+  *new = (thread_list){.next = new,
+                       .prev = new,
+                       .el0_stack_malloc = el0_stack_malloc,
+                       .el1_stack_malloc = el1_stack_malloc,
+                       .sp_el0 = delta_sp_el0 + el0_stack_malloc,
+                       .fp_el0 = delta_fp_el0 + el0_stack_malloc,
+                       .fp = delta_fp + el1_stack_malloc,
+                       .lr = original->lr,
+                       .sp = delta_sp + el1_stack_malloc,
+                       .status = ALIVE,
+                       .tid = get_free_tid()};
+  if (el0_stack_malloc)
+    memcpy(new->el0_stack_malloc, original->el0_stack_malloc, STACK_SIZE);
+  memcpy(new->el1_stack_malloc, original->el1_stack_malloc, STACK_SIZE);
+  memcpy(new->regs, original->regs, sizeof(original->regs));
+  add_to_thread_q(&run_q, new);
+  return new;
+}
+
+void thread_init() {
+  run_q = 0;
+  thread_create(idle);
+}
+
+void schedule2(thread_list *to) {
+  /*
+   * 1. should make sure to->state is ALIVE by caller
+   * 2. current thread may ACTIVE or DEAD
+   */
+  delay(1000);
+  if (find_thread(run_q, to) == 0) return;
+  if (run_q->status == ACTIVE) run_q->status = ALIVE;
+  run_q = to;
+  run_q->status = ACTIVE;
+
   void *tpdir_el1 = get_current();
+
+  /* Here is make sure if first run idle from kernel shell */
   if (tpdir_el1 > (void *)BUDDY_END || tpdir_el1 < (void *)BUDDY_START)
-    tpdir_el1 = KERNEL_TPDIR_EL1;
-  switch_to(tpdir_el1, running->regs);
+    tpdir_el1 = kernel_shell.regs;
+
+  switch_to(tpdir_el1, run_q->regs);
+}
+
+void schedule() {
+  /* 1. first call schedule at least has a thread idel
+   * 2. schedule just run all ALIVE thread ONE time each one call
+   */
+
+  /* if queue only have idle switch to kernel shell */
+  if (run_q == run_q->next) {
+    switch_to(get_current(), kernel_shell.regs);
+  }
+  /* round robin */
+  for (thread_list *next = run_q->next;; next = next->next) {
+    if (next->status == ALIVE) schedule2(next);
+    if (next->next == run_q) break;
+  }
+}
+
+void exit_thread() {
+  run_q->status = DEAD;
+  schedule();
+}
+
+void kill_zombies() {
+  /* this is just call by idle so here at least exist one thread "idle" */
+  if (run_q == 0) return;
+  for (thread_list *now = run_q->next; run_q && run_q->next != run_q;
+       now = now->next) {
+    if (now->status == DEAD) {
+      del_thread(&run_q, now);
+    }
+    if (now->next == run_q) break;
+  }
+}
+
+/*
+ *   fork & exec
+ */
+
+process_list *process_head;
+int getpid() {
+  if (run_q->process) return run_q->process->pid;
+  return -1;
+}
+
+void print_process_q(process_list *q) {
+  if (q == 0) return;
+  for (process_list *now = q;; now = now->next) {
+    printf("pid: %d, tid: %d, status: %d\n", now->pid, now->thread->tid,
+           now->thread->status);
+    if (now->next == q) break;
+  }
+  return;
+}
+
+process_list *find_pid(process_list *q, uint64_t pid) {
+  if (q == 0) return 0;
+  for (process_list *now = q;; now = now->next) {
+    if (pid == now->pid) return now;
+    if (now->next == q) break;
+  }
+  return 0;
+}
+
+uint64_t get_free_pid() {
+  for (uint64_t pid = 1;; pid++)
+    if (find_pid(process_head, pid) == 0) return pid;
+  return 0;
+}
+
+void add_to_process_q(process_list **q, process_list *item) {
+  item->next = item->prev = item;
+  if (*q) {
+    item->next = (*q);
+    item->prev = (*q)->prev;
+    (*q)->prev->next = item;
+    (*q)->prev = item;
+  } else
+    *q = item;
+}
+
+void del_process(process_list **q, process_list *item) {
+  if (*q == item) *q = item->next;
+  if (*q == (*q)->next) *q = 0;
+  item->prev->next = item->next;
+  item->next->prev = item->prev;
+  item->prev = item->next = item;
+}
+
+process_list *process_create(thread_list *thread, void *context_malloc,
+                             uint64_t context_size) {
+  process_list *new = kmalloc(sizeof(process_list));
+  *new = (process_list){.prev = new,
+                        .next = new,
+                        .context_malloc = context_malloc,
+                        .thread = thread,
+                        .pid = get_free_pid(),
+                        .context_size = context_size,
+                        .context_count = 1};
+  thread->process = new;
+  add_to_process_q(&process_head, new);
+  return new;
+}
+
+void exit_process() {
+  del_process(&process_head, run_q->process);
+  kfree(run_q->process);
+  /* will not free process context_malloc,
+   * although it have to be freed at some condition
+   */
+}
+
+void process_init() { process_head = 0; }
+void process_copy() {
+  if (run_q == 0) return;
+  for (thread_list *now = run_q;; now = now->next) {
+    if (now->status == FORK) {
+      process_create(thread_copy(now), now->process->context_malloc,
+                     now->process->context_size);
+      now->status = ALIVE;
+    }
+    if (now->next == run_q) break;
+  }
+}
+int fork() {
+  run_q->status = FORK;
+  thread_list *parent = run_q;
+  schedule();
+  if (run_q == parent) return run_q->process->pid;
+  return 0;
+}
+
+int exec(char *filename, char *argv[]) {
+  char *now_addr = (char *)CPIO_ARRD, *name, *context;
+  struct cpio_newc_header *cpio_header;
+  unsigned long long int context_size = 0;
+  do {
+    name = now_addr + CPIO_SIZE;
+    context_size = cpio_info(&cpio_header, &now_addr, &context);
+  } while (!strcmp("TRAILER!!!", name) && !strcmp(filename, name));
+  /* check file exist */
+  if (!strcmp(filename, name)) return -1;
+
+  /* get cpio context size */
+  char *context_malloc = (void *)0x20000000;
+  for (int i = 0; i < context_size; ++i) context_malloc[i] = context[i];
+  run_q->process->context_size = context_size;
+  run_q->process->context_malloc = context_malloc;
+
+  void *el0_stack_malloc = kmalloc(STACK_SIZE);
+  char *user_sp = el0_stack_malloc + STACK_SIZE;
+  run_q->el0_stack_malloc = el0_stack_malloc;
+
+  uint64_t argc = 0;
+  while (argv[++argc] != NULL)  // count argc
+    ;
+
+  int total_size =
+      sizeof(uint64_t) + sizeof(char **) + sizeof(char *) * (argc + 1);
+  for (int i = 0; i < argc; ++i)
+    total_size += sizeof(char) * (strlen(argv[i]) + 1);
+  user_sp -= align(total_size, 16);
+
+  /* copy *argv[] */
+  for (int i = argc - 1; i >= 0; --i) {
+    int size = sizeof(char) * (strlen(argv[i]) + 1);
+    user_sp -= size;
+    memcpy(user_sp, argv[i], size);
+    argv[i] = (char *)user_sp;
+  }
+  argv[argc] = NULL;
+
+  /* copy argv[] */
+  for (int i = argc; i >= 0; --i) {
+    int size = sizeof(char *);
+    user_sp -= size;
+    memcpy(user_sp, &argv[i], size);
+  }
+
+  /* copy argv */
+  argv = (char **)user_sp;
+  user_sp -= sizeof(char **);
+  memcpy(user_sp, &argv, sizeof(char **));
+
+  /* copy argc*/
+  user_sp -= sizeof(uint64_t);
+  memcpy(user_sp, &argc, sizeof(uint64_t));
+
+  _run_el0(run_q->process->context_malloc, user_sp);
+  return 0;
 }
 
 void exit() {
-  running->status = DEAD;
-  del(&run_q, running);
-  add_to_q(&wait_q, running);
-  if (run_q) schedule();
-  running = 0;
-  switch_to(get_current(), (void *)KERNEL_TPDIR_EL1);
+  if (run_q->process) exit_process();
+  exit_thread();
 }
 
-void kill_zombies(thread_list **q) {
-  if (*q == 0) return;
-  thread_list *now = (*q);
-  for (; now->next != (*q); now = now->next)
-    if (now->status == DEAD) {
-      del(q, now);
-      free(now->fp);
-      free(now);
-    }
-  if (now->status == DEAD) {
-    del(q, now);
-    free(now->fp);
-    free(now);
-  }
-}
 void idle() {
-  // while (1)
-  for (int i = 0; i < 5; i++) {
-    kill_zombies(&wait_q);
+  while (1) {
+    kill_zombies();
+    process_copy();
     schedule();
-    uart_puts("idle\r\n");
+    if (run_q == run_q->next) exit();
   }
-  // print_q(wait_q);
 }
 
-void foo4() {
-  for (int i = 0; i < 5; ++i) {
-    uart_puts("Thread id: ");
-    print_h(get_current_tid());
-    uart_puts(" i: ");
-    print_h(i);
-    uart_puts("\r\n");
-    schedule();
+#define EL0_SYNC_EXIT 0
+#define EL0_SYNC_UART_SEND 1
+#define EL0_SYNC_FORK 2
+#define EL0_SYNC_PID 3
+#define EL0_SYNC_EXEC 4
+#define EL0_SYNC_UART_GETC 5
+#define EL0_SYNC_UART_PUTS 6
+
+#define EL0_SYNC_TEST 20
+#define EL0_SYNC_PRINT_H 21
+
+int _el0_sync_entry() {
+  uint64_t *entry_sp;
+  asm volatile("mov %0, x0" : "=r"(entry_sp));
+
+  uint64_t x0, x1;
+  asm volatile("ldr %0, [%1, 0]\n" : "=r"(x0) : "r"(entry_sp));
+  asm volatile("ldr %0, [%1, 8]\n" : "=r"(x1) : "r"(entry_sp));
+
+  /* update current thread sp_el0 & fp_el0 */
+  asm volatile("ldr %0, [%1, 16 * 15 + 8]\n"
+               : "=r"(run_q->sp_el0)
+               : "r"(entry_sp));
+  asm volatile("ldr %0, [%1, 16 * 14 + 8]\n"
+               : "=r"(run_q->fp_el0)
+               : "r"(entry_sp));
+  uint64_t esr, result = 0;
+  asm volatile("mrs %0, esr_el1" : "=r"(esr) :);
+  if (((esr >> 26) & 0x3f) == 0x15) {
+    uint64_t svc = esr & 0x1ffffff;
+    if (svc == EL0_SYNC_EXIT)
+      exit();
+    else if (svc == EL0_SYNC_UART_SEND)
+      printf("%c", (char)x0);
+    else if (svc == EL0_SYNC_UART_PUTS)
+      printf("%s", (char *)x0);
+    else if (svc == EL0_SYNC_EXEC)
+      exec((char *)x0, (char **)x1);
+    else if (svc == EL0_SYNC_FORK)
+      result = fork();
+    else if (svc == EL0_SYNC_PID) {
+      printf("%d", getpid());
+      result = getpid();
+    } else if (svc == EL0_SYNC_UART_GETC)
+      return uart_getc();
+    else if (svc == EL0_SYNC_TEST)
+      printf("count\n");
+    else if (svc == EL0_SYNC_PRINT_H)
+      printf("0x%08x\n", x0);
   }
-  exit();
+  printf("");
+  asm volatile("mov x1, %0" ::"r"(run_q->fp_el0));
+  asm volatile("mov x2, %0" ::"r"(run_q->sp_el0));
+  return result;
 }
-/* el0 entries */
+
+/*
+ * irq entries
+ */
 extern void _irq_enable();
 extern void _irq_disable();
 void _el0_irq_entry() {

@@ -6,23 +6,18 @@ void do_reset(int tick) {         // reboot after watchdog timer expire
   *PM_WDOG = PM_PASSWORD | tick;  // number of watchdog tick
 }
 void do_help() {
-  uart_puts("help: print available commands\r\n");
-  uart_puts("reboot: restart device\r\n");
-  uart_puts("ls: list file\r\n");
-  uart_puts("cat: print file context\r\n");
-  uart_puts("clear: clean screen\r\n");
+  printf("help: print available commands\n");
+  printf("reboot: restart device\n");
+  printf("ls: list file\n");
+  printf("cat: print file context\n");
+  printf("clear: clean screen\n");
 }
-void do_except(char *buff) {
-  uart_puts("No command: ");
-  uart_puts(buff);
-  uart_puts("\r\n");
-}
+void do_except(char *buff) { printf("No command: %s\n", buff); }
 void do_ls() {
   char *now_addr = (char *)CPIO_ARRD, *filename, *context;
   struct cpio_newc_header *cpio_header;
   while (!strcmp("TRAILER!!!", filename = now_addr + CPIO_SIZE)) {
-    uart_puts(filename);
-    uart_puts("\r\n");
+    printf("%s\n", filename);
     cpio_info(&cpio_header, &now_addr, &context);
   }
 }
@@ -37,62 +32,56 @@ void do_cat(char *buff) {
     context_size = cpio_info(&cpio_header, &now_addr, &context);
   } while (!strcmp("TRAILER!!!", filename) && !strcmp(&buff[k + 1], filename));
   /* check file exist */
-  if (!strcmp(&buff[k + 1], filename)) {
-    uart_puts("cat: ");
-    uart_puts(&buff[k + 1]);
-    uart_puts(": No such file or directory\r\n");
-  }
+  if (!strcmp(&buff[k + 1], filename))
+    printf("cat: %s : No such file or directory\n", &buff[k + 1]);
   /* get cpio context size */
-  for (int i = 0; i < context_size; i++) uart_send(context[i]);
-  uart_puts("\r\n");
+  for (int i = 0; i < context_size; i++) printf("%c", context[i]);
+  printf("\n");
 }
-void do_clear() { uart_puts("\033c"); }
+void do_clear() { printf("\033c"); }
 void do_run(char *buff) {
-  char *now_addr = (char *)CPIO_ARRD, *filename, *context;
-  struct cpio_newc_header *cpio_header;
-  int k = 0;
-  unsigned long long int context_size = 0;
-  buff = "run\0test.img\0";  //+++++++++++++++++++++++++++++++++++++++++
-  while (buff[k] != '\0') k++;
-  do {
-    filename = now_addr + CPIO_SIZE;
-    context_size = cpio_info(&cpio_header, &now_addr, &context);
-  } while (!strcmp("TRAILER!!!", filename) && !strcmp(&buff[k + 1], filename));
-  /* check file exist */
-  if (!strcmp(&buff[k + 1], filename)) {
-    uart_puts("run: ");
-    uart_puts(&buff[k + 1]);
-    uart_puts(": No such file or directory\r\n");
-    return;
-  }
-  /* get cpio context size */
-  char *process_location = (char *)malloc(context_size + 4 * MB);
-  for (int i = 0; i < context_size; i++) process_location[i] = context[i];
-  // add_timer(0x0, 10);
-  // add_timer(0x0, 2);
-  // add_timer(0x0, 3);
-  _run_el0(process_location, process_location + context_size + 4 * MB);
-  free(process_location);
+  // exec("test.img", (char *[]){"test.img", NULL});
+}
+void do_top() {
+  // kill_zombies(&wait_q);
+  // print_process_q(process_head);
+  // print_thread_q(wait_q);
 }
 /*
   test block
 */
 
-void do_test() {
-  for (int i = 0; i < 5; i++) thread_create(foo4);
-  idle();
-  uart_puts("exit\r\n");
+void foo4() {
+  for (int i = 0; i < 5; ++i) {
+    printf("Thread id: %d, i: %d\n", gettid(), i);
+    schedule();
+  }
+  exit_thread();
 }
-
+void do_req1() {
+  for (int i = 0; i < 5; i++) thread_create(foo4);
+  schedule();
+}
+void user_test() {
+  char *argv[] = {"argv_test.img", "-o", "arg2", 0};
+  exec("argv_test.img", argv);
+  exit();
+}
+void do_req2() {
+  process_create(thread_create(user_test), 0, 0);
+  schedule();
+}
 void shell() {
+  do_clear();
   char buff[buff_size];
   /* say hello */
-  uart_puts("\r\n++++++++++++++++++++++\r\n");
-  uart_puts("+++ Hello Kernel!! +++\r\n");
-  uart_puts("++++++++++++++++++++++\r\n");
-  printf("%d123123\r\n123123",456);
+  printf(
+      "\n"
+      "++++++++++++++++++++++\n"
+      "+++ Hello Kernel!! +++\n"
+      "++++++++++++++++++++++\n");
   while (1) {
-    uart_puts("$ ");
+    printf("$ ");
     get_cmd(buff);
     if (buff[0] == '\0')
       continue;
@@ -109,8 +98,20 @@ void shell() {
       do_clear();
     else if (strcmp(buff, "run"))
       do_run(buff);
-    else if (strcmp(buff, "test"))
-      do_test();
+    else if (strcmp(buff, "req1"))
+      do_req1();
+    else if (strcmp(buff, "req2"))
+      do_req2();
+    // else if (strcmp(buff, "test"))
+    //   do_test();
+    // else if (strcmp(buff, "test2"))
+    //   do_test2();
+    // else if (strcmp(buff, "test3"))
+    //   do_test3();
+    // else if (strcmp(buff, "test4"))
+    //   do_test4();
+    else if (strcmp(buff, "top"))
+      do_top();
     else
       do_except(buff);
   }
@@ -118,15 +119,16 @@ void shell() {
 
 void main() {
   uart_init();  // set up serial console
-  uart_puts("\r\nuart_init\r\n");
+  printf("\nuart_init\n");
   buddy_init((char *)BUDDY_START);
-  uart_puts("\r\nbuddy_init\r\n");
+  printf("\nbuddy_init\n");
   dma_init();
-  uart_puts("\r\ndma_init\r\n");
+  printf("\ndma_init\n");
   timer_init();
-  uart_puts("\r\ntimer_init\r\n");
+  printf("\ntimer_init\n");
   thread_init();
-  uart_puts("\r\nthread_init\r\n");
-  do_clear();
+  printf("\nthread_init\n");
+  process_init();
+  printf("\nprocess_init\n");
   shell();
 }
