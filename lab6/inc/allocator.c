@@ -214,7 +214,7 @@ void* findChunk(Pool* pool){
 	return findChunk(pool->next);
 }
 
-Pool* pools[4];//12, 32, 48, ...
+Pool* pools[4];//16, 32, 48, ...
 
 void* dalloc(int size){
 	for(int i=0;i<4;++i){
@@ -240,7 +240,7 @@ void allocator_init(){
 	frame_table[1]=listInsert(&lists[0],1);
 	for(int i=2;i<F_NUM*2;++i)frame_table[i]=-1;
 
-	int chunk_size[4]={12,32,48,1024};
+	int chunk_size[4]={16,32,48,1024};
 	for(int i=0;i<4;++i){
 		pools[i]=(Pool*)falloc(F_SIZE);
 		pools[i]->size=chunk_size[i];

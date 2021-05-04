@@ -38,3 +38,13 @@ typedef struct vnode vnode;
 typedef struct vnode_operations vnode_operations;
 typedef struct file file;
 typedef struct file_operations file_operations;
+
+#define PREFIX_LEN 50
+#define O_CREAT 2
+
+const char* slashIgnore(const char* src,char* dst,int size);
+file* vfs_open(const char* pathname, int flags);
+int vfs_close(file* f);
+int vfs_write(file* f,const void* buf,unsigned long len);
+int vfs_read(file* f,void* buf,unsigned long len);
+void vfs_init(void* setup_mount_f,void* write_f,void* read_f);

@@ -154,6 +154,44 @@ void shell(){
 			threadTest2();
 		}else if(strcmp(buffer,"fdump")==0){
 			fDump();
+		}else if(strcmp(buffer,"lab6-1")==0){
+			char buf[100];
+			//RW test
+			file* f=vfs_open("dir/dirdir/f3",0);
+			for(int i=0;i<10;++i)vfs_write(f,"12345",5);
+			vfs_close(f);
+			f=vfs_open("dir/dirdir/f3",0);
+			int n=vfs_read(f,buf,100);
+			buf[n]=0;
+			uart_printf("%d: %s\n",n,buf);
+			vfs_close(f);
+
+			//create test
+			file* a=vfs_open("dir/hello",O_CREAT);
+			file* b=vfs_open("dir/world",O_CREAT);
+			vfs_write(a,"Hello ",6);
+			vfs_write(b,"World!",6);
+			vfs_close(a);
+			vfs_close(b);
+			b=vfs_open("dir/hello",0);
+			a=vfs_open("dir/world",0);
+			int sz;
+			sz=vfs_read(b,buf,100);
+			sz+=vfs_read(a,buf+sz,100);
+			buf[sz]=0;
+			uart_printf("%s\n",buf);//should be Hello World!
+			vfs_close(a);
+			vfs_close(b);
+
+			//ls test
+			f=vfs_open("dir",0);
+			while(1){
+				n=vfs_read(f,buf,100);
+				if(n==0)break;
+				buf[n]=0;
+				uart_printf("...%s\n",buf);
+			}
+			vfs_close(f);
 		}else{
 			uart_puts("Error: No such command \"");
 			uart_puts(buffer);
@@ -184,10 +222,9 @@ void main(){
 	printHWInfo();
 	allocator_init();
 
-	mount m;
-	filesystem f;
-	tmpfs_Setup(&f,&m);
-	uart_printf("%s have been setup.\n\n",f.name);
+	file_operations fops;
+	tmpfs_fopsGet(&fops);
+	vfs_init(tmpfs_Setup,fops.write,fops.read);
 
 	shell();
 }
