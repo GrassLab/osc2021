@@ -1,12 +1,12 @@
 #include "lib.h"
-int main() {
-  // Would result in a absolute address
-  char *args[4];
-  char *name = "./hello_world.out";
-  args[0] = "./hello_world.out";
-  args[1] = "ian";
-  args[2] = "nctu";
-  args[3] = NULL;
-  exec(name, (const char **)args);
+
+int main(int argc, char **argv) {
+  int pid = getpid();
+  printf("Argv Test, pid %d\n", pid);
+  for (int i = 0; i < argc; ++i) {
+    printf("  argv[%d] = %s\n", i, argv[i]);
+  }
   return 0;
+  // char *fork_argv[] = {"fork_test", 0};
+  // exec("fork_test", fork_argv);
 }

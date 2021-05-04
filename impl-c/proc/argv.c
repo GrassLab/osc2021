@@ -39,7 +39,8 @@ void place_args(/*IN*/ uintptr_t src_sp,
 
   int nm_args = 0;
   while (src_argv[nm_args] != NULL) {
-    log_println(" src_argv[%d]:`%s`", nm_args, src_argv[nm_args]);
+    log_println(" src_argv[%d](%x):`%s`", nm_args, src_argv[nm_args],
+                src_argv[nm_args]);
     nm_args++;
   }
 

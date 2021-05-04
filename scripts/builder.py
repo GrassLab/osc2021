@@ -45,7 +45,12 @@ def init_global():
             keyword="user_programs",
             project_folder="user_programs",
             target_folder="res/rootfs",
-            target_files=["hello_world.out", "get_pid.out", "argv_test.out"],
+            target_files=[
+                "hello_world.out",
+                "get_pid.out",
+                "argv_test.out",
+                "init_user.out",
+            ],
             run_cross=True,
             clean_target_folder=False,
         ),

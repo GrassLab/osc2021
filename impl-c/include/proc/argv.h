@@ -11,7 +11,7 @@
  * @param ret_sp new sp value
  */
 void place_args(/*IN*/ uintptr_t src_sp,
-                /*IN*/ const char **src_argv,
+                /*IN*/ char *const src_argv[],
                 /*OUT*/ int *ret_argc,
                 /*OUT*/ char ***ret_argv,
                 /*OUT*/ uintptr_t *ret_sp);

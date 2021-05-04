@@ -61,7 +61,7 @@ void sys_getpid(struct trap_frame *tf) {
 // Overwrite current task
 // note: int exec(const char *name, char *const argv[]);
 void sys_exec(struct trap_frame *tf) {
-  const char **argv = (const char **)tf->regs[1];
+  char **argv = (char **)(tf->regs[1]);
   const char *name = (const char *)tf->regs[0];
   uart_println("sys exec called");
   exec(name, argv);
@@ -91,7 +91,7 @@ void foo() {
 // This funciton is purely user code
 void user_startup() {
   uart_println("enter user startup");
-  const char *name = "./argv_test.out";
+  const char *name = "./init_user.out";
   struct task_struct *task = get_current();
   // address of the program code in memory
   void *entry_point = load_program(name);

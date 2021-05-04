@@ -27,10 +27,9 @@ void *load_program(const char *name) {
 
 // Overwrite current task
 // note: int exec(const char *name, char *const argv[]);
-void exec(const char *name, const char **argv) {
+void exec(const char *name, char *const argv[]) {
   struct task_struct *task = get_current();
-
-  uart_println("sys exec called");
+  uart_println("exec on task: %d(%x)", task->id, task);
 
   // address of the program code in memory
   void *entry_point = load_program(name);
