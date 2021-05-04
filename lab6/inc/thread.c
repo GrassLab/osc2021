@@ -244,7 +244,8 @@ int sys_close(int fd){
 	Task* cur;
 	asm volatile("mrs %0, tpidr_el1\n":"=r"(cur):);
 	if(cur->fd_table[fd]){
-		return vfs_close(cur->fd_table[fd]);
+		vfs_close(cur->fd_table[fd]);
+		cur->fd_table[fd]=0;
 	}
 	return 0;
 }
