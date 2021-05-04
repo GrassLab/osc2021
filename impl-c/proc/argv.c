@@ -24,23 +24,28 @@ static inline uintptr_t align_up(uintptr_t n, unsigned long align) {
 /**
  * @brief Place argv into user stack
  * @param src_sp the original user sp value
+ * @param name name of the program
  * @param src_argv argv to copy from
  * @param ret_argc (total argc count)
  * @param ret_argv (alt)
  * @param ret_sp new sp value
  */
-void place_args(/*IN*/ uintptr_t src_sp, /*IN*/ const char **src_argv,
+void place_args(/*IN*/ uintptr_t src_sp, /*IN*/ const char *name,
+                /*IN*/ const char **src_argv,
                 /*OUT*/ int *ret_argc,
                 /*OUT*/ char ***ret_argv,
                 /*OUT*/ uintptr_t *ret_sp) {
 
   log_println("[place_arg] src_sp:%x", src_sp);
+  log_println(" name: %s", name);
 
   int nm_args = 0;
   while (src_argv[nm_args] != NULL) {
     log_println(" src_argv[%d]:`%s`", nm_args, src_argv[nm_args]);
     nm_args++;
   }
+  // at least one arg: name
+  nm_args++;
 
   if (ret_argc != NULL) {
     *ret_argc = nm_args;
@@ -52,9 +57,16 @@ void place_args(/*IN*/ uintptr_t src_sp, /*IN*/ const char **src_argv,
   char **saved_args = kalloc(sizeof(char *) * nm_args);
   char *arg_str = NULL;
 
-  for (int i = 0; i < nm_args; i++) {
-    arg_str = kalloc(sizeof(char) * (strlen(src_argv[i]) + 1));
-    strcpy(arg_str, src_argv[i]);
+  // argv[0]
+  {
+    arg_str = kalloc(sizeof(char) * (strlen(name) + 1));
+    strcpy(arg_str, name);
+    saved_args[0] = arg_str;
+  }
+  // argv[1...n]
+  for (int i = 1; i < nm_args; i++) {
+    arg_str = kalloc(sizeof(char) * (strlen(src_argv[i - 1]) + 1));
+    strcpy(arg_str, src_argv[i - 1]);
     saved_args[i] = arg_str;
   }
 
@@ -144,7 +156,7 @@ void place_args(/*IN*/ uintptr_t src_sp, /*IN*/ const char **src_argv,
 
 #ifdef CFG_RUN_PROC_ARGV_TEST
 bool test_good() {
-  char *src_argv[] = {"./hello_world.out", "--name", "ian", NULL};
+  char *src_argv[] = {"--name", "ian", NULL};
   char stack[400];
 
   uintptr_t src_sp = align_up((uintptr_t)&stack[350], SP_ALIGN);
@@ -153,7 +165,8 @@ bool test_good() {
   char **new_argv;
   int argc;
 
-  place_args(src_sp, (const char **)src_argv, &argc, &new_argv, &new_sp);
+  place_args(src_sp, "hello_world.out", (const char **)src_argv, &argc,
+             &new_argv, &new_sp);
   assert((new_sp % SP_ALIGN) == 0);
   assert(new_sp < src_sp);
   assert(argc == 3);

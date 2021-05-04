@@ -62,8 +62,8 @@ void sys_getpid(struct trap_frame *tf) {
 // note: int exec(const char *name, char *const argv[]);
 void sys_exec(struct trap_frame *tf) {
   struct task_struct *task = get_current();
-  const char **argv = (const char **)tf->regs[0];
-  const char *name = argv[0];
+  const char **argv = (const char **)tf->regs[1];
+  const char *name = (const char *)tf->regs[0];
   uart_println("sys exec called");
   // do not get argv in mvp version
 
@@ -81,10 +81,11 @@ void sys_exec(struct trap_frame *tf) {
   int argc;
   char **user_argv;
   uintptr_t new_sp;
-  place_args((void *)task->cpu_context.sp, argv, &argc, &user_argv, &new_sp);
+  place_args((uintptr_t)task->cpu_context.sp, name, argv, &argc, &user_argv,
+             &new_sp);
   uart_println("olg sp: %x", task->cpu_context.sp);
   uart_println("new sp: %x", new_sp);
-  uart_println("newargv: %x", user_argv);
+  uart_println("new argv: %x", user_argv);
   task->cpu_context.sp = (uint64_t)new_sp;
 
   // finish process replacement
