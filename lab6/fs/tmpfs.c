@@ -56,8 +56,6 @@ static int setup_mount(struct filesystem* fs, struct mount* _mount) {
     return null;
   }
 
-  traversal(_mount->root->internal);
-
   return 0;
 }
 
@@ -74,9 +72,9 @@ static int lookup(struct vnode* dir_node, struct vnode** target, const char* com
   int max_len;
   
   if(component_name == null)
-    return -1;
+    return 1;
   if(dir_node == null)
-    return -1;
+    return 1;
 
   inode = dir_node->internal;
   inode = inode->children;
@@ -93,24 +91,62 @@ static int lookup(struct vnode* dir_node, struct vnode** target, const char* com
     inode = inode->sublings;
   }
 
-  return 0;
+  return 1;
 }
 
 static int create(struct vnode* dir_node, struct vnode** target, const char* component_name) {
+  struct vnode *v_node;
+  struct tmpfs_inode* inode, *par_inode;
+  int max_len;
+
+  if(component_name == null)
+    return 1;
+  if(dir_node == null)
+    return 1;
+  
+  v_node = tmpfs_vnode_create(dir_node->mount, file_t);
+
+  if(v_node == null)
+    return 1;
+  
+  inode = v_node->internal;
+  
+  max_len = strlen(component_name);
+  
+  if(max_len >= FILE_NAME_LEN) 
+    max_len = FILE_NAME_LEN - 1;
+
+  strncpy(inode->name, component_name, max_len);
+  
+  //update parent children
+  par_inode = ((struct tmpfs_inode* )dir_node->internal)->children;
+
+  if(par_inode == null) {
+    ((struct tmpfs_inode* )dir_node->internal)->children = inode;
+  }
+  else {
+    while(par_inode->sublings != null) {
+      par_inode = par_inode->sublings;
+    }
+    par_inode->sublings = inode;
+  }
+  
+  *target = v_node;
+
   return 0;
 }
 
 
 void traversal(struct tmpfs_inode* inode) { 
   struct tmpfs_inode* ptr;
-  struct tmpfs_block* block;
+  /*struct tmpfs_block* block;
   char buff[33];
-  int block_size;
+  int block_size;*/
   if(inode == null)
     return;
   
   printf("name: %s, type: %d\n", inode->name, inode->type);
-  if(inode->type == file_t) {
+  /*if(inode->type == file_t) {
    
     if(inode->block->size > 0) {
       if(inode->block->size < 32) {
@@ -132,10 +168,10 @@ void traversal(struct tmpfs_inode* inode) {
       printf("block size: %d\n", block_size);
       printf("%s\n", buff);
     }
-  }
-  else {   
+  }*/
+  //else
+  if(inode->type == dir_t) {   
     
-  
     ptr = inode->children;
     while(ptr != null) {
       traversal(ptr);
@@ -232,8 +268,9 @@ int tmpfs_load_initramfs(struct mount* _mount) {
       ptr->sublings = new_inode;
     }
     
-    traversal(_mount->root->internal);
   }
+
+  traversal(_mount->root->internal);
   
   return 0; 
 }

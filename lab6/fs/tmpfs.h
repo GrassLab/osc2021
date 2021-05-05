@@ -3,8 +3,6 @@
 #include <types.h>
 #include <vfs.h>
 
-#define FILE_NAME_LEN 64
-#define FS_BLOCK_SIZE 512
 enum tmpfs_type
 {
   dir_t,

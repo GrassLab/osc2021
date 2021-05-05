@@ -3,6 +3,10 @@
 #include <types.h>
 
 #define REG_FS_NUM 16
+#define FILE_NAME_LEN 64
+#define FS_BLOCK_SIZE 512
+
+#define O_CREAT 1
 
 struct vnode {
   struct mount *mount;
