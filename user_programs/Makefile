@@ -10,7 +10,9 @@ HELLO = hello_world.out
 GETPID = get_pid.out
 ARGV = argv_test.out
 INIT = init_user.out
-all: $(HELLO) $(GETPID) $(ARGV) $(INIT)
+FORK = fork_test.out
+
+all: $(HELLO) $(GETPID) $(ARGV) $(INIT) $(FORK)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -40,6 +42,12 @@ INIT_ELF = init_user.elf
 $(INIT): $(INIT_DEPS)
 	$(LD) $(INIT_DEPS) -T linker.ld -o $(INIT_ELF)
 	$(OBJCOPY) -O binary $(INIT_ELF) $(INIT)
+
+FORK_DEPS = $(libs) fork_test.o
+FORK_ELF = fork_test.elf
+$(FORK): $(FORK_DEPS)
+	$(LD) $(FORK_DEPS) -T linker.ld -o $(FORK_ELF)
+	$(OBJCOPY) -O binary $(FORK_ELF) $(FORK)
 
 
 .PHONY: clean

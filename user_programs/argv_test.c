@@ -6,7 +6,10 @@ int main(int argc, char **argv) {
   for (int i = 0; i < argc; ++i) {
     printf("  argv[%d] = %s\n", i, argv[i]);
   }
+
+  char *fork_argv[2];
+  fork_argv[0] = "./fork_test.out";
+  fork_argv[1] = NULL;
+  exec("./fork_test.out", fork_argv);
   return 0;
-  // char *fork_argv[] = {"fork_test", 0};
-  // exec("fork_test", fork_argv);
 }

@@ -3,6 +3,7 @@
 #define SYS_UART_WRITE 3
 #define SYS_EXEC 4
 #define SYS_EXIT 5
+#define SYS_FORK 6
 
 
 // Program Runtime
@@ -47,5 +48,11 @@ exec:
 .global exit
 exit:
     mov x8, SYS_EXIT
+    svc 0
+    ret
+
+.global fork
+fork:
+    mov x8, SYS_FORK
     svc 0
     ret

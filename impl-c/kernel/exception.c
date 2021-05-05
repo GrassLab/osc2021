@@ -32,13 +32,11 @@ void dumpState() {
 }
 
 void syn_handler(struct trap_frame *tf) {
-  uart_println("Syn Exception");
   struct Exception exception;
   uint32_t esr_el1;
 
   asm volatile("mrs %0, elr_el1 \n" : "=r"(exception.ret_addr) :);
   asm volatile("mrs %0, esr_el1 \n" : "=r"(esr_el1) :);
-  dumpState();
   exception.ec = get_bits(esr_el1, 26, 6);
   exception.iss = get_bits(esr_el1, 0, 25);
 
@@ -51,11 +49,13 @@ void syn_handler(struct trap_frame *tf) {
     syscall_routing(tf->regs[8], tf);
     break;
   case EC_SVC_DATA_ABORT:
+    dumpState();
     uart_println("Data abort taken, ec:%x iss:%x", exception.ec, exception.iss);
     while (1) {
       ;
     }
   default:
+    dumpState();
     uart_println("Unknown exception, ec:%x iss:%x", exception.ec,
                  exception.iss);
     while (1) {

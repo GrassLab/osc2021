@@ -13,13 +13,13 @@
 #define log_println(fmt, ...)                                                  \
   do {                                                                         \
     if (_DO_LOG) {                                                             \
-      uart_println(fmt, ##__VA_ARGS__);                                        \
+      uart_println("%s" fmt "%s", "\033[90;m", ##__VA_ARGS__, "\033[0m");      \
     }                                                                          \
   } while (0)
 
 #define log_printf(fmt, ...)                                                   \
   do {                                                                         \
     if (_DO_LOG) {                                                             \
-      uart_printf(fmt, ##__VA_ARGS__);                                         \
+      uart_printf("%s" fmt "%s", "\033[90;m", ##__VA_ARGS__, "\033[0m");       \
     }                                                                          \
   } while (0)

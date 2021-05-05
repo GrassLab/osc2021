@@ -3,6 +3,9 @@
 /**
  *  Log
  * */
+
+// #define CFG_LOG_SYSCALL
+
 // #define CFG_LOG_CPIO
 // #define CFG_LOG_SHELL_SEARCH_FILE
 // #define CFG_LOG_SHELL_CMD
@@ -13,7 +16,8 @@
 // #define CFG_LOG_MEM_SLAB
 #define CFG_LOG_PROC_TASK
 #define CFG_LOG_PROC_SCHED
-#define CFG_LOG_PROC_ARGV
+// #define CFG_LOG_PROC_ARGV
+#define CFG_LOG_PROC_EXEC
 
 /**
  *  TEST

@@ -10,6 +10,15 @@
 #include "timer.h"
 #include "uart.h"
 
+#include "cfg.h"
+#include "log.h"
+
+#ifdef CFG_LOG_PROC_EXEC
+static const int _DO_LOG = 1;
+#else
+static const int _DO_LOG = 0;
+#endif
+
 // load program into a seperate memory space
 void *load_program(const char *name) {
   unsigned long size;
@@ -29,7 +38,7 @@ void *load_program(const char *name) {
 // note: int exec(const char *name, char *const argv[]);
 void exec(const char *name, char *const argv[]) {
   struct task_struct *task = get_current();
-  uart_println("exec on task: %d(%x)", task->id, task);
+  log_println("[exec] task: %d(%x)", task->id, task);
 
   // address of the program code in memory
   void *entry_point = load_program(name);
@@ -38,22 +47,16 @@ void exec(const char *name, char *const argv[]) {
   task->cpu_context.fp = (uint64_t)task + FRAME_SIZE;
   task->cpu_context.lr = (uint64_t)entry_point;
   task->cpu_context.sp = (uint64_t)task + FRAME_SIZE;
-  uart_println("thread info replaced");
 
   // place args
-  uart_println("start printint args");
   int argc;
   char **user_argv;
   uintptr_t new_sp;
   place_args((uintptr_t)task->cpu_context.sp, argv, &argc, &user_argv, &new_sp);
-  uart_println("olg sp: %x", task->cpu_context.sp);
-  uart_println("new sp: %x", new_sp);
-  uart_println("new argv: %x", user_argv);
   task->cpu_context.sp = (uint64_t)new_sp;
 
   // finish process replacement
   // wait for scheduler schedule this thread
-  uart_println("finished, start switching");
   asm volatile("mov x0, 0x340  \n"); // enable core timer interrupt
   asm volatile("msr spsr_el1, x0  \n");
   asm volatile("msr sp_el0, %0    \n" ::"r"(task->cpu_context.sp));

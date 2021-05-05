@@ -63,9 +63,10 @@ void sys_getpid(struct trap_frame *tf) {
 void sys_exec(struct trap_frame *tf) {
   char **argv = (char **)(tf->regs[1]);
   const char *name = (const char *)tf->regs[0];
-  uart_println("sys exec called");
   exec(name, argv);
 }
+
+void sys_fork(struct trap_frame *tf) { tf->regs[0] = 996; }
 
 // note: void exit();
 void sys_exit(struct trap_frame *tf) { cur_task_exit(); }
