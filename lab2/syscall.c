@@ -3,8 +3,10 @@
 #include "include/syscall.h"
 #include "include/csched.h"
 #include "include/cutils.h"
+#include "include/cirq.h"
 #include "include/entry.h"
 #include "include/mm.h"
+#include "include/vfs.h"
 
 extern struct task *current;
 extern struct task task_pool[];
@@ -51,22 +53,6 @@ extern char uart_recv_buf[];
 extern int uart_recv_buf_in;
 extern int uart_recv_buf_out;
 
-int uart_read_block(char buf[], int size)
-{
-    int tmp, left;
-
-    left = size;
-    while (left > 0){
-        while ((tmp = uart_read_nonblock(buf+size-left, left)) == EAGAIN) {
-            rm_from_ready(current);
-            add_to_waitQueue(current, uartQueue);
-            schedule();
-        }
-        left -= tmp;
-    }
-    return size;
-}
-
 int uart_read_nonblock(char buf[], int size)
 {
     int read_cnt;
@@ -87,6 +73,22 @@ int uart_read_nonblock(char buf[], int size)
             break;
     }
     return read_cnt;
+}
+
+int uart_read_block(char buf[], int size)
+{
+    int tmp, left;
+
+    left = size;
+    while (left > 0){
+        while ((tmp = uart_read_nonblock(buf+size-left, left)) == EAGAIN) {
+            rm_from_ready(current);
+            add_to_waitQueue(current, uartQueue);
+            schedule();
+        }
+        left -= tmp;
+    }
+    return size;
 }
 
 int sys_uart_write(const char buf[], int size)
@@ -174,6 +176,57 @@ int sys_useless()
     return 0;
 }
 
+int sys_open(const char *pathname, int flags)
+{
+    struct file *file_handle;
+
+    if (!(file_handle = vfs_open(pathname, flags)))
+        return -1; // fail
+    for (int i = 0; i < 8; ++i) {
+        if (!(current->fd_tab[i])) {
+            current->fd_tab[i] = file_handle;
+            return i;
+        }
+    }
+    return -1; // fail
+}
+
+int sys_read(int fd, void *buf, int count)
+{
+    return vfs_read(current->fd_tab[fd], buf, count);
+}
+
+int sys_write(int fd, const void *buf, int count)
+{
+    return vfs_write(current->fd_tab[fd], buf, count);
+}
+
+int sys_close(int fd)
+{
+    int ret;
+    ret = vfs_close(current->fd_tab[fd]);
+    current->fd_tab[fd] = 0;
+
+    return ret;
+}
+
+int sys_stat_and_next(int fd, struct dentry *dent)
+{
+    struct file *fh;
+    struct vnode *child;
+
+    fh = current->fd_tab[fd];
+    if (!(child = fh->child_iter)) {
+        fh->vnode->v_ops->get_child(fh->vnode, &(fh->child_iter));
+        return 1;
+    }
+    child->v_ops->stat(child, dent);   // stat
+    child->v_ops->get_rsib(child, &(fh->child_iter)); // next
+
+    return 0;
+}
+
+
 // DDI0487C_a_armv8_arm.pdf p.2438
 unsigned long get_syscall_type()
 {
@@ -219,6 +272,21 @@ unsigned long syscall_handler(unsigned long x0, unsigned long x1,
             break;
         case SYS_USELESS:
             ret = sys_useless();
+            break;
+        case SYS_OPEN:
+            ret = sys_open((char*)x0, (int)x1);
+            break;
+        case SYS_READ:
+            ret = sys_read((int)x0, (void*)x1, (int)x2);
+            break;
+        case SYS_WRITE:
+            ret = sys_write((int)x0, (void*)x1, (int)x2);
+            break;
+        case SYS_CLOSE:
+            ret = sys_close((int)x0);
+            break;
+        case SYS_STAT_AND_NEXT:
+            ret = sys_stat_and_next((int)x0, (struct dentry*)x1);
             break;
         default:
             uart_send_string("Error: Unknown syscall type.");

@@ -31,7 +31,19 @@ void *memcpy(char *str1, const char *str2, int n)
     return 0;
 }
 
-int strcmp(char *str1, char *str2)
+int strcpy(char *str1, const char *str2)
+{ // return str2 length without counting '\0'
+    int i = 0;
+    while (str2[i] != '\0') {
+        str1[i] = str2[i];
+        i++;
+    }
+    str1[i] = '\0';
+
+    return i;
+}
+
+int strcmp(const char *str1, const char *str2)
 {
     int i;
 
