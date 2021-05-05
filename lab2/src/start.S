@@ -30,4 +30,3 @@ clear_bss:
 
 4:  
     b main
-    
