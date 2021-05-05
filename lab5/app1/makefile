@@ -13,7 +13,7 @@ all:
 $(APP):$(OBJS)
 	aarch64-linux-gnu-ld -T $(LINKER) -o tmp.elf $(OBJS)
 	aarch64-linux-gnu-objcopy -O binary tmp.elf $@
-	rm tmp.elf
+#	rm tmp.elf
 
 %.o:%.c
 	aarch64-linux-gnu-gcc $(CFLAGS) -c $< -o $@

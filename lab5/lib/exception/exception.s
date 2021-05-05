@@ -43,7 +43,7 @@ _exception_vector_table:
 
 
 .macro _kernel_entry
-sub sp, sp, 35*8 // size of all registers x0-x30 (31 * 16)
+sub sp, sp, 36*8 // size of all registers x0-x30 (31 * 16)
 stp x0, x1, [sp, 16 * 0]
 stp x2, x3, [sp, 16 * 1]
 stp x4, x5, [sp, 16 * 2]
@@ -61,12 +61,17 @@ stp x26, x27, [sp, 16 * 13]
 stp x28, x29, [sp, 16 * 14]
 str x30, [sp, 16 * 15]
 
+
 mrs x19, sp_el0
 mrs x20, elr_el1
 mrs x21, spsr_el1
 
 stp x19,x20, [sp, 16*16]
 str x21, [sp, 16*17]
+mov x0,sp
+ands x1,x0,15
+sub x0,x0,x1
+mov sp,x0
 .endm
 
 .macro _kernel_exit
@@ -93,7 +98,7 @@ ldp x24, x25, [sp, #16 * 12]
 ldp x26, x27, [sp, #16 * 13]
 ldp x28, x29, [sp, #16 * 14]
 ldr x30, [sp,16 * 15]
-add sp, sp, 35 * 8
+add sp, sp, 36 * 8
 .endm
 
 .global _exception_handler
@@ -106,7 +111,7 @@ _exception_handler:
 
 .global _child_return_from_fork
 _child_return_from_fork:
-    mov x0, sp
+   # mov x0, sp
     _kernel_exit
     eret
 

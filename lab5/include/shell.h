@@ -3,5 +3,7 @@
 
 void read_input(char* buffer);
 void shell();
+void test1();
+void test2();
 
 #endif

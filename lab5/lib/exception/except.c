@@ -44,25 +44,25 @@ void _except_handler(trap_frame *tf){
         switch(svc){
             case 0:
                 {
-     //           uart_printf("svc = %d \n",svc);
+                //uart_printf("svc = %d \n",svc);
                 dumpState();
                 break;
                 }
             case 1:
                 {
-      //          uart_printf("svc = %d \n",svc);
+               // uart_printf("svc = %d \n",svc);
                 cur_exit();
                 break;
                 }
             case 2:
                 {
-       //         uart_printf("svc = %d \n",svc);
+               // uart_printf("svc = %d \n",svc);
                 exec(tf->regs[0], tf->regs[1]);
                 break;
                 }
             case 3:
                 {
-        //        uart_printf("svc = %d \n",svc);
+                //uart_printf("svc = %d \n",svc);
                 uart_puts(tf->regs[0]);
                 tf->regs[0] = tf->regs[1];
                 return;

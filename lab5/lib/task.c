@@ -6,7 +6,7 @@
 #include "../include/switch.h"
 #include "../include/list.h"
 #include "../include/interrupt.h"
-
+#include "../include/stringUtils.h"
 
 #define BUF_MAX_SIZE 128
 #define TASKSIZE 4096
@@ -85,8 +85,8 @@ void threadSchedule(){
     task_struct *cur = get_current();
 
 //    uart_printf("next_node task:%x\n",next_node->task);
-    unsigned long *cur_context = &cur->context;
-    unsigned long *new_context = &next_node->task->context;
+    //unsigned long *cur_context = &cur->context;
+    //unsigned long *new_context = &next_node->task->context;
 //     for(int i = 0 ;i< 13 ; ++i){
 //         uart_printf("%x: %x\n", i, cur_context[i]);
 //         uart_printf("%x: %x\n\n", i, new_context[i]);
@@ -125,8 +125,8 @@ void zombiekill(){
     while(1){
         RUN_Q_NODE *tmp = list_pop(&exit_q);
         if(tmp){
-            my_free(tmp->task);
-            my_free(tmp);
+            my_free((unsigned long)(tmp->task));
+            my_free((unsigned long)tmp);
         }else{
             return;
         }
@@ -156,33 +156,31 @@ void exec(char *path, char** argv){
     unsigned long sp_addr;
     sp_addr = loadprogWithArgv(path, a_addr, argv);
     uart_printf("loadsuce\n");
-    task_struct *cur = get_current();
-    cur->context.lr = a_addr;
-
-    asm volatile("mov x0, 0x340   \n"::);
-    asm volatile("msr spsr_el1, x0   \n"::);
-    asm volatile("msr elr_el1, %0   \n"::"r"(cur->context.lr));
-    asm volatile("msr sp_el0, %0   \n"::"r"(sp_addr));
-    //uart_printf("sp_el0:%x\n",sp_addr);
-    core_timer_enable();
-    asm volatile("mrs x3, sp_el0   \n"::);
-    asm volatile("ldr x0, [x3, 0]   \n"::);
-    asm volatile("ldr x1, [x3, 8]   \n"::);
-    unsigned long x0,x1;
-    //asm volatile("ldr %0, [x3, 0]   \n":"=r"(x0):);
-    //asm volatile("ldr %0, [x3, 0]   \n":"=r"(x1):);
-    //uart_printf("%d\n",x0);
-    asm volatile("eret   \n");
+//    task_struct *cur = get_current();
+//    cur->context.lr = a_addr;
+//
+//    asm volatile("mov x0, 0x340   \n"::);
+//    asm volatile("msr spsr_el1, x0   \n"::);
+//    asm volatile("msr elr_el1, %0   \n"::"r"(a_addr));
+//    asm volatile("msr sp_el0, %0   \n"::"r"(sp_addr));
+//    uart_printf("sp_el0:%x\n",sp_addr);
+//    core_timer_enable();
+//    asm volatile("mrs x3, sp_el0   \n"::);
+//    asm volatile("ldr x0, [x3, 0]   \n"::);
+//    asm volatile("ldr x1, [x3, 8]   \n"::);
+//    unsigned long x0,x1;
+//    //uart_printf("sp_el0:%x\n",sp_addr);
+//    asm volatile("eret   \n");
 }
 
-void ALLMIGHTYLOG(void) {
-    task_struct *cur = get_current();
-    unsigned long *cur_context = cur->context.sp;
-    for(int i = 0 ;i< 35 ; ++i){
-        uart_printf("%x: %x\n", i, cur_context[i]);
-        //uart_printf("%x: %x\n\n", i, new_context[i]);
-    }
-}
+//void ALLMIGHTYLOG(void) {
+//    task_struct *cur = get_current();
+//    unsigned long *cur_context = cur->context.sp;
+//    for(int i = 0 ;i< 35 ; ++i){
+//        uart_printf("%x: %x\n", i, cur_context[i]);
+//        //uart_printf("%x: %x\n\n", i, new_context[i]);
+//    }
+//}
 
 void spppp(unsigned long *sp) {
     uart_printf("sp is at: %x\n", sp);
@@ -222,18 +220,19 @@ void sys_fork(trap_frame *tf){
         src++;
         dst++;
     }
-    parent->context.sp = tf;
+    parent->context.sp =(unsigned long)tf;
     //uart_printf("=============================\n"
     //            "> parent task: %x\n"
     //            "=============================\n", parent);
     //spppp(parent->context.sp);
     //uart_printf("child id: %d\n",child_id);
-    int parent_ustack;
+    int parent_ustack_size;
     if(child_id == 2){
-        parent_ustack = (0x700000)-(tf->sp_el0);
-    }else{
-        parent_ustack = (0x800000)-(tf->sp_el0);
+        parent_ustack_size = (0x700000)-(tf->sp_el0);
+    }else if(child_id == 3){
+        parent_ustack_size = (0x800000)-(tf->sp_el0);
     }
+    uart_printf("parent ustack size:%x\n", parent_ustack_size);
 //    uart_printf("parent ustack size:%d\n",parent_ustack);
     //uart_printf("parent sp_el0:%x\n",tf->sp_el0);
     if ((unsigned long)child > (unsigned long)parent) {
@@ -241,19 +240,20 @@ void sys_fork(trap_frame *tf){
     } else {
         child->context.sp = parent->context.sp - ((unsigned long)parent - (unsigned long)child);
     }
+    uart_printf("child sp: %x\n", child->context.sp);
     //uart_printf("=============================\n"
     //            "> child task: %x\n"
     //            "=============================\n", child);
     //spppp(child->context.sp);
-    child->context.fp = child+TASKSIZE;
-    child->context.lr = _child_return_from_fork;
+    child->context.fp =(unsigned long)(child+TASKSIZE);
+    child->context.lr =(unsigned long)_child_return_from_fork;
     //uart_printf("parent lr: %x\n", parent->context.lr);
     //uart_printf("child lr: %x\n", child->context.lr);
 
     //uart_printf("parent :%x, child :%x\n",parent, child);
     //uart_printf("parent sp_el1:%x, child sp_el1:%x\n",parent->context.sp, child->context.sp);
     child->id = child_id;
-    trap_frame *child_tf = child->context.sp;
+    trap_frame *child_tf =(trap_frame*)(child->context.sp);
     uart_puts("Please enter child ustack address\n");
     char buf[128];
     read_input(buf);
@@ -262,11 +262,16 @@ void sys_fork(trap_frame *tf){
     //uart_printf("read done\n");
     //child_tf->elr_el1 = tf->elr_el1;
     char *src_stack = (char*)(tf->sp_el0);
-    char *dst_stack = (char*)(child_ustack);
+    char *dst_stack = (char*)(child_ustack - parent_ustack_size);
 
+    child_tf->sp_el0 = child_ustack - parent_ustack_size;
+    uart_printf("child sp_el0: %x\n",child_tf->sp_el0);
+    child_tf->regs[0] = 0;
+    child_tf->regs[29] = child_ustack;
+    tf->regs[0] = child->id;
     //uart_printf("%x\n",tf->sp_el0);
     //uart_printf("%x\n",parent_ustack);
-    while(parent_ustack--){
+    while(parent_ustack_size--){
         *dst_stack = *src_stack;
         src_stack++;
         dst_stack++;
@@ -274,10 +279,6 @@ void sys_fork(trap_frame *tf){
     //uart_printf("copy done\n");
 
 //    uart_printf("parent elr:%x, child elr:%x", tf->elr_el1, child_tf->elr_el1);
-    child_tf->sp_el0 = child_ustack;
-    child_tf->regs[0] = 0;
-    child_tf->regs[29] = (unsigned long)dst_stack;
-    tf->regs[0] = child->id;
     //uart_printf("forek done\n");
     return;
 
@@ -300,6 +301,7 @@ void foo1(){
 void foo2(){
     char* argv[] = {"argv_test", "-o", "arg2", 0};
     exec("app1", argv);
+   // exec("test.img", argv);
 }
 
 void test1(){

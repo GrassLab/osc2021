@@ -27,4 +27,5 @@
 
 void cpio();
 void loadprog();
+unsigned long loadprogWithArgv(char *path, unsigned long a_addr, char **argv);
 #endif

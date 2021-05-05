@@ -30,8 +30,10 @@ unsigned long hexToDex(char *s){
     for(int i = 0 ;i < 8 ; ++i){
         if(s[i] >= '0' && s[i] <= '9'){
             r = r* 16 + s[i]-'0';
-        }else{
-            r = r * 16 + s[i]-'A'+10;
+        }else if(s[i]>= 'a' && s[i]<='f'){
+            r = r * 16 + s[i]-'a'+10;
+        }else if(s[i]>= 'A' && s[i]<='F'){
+            r = r*16 + s[i]-'A'+10;
         }
     }
     return r;
@@ -158,23 +160,29 @@ unsigned long argvPut(char** argv,unsigned long ret){
 			}
 		}
 	}
-    //uart_printf("after argvput:%x\n",ret);
+    uart_printf("after argvput:%x\n",ret);
 	return ret;
+}
+void junk(){
+    uart_printf("junk\n");
+    char buf[8];
+    read_input(buf);
+    return ;
 }
 
 unsigned long loadprogWithArgv(char *path, unsigned long a_addr, char **argv){
     cpio_t *file_addr = findFile((cpio_t*)0x8000000, path);
     if(!file_addr){
         uart_puts("Prog not found\n");
-        return;
+        return 0;
     }
 
     unsigned long psize=hexToDex(file_addr->namesize),dsize=hexToDex(file_addr->filesize);
     unsigned long HPP = sizeof(cpio_t) + psize;
     Align_4(&HPP);
-    Align_4(&dsize);
-
-    char *data = (char*)((char*)file_addr + HPP);
+    //Align_4(&dsize);
+// uart_printf("dsize:%d\n",dsize);
+    unsigned char *data = (unsigned char*)((unsigned char*)file_addr + HPP);
     //*task_addr = a_addr;
     unsigned char* tar = (unsigned char*)a_addr;
     while(dsize--){
@@ -184,17 +192,36 @@ unsigned long loadprogWithArgv(char *path, unsigned long a_addr, char **argv){
     }
 
     unsigned long sp_addr = argvPut(argv, a_addr);
-    return sp_addr;
-    //asm volatile("mov x0, 0x340			\n");//enable interrupt
-	//asm volatile("msr spsr_el1, x0		\n");
-	//asm volatile("msr elr_el1, %0		\n"::"r"(a_addr));
-	//asm volatile("msr sp_el0, %0		\n"::"r"(sp_addr));
+    //task_struct *cur = get_current();
+    //cur->context.lr = a_addr;
+ //   uart_printf("addr: %x, sp_addr: %x\n", a_addr, sp_addr);
+    asm volatile("mov x0, 0x340   \n"::);
+    //asm volatile("mov x0, 0x3c0   \n"::);
+    asm volatile("msr spsr_el1, x0   \n"::);
+    asm volatile("msr elr_el1, %0   \n"::"r"(a_addr));
+    asm volatile("msr sp_el0, %0   \n"::"r"(sp_addr));
+  //  uart_printf("sp_el0:%x\n",sp_addr);
+   core_timer_enable();
+    asm volatile("mrs x3, sp_el0   \n"::);
+    asm volatile("ldr x0, [x3, 0]   \n"::);
+    asm volatile("ldr x1, [x3, 8]   \n"::);
+    //unsigned long elr;
+   // asm volatile("mrs x3, elr_el1   \n"::);
+   // asm volatile("str x3, [sp, -8]  \n"::);
+   // asm volatile("ldr %0, [sp, -8]   \n":"=r"(elr):);
+   // char* x = (char*)elr;
+   // for(int i =0 ; i< 10 ;++i){
+   //    uart_printf("%x",x[i]);
 
-	//asm volatile("mrs x3, sp_el0		\n"::);
-	//asm volatile("ldr x0, [x3, 0]		\n"::);
-	//asm volatile("ldr x1, [x3, 8]		\n"::);
-
-	//asm volatile("eret					\n");
+   // }
+   // uart_puts("\n");
+   // uart_printf("elr:%x\n",elr);
+    //asm volatile("svc 0   \n"::);
+    //while(1);
+    asm volatile("eret    \n"::);
+    //asm volatile("mrs x3, elr_el1  \n"::);
+    //asm volatile("br x3   \n"::);
+    //return sp_addr;
 }
 
 /**
