@@ -1,10 +1,8 @@
-#include "../include/types.h"
+#include "../include/syscall.h"
 #include "../include/string.h"
 
 extern "C" {
-    void uart_put(const char* str, size_t count);
-    void exec(const char* name, const char **argv);
-    uint64_t getpid();
+
 }
 
 int main(int argc, char** argv) {

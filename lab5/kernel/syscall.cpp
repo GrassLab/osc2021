@@ -193,7 +193,7 @@ static void sys_exec(char* name, char** argv) {
 static void sys_putuart(char* str, size_t count) {
     BEGIN_SYS;
     MiniUART::PutS(str, count);
-    END_SYS;
+    END_SYS_RET(count);
 }
 
 static void sys_getpid() {
@@ -201,6 +201,12 @@ static void sys_getpid() {
     uint64_t pid;
     asm ("mrs %x0, tpidr_el1":"=r"(pid));
     END_SYS_RET(pid);
+}
+
+static void sys_getuart(char* str, size_t count) {
+    BEGIN_SYS;
+    count = MiniUART::GetS(str, count);
+    END_SYS_RET(count);
 }
 
 typedef void(* syscall_fun)();
@@ -211,6 +217,7 @@ void (*syscall_table[])() = {
     syscall_fun(sys_exec),
     syscall_fun(sys_exit),
     syscall_fun(sys_putuart),
-    syscall_fun(sys_getpid)
+    syscall_fun(sys_getpid),
+    syscall_fun(sys_getuart)
 };
 

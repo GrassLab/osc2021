@@ -62,13 +62,12 @@ uint8_t MiniUART::GetCh() {
     return ch;
 }
 
-void MiniUART::GetS(char* str, uint64_t count) {
+size_t MiniUART::GetS(char* str, uint64_t count) {
     uint32_t offset = 0;
     while (offset < count) {
         uint8_t ch = GetCh();
         if (ch == '\r') {
-            str[offset] = 0;
-            return;
+            return offset;
         }
         else if (ch == '\b') {
             if (offset > 0) {
@@ -85,14 +84,14 @@ void MiniUART::GetS(char* str, uint64_t count) {
             }
         }
         else if (ch == 'C' - 64) { //Ctrl-C
-            str[0] = '\0';
             PutS("\r\n");
-            return;
+            return 0;
         }
         else {
             str[offset++] = ch;
         }
     }
+    return offset;
 }
 
 void MiniUART::PutS(const char* str) {

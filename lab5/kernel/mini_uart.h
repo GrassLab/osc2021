@@ -6,7 +6,7 @@
 class MiniUART {
 public:
     static void Init();
-    static void GetS(char* str, uint64_t count);
+    static size_t GetS(char* str, uint64_t count);
     static void PutS(const char* str);
     static void PutS(const char* str, uint64_t length);
     static void PutUInt64(uint64_t val);
