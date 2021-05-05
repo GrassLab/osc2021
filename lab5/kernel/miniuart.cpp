@@ -1,16 +1,16 @@
-#include <mini_uart.h>
+#include "mini_uart.h"
 
-#include <mmio.h>
-#include <kernel.h>
+#include "mmio.h"
+#include "delay.h"
 
 void MiniUART::Init() {
     uint32_t gpfsel1_value = MMIO::get(MMIOREG::GPFSEL1);
     gpfsel1_value = gpfsel1_value & ~((7 << 12) | (7 << 15)) | ((2 << 12) | (2 << 15));
     MMIO::set(MMIOREG::GPFSEL1, gpfsel1_value);
     MMIO::set(MMIOREG::GPPUD, 0);
-    Kernel::Delay(150);
+    delay(150);
     MMIO::set(MMIOREG::GPPUDCLK0, (1 << 14) | (1 << 15));
-    Kernel::Delay(150);
+    delay(150);
     MMIO::set(MMIOREG::GPPUD, 0);
     MMIO::set(MMIOREG::GPPUDCLK0, 0);
 
@@ -62,9 +62,9 @@ uint8_t MiniUART::GetCh() {
     return ch;
 }
 
-void MiniUART::GetS(char* str) {
+void MiniUART::GetS(char* str, uint64_t count) {
     uint32_t offset = 0;
-    while (true) {
+    while (offset < count) {
         uint8_t ch = GetCh();
         if (ch == '\r') {
             str[offset] = 0;

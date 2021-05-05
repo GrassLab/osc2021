@@ -8,7 +8,7 @@
             "name": "(gdb) 連接",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/terminal.elf",
+            "program": "${workspaceFolder}/kernel8.elf",
             "miDebuggerPath": "/usr/bin/gdb-multiarch",
             "miDebuggerServerAddress": ":1234",
             "stopAtEntry": false,

@@ -1,8 +1,15 @@
-#include <memalloc.h>
+#include "memory.h"
+
+// #include "mini_uart.h>
+#include "types.h"
+
+extern "C"
+void* memset(void*, uint64_t c, uint64_t size);
+
 
 char* MemAlloc::malloc(uint32_t size) {
     if (size <= 0) {
-        IO() << "size should be greater than 0\r\n";
+        // IO() << "size should be greater than 0\r\n";
         return nullptr;
     }
     size = (size + 3) & ~3; // Align 4
@@ -28,12 +35,7 @@ char* MemAlloc::malloc(uint32_t size) {
         current_ptr = nullptr;
         left_size = 0;
     }
-    for (int i = 0; i < 1024; i++) {
-        if (allocated_memory[i] == nullptr) {
-            allocated_memory[i] = result;
-            break;
-        }
-    }
+    allocated_memory[allocated_memory_count++] = result;
     return result;
 }
 
@@ -45,13 +47,17 @@ static inline bool sameChunk(char* ptr1, char* ptr2) {
 
 bool MemAlloc::free(char* ptr) {
     if (ptr == nullptr) {
-        IO() << "ptr should not be 0\r\n";
+        // IO() << "ptr should not be 0\r\n";
         return false;
     }
     bool hasSameChunk = false;
-    for (int i = 0; i < 1024; i++) {
+    for (int i = 0; i < allocated_memory_count; i++) {
         if (allocated_memory[i] == ptr) {
             allocated_memory[i] = nullptr;
+            allocated_memory_count--;
+            if (i < allocated_memory_count) {
+                allocated_memory[i] = allocated_memory[allocated_memory_count];
+            }
         }
         else if (sameChunk(ptr, allocated_memory[i])) {
             hasSameChunk = true;
@@ -64,4 +70,22 @@ bool MemAlloc::free(char* ptr) {
         buddy.Free((ptr - base) >> 12);
     }
     return true;
+}
+
+void MemAlloc::Init() {
+    buddy.Init();
+    allocated_memory_count = 0;
+    allocated_memory = (char**)memset((char**)(0x40000), 0, 0x1000);
+    base = (char*)0x10000000;
+    left_size = 0;
+    current_ptr = 0;
+}
+
+MemAlloc allocator;
+
+void* malloc(uint32_t size) {
+    return allocator.malloc(size);
+}
+bool free(void* ptr) {
+    return allocator.free((char*)ptr);
 }

@@ -1,7 +1,7 @@
 #ifndef GPIO_H
 #define GPIO_H
 
-#include <stdint.h>
+#include "types.h"
 
 enum class MMIOREG {
     MMIO_BASE       = 0x3F000000,

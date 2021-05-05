@@ -1,7 +1,7 @@
 #ifndef CPIO_H
 #define CPIO_H
 
-#include <stdint.h>
+#include "types.h"
 
 struct cpio_newc_header {
     char	   c_magic[6];
@@ -27,6 +27,8 @@ public:
     uint64_t namesize;
     char* filename;
     char* filecontent;
+    cpio_newc_header* header;
+    cpio_newc_header* next();
 private:
     int Hex2int(uint8_t hex);
 };

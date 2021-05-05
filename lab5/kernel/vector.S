@@ -2,43 +2,41 @@
 
 .balign 0x800
 .global exception_vector_table
-.global core_timer_enable
-.global core_timer_disable
 exception_vector_table:
-    b on_svc // branch to a handler function.
+    b .Lsvc_handler // branch to a handler function.
     .align 7 // entry size is 0x80, .align will pad 0
-    b timer_handler
+    b .Ltimer_handler
     .align 7
-    b exception_handler
+    b .Lexception_handler
     .align 7
-    b exception_handler
-    .align 7
-
-    b on_svc
-    .align 7
-    b timer_handler
-    .align 7
-    b exception_handler
-    .align 7
-    b exception_handler
+    b .Lexception_handler
     .align 7
 
-    b on_svc // For syscall
+    b .Lsvc_handler
     .align 7
-    b timer_handler
+    b .Ltimer_handler
     .align 7
-    b exception_handler
+    b .Lexception_handler
     .align 7
-    b exception_handler
+    b .Lexception_handler
     .align 7
 
-    b on_svc
+    b .Lsvc_handler // For syscall
     .align 7
-    b timer_handler
+    b .Ltimer_handler
     .align 7
-    b exception_handler
+    b .Lexception_handler
     .align 7
-    b exception_handler
+    b .Lexception_handler
+    .align 7
+
+    b .Lsvc_handler
+    .align 7
+    b .Ltimer_handler
+    .align 7
+    b .Lexception_handler
+    .align 7
+    b .Lexception_handler
     .align 7
 
 .macro save_all
@@ -80,21 +78,27 @@ exception_vector_table:
     add sp, sp, 32 * 8
 .endm
 
-exception_handler:
+.Lexception_handler:
     save_all
-    bl on_exception
+    bl kernel_exception
+1:
+    wfe
+    b 1b
+
+.Ltimer_handler:
+    save_all
+    bl kernel_timer
     load_all
     eret
 
-timer_handler:
-    save_all
-    bl on_timer
-    load_all
-    eret
-
-on_svc:
-    mov x6, 0x60000
+/**
+x0-x5 syscall parameters
+x6 user space lr
+x8 system call identifier
+ */
+.Lsvc_handler:
+    adr x6, _start
     mov sp, x6
-    adr x6, ExceptionTable
-    ldr x6, [x6, x0, lsl #3]
-    br x6
+    adr x7, syscall_table
+    ldr x7, [x7, x8, lsl #3]
+    br x7

@@ -1,12 +1,12 @@
   
 #ifndef MINI_UART_H
 #define MINI_UART_H
-#include <stdint.h>
+#include "types.h"
 
 class MiniUART {
 public:
     static void Init();
-    static void GetS(char* str);
+    static void GetS(char* str, uint64_t count);
     static void PutS(const char* str);
     static void PutS(const char* str, uint64_t length);
     static void PutUInt64(uint64_t val);

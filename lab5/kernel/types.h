@@ -1,5 +1,5 @@
-#ifndef STDINT_H
-#define STDINT_H
+#ifndef TYPES_H
+#define TYPES_H
 
 typedef unsigned long long int uint64_t;
 static_assert(sizeof(uint64_t) == 8);
