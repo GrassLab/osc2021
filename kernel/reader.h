@@ -24,6 +24,8 @@ struct cpio_file {
     char contents[1024 * 1024]; // 1 MB limited
 };
 
+void exec(char * filename, char ** argv);
+
 void Cpiols();
 void Cpiocat(char arg[]);
 void Cpioexe(char arg[]);
@@ -34,6 +36,13 @@ void ReadCpio();
 void ReadBytesData(char data[], int offset, int bytes);
 void ReadCpioHeader(struct cpio_file * cpio_, int offset);
 int ReadCpioContent(struct cpio_file * cpio_, int offset);
+
+void LoadUserProgram(char filename[]);
+
+void FromEl1toEl0();
+
+void EnableTimer();
+void EnableInterrupt();
 
 void PrintCpio();
 void PrintFileContent(char arg[]);

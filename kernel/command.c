@@ -124,6 +124,8 @@ void CommandBuddyAlloc(const int size)
 void CommandThreadTest(int test_id)
 {
     thread_test(test_id);
+
+    return;
 }
 
 void CommandNotFound(char *s)

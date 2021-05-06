@@ -1,5 +1,6 @@
 #include "thread.h"
 #include "allocator.h"
+#include "reader.h"
 #include "../lib/uart.h"
 
 #define THREAD_MAX 5
@@ -19,8 +20,6 @@ void thread_init()
 
         thread_table[i]->id = i;
         thread_table[i]->used = false;
-        uart_puts_h("??");
-        
         thread_table[i]->state = Thread_Wait;
         
         thread_table[i]->next = NULL;
@@ -71,8 +70,6 @@ struct Thread * current_thread()
 
 void switch_to()
 {
-    asm volatile("_switch_to:");
-
     asm volatile("  stp x19, x20, [x0, 16 * 0]");
     asm volatile("  stp x21, x22, [x0, 16 * 1]");
     asm volatile("  stp x23, x24, [x0, 16 * 2]");
@@ -93,17 +90,10 @@ void switch_to()
     asm volatile("  msr tpidr_el1, x1");
 
     asm volatile("  ret");
-
-
-    //unsigned long test;
-    //asm volatile("  mov %0, sp":"=r"(test));
-    //uart_puts_h(test);
-    //asm volatile("  mov sp, %0"::"r"(test));
 }
 
 void schedule()
 {
-  //  uart_puts("--schedule\n");
     struct Thread * current = current_thread();
     struct Thread * next = current->next;
 
@@ -130,14 +120,16 @@ void schedule()
     
     if (next->state != Thread_Wait) return;
 
-    //uart_puts("--switch to ");
-    //uart_puts_h(next->context.lr);
-    //uart_puts("\n");
-    
-    asm volatile("\
-        mov x1, %0\n\
-        mrs x0, tpidr_el1\n\
-        bl _switch_to"::"r"(&next->context));
+    uart_puts_h(current->context.lr);
+    uart_puts(" switch to ");
+    uart_puts_h(next->context.lr);
+    uart_puts(" ");
+    uart_puts_i(next->id);
+    uart_puts(" ");
+
+    //unsigned long test;
+    //asm volatile("msr %0, lr":"=r"(&test));
+    //uart_puts(test);
 
     switch_to(&current->context, &next->context);
 }
@@ -152,6 +144,9 @@ void kill_zombies()
     {
         if (current->next->state == Thread_Exit)
         {
+            current->next->used = false;
+            current->next->state = Thread_Wait;
+
             if (current->next == run_queue.end)
             {
                 run_queue.end = current;
@@ -161,10 +156,6 @@ void kill_zombies()
             {
                 current->next = current->next->next;
             }
-
-            current->next->used = false;
-            uart_puts("??");
-            current->next->state = Thread_Wait;
         }
         else
         {
@@ -173,14 +164,11 @@ void kill_zombies()
     }
 }
 
-void delay
-
 void idle()
 {
     while(1)
     {
    //     uart_puts("---Idle\n");
-
         kill_zombies();
         schedule();
     }
@@ -216,7 +204,7 @@ void log_runqueue()
 
 /*------------------- Test -------------------*/
 
-void foo1()
+void foo()
 {
     for (int i = 0; i < 3; ++i)
     {
@@ -230,30 +218,49 @@ void foo1()
     exit();
 }
 
-void foo2()
+void user_test()
 {
+    char * argv[] = {"argv_test", "-o", "arg2", 0};
+    exec("argv_test", argv);
+}
 
+void fork_test()
+{
+    exec("fork_test", NULL);
 }
 
 void thread_test(int test_id)
 {
-    struct Thread * default_thread = thread_create(0);
+    struct Thread * default_thread = thread_create(idle);
     asm volatile("msr tpidr_el1, %0"::"r"(default_thread));
 
     switch(test_id)
     {
         case 1:
-
         for (int i = 0; i < 3; ++i)
         {
-            thread_create(foo1);
+            thread_create(foo);
         }
-        idle();
+        schedule();
+        
         break;
 
         case 2:
+        thread_create(user_test);
+        idle();
         break;
+
+        case 3:
+        thread_create(fork_test);
+        idle();
+        break;
+
         default:
         break;
     }
+
+    int a= 0;
+    uart_puts_i(a++);
+
+    return ;
 }
