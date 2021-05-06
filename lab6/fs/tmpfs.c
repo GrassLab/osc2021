@@ -8,23 +8,28 @@ void tmpfs_init() {
   struct filesystem tmp_fs;
   tmp_fs.name = "tmpfs";
   tmp_fs.setup_mount = setup_mount;
+
+  tmpfs_fops.read = read;
+  tmpfs_fops.write = write;
+  tmpfs_vops.create = create;
+  tmpfs_vops.lookup = lookup;
+
   register_filesystem(&tmp_fs);  
 }
 
 void* tmpfs_vnode_create(struct mount* _mount, enum tmpfs_type type) {
   struct vnode* v_node;
   struct tmpfs_inode* inode;
- 
+  
   v_node = (struct vnode* )varied_malloc(sizeof(struct vnode));
 
   if(v_node == null)
     return null;
   
   v_node->mount = _mount;
-  v_node->f_ops->read = read;
-  v_node->f_ops->write = write;
-  v_node->v_ops->create = create;
-  v_node->v_ops->lookup = lookup;
+  v_node->f_ops = &tmpfs_fops;
+  v_node->v_ops = &tmpfs_vops;
+
   inode = (struct tmpfs_inode*)varied_malloc(sizeof(struct tmpfs_inode));
   
   if(inode == null)
@@ -64,7 +69,53 @@ static int write(struct file* file, const void* buf, size_t len) {
 }
 
 static int read(struct file* file, void* buf, size_t len) {
-  return 0;
+  struct tmpfs_inode *inode;
+  struct tmpfs_block *block;
+  size_t pos;
+  size_t read_bytes;
+  
+  if(file == null)
+    return -1;
+  if(len == 0)
+    return 0;
+  
+  inode = file->vnode->internal;
+  if(inode->type != file_t)
+    return -1;
+  //EOF
+  if(file->f_pos >= inode->size)
+    return 0;  
+  
+  block = inode->block;
+  pos = file->f_pos;
+  read_bytes = 0;
+  //read byte
+  while(block != null) {
+   
+   if(pos < block->size) {
+      //in this block
+      if(len <= block->size - pos) {
+        memcpy((char *)buf, block->content + pos, len);
+        read_bytes += len;
+        break; 
+      }
+      else {
+
+        memcpy((char *)buf, block->content + pos, block->size - pos);
+
+        len -= block->size - pos;
+        read_bytes += block->size - pos; 
+      }
+    } 
+    else {
+      //find next block
+      pos -= block->size;
+    }
+
+    block = block->next;
+  }
+
+  return read_bytes;
 } 
 
 static int lookup(struct vnode* dir_node, struct vnode** target, const char* component_name) {
@@ -98,7 +149,7 @@ static int create(struct vnode* dir_node, struct vnode** target, const char* com
   struct vnode *v_node;
   struct tmpfs_inode* inode, *par_inode;
   int max_len;
-
+  
   if(component_name == null)
     return 1;
   if(dir_node == null)
@@ -139,14 +190,14 @@ static int create(struct vnode* dir_node, struct vnode** target, const char* com
 
 void traversal(struct tmpfs_inode* inode) { 
   struct tmpfs_inode* ptr;
-  /*struct tmpfs_block* block;
+  struct tmpfs_block* block;
   char buff[33];
-  int block_size;*/
+  int block_size;
   if(inode == null)
     return;
   
   printf("name: %s, type: %d\n", inode->name, inode->type);
-  /*if(inode->type == file_t) {
+  if(inode->type == file_t) {
    
     if(inode->block->size > 0) {
       if(inode->block->size < 32) {
@@ -165,10 +216,10 @@ void traversal(struct tmpfs_inode* inode) {
         block = block->next;
       }
 
-      printf("block size: %d\n", block_size);
+      printf("block size: %d size: %d\n", block_size, inode->size);
       printf("%s\n", buff);
     }
-  }*/
+  }
   //else
   if(inode->type == dir_t) {   
     
@@ -300,13 +351,16 @@ int tmpfs_copy_content_from_cpio(struct tmpfs_inode* inode, void* addr, size_t s
         addr += FS_BLOCK_SIZE - block->size;
         size -= FS_BLOCK_SIZE - block->size;
 
+        inode->size += FS_BLOCK_SIZE - block->size;
         block->size = FS_BLOCK_SIZE;
+
       }
       else {
         //enough
         memcpy(block->content, (char *)addr, size);
 
         block->size += size;
+        inode->size += size;
         break;
       }
     }

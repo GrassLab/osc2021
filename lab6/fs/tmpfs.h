@@ -15,6 +15,7 @@ struct tmpfs_inode {
   struct tmpfs_block *block;
   struct tmpfs_inode* sublings;
   struct tmpfs_inode* children;
+  size_t size;
   struct vnode *vnode; 
 };
 
@@ -24,6 +25,9 @@ struct tmpfs_block {
   char content[FS_BLOCK_SIZE];
 };
 
+struct file_operations tmpfs_fops;
+
+struct vnode_operations tmpfs_vops;
 
 void tmpfs_init();
 void* tmpfs_vnode_create(struct mount* _mount, enum tmpfs_type type);

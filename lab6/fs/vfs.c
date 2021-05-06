@@ -62,6 +62,9 @@ struct file* vfs_open(const char* pathname, int flags) {
       return null;   
   }
   
+  if(v_node == null)
+    return null;
+  
   _file = (struct file* )varied_malloc(sizeof(struct file));
 
   if(_file == null)
@@ -72,7 +75,7 @@ struct file* vfs_open(const char* pathname, int flags) {
   _file->f_pos = 0;
   _file->flags = flags;
   _file->f_ops = v_node->f_ops;  
- 
+  
   return _file;
 }
 int vfs_close(struct file* file) {
@@ -113,6 +116,8 @@ void root_fs_init() {
 
   tmpfs_load_initramfs(rootfs); 
 
-  vfs_test();
+  //vfs_open_test();
+  
+  vfs_read_test();
 }
 
