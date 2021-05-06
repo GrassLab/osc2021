@@ -11,5 +11,6 @@ SECTIONS
     __bss_start = .;
     .bss : { *(.bss) }
     __bss_end = .;
+    __stack_top = . + 0x1000;
 }
 __bss_size = (__bss_end - __bss_start) >> 3;

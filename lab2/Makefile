@@ -62,7 +62,7 @@ gdb:
 	$(GDB) $(GDBFLAGS)
 
 run:
-	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/$(BOOT).img -display none -serial null -serial stdio
+	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/$(BOOT).img -display none -serial null -serial stdio -initrd initramfs.cpio
 
 test: 
 	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/$(BOOT).img -serial null -serial pty -initrd initramfs.cpio
