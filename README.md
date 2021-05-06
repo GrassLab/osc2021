@@ -1,4 +1,4 @@
-# OSDI 2020 - LAB 04  Exception and Interrupt
+# OSDI 2020 - LAB 05 Thread and User Process
 
 ## Author
 
@@ -7,37 +7,30 @@
 | 0856167    | Yunyung        | 許振揚| yungyung7654321@gmail.com  |
 
 ### Introduction
-An exception is an event that causes the currently executing program to relinquish the CPU to the corresponding handler. With the exception mechanism, an operating system can
-
-1. do proper handling when an error occurs during execution.
-
-2. A user program can generate an exception to get the corresponding operating system’s service.
-
-3. A peripheral device can force the currently executing program to relinquish the CPU and execute its handler.
+Multitasking is the most important feature of an operating system. In this lab, we’ll learn how to create threads and how to switch between different threads to achieve multitasking. Moreover, we’ll learn how a user program becomes a user process and accesses services provided by the kernel through system calls.
 
 ### Goals of this lab
-- Understand what’s exception levels in Armv8-A.
+- Understand how to create threads and user processes.
 
-- Understand what’s exception handling.
+- Implement create theads and user processes.
 
-- Understand what’s interrupt.
+- Implement syscall such as fork(), exec(), and so on.
 
-- Understand how rpi3’s peripherals interrupt the CPU by interrupt controllers.
+- Understand how to implement scheduler and context switch.
 
-- Implement synchronous exception and asynchronous interrupt handler from peripheral devices in Armv8-A.
+- Implement round robin scheduler and context switch mechanism.
 
-- Load an user program and switch between kernel mode(EL1) and user mode(EL0).
- 
-- Implement core timer interrput handler and miniUART asynchronous read/write.
+- Understand what’s preemption.
 
-- Understand how to multiplex a timer.
+- Implement user and kernel preemption
 
-- Implenment a timer multiplexing.
+- Understand how to implement the waiting mechanism.
 
-- Understand how to concurrently handle I/O devices.
+- Implement the waiting machanism 
+
+- Understand what's POSIX signals and mechanism.
 
 ## Directory structure
-mm.h and mm.c is key files in our implementation.
 ```
 .
 ├── bootloader          # Bootloader to load actual kernel in run time through miniUART(UART1)
@@ -60,7 +53,11 @@ mm.h and mm.c is key files in our implementation.
 │   ├── utils.h
 │   ├── entry.h
 │   ├── exception.h
-│   └── timer.h
+│   ├── timer.h
+│   ├── fork.h
+│   ├── sched.h
+│   ├── sys.h
+│   └── wait.h
 │
 ├── src                 # source files
 │   ├── command.c       # source file to process command
@@ -73,13 +70,20 @@ mm.h and mm.c is key files in our implementation.
 │   ├── cpio.c          # source file to parse "New ASCII Format" cpio archive
 │   ├── uart.c          # source file to process uart interface and implement uart asynchronous read/write cooperate with shell in shell.c
 │   ├── mm.c            # Implementation of buudy system and object allocator(slab) for memory allocation
+│   ├── mm.S   
 │   ├── utils.S        
 │   ├── entry.S 
 │   ├── exception.c  
-│   ├── timer.S   
-│   └── timer.c    
+│   ├── timer.S 
+│   ├── timer.c 
+│   ├── fork.c 
+│   ├── sys.S 
+│   ├── sys.c
+│   ├── wait.c 
+│   ├── sched.S
+│   └── sched.c  
 │ 
-├── rootfs              # file will be made as cpio archive
+├── rootfs              # file will be made as cpio archive / user program
 │   └── ...             # any file 
 │
 ├── initramfs.cpio      # cpio archive of rootfs folder 
@@ -92,6 +96,7 @@ mm.h and mm.c is key files in our implementation.
 
 
 ## Simple Shell
+**In this lab, kernel shell is disable**
 | command           | description                        | 
 | ------------------| -----------------------------------| 
 | hello             | print Hello World!                 |
