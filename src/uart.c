@@ -28,6 +28,7 @@
 #include "base.h"
 #include "exception.h"
 #include "printf.h"
+#include "wait.h"
 
 int uart_read_idx, uart_transmit_idx;
 char UART_READ_BUFFER[MAX_BUFFER_LEN], UART_TRANSMIT_BUFFER[MAX_BUFFER_LEN];
@@ -116,7 +117,8 @@ void disable_uart_transmit_interrupt()
 }
 
 /**
- * mini UART read/write interrupt handler
+ * 
+ * mini UART read/write interrupt handler for kernel shell
  * 
  * Basic uart asynchronous read/write idea is that we use "read buffer" and "transmit buffer".
  *
@@ -132,7 +134,7 @@ void disable_uart_transmit_interrupt()
  * 
  * This function need to cooperate with shell code in shell.c to achieve asynchronous r/w.
  */
-void uart_irq_handler()
+void shell_uart_irq_handler()
 {
     unsigned int id = *AUX_MU_IIR;
     if((id & 0x06) == 0x04) // miniReceiver holds valid byte
@@ -228,4 +230,27 @@ void uart_puts(char *s)
 void putc ( void* p, char c)
 {
     uart_send(c);
+}
+
+
+void block_uart_read()
+{
+    while (uart_read_status() != UART_READ_READY) {
+        enable_uart_read_interrupt();
+        wait(&uart_read_waitQueue);
+    }
+}
+
+int uart_read_status()
+{
+     // (AUX_MU_LSR) Bit zero if it is set to 1, indicates that the data is ready
+    return *AUX_MU_LSR&0x01;
+}
+
+void uart_read_irq_wakeUp_handler()
+{
+    wake_up(&uart_read_waitQueue);
+    // wake up threads would not read from uart buffer immediate so disable
+    // uart read interrupt is needed
+    disable_uart_read_interrupt(); 
 }

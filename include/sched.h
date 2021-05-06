@@ -1,13 +1,16 @@
 #ifndef _SCHED_H
 #define _SCHED_H
 
+
 #define THREAD_CPU_CONTEXT          0       // offset of cpu_context in task_struct 
 
 #ifndef __ASSEMBLER__ 
 
+#include "list.h"
+
 #define THREAD_SIZE                 4096
 
-#define NR_TASKS                    64 
+#define NR_TASKS                    64     // The max number of task
 
 #define TASK_RUNNING                0
 #define TASK_WAITING				1
@@ -15,9 +18,18 @@
 
 #define PF_KTHREAD                  0x00000002	
 
-extern struct task_struct *current;
-extern struct task_struct * task[NR_TASKS];
+#define MAX_PRIO                    140     // Max proirity number of runqueue (140 is same as linux kernel)
+
+#define KERNEL_SHELL_PID            0
+
+extern struct task_struct *current;         // current executing task
+extern struct task_struct *task[NR_TASKS]; 
 extern int nr_tasks;
+
+// Each runqueue have corresponding prority(array number)
+// The lower number is more significant than higher one
+// TODO:
+extern struct list_head runqueue[MAX_PRIO];
 
 struct cpu_context {
     unsigned long x19;
@@ -48,6 +60,7 @@ struct task_struct {
     unsigned long stack; 
     unsigned long flags;
     long pid;
+    struct list_head run_list;
 };
 
 extern void schedule(void);
@@ -56,6 +69,7 @@ extern void preempt_enable(void);
 extern void timer_tick(void);
 extern void switch_to(struct task_struct * next, int index);
 extern void cpu_switch_to(struct task_struct* prev, struct task_struct* next);
+extern void task_preemption();
 extern void exit_process(void);
 extern void kill_zombies(void);
 

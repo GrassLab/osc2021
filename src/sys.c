@@ -24,10 +24,16 @@ int sys_uart_write(char buf[], size_t size)
 
 int sys_uart_read(char buf[], size_t size) 
 {
+    preempt_disable();
+
     for (int i = 0;i < size;i++) {
+        // block until uart_read ready
+        block_uart_read();
         buf[i] = uart_getc();
     }
     buf[size] = '\0';
+
+    preempt_enable();
 
     return size;
 }
@@ -54,6 +60,7 @@ int sys_fork()
     int copiedTask_sp_offset = cur_regs->sp - current->stack;
     struct pt_regs *childregs = task_pt_regs(task[pid]);
     childregs->sp = task[pid]->stack + copiedTask_sp_offset;
+
     preempt_enable();
     
 
@@ -99,6 +106,7 @@ int sys_exec(const char *name, char* const argv[])
     for (int i = 0;i < argc_count;i++) {
         *(temp + i)  = *(backup + i);
     }
+    //kfree(backup);
 
     // set pc(elr_el) to new function(user program), and starting address of argv[]
     regs->pc = (unsigned long)target_addr;

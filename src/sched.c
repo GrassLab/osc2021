@@ -8,6 +8,8 @@ struct task_struct *current = &(init_task);
 struct task_struct *task[NR_TASKS] = {&(init_task), };
 int nr_tasks = 1;
 
+struct list_head runqueue[MAX_PRIO];
+
 void preempt_disable(void)
 {
     current->preempt_count++;
@@ -45,7 +47,7 @@ void _schedule(void)
         }
     }
     
-    printf("[_schedule] next scheduled - pid = %d\n", next);
+    //printf("[_schedule] next scheduled - pid = %d\n", next);
     switch_to(task[next], next);
 
     preempt_enable();
@@ -61,6 +63,11 @@ void switch_to(struct task_struct *next, int index)
 {
     if (current == next)
         return;
+
+    //printf("[switch_to] Tasks state before cotext switch:\n");
+    //dumpTasksState();
+    printf("[switch_to] context switch! next scheduled - pid = %d\n", index);
+
     struct task_struct *prev = current;
     current = next;
     cpu_switch_to(prev, next);
@@ -75,32 +82,42 @@ void schedule_tail(void)
 void timer_tick()
 {
     --current->counter;
+}
+
+void task_preemption()
+{
     if (current->counter>0 || current->preempt_count >0) {
         return;
     }
     current->counter=0;
 
-    enable_irq();   // Enter by intterupt so default irq is off
+    enable_irq();   // Enter by interrupt Because default irq is off
     _schedule();
     disable_irq();
 }
 
 void exit_process(void) {
     preempt_disable();
-
     current->state = TASK_ZOMBIE;
-    if (current->stack) { // if user stack allocated 
+
+    // if user stack allocated, free stack.
+    if (current->stack) { 
         kfree((void *)current->stack);
     }
 
     preempt_enable();
-    // dumpTasksState();
     schedule();
 }
 
 void kill_zombies(void) {
     // reclaim threads marked as DEAD
-    // TODO
+    //
+    for (int i = 0;i < NR_TASKS;i++) {
+        if (task[i]->state == TASK_ZOMBIE) {
+            // kfree(task[i]);
+            // task[i] = NULL;
+        }
+    }
 }
 
 void dumpTasksState() {

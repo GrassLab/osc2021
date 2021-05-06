@@ -11,6 +11,7 @@
 #include "exception.h"
 #include "printf.h"
 #include "sched.h"
+#include "types.h"
 
 int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg, unsigned long stack) {
     preempt_disable();
@@ -30,6 +31,9 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
         // Kernel thread
         p->cpu_context.x19 = fn;
         p->cpu_context.x20 = arg;
+        
+        // No user stack
+        p->stack = (unsigned long) NULL;
     } else {
         // Sysclone and fork, initalize stage for clone and fork user process
         struct pt_regs * cur_regs = task_pt_regs(current);

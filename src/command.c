@@ -135,12 +135,12 @@ void command_current_el()
 
 void commnad_coreTimerOn()
 {
-    call_sys_coreTimer_on();
+    core_timer_enable();
 }
 
 void commnad_coreTimerOff()
 {
-    call_sys_coreTimer_off();
+    core_timer_disable();
 }
 
 void coomand_setTimeout(char *buf)

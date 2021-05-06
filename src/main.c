@@ -28,12 +28,11 @@ char * init_logo = "\n\
 void foo(){
     for(int i = 0; i < 10; ++i) {
         printf("Thread id: %d %d\n", current->pid, i);
-        delay(1000000);
+        delay(10000);
         schedule();
     }
-    while (1);
-
-    exit_process();
+    
+    call_sys_exit();
 }
 
 void fork_test()
@@ -88,8 +87,7 @@ void user_process(){
     // /* Test syscall uart_read */
     // printf("[uart_read] Test syscall uart_read\n");
     // char uart_read_buf[20];
-    // printf("[uart_read] Enter your input: ");
-    // size = call_sys_uart_read(uart_read_buf, 4);
+    // int size = call_sys_uart_read(uart_read_buf, 4);
     // printf("\n[uart_read] Read buf = %s, How many byte read = %d\n", uart_read_buf, size);
 
     // /* Test syscall malloc */
@@ -106,14 +104,25 @@ void user_process(){
     call_sys_exit();
 }
 
+void test_waitQueue_uart_read()
+{
+    printf("[uart_read] Test syscall uart_read\n");
+    char uart_read_buf[20];
+    int size = call_sys_uart_read(uart_read_buf, 3);
+    printf("\n[uart_read] Read buf = %s, How many byte read = %d\n", uart_read_buf, size);
+    //printf("[exit] Task%d exit\n", call_sys_gitPID());
+    while(1);
+    exit_process();
+}
 
 void kernel_process(){
-    printf("[kernel_process]Kernel process started. EL %d\r\n", get_el());
+    // printf("[kernel_process]Kernel process started. EL %d\r\n", get_el());
     int err = move_to_user_mode((unsigned long)&user_process);
     if (err < 0){
         printf("Error while moving process to user mode\n\r");
     } 
 }
+
 
 int main()
 {
@@ -128,17 +137,18 @@ int main()
 
     // Turn on core timer interrupt
     core_timer_enable();
-
     // enable IRQ interrupt
     enable_irq();
     
+    enable_uart_interrupt();
+
     // say hello
     printf(init_logo);
 
-
+    
     /* Test cases */
     // Requirement 1 - Implement the thread mechanism. 
-    for(int i = 0; i < 2; ++i) { // N should
+    for(int i = 0; i < 3; ++i) { // N should
         int res = copy_process(PF_KTHREAD, (unsigned long)&foo, 0, 0);
         if (res < 0) {
          printf("error while starting kernel process");
@@ -146,26 +156,33 @@ int main()
        }
     }
 
-    // Requirement 2 
+    //  Requirement 2 
     int res = copy_process(PF_KTHREAD, (unsigned long)&kernel_process, 0, 0);
     if (res < 0) {
         printf("error while starting kernel process");
         return 0;
     }
     
+    // Elevtive 1 - Wait Queue
+    res = copy_process(PF_KTHREAD, (unsigned long)&test_waitQueue_uart_read, 0, 0);
+    if (res < 0) {
+        printf("error while starting kernel process");
+        return 0;
+    }
 
     while (1) {
-        printf("In kernel main()\n");
-        dumpTasksState();
+        // printf("In kernel main()\n");
+        // dumpTasksState();
         kill_zombies(); // reclaim threads marked as DEAD
         schedule();
-        delay(1000000);
+        delay(100000);
     }
 
 
     
     // start shell
-    // shell_start();
+    if (kernel_shell_status == KERNEL_SHELL_ENABLE)
+        shell_start();
 
     return 0;
 }

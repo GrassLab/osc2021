@@ -86,28 +86,28 @@
 .globl exception_vector_table 
 exception_vector_table:
     // Current EL with SP0
-    ventry	sync_invalid_el1t			// Synchronous EL1t
-    ventry	irq_invalid_el1t			// IRQ EL1t
-    ventry	fiq_invalid_el1t			// FIQ EL1t
-    ventry	error_invalid_el1t			// Error EL1t
+    ventry	sync_invalid_el1t           // Synchronous EL1t
+    ventry	irq_invalid_el1t            // IRQ EL1t
+    ventry	fiq_invalid_el1t            // FIQ EL1t
+    ventry	error_invalid_el1t          // Error EL1t
 
     // Current EL with SPx
-    ventry	sync_exc_handler			// Synchronous EL1h
-    ventry	irq_exc_handler				// IRQ EL1h
-    ventry	fiq_invalid_el1h			// FIQ EL1h
-    ventry	error_invalid_el1h			// Error EL1h
+    ventry	el1_sync_exc_handler        // Synchronous EL1h
+    ventry	irq_exc_handler             // IRQ EL1h
+    ventry	fiq_invalid_el1h            // FIQ EL1h
+    ventry	error_invalid_el1h          // Error EL1h
 
     // Lower EL using AArch64
-    ventry	sync_exc_handler			// Synchronous 64-bit EL0
-    ventry	irq_exc_handler				// IRQ 64-bit EL0
-    ventry	fiq_invalid_el0_64			// FIQ 64-bit EL0
-    ventry	error_invalid_el0_64		// Error 64-bit EL0
+    ventry	el0_sync_exc_handler        // Synchronous 64-bit EL0
+    ventry	irq_exc_handler             // IRQ 64-bit EL0
+    ventry	fiq_invalid_el0_64          // FIQ 64-bit EL0
+    ventry	error_invalid_el0_64        // Error 64-bit EL0
 
     // Lower EL using AArch32
-    ventry	sync_invalid_el0_32			// Synchronous 32-bit EL0
-    ventry	irq_invalid_el0_32			// IRQ 32-bit EL0
-    ventry	fiq_invalid_el0_32			// FIQ 32-bit EL0
-    ventry	error_invalid_el0_32		// Error 32-bit EL0
+    ventry	sync_invalid_el0_32         // Synchronous 32-bit EL0
+    ventry	irq_invalid_el0_32          // IRQ 32-bit EL0
+    ventry	fiq_invalid_el0_32          // FIQ 32-bit EL0
+    ventry	error_invalid_el0_32        // Error 32-bit EL0
 
 /* Invalid expcetion handler*/
 sync_invalid_el1t:
@@ -156,8 +156,37 @@ error_invalid_el0_32:
     handle_invalid_entry 0, ERROR_INVALID_EL0_32
 
 /* Synchronous and IRQ handler */
+el1_sync_exc_handler: 
+    kernel_entry 1
+    mrs    x25, esr_el1                // read the syndrome register
+    lsr    x24, x25, #ESR_ELx_EC_SHIFT // exception class
+    cmp    x24, #ESR_ELx_EC_SVC64   // SVC in 64-bit state
+    b.eq   el1_svc
+    handle_invalid_entry 1, SYNC_ERROR
 
-sync_exc_handler:
+sc_nr   .req    x25                  // number of system calls
+scno    .req    x26                  // syscall number
+stbl    .req    x27                  // syscall table pointer
+
+el1_svc:
+    adr    stbl, sys_call_table      // load syscall table pointer
+    uxtw   scno, w8                  // syscall number in w8
+    mov    sc_nr, #__NR_syscalls
+    bl     enable_irq
+    cmp    scno, sc_nr               // check upper syscall limit
+    b.hs   ni_sys
+
+    ldr    x16, [stbl, scno, lsl #3] // address in the syscall table
+    blr    x16                       // call sys_* routine
+    b      el1_ret_from_syscall
+el1_ni_sys: // non-existent syscall
+    handle_invalid_entry 1, SYSCALL_ERROR 
+el1_ret_from_syscall:
+    bl    disable_irq
+    str   x0, [sp, #S_X0]            // save returned x0
+    kernel_exit 1
+
+el0_sync_exc_handler:
     kernel_entry 0
     mrs    x25, esr_el1                // read the syndrome register
     lsr    x24, x25, #ESR_ELx_EC_SHIFT // exception class
@@ -184,18 +213,19 @@ ni_sys: // non-existent syscall
     handle_invalid_entry 0, SYSCALL_ERROR 
 ret_from_syscall:
     bl    disable_irq
-    str   x0, [sp, #S_X0]             // save returned x0
+    str   x0, [sp, #S_X0]            // save returned x0
     kernel_exit 0
 
 irq_exc_handler:
     kernel_entry 0
     bl  irq_exc_router
+    bl  task_preemption
     kernel_exit 0
 
 .globl ret_from_fork
 ret_from_fork:
-    bl	schedule_tail // enabled preemption
-    cbz x19, ret_to_user            // not a kernel thread
+    bl	schedule_tail                // enabled preemption
+    cbz x19, ret_to_user             // not a kernel thread
     mov	x0, x20
     blr	x19 		
 ret_to_user:
@@ -204,31 +234,31 @@ ret_to_user:
 
 .globl enable_irq_persist
 enable_irq_persist:
-    mov x2, x30	// store return address
+    mov x2, x30	                     // store return address
     bl enable_irq
     mov x30, x2
 
     mrs x0, spsr_el1
     mov x1, 0b01111111
     and x0, x0, x1
-    msr spsr_el1, x0 // set irq bit enable
+    msr spsr_el1, x0                 // set irq bit enable
     ret
 
 .globl disable_irq_persist
 disable_irq_persist:
-    mov x2, x30	// store return address
+    mov x2, x30	                     // store return address
     bl disable_irq
     mov x30, x2
 
     mrs x0, spsr_el1
     mov x1, 0b10000000
     orr x0, x0, x1
-    msr spsr_el1, x0 // set irq bit disable
+    msr spsr_el1, x0                 // set irq bit disable
     ret
 
 .globl enable_irq
 enable_irq:
-    msr daifclr, #2 // enable irq to current processor state
+    msr daifclr, #2                  // enable irq to current processor state
     ret
 
 .globl disable_irq

@@ -7,10 +7,14 @@
 #include "mm.h"
 #include "entry.h"
 
+
+int kernel_shell_status = KERNEL_SHELL_DISABLE;
+
 extern int uart_read_idx;
 extern char UART_READ_BUFFER[MAX_BUFFER_LEN];
 extern int uart_transmit_idx;
 extern char UART_TRANSMIT_BUFFER[MAX_BUFFER_LEN];
+
 void shell_start () 
 {
     int buffer_counter = 0;

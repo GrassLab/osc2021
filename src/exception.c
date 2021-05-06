@@ -6,6 +6,7 @@
 #include "uart.h"
 #include "timer.h"
 #include "sched.h"
+#include "shell.h"
 
 extern int isTimerMultiplexingEventIRQ;
 
@@ -87,7 +88,15 @@ void irq_exc_router()
     // irq_basic1_pending
     if (irq_basic1_pending & AUX_IRQ) {
         //printf("irq_basic1_pending\n");
-        uart_irq_handler();
+        if (kernel_shell_status == KERNEL_SHELL_ENABLE) {
+            shell_uart_irq_handler(); // uart read/write for kernel shell
+        }
+        else {
+            // wake up tasks in uart_read waiting queue
+            uart_read_irq_wakeUp_handler();
+        }  
+            
+            
     }
     // ARM Core Timer Interrupt
     else if (src & (1<<1)) {
@@ -96,7 +105,7 @@ void irq_exc_router()
             timerEvents_irq_handler();
         }
         else {
-            printf("Core timer interrupt!, timestamp: %u\n", get_system_time());
+            printf("Core timer interrupt!, timestamp: %u, current thread pid = %u\n", get_system_time(), current->pid);
             core_timer_handler();
             timer_tick(); // schedule 
             

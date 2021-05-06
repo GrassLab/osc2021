@@ -9,7 +9,7 @@ int main(void) {
     int cnt = 1;
     int ret = 0;
     printf("pid: %d, cnt: %d, cnt_adress: 0x%x\n", call_sys_gitPID(), cnt, &cnt);
-    if (call_sys_fork() == 0) { // child
+    if ((ret = call_sys_fork()) == 0) { // child
         printf("pid: %d, cnt: %d, cnt_adress: 0x%x\n", call_sys_gitPID(), cnt, &cnt);
         ++cnt;
         call_sys_fork();
