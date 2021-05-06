@@ -48,8 +48,8 @@ void do_top() {
   // print_thread_q(wait_q);
 }
 /*
-  test block
-*/
+ * lab5 test
+ */
 
 void foo4() {
   for (int i = 0; i < 5; ++i) {
@@ -69,6 +69,28 @@ void user_test() {
 }
 void do_req2() {
   process_create(thread_create(user_test), 0, 0);
+  schedule();
+}
+/*
+ * lab6 test
+ */
+
+void user_tmpfs() {
+  char *argv[] = {"tmpfs_test.img", 0};
+  exec("tmpfs_test.img", argv);
+  exit();
+}
+void do_test() {
+  process_create(thread_create(user_tmpfs), 0, 0);
+  schedule();
+}
+void user_ls() {
+  char *argv[] = {"ls.img", ".", 0};
+  exec("ls.img", argv);
+  exit();
+}
+void do_ls2() {
+  process_create(thread_create(user_ls), 0, 0);
   schedule();
 }
 void shell() {
@@ -102,10 +124,10 @@ void shell() {
       do_req1();
     else if (strcmp(buff, "req2"))
       do_req2();
-    // else if (strcmp(buff, "test"))
-    //   do_test();
-    // else if (strcmp(buff, "test2"))
-    //   do_test2();
+    else if (strcmp(buff, "test"))
+      do_test();
+    else if (strcmp(buff, "ls2"))
+      do_ls2();
     // else if (strcmp(buff, "test3"))
     //   do_test3();
     // else if (strcmp(buff, "test4"))

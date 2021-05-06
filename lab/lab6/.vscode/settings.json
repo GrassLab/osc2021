@@ -8,6 +8,8 @@
     "initializer_list": "cpp",
     "utility": "cpp",
     "memory": "cpp",
-    "sstream": "c"
+    "sstream": "c",
+    "functional": "cpp",
+    "*.tcc": "c"
   }
 }

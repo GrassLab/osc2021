@@ -5,6 +5,12 @@
 #define EL0_SYNC_EXEC 4
 #define EL0_SYNC_UART_GETC 5
 #define EL0_SYNC_UART_PUTS 6
+#define EL0_SYNC_OPEN 7
+#define EL0_SYNC_CLOSE 8
+#define EL0_SYNC_WRITE 9
+#define EL0_SYNC_READ 10
+#define EL0_SYNC_LIST 11
+
 #define EL0_SYNC_TEST 20
 #define EL0_SYNC_PRINT_H 21
 
@@ -51,4 +57,29 @@ print_hex:
 .global exec
 exec:
   svc EL0_SYNC_EXEC
+  ret
+
+.global open
+open:
+  svc EL0_SYNC_OPEN
+  ret
+
+.global close
+close:
+  svc EL0_SYNC_CLOSE
+  ret
+
+.global read
+read:
+  svc EL0_SYNC_READ
+  ret
+
+.global write
+write:
+  svc EL0_SYNC_WRITE
+  ret
+
+.global readdir
+readdir:
+  svc EL0_SYNC_LIST
   ret

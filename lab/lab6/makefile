@@ -25,7 +25,7 @@ ifeq ($(v), -1)
 	CONNECT=sudo screen /dev/ttyUSB0 115200
 endif
 
-bootloader.img: clean bootloader.elf kernel.img  ./rootfs/fork_test.img ./rootfs/argv_test.img
+bootloader.img: clean bootloader.elf kernel.img  ./rootfs/fork_test.img ./rootfs/argv_test.img ./rootfs/tmpfs_test.img ./rootfs/ls.img
 	$(GNU_OBJECT) -O binary bootloader.elf bootloader.img
 bootloader.elf: bstart.o uart.o bootloader.o linker.ld utils.o 
 	$(GNU_LD) -T linker.ld -o bootloader.elf bstart.o bootloader.o uart.o utils.o
@@ -44,15 +44,26 @@ kernel.o: kernel.c kernel.h
 	$(GNU_GCC) $(CFLAGS) -I $(INCLUDE) -c $(G) kernel.c
 
 
-./rootfs/test.img: test.elf
-	$(GNU_OBJECT) -O binary test.elf ./rootfs/test.img
+./rootfs/tmpfs_test.img: tmpfs_test.elf
+	$(GNU_OBJECT) -O binary tmpfs_test.elf ./rootfs/tmpfs_test.img
 	$(CPIO)
-test.elf: test.o start.o user_C.o user_S.o tlinker.ld
-	$(GNU_LD) -o test.elf test.o start.o user_C.o user_S.o -T tlinker.ld
+tmpfs_test.elf: tmpfs_test.o start.o user_C.o user_S.o tlinker.ld
+	$(GNU_LD) -o tmpfs_test.elf tmpfs_test.o start.o user_C.o user_S.o -T tlinker.ld
 start.o: start.S
 	$(GNU_GCC) $(CFLAGS) -c $(G) start.S
-test.S: test.c
-	$(GNU_GCC) $(CFLAGS) -I $(INCLUDE) -S $(G) test.c
+tmpfs_test.o: tmpfs_test.c
+	$(GNU_GCC) $(CFLAGS) -I $(INCLUDE) -c $(G) tmpfs_test.c
+
+
+./rootfs/ls.img: ls.elf
+	$(GNU_OBJECT) -O binary ls.elf ./rootfs/ls.img
+	$(CPIO)
+ls.elf: ls.o start.o user_C.o user_S.o tlinker.ld
+	$(GNU_LD) -o ls.elf ls.o start.o user_C.o user_S.o -T tlinker.ld
+start.o: start.S
+	$(GNU_GCC) $(CFLAGS) -c $(G) start.S
+ls.o: ls.c
+	$(GNU_GCC) $(CFLAGS) -I $(INCLUDE) -c $(G) ls.c
 
 ./rootfs/argv_test.img: argv_test.elf
 	$(GNU_OBJECT) -O binary argv_test.elf ./rootfs/argv_test.img

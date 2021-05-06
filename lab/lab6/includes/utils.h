@@ -195,4 +195,14 @@ void *memcpy(void *destination, void *source, uint64_t num) {
   for (uint64_t i = 0; i < num; ++i) dest[i] = src[i];
   return destination;
 }
+void strcpy(char *destination, char *source) {
+  int i = 0;
+  for (; source[i] != '\0'; ++i) destination[i] = source[i];
+  destination[i] = source[i];
+}
+void *memset(void *str, int c, unsigned long long n) {
+  char *s = str;
+  for (int i = 0; i < n; ++i) s[i] = c;
+  return str;
+}
 #endif /*_UTILS */

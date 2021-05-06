@@ -319,14 +319,17 @@ void _timer_handler() {
 #define DEAD 3
 #define FORK 4
 #define STACK_SIZE (PAGE_SIZE - sizeof(dma))
+#define FILE_DESCRIPTOR_SIZE (1024)
 
 void exit();
 struct thread_list;
+struct file;
 typedef struct process_list {
   struct process_list *prev, *next;
   struct thread_list *thread;
   void *context_malloc;
   uint64_t pid, context_size, context_count;
+  struct file *file_descriptor[FILE_DESCRIPTOR_SIZE];
 } process_list;
 
 void print_process_q(process_list *);
@@ -579,8 +582,26 @@ process_list *process_create(thread_list *thread, void *context_malloc,
                         .thread = thread,
                         .pid = get_free_pid(),
                         .context_size = context_size,
+                        .context_count = 1,
+                        .file_descriptor = {}};
+  thread->process = new;
+  add_to_process_q(&process_head, new);
+  return new;
+}
+
+process_list *process_copy(process_list *original, thread_list *thread,
+                           void *context_malloc, uint64_t context_size) {
+  process_list *new = kmalloc(sizeof(process_list));
+  *new = (process_list){.prev = new,
+                        .next = new,
+                        .context_malloc = context_malloc,
+                        .thread = thread,
+                        .pid = get_free_pid(),
+                        .context_size = context_size,
                         .context_count = 1};
   thread->process = new;
+  memcpy(new->file_descriptor, original->file_descriptor,
+         sizeof(original->file_descriptor));
   add_to_process_q(&process_head, new);
   return new;
 }
@@ -594,12 +615,12 @@ void exit_process() {
 }
 
 void process_init() { process_head = 0; }
-void process_copy() {
+void process_do_copy() {
   if (run_q == 0) return;
   for (thread_list *now = run_q;; now = now->next) {
     if (now->status == FORK) {
-      process_create(thread_copy(now), now->process->context_malloc,
-                     now->process->context_size);
+      process_copy(now->process, thread_copy(now), now->process->context_malloc,
+                   now->process->context_size);
       now->status = ALIVE;
     }
     if (now->next == run_q) break;
@@ -681,12 +702,319 @@ void exit() {
 void idle() {
   while (1) {
     kill_zombies();
-    process_copy();
+    process_do_copy();
     schedule();
     if (run_q == run_q->next) exit();
   }
 }
 
+/*
+ * Virtual File System
+ */
+#define O_CREAT 1
+
+typedef enum { FILE_TYPE_F, FILE_TYPE_D, FILE_TYPE_N } FILE_TYPE;
+struct vnode {
+  struct mount *mount;
+  struct vnode_operations *v_ops;
+  struct file_operations *f_ops;
+  void *internal;
+};
+struct file {
+  struct vnode *vnode;
+  size_t f_pos;  // The next read/write position of this opened file
+  struct file_operations *f_ops;
+  int flags;
+};
+
+struct mount {
+  struct vnode *root;
+  struct filesystem *fs;
+};
+
+struct filesystem {
+  char *name;
+  int (*setup_mount)(struct filesystem *fs, struct mount *mount);
+};
+
+struct file_operations {
+  int (*write)(struct file *file, void *buf, size_t len);
+  int (*read)(struct file *file, void *buf, size_t len);
+  int (*list)(struct file *file, char *buff, int i);
+};
+
+struct vnode_operations {
+  int (*lookup)(struct vnode *dir_node, struct vnode **target,
+                char *component_name);
+  int (*create)(struct vnode *dir_node, struct vnode **target,
+                char *component_name);
+};
+
+struct mount *rootfs;
+struct filesystem tmpfs;
+struct vnode *cur_dir;
+
+/* tmpfs functions * values declare */
+struct file_operations tmpfs_f_ops;
+struct vnode_operations tmpfs_v_ops;
+
+int tmpfs_write(struct file *, void *, size_t);
+int tmpfs_read(struct file *, void *, size_t);
+int tmpfs_lookup(struct vnode *, struct vnode **, char *);
+int tmpfs_mount(struct filesystem *, struct mount *);
+int tmpfs_create(struct vnode *, struct vnode **, char *);
+int tmpfs_list(struct file *file, char *buff, int i);
+
+int register_filesystem(struct filesystem *fs) {
+  /* register the file system to the kernel. */
+  if (strcmp(fs->name, "tmpfs")) {
+    fs->setup_mount = tmpfs_mount;
+    tmpfs_v_ops.lookup = tmpfs_lookup;
+    tmpfs_v_ops.create = tmpfs_create;
+    tmpfs_f_ops.write = tmpfs_write;
+    tmpfs_f_ops.read = tmpfs_read;
+    tmpfs_f_ops.list = tmpfs_list;
+    return 1;
+  }
+  return 0;
+}
+
+#define INIT_WITH_CPIO 1
+void cpio_to_filesystem();
+void filesystem_init() {
+  rootfs = kmalloc(sizeof(struct mount));
+  tmpfs.name = "tmpfs";
+  register_filesystem(&tmpfs);
+  tmpfs.setup_mount(&tmpfs, rootfs);
+  cur_dir = rootfs->root;
+  if (INIT_WITH_CPIO) cpio_to_filesystem();
+}
+struct file *vfs_open(char *pathname, int flags) {
+  /* 1. Lookup pathname from the root vnode.
+   * 2. Create a new file descriptor for this vnode if found.
+   * 3. Create a new file if O_CREAT is specified in flags.
+   */
+  struct file *fd = kmalloc(sizeof(struct file));
+  struct vnode *target = 0;
+
+  if (strcmp(pathname, "/") && flags != O_CREAT)  // open  root dir
+    target = rootfs->root;
+  else if (strcmp(pathname, ".") && flags != O_CREAT)  // open  current dir
+    target = cur_dir;
+  else if (flags == O_CREAT) {  // create file
+    int ret = cur_dir->v_ops->lookup(
+        cur_dir, &target, pathname);  // if file exists, target will assign
+    if (ret == -1)                    // file not extst, create it
+      /* if file not exists, target will re-assign here */
+      cur_dir->v_ops->create(cur_dir, &target, pathname);
+    else {         // file extst, not create it
+      target = 0;  // re-assign target
+      printf("Creat file error: File exist!!\n");
+    }
+  } else {  // open file
+    int ret = cur_dir->v_ops->lookup(
+        cur_dir, &target, pathname);  // if file exists, target will assign
+    if (ret == -1) printf("Open file error: File is not found!!\n");
+  }
+
+  if (target)
+    *fd = (struct file){
+        .vnode = target, .f_ops = target->f_ops, .f_pos = 0, .flags = flags};
+  else {
+    kfree(fd);
+    fd = 0;
+  }
+  return fd;
+}
+int vfs_close(struct file *file) {
+  /* 1. release the file descriptor */
+  kfree(file);
+  return 1;
+}
+int vfs_write(struct file *file, void *buf, size_t len) {
+  /* 1. write len byte from buf to the opened file.
+   * 2. return written size or error code if an error occurs.
+   */
+  return file->f_ops->write(file, buf, len);
+}
+int vfs_read(struct file *file, void *buf, size_t len) {
+  /* 1. read min(len, readable file data size) byte to buf from the opened
+  file.
+   * 2. return read size or error code if an error occurs.
+   */
+  return file->f_ops->read(file, buf, len);
+}
+int vfs_list(struct file *file, void *buf, int i) {
+  return file->f_ops->list(file, buf, i);
+}
+void cpio_to_filesystem() {
+  char *now_addr = (char *)CPIO_ARRD, *filename, *context;
+  struct cpio_newc_header *cpio_header;
+  do {
+    filename = now_addr + CPIO_SIZE;
+    uint64_t context_size = cpio_info(&cpio_header, &now_addr, &context);
+    if (!strcmp("TRAILER!!!", filename)) {
+      struct file *fd = vfs_open(filename, O_CREAT);
+      vfs_write(fd, context, context_size);
+      vfs_close(fd);
+    }
+  } while (!strcmp("TRAILER!!!", filename));
+}
+/*
+ * tmpfs
+ */
+#define DIR_MAX 10
+#define TMPFS_BUF_SIZE 4096
+
+struct tmpfs_buf {
+  int flag;
+  size_t size;
+  char buffer[TMPFS_BUF_SIZE];
+};
+struct tmpfs_entry {
+  char name[10];
+  FILE_TYPE type;
+  struct vnode *vnode;
+  struct tmpfs_entry *list[DIR_MAX];
+  struct tmpfs_entry *parent;
+  struct tmpfs_buf *buf;
+};
+
+void init_tmpfs_entry(struct tmpfs_entry *fentry, struct vnode *vnode,
+                      char *name) {
+  fentry->vnode = vnode;
+  strcpy(fentry->name, name);
+}
+
+int tmpfs_mount(struct filesystem *fs, struct mount *mount) {
+  mount->fs = fs;
+  struct tmpfs_entry *fentry = kmalloc(sizeof(struct tmpfs_entry));
+  struct vnode *vnode = kmalloc(sizeof(struct vnode));
+  vnode->v_ops = &tmpfs_v_ops;
+  vnode->f_ops = &tmpfs_f_ops;
+  vnode->internal = fentry;
+
+  fentry->type = FILE_TYPE_D;
+
+  init_tmpfs_entry(fentry, vnode, "/");  // init root vnode & entry
+  for (int i = 0; i < DIR_MAX; i++) {
+    fentry->list[i] = kmalloc(sizeof(struct tmpfs_entry));
+    fentry->list[i]->type = FILE_TYPE_N;  // no file, no type
+    fentry->list[i]->name[0] = 0;         // no name
+    fentry->list[i]->parent = fentry;
+  }
+
+  mount->root = vnode;
+  return 1;
+}
+
+int tmpfs_create(struct vnode *dir_node, struct vnode **target,
+                 char *component_name) {
+  for (int i = 0; i < DIR_MAX; i++) {
+    struct tmpfs_entry *list =
+        ((struct tmpfs_entry *)dir_node->internal)->list[i];
+    if (list->type == FILE_TYPE_N) {
+      struct tmpfs_entry *fentry = list;
+      strcpy(fentry->name, component_name);
+      fentry->type = FILE_TYPE_F;  // create file, type file
+      struct vnode *vnode = kmalloc(sizeof(struct vnode));
+      vnode->v_ops = dir_node->v_ops;  // type is same as parent
+      vnode->f_ops = dir_node->f_ops;  // type is same as parent
+      vnode->internal = fentry;
+      init_tmpfs_entry(fentry, vnode, component_name);
+      fentry->buf = kmalloc(sizeof(struct tmpfs_buf));
+      fentry->buf->size = 0;  // empty file
+
+      *target = fentry->vnode;
+      return 1;
+    }
+  }
+  return -1;
+}
+
+int tmpfs_lookup(struct vnode *dir_node, struct vnode **target,
+                 char *component_name) {
+  for (int i = 0; i < DIR_MAX; i++) {
+    struct tmpfs_entry *list =
+        ((struct tmpfs_entry *)dir_node->internal)->list[i];
+    if (strcmp(list->name, component_name)) {
+      struct tmpfs_entry *fentry = list;
+      *target = fentry->vnode;
+      return 1;
+    }
+  }
+  return -1;
+}
+
+int tmpfs_list(struct file *file, char *buff, int i) {
+  struct tmpfs_entry *dir = (struct tmpfs_entry *)file->vnode->internal;
+  if (dir->type == FILE_TYPE_D) {
+    if (dir->list[i]->type != FILE_TYPE_N)
+      memcpy(buff, dir->list[i]->name, strlen(dir->list[i]->name) + 1);
+    return dir->list[i]->buf->size;
+  }
+  return -1;
+}
+int tmpfs_write(struct file *file, void *buf, size_t len) {
+  size_t i = 0;
+  for (; i < len; ++i) {
+    if (i >= TMPFS_BUF_SIZE) {
+      printf("tmpfs buffer error: over buffer limit\n");
+      return -1;
+    }
+    struct tmpfs_buf *buff = ((struct tmpfs_entry *)file->vnode->internal)->buf;
+    buff->buffer[file->f_pos++] = ((char *)buf)[i];
+    if (buff->size < file->f_pos) buff->size = file->f_pos;
+  }
+  return i;
+}
+
+int tmpfs_read(struct file *file, void *buf, size_t len) {
+  size_t i = 0;
+  for (; i < len;) {
+    struct tmpfs_buf *buff = ((struct tmpfs_entry *)file->vnode->internal)->buf;
+    ((char *)buf)[i] = buff->buffer[file->f_pos++];
+    if (++i >= buff->size) break;
+  }
+  return i;
+}
+/*
+ * sync file system call
+ */
+int open(char *pathname, int flags) {
+  struct file *fd = vfs_open(pathname, flags);
+  int i = 0;
+  for (; i < FILE_DESCRIPTOR_SIZE; ++i)
+    if (run_q->process->file_descriptor[i] == 0) {
+      run_q->process->file_descriptor[i] = fd;
+      return i;
+    }
+  return -1;
+}
+int close(int fd) {
+  if (run_q->process->file_descriptor[fd] != 0) {
+    vfs_close(run_q->process->file_descriptor[fd]);
+    return 1;
+  }
+  return -1;
+}
+
+int write(int fd, void *buf, int count) {
+  if (run_q->process->file_descriptor[fd] != 0)
+    return vfs_write(run_q->process->file_descriptor[fd], buf, count);
+  return -1;
+}
+int read(int fd, void *buf, int count) {
+  if (run_q->process->file_descriptor[fd] != 0)
+    return vfs_read(run_q->process->file_descriptor[fd], buf, count);
+  return -1;
+}
+int readdir(char *dir, void *buf, int i) {
+  struct file *vfs_dir = vfs_open(dir, 0);
+  int len = vfs_list(vfs_dir, buf, i);
+  vfs_close(vfs_dir);
+  return len;
+}
 #define EL0_SYNC_EXIT 0
 #define EL0_SYNC_UART_SEND 1
 #define EL0_SYNC_FORK 2
@@ -694,6 +1022,11 @@ void idle() {
 #define EL0_SYNC_EXEC 4
 #define EL0_SYNC_UART_GETC 5
 #define EL0_SYNC_UART_PUTS 6
+#define EL0_SYNC_OPEN 7
+#define EL0_SYNC_CLOSE 8
+#define EL0_SYNC_WRITE 9
+#define EL0_SYNC_READ 10
+#define EL0_SYNC_LIST 11
 
 #define EL0_SYNC_TEST 20
 #define EL0_SYNC_PRINT_H 21
@@ -702,9 +1035,10 @@ int _el0_sync_entry() {
   uint64_t *entry_sp;
   asm volatile("mov %0, x0" : "=r"(entry_sp));
 
-  uint64_t x0, x1;
-  asm volatile("ldr %0, [%1, 0]\n" : "=r"(x0) : "r"(entry_sp));
-  asm volatile("ldr %0, [%1, 8]\n" : "=r"(x1) : "r"(entry_sp));
+  uint64_t x0, x1, x2;
+  asm volatile("ldr %0, [%1, 0 ]\n" : "=r"(x0) : "r"(entry_sp));
+  asm volatile("ldr %0, [%1, 8 ]\n" : "=r"(x1) : "r"(entry_sp));
+  asm volatile("ldr %0, [%1, 16]\n" : "=r"(x2) : "r"(entry_sp));
 
   /* update current thread sp_el0 & fp_el0 */
   asm volatile("ldr %0, [%1, 16 * 15 + 8]\n"
@@ -715,8 +1049,16 @@ int _el0_sync_entry() {
                : "r"(entry_sp));
   uint64_t esr, result = 0;
   asm volatile("mrs %0, esr_el1" : "=r"(esr) :);
+  /* esr_eln: 31~26:EC, 25:IL, 24~0:ISS
+   * EC: indicate the exception class which enables the handler
+   * IL: indicates the length of the trapped instruction
+   *     0 for a 16-bit instruction or 1 for a 32-bit instruction
+   * ISS:form the Instruction Specific Syndrome (ISS) field containing
+   *     information specific to that exception type
+   */
+  /* mask: EC, EC = 0x15 is an SVC exceptions */
   if (((esr >> 26) & 0x3f) == 0x15) {
-    uint64_t svc = esr & 0x1ffffff;
+    uint64_t svc = esr & 0x1ffffff;  // mask: IS + ISS: 25~0
     if (svc == EL0_SYNC_EXIT)
       exit();
     else if (svc == EL0_SYNC_UART_SEND)
@@ -731,7 +1073,17 @@ int _el0_sync_entry() {
       printf("%d", getpid());
       result = getpid();
     } else if (svc == EL0_SYNC_UART_GETC)
-      return uart_getc();
+      result = uart_getc();
+    else if (svc == EL0_SYNC_OPEN)
+      result = open((char *)x0, (int)x1);
+    else if (svc == EL0_SYNC_CLOSE)
+      result = close((int)x0);
+    else if (svc == EL0_SYNC_WRITE)
+      result = write((int)x0, (void *)x1, (int)x2);
+    else if (svc == EL0_SYNC_READ)
+      result = read((int)x0, (void *)x1, (int)x2);
+    else if (svc == EL0_SYNC_LIST)
+      result = readdir((char *)x0, (void *)x1, (int)x2);
     else if (svc == EL0_SYNC_TEST)
       printf("count\n");
     else if (svc == EL0_SYNC_PRINT_H)
@@ -756,111 +1108,3 @@ void _el0_irq_entry() {
   }
   // _irq_enable();
 }
-
-/*
- * Virtual File System
- */
-typedef struct vnode {
-  struct mount *mount;
-  struct vnode_operations *v_ops;
-  struct file_operations *f_ops;
-  void *internal;
-} vnode;
-struct file {
-  struct vnode *vnode;
-  size_t f_pos;  // The next read/write position of this opened file
-  struct file_operations *f_ops;
-  int flags;
-};
-
-typedef struct mount {
-  struct vnode *root;
-  struct filesystem *fs;
-} mount;
-
-typedef struct filesystem {
-  char *name;
-  int (*setup_mount)(struct filesystem *fs, struct mount *mount);
-} filesystem;
-
-typedef struct file_operations {
-  int (*write)(struct file *file, void *buf, size_t len);
-  int (*read)(struct file *file, void *buf, size_t len);
-} file_operations;
-
-typedef struct vnode_operations {
-  int (*lookup)(struct vnode *dir_node, struct vnode **target,
-                char *component_name);
-  int (*create)(struct vnode *dir_node, struct vnode **target,
-                char *component_name);
-} vnode_operations;
-
-mount *rootfs;
-filesystem *filesystem_arr[10];
-
-int register_filesystem(filesystem *fs) {
-  /* register the file system to the kernel. */
-  static int i = 0;
-  filesystem_arr[i++] = fs;
-  return 0;
-}
-
-int setup_mount(struct filesystem *fs, struct mount *mount) {
-  mount->fs = fs;
-  return 1;
-}
-int lookup(struct vnode *dir_node, struct vnode **target,
-           char *component_name) {
-  return 0;
-}
-int create(struct vnode *dir_node, struct vnode **target,
-           char *component_name) {
-  return 0;
-}
-void filesystem_init() {
-  char *now_addr = (char *)CPIO_ARRD, *filename, *context;
-  struct cpio_newc_header *cpio_header;
-  mount **now = &rootfs;
-  while (!strcmp("TRAILER!!!", filename = now_addr + CPIO_SIZE)) {
-    mount *new = kmalloc(sizeof(mount));
-    *now = new;
-
-    vnode_operations *v_ops = kmalloc(sizeof(vnode_operations));
-    v_ops->create = create;
-    v_ops->lookup = lookup;
-
-    vnode *root = kmalloc(sizeof(vnode));
-    new->root = root;
-
-    filesystem *fs = kmalloc(sizeof(filesystem));
-    fs->name = filename;
-    fs->setup_mount = setup_mount;
-    fs->setup_mount(fs, *now);
-    cpio_info(&cpio_header, &now_addr, &context);
-    now = &(new->root->mount);
-  }
-  now = NULL;
-  register_filesystem(rootfs->fs);
-}
-struct file *vfs_open(char *pathname, int flags) {
-  /* 1. Lookup pathname from the root vnode.
-   * 2. Create a new file descriptor for this vnode if found.
-   * 3. Create a new file if O_CREAT is specified in flags.
-   */
-}
-int vfs_close(struct file *file) { /* 1. release the file descriptor */
-}
-int vfs_write(struct file *file, void *buf, size_t len) {
-  /* 1. write len byte from buf to the opened file.
-   * 2. return written size or error code if an error occurs.
-   */
-}
-int vfs_read(struct file *file, void *buf, size_t len) {
-  /* 1. read min(len, readable file data size) byte to buf from the opened file.
-   * 2. return read size or error code if an error occurs.
-   */
-}
-
-/*
- * tmpfs
- */
