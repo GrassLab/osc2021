@@ -7,4 +7,8 @@
 #define EXIT 4
 #define FORK 5
 #define GET_TIME 6
+#define OPEN 7
+#define CLOSE 8
+#define WRITE 9
+#define READ 10
 #endif

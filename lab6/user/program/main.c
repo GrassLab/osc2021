@@ -2,7 +2,6 @@
 #include <printf.h>
 #include <types.h>
 #include <time.h>
-
 /*int main(int argc, char **argv) {
   printf("Argv Test, pid %d\n", getpid());
   for (int i = 0; i < argc; ++i) {
@@ -14,7 +13,7 @@
   return 0;
 }*/
 
-int main(void) {
+/*int main(void) {
     printf("Fork Test, pid %d\n", getpid());
     int cnt = 1;
     int ret = 0;
@@ -30,5 +29,24 @@ int main(void) {
     } else {
         printf("parent here, pid %d, child %d\n", getpid(), ret);
     }
+  return 0;
+}*/
+
+int main() {
+  printf("VFS Test\n");
+  char buf[256];
+  int a = open("hello", O_CREAT);
+  int b = open("world", O_CREAT);
+  write(a, "Hello ", 6);
+  write(b, "World!", 6);
+  close(a);
+  close(b);
+  b = open("hello", 0);
+  a = open("world", 0);
+  int sz;
+  sz = read(b, buf, 100);
+  sz += read(a, buf + sz, 100);
+  buf[sz] = '\0';
+  printf("%s\n", buf); // should be Hello World!
   return 0;
 }

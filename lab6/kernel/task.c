@@ -125,6 +125,34 @@ void task_test2_init() {
 
 
 }
+
+void task_vfs_test_init() {
+  struct task_struct fake;
+  
+  disable_interrupt();
+  //create idle task
+  privilege_task_create(idle_task);
+
+  privilege_task_create(user_vfs_task);
+    
+  task_queue_pop(&run_queue);
+  
+  task_queue_status(&run_queue);
+
+  enable_interrupt();
+
+  switch_to(&fake, &task_pool[0]);
+
+
+}
+
+void user_vfs_task() {
+  
+  char *vfs_argv[] = {"vfs_test", 0};
+  do_exec("vfs_test", vfs_argv);
+
+}
+
 struct trapframe* get_trapframe(struct task_struct* t) {
   struct trapframe* tf;
   tf = (struct trapframe* )(t->kstack + TASK_STACK_SIZE - sizeof(struct trapframe));

@@ -16,4 +16,5 @@
 #define size_t uint64_t
 
 #define null 0
+
 #endif

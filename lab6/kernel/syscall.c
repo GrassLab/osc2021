@@ -5,6 +5,7 @@
 #include <cpio.h>
 #include <elf.h>
 #include <uart.h>
+#include <vfs.h>
 
 void sys_exit(int status) {
   do_exit(status);
@@ -307,3 +308,93 @@ int do_getpid() {
 }
 
 
+int sys_open(const char *pathname, int flags) { 
+  return do_open(pathname, flags);
+}
+
+int do_open(const char *pathname, int flags) {
+  struct file* file;
+  
+  if(pathname == null)
+    return -1;
+  if(strlen(pathname) == 0)
+    return -1;
+
+  for(int i = 0; i < FD_TABLE_SIZE; i++) {
+    if(get_current()->fd_table[i] == null) {
+      //should preserve 0, 1, 2 to stdin, stdout, stderr 
+      file = vfs_open(pathname, flags);
+      //file cannot open
+      if(file == null)
+        return -1;
+
+      get_current()->fd_table[i] = file;
+
+      return i;
+    }
+  }
+  //fd table full
+  return -1;
+}
+
+int sys_close(int fd) {
+  return do_close(fd);
+}
+
+int do_close(int fd) {
+
+  if(fd < 0 || fd > FD_TABLE_SIZE)
+    return -1;
+  //not open
+  if(get_current()->fd_table[fd] == null)
+    return -1;
+
+  return vfs_close(get_current()->fd_table[fd]); 
+}
+
+int sys_write(int fd, const void *buf, int count) {
+  return do_write(fd, buf, count);
+}
+
+int do_write(int fd, const void *buf, int count) {
+  
+  if(fd < 0 || fd > FD_TABLE_SIZE)
+    return -1;
+  
+  //not open
+  if(get_current()->fd_table[fd] == null)
+    return -1;
+
+  if(buf == null)
+    return -1;
+  if(count < 0)
+    return -1;
+  if(count == 0)
+    return 0;
+  
+  return vfs_write(get_current()->fd_table[fd], buf, count);
+}
+
+int sys_read(int fd, void *buf, int count) {
+  return do_read(fd, buf, count);
+}
+
+int do_read(int fd, void *buf, int count) {
+  
+  if(fd < 0 || fd > FD_TABLE_SIZE)
+    return -1;
+  
+  //not open
+  if(get_current()->fd_table[fd] == null)
+    return -1;
+
+  if(buf == null)
+    return -1;
+  if(count < 0)
+    return -1;
+  else if(count == 0)
+    return 0;
+  
+  return vfs_read(get_current()->fd_table[fd], buf, count);
+  
+}

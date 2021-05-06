@@ -70,6 +70,7 @@ void do_command(char* command) {
     printf("disatimer: disable core timer interrupt.\n");
     printf("lab5_test1: kernel thread test\n");
     printf("lab5_test2: argv, fork test\n");
+    printf("lab6_test: vfs/tmpfs open, read, write test.\n");
   } 
   else if(strncmp(command, "hello", 6) == 0) {
     printf("Hello World!\n");
@@ -176,6 +177,10 @@ void do_command(char* command) {
   else if(strncmp(command, "lab5_test2", 10) == 0) {
     core_timer_enable();
     task_test2_init();
+  }
+  else if(strncmp(command, "lab6_test", 10) == 0) {
+    core_timer_enable();
+    task_vfs_test_init();
   }
   else {
     printf("unknown command\n");

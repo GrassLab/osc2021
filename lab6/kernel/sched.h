@@ -3,6 +3,9 @@
 #include <types.h>
 #include <task.h>
 #include <task_queue.h>
+#include <vfs.h>
+#include <syscall.h>
+#include <task.h>
 
 #define TASK_POOL_SIZE 0x40
 #define TASK_STACK_SIZE 0x1000
@@ -11,7 +14,7 @@
 
 #define TASK_STATUS_DEAD 0
 #define TASK_STATUS_READY 1
-
+#define FD_TABLE_SIZE 64
 
 struct trapframe {
   size_t x0, x1, x2, x3, x4, x5, x6, x7, x8, x9;
@@ -47,6 +50,7 @@ struct task_struct {
   size_t size;
   void* stack;
   struct task_struct* next;
+  struct file* fd_table[FD_TABLE_SIZE];
 };
 
 struct task_struct task_pool[TASK_POOL_SIZE];
@@ -66,20 +70,5 @@ extern void* not_syscall();
 extern void* kernel_exit();
 struct trapframe* get_trapframe(struct task_struct* t);
 
-void sys_exit(int status);
-void do_exit(int status);
-int sys_fork();
-int do_fork();
-int sys_exec(const char* name, char* const argv[]);
-int do_exec(const char* name, char* const argv[]);
-int sys_getpid();
-int do_getpid();
-
-void* load_program(const char* name);
-void* fork_memcpy();
-void* exec_set_argv(void* stack, int argc, char* const argv[]);
 extern int exit();
-
-void task_test1_init();
-void task_test2_init();
 #endif

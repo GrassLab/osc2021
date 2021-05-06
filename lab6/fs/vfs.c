@@ -81,6 +81,7 @@ struct file* vfs_open(const char* pathname, int flags) {
 int vfs_close(struct file* file) {
   // 1. release the file descriptor
   varied_free(file);
+  file = null;
   return 0;
 }
 int vfs_write(struct file* file, const void* buf, size_t len) {
@@ -115,9 +116,8 @@ void root_fs_init() {
   extern void tmpfs_load_initramfs(struct mount* mount);
 
   tmpfs_load_initramfs(rootfs); 
-
-  //vfs_open_test();
   
-  vfs_read_test();
+  //vfs_read_test();
+  //vfs_write_test();
 }
 

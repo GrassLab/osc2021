@@ -42,3 +42,26 @@ get_time:
   mov x8, GET_TIME
   svc #0
   ret
+
+.global open
+open:
+  mov x8, OPEN
+  svc #0
+  ret
+
+.global close
+close:
+  mov x8, CLOSE
+  svc #0
+  ret
+
+.global write
+write:
+  mov x8, WRITE
+  svc #0
+  ret
+.global read
+read:
+  mov x8, READ
+  svc #0
+  ret

@@ -45,6 +45,18 @@ syscall_table:
   #get_time
   b sys_get_time
   .align 4
+  #open
+  b sys_open
+  .align 4
+  #close
+  b sys_close
+  .align 4
+  #write
+  b sys_write
+  .align 4
+  #read
+  b sys_read
+  .align 4
 syscall_table_end:
 
 .global exit

@@ -65,19 +65,61 @@ static int setup_mount(struct filesystem* fs, struct mount* _mount) {
 }
 
 static int write(struct file* file, const void* buf, size_t len) {
-  return 0;
+  struct tmpfs_inode *inode;
+  struct tmpfs_block *block, *new_block;
+  size_t pos, write_bytes, write_len;
+  
+  inode = file->vnode->internal;
+  if(inode->type != file_t)
+    return -1;
+  
+  block = inode->block;
+  pos = file->f_pos;
+  write_bytes = 0;
+   
+  //overwrite
+  while(1) {
+    //find position (?)
+    //write bytes
+    if(len < FS_BLOCK_SIZE) {
+      
+      memcpy(block->content + pos, (char *)buf + write_bytes, len);
+      write_bytes += len;
+      block->size = len;
+      break;
+    }
+    else {
+      
+      write_len = FS_BLOCK_SIZE; 
+      memcpy(block->content + pos, (char *)buf + write_bytes, write_len);
+      
+      len -= write_len;
+      write_bytes += write_len; 
+
+      block->size = FS_BLOCK_SIZE;
+    }   
+    
+    if(block->next == null) {
+      //allocate new data block
+      new_block = (struct tmpfs_block*)varied_malloc(sizeof(struct tmpfs_block));
+
+      if(new_block == null)
+        return write_bytes;
+
+      block->next = new_block;
+    }
+
+    block = block->next;
+  }
+
+  inode->size = write_bytes;
+  return write_bytes;
 }
 
 static int read(struct file* file, void* buf, size_t len) {
   struct tmpfs_inode *inode;
   struct tmpfs_block *block;
-  size_t pos;
-  size_t read_bytes;
-  
-  if(file == null)
-    return -1;
-  if(len == 0)
-    return 0;
+  size_t pos, read_bytes, read_len;
   
   inode = file->vnode->internal;
   if(inode->type != file_t)
@@ -89,22 +131,23 @@ static int read(struct file* file, void* buf, size_t len) {
   block = inode->block;
   pos = file->f_pos;
   read_bytes = 0;
-  //read byte
+  //read bytes
   while(block != null) {
-   
    if(pos < block->size) {
       //in this block
       if(len <= block->size - pos) {
-        memcpy((char *)buf, block->content + pos, len);
+        memcpy((char *)buf + read_bytes, block->content + pos, len);
         read_bytes += len;
+        file->f_pos += read_bytes;
         break; 
       }
       else {
-
-        memcpy((char *)buf, block->content + pos, block->size - pos);
-
-        len -= block->size - pos;
-        read_bytes += block->size - pos; 
+        
+        read_len = block->size - pos; 
+        memcpy((char *)buf + read_bytes, block->content + pos, read_len);
+        
+        len -= read_len;
+        read_bytes += read_len; 
       }
     } 
     else {
@@ -114,7 +157,7 @@ static int read(struct file* file, void* buf, size_t len) {
 
     block = block->next;
   }
-
+  
   return read_bytes;
 } 
 
