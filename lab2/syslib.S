@@ -89,3 +89,27 @@ stat_and_next:
   mov x8, SYS_STAT_AND_NEXT
   svc 0
   ret
+
+.global mkdir
+mkdir:
+  mov x8, SYS_MKDIR
+  svc 0
+  ret
+
+.global chdir
+chdir:
+  mov x8, SYS_CHDIR
+  svc 0
+  ret
+
+.global mount
+mount:
+  mov x8, SYS_MOUNT
+  svc 0
+  ret
+
+.global umount
+umount:
+  mov x8, SYS_UMOUNT
+  svc 0
+  ret

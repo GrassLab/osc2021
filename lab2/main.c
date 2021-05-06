@@ -378,8 +378,8 @@ int cmd_handler(char *cmd)
     return 0;
 }
 
-int ls(int argc, char** argv) {
-    int fd = open(argv[1], 0);
+int ls(char *path) {
+    int fd = open(path, 0);
     char name[100];
     int size;
     // Modify the for loop to iterate
@@ -514,7 +514,45 @@ void user_logic_2(int argc, char **argv)
 
 void user_logic_3(int argc, char **argv)
 {
-    ls(2, argv);
+    ls(argv[1]);
+    exit();
+}
+
+void user_logic_4(int argc, char **argv)
+{
+    char buf[8];
+    mkdir("/mnt", 0);
+    ls(".");
+    int fd = open("/mnt/a.txt", O_CREAT);
+    write(fd, "Hi", 2);
+    close(fd);
+    chdir("/mnt");
+    ls("..");
+    fd = open("./a.txt", 0);
+    // assert(fd >= 0);
+    if (fd >= 0)
+        uart_send_string("ASSERT: fd >= 0\r\n");
+    read(fd, buf, 2);
+    // assert(strncmp(buf, "Hi", 2) == 0);
+    if (strcmp_with_len(buf, "Hi", 2) == 0)
+        uart_send_string("ASSERT: strncmp(buf, \"Hi\", 2) == 0\r\n");
+
+
+    chdir("..");
+    mount("tmpfs", "/mnt", "tmpfs");
+    fd = open("/mnt/a.txt", 0);
+    // assert(fd < 0);
+    if (fd < 0)
+        uart_send_string("ASSERT: fd < 0\r\n");
+    umount("/mnt");
+    fd = open("/mnt/a.txt", 0);
+    // assert(fd >= 0);
+    if (fd >= 0)
+        uart_send_string("ASSERT: fd >= 0\r\n");
+    read(fd, buf, 2);
+    // assert(strncmp(buf, "Hi", 2) == 0);
+    if (strcmp_with_len(buf, "Hi", 2) == 0)
+        uart_send_string("ASSERT: strncmp(buf, \"Hi\", 2) == 0\r\n");
     exit();
 }
 
@@ -549,7 +587,7 @@ void user_thread_2()
     // current->sig.sigpend = 1; // DEMO: raise signal itself
     // current->sig.user_handler[0] = (unsigned long)udh_1;
     // exec((unsigned long)user_logic_2, argv); // DEMO:
-    exec((unsigned long)user_logic_3, argv);
+    exec((unsigned long)user_logic_4, argv);
 
 }
 

@@ -12,3 +12,9 @@ extern int open(const char *pathname, int flags);
 extern int close(int fd);
 extern int write(int fd, const void *buf, int count);
 extern int read(int fd, void *buf, int count);
+extern int stat_and_next(int fd, struct dentry *dent);
+extern int mkdir(const char *path, int mode);
+extern int chdir(const char *path);
+extern int vfs_mount(const char* device,
+	const char* mountpoint, const char* filesystem);
+extern int vfs_umount(const char* mountpoint);

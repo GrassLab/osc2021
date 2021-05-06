@@ -13,6 +13,10 @@
 #define SYS_WRITE 			13
 #define SYS_CLOSE 			14
 #define SYS_STAT_AND_NEXT   15
+#define SYS_MKDIR			16
+#define SYS_CHDIR			17
+#define SYS_MOUNT			18
+#define SYS_UMOUNT			19
 
 #define ESR_ISS_MASK ((1 << 25) - 1)
 

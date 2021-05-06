@@ -58,6 +58,7 @@ int register_filesystem(char *name, unsigned long setup_mount)
         fs = &fs_tab[i];
         if (!(fs->name)) {
             fs->name = name;
+            fs->cnt = 0;
             fs->setup_mount = (int (*)(struct filesystem*, struct mount*))setup_mount;
             return 0;
         }
@@ -65,12 +66,52 @@ int register_filesystem(char *name, unsigned long setup_mount)
     return -1;
 }
 
+struct filesystem *get_filesystem(const char *filesystem)
+{
+    for (int i = 0; i < MAX_FS_NR; ++i)
+        if (!(strcmp(filesystem, fs_tab[i].name)))
+            return &fs_tab[i];
+    return 0; // NULL
+}
+
+int vfs_mount(const char* device, const char* mountpoint,
+    const char* filesystem)
+{ // TODO: device for device-based fs
+    struct vnode *mnt_node, *new_fs_root;
+    struct filesystem *fs;
+    struct mount *new_mnt;
+
+    new_mnt = new_mount();
+    mnt_node = get_vnode(mountpoint, 1);
+    new_fs_root = new_vnode();
+    new_fs_root->on = mnt_node;
+    mnt_node->by = new_fs_root;
+    fs = get_filesystem(filesystem);
+    fs->setup_mount(fs, new_mnt, new_fs_root);
+
+    return 0;
+}
+
+int vfs_umount(const char* mountpoint)
+{
+    struct vnode *mnt_node;
+
+    mnt_node = get_vnode(mountpoint, 1);
+    if (!(mnt_node->by))
+        return 1; // mountpoint wasn't mounted by anyone.
+    // mnt_node->by->v_ops->setup_umount(mnt_node->by->mount);
+    mnt_node->by->on = 0;
+    mnt_node->by = 0;
+    return 0;
+}
+
 void init_root_filesystem() {
     // init vnode
     // mount the vnode 
-    struct filesystem *root_fs = &fs_tab[0];
+    struct filesystem *root_fs = get_filesystem("tmpfs");
     rootfs_mount = new_mount();
-    root_fs->setup_mount(root_fs, rootfs_mount);
+    struct vnode *root = new_vnode();
+    root_fs->setup_mount(root_fs, rootfs_mount, root);
 }
 
 void init_vnode_pool()
@@ -85,6 +126,9 @@ struct vnode *new_vnode()
     for (int i = 0; i < MAX_VNODE_NR; ++i) {
         vnode = &vnode_pool[i];
         if (!(vnode->mount)) {
+            vnode->internal = 0;
+            vnode->on = 0;
+            vnode->by = 0;
             vnode->f_ops = (struct file_operations*)kmalloc(sizeof(struct file_operations));
             vnode->v_ops = (struct vnode_operations*)kmalloc(sizeof(struct vnode_operations));
             return vnode;
@@ -93,10 +137,10 @@ struct vnode *new_vnode()
     return 0; // NULL
 }
 
-char *get_next_string(char *str)
+char *get_next_component(char *str, char delimeter)
 {
     char *ch = str;
-    while (*ch != '\0')
+    while (*ch != delimeter)
         ch++;
     return ch + 1;
 }
@@ -112,34 +156,37 @@ struct vnode *get_vnode(const char *pathname, int level)
     int folder_nr;
 
     strcpy(buf, pathname);
+    buf_ptr = buf;
 
-    // if (type == REG_DIR)
-    //     folder_nr = get_level(pathname) - 2;
-    // else if (type == REG_FILE)
-    //     folder_nr = get_level(pathname) - 1;
-    if ((folder_nr = get_level(pathname) - level) < 0)
-        return 0; // NULL
+    folder_nr = get_level(pathname) - level;
+    // if ((folder_nr = get_level(pathname) - level) < 0)
+    //     return 0; // NULL
 
     /* Decide starting directory to lookup. */ 
-    if (buf[0] == '/') // absolute
+    if (buf[0] == '/') { // "/x/y"
         vnode_dir = rootfs_mount->root;
-    else if (buf[0] == '.' && buf[1] == '.')
+        buf_ptr = get_next_component(buf_ptr, '/');
+    }
+    else if (buf[0] == '.' && buf[1] == '.') { // "../x/y"
         current->wd->v_ops->get_parent(current->wd, &vnode_dir);
-    else // "./xxx/yyy". Note: Assume "xxx/yyy" won't appear
+        buf_ptr = get_next_component(buf_ptr, '/');
+    }
+    else { // "./x/y" or "x/y"
         vnode_dir = current->wd;
+        if (buf[0] == '.' && buf[1] == '/')
+            buf_ptr = get_next_component(buf_ptr, '/');
+    }
 
     for (char *ch = buf; *ch != '\0'; ch++)
         if (*ch == '/')
             *ch = '\0';
-    buf_ptr = buf;
-    buf_ptr = get_next_string(buf_ptr);
 
     /* Lookup downward */
-    while (folder_nr--) {
+    while ((folder_nr--) > 0) {
         vnode_dir->v_ops->lookup(vnode_dir, &vnode_walk, buf_ptr);
         if (!vnode_walk)
             return 0; // NULL
-        buf_ptr = get_next_string(buf_ptr);
+        buf_ptr = get_next_component(buf_ptr, '\0');
         vnode_dir = vnode_walk;
         vnode_walk = 0;
     }
@@ -208,3 +255,22 @@ int vfs_read(struct file* file, void* buf, int len) {
     return file->f_ops->read(file, buf, len);
 }
 
+int vfs_mkdir(const char *pathname, int mode)
+{
+    struct vnode *start_vnode, *target;
+
+    if (!(start_vnode = get_vnode(pathname, 2))){
+        uart_send_string("Error from vfs_mkdir: get_vnode failed.\r\n");
+        return 1;
+    }
+    start_vnode->v_ops->create(start_vnode, &target,
+        get_file_component(pathname), REG_DIR);
+
+    return 0;
+}
+
+int vfs_chdir(const char *pathname)
+{
+    current->wd = get_vnode(pathname, 1);
+    return 0;
+}

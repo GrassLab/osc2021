@@ -95,6 +95,8 @@ int tmpfs_lookup(struct vnode* dir_node, struct vnode** target,
 {
     struct tmpent *ent, *walk;
 
+    if (dir_node->by) // dir_node is mounted by someone
+        return dir_node->by->v_ops->lookup(dir_node->by, target, component_name);
     ent = (struct tmpent*)(dir_node->internal);
     walk = ent->child;
     while (walk) {
@@ -141,6 +143,14 @@ int tmpfs_get_parent(struct vnode* dir_node, struct vnode** target)
     struct tmpent *tmpdir;
 
     tmpdir = (struct tmpent*)(dir_node->internal);
+    if (tmpdir == tmpdir->parent) { // means tmpdir is a root
+        if (!(dir_node->on)) {
+            *target = dir_node;
+            return 0;
+        }
+        // dir_node is on someone.
+        return dir_node->on->v_ops->get_parent(dir_node->on, target);
+    }
     *target = tmpdir->parent->vnode;
     return 0;
 }
@@ -172,6 +182,8 @@ int tmpfs_get_child(struct vnode *vnode, struct vnode **target)
 {
     struct tmpent *self;
 
+    if (vnode->by)
+        return vnode->by->v_ops->get_child(vnode->by, target);
     self = (struct tmpent*)(vnode->internal);
     if (!(self->child))
         *target = 0;
@@ -180,14 +192,16 @@ int tmpfs_get_child(struct vnode *vnode, struct vnode **target)
     return 0;
 }
 
-int tmpfs_setup_mount(struct filesystem* fs, struct mount* mount)
+int tmpfs_setup_mount(struct filesystem* fs,
+    struct mount* mount, struct vnode *root)
 {
-    mount->root = new_vnode();
+    mount->root = root;
     mount->fs = fs;
     mount->root->mount = mount;
     mount->root->type = REG_DIR;
     mount->root->internal = (void*)&tmp_root;
-    tmp_root.vnode = mount->root;
+    if (!(mount->fs->cnt++)) // only firt time setup will set root.vnode
+        tmp_root.vnode = mount->root;
     mount->root->f_ops->read = tmpfs_read;
     mount->root->f_ops->write = tmpfs_write;
     mount->root->v_ops->create = tmpfs_create;

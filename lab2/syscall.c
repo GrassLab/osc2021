@@ -226,6 +226,26 @@ int sys_stat_and_next(int fd, struct dentry *dent)
     return 0;
 }
 
+int sys_mkdir(const char *path, int mode)
+{
+    return vfs_mkdir(path, mode);
+}
+
+int sys_chdir(const char *path)
+{
+    return vfs_chdir(path);
+}
+
+int sys_mount(const char* device, const char* mountpoint,
+    const char* filesystem)
+{
+    return vfs_mount(device, mountpoint, filesystem);
+}
+
+int sys_umount(const char* mountpoint)
+{
+    return vfs_umount(mountpoint);
+}
 
 // DDI0487C_a_armv8_arm.pdf p.2438
 unsigned long get_syscall_type()
@@ -287,6 +307,18 @@ unsigned long syscall_handler(unsigned long x0, unsigned long x1,
             break;
         case SYS_STAT_AND_NEXT:
             ret = sys_stat_and_next((int)x0, (struct dentry*)x1);
+            break;
+        case SYS_MKDIR:
+            ret = sys_mkdir((char*)x0, (int)x1);
+            break;
+        case SYS_CHDIR:
+            ret = sys_chdir((char*)x0);
+            break;
+        case SYS_MOUNT:
+            ret = sys_mount((char*)x0, (char*)x1, (char*)x2);
+            break;
+        case SYS_UMOUNT:
+            ret = sys_umount((char*)x0);
             break;
         default:
             uart_send_string("Error: Unknown syscall type.");

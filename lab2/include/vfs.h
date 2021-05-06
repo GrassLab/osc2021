@@ -1,5 +1,7 @@
 struct vnode {
     struct mount* mount;
+    struct vnode *on; // self is mounting on 'on'.
+    struct vnode *by; // self is mounted by 'by'.
     struct vnode_operations *v_ops;
     struct file_operations *f_ops;
     void* internal;
@@ -41,7 +43,8 @@ struct mount {
 
 struct filesystem {
     const char* name;
-    int (*setup_mount)(struct filesystem* fs, struct mount* mount);
+    int cnt;
+    int (*setup_mount)(struct filesystem* fs, struct mount* mount, struct vnode *root);
 };
 
 #define MAX_FS_NR 10
@@ -49,11 +52,12 @@ struct filesystem {
 #define MAX_VNODE_NR 256
 #define MAX_FD_NR 16
 
-#define REG_DIR 0
-#define REG_FILE 1
+#define REG_DIR  1
+#define REG_FILE 2
 #define O_CREAT (1 << 0)
 
-int tmpfs_setup_mount(struct filesystem* fs, struct mount* mount);
+int tmpfs_setup_mount(struct filesystem* fs,
+    struct mount* mount, struct vnode *root);
 
 void init_mnttab();
 struct mount *new_mount();
@@ -61,6 +65,9 @@ void init_oftab();
 struct file *new_file();
 void init_fstab();
 int register_filesystem(char *name, unsigned long setup_mount);
+int vfs_mount(const char* device, const char* mountpoint,
+    const char* filesystem);
+int vfs_umount(const char* mountpoint);
 void init_root_filesystem();
 void init_vnode_pool();
 struct vnode *new_vnode();
@@ -71,3 +78,6 @@ struct file* vfs_open(const char* pathname, int flags);
 int vfs_close(struct file* file);
 int vfs_write(struct file* file, const void* buf, int len);
 int vfs_read(struct file* file, void* buf, int len);
+int vfs_mkdir(const char *path, int mode);
+int vfs_chdir(const char *path);
+

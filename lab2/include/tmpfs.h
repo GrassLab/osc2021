@@ -11,8 +11,8 @@ struct tmpent {
     int free;
 };
 
-#define DIRENT 0
-#define FILEENT 1
+#define DIRENT 1
+#define FILEENT 2
 
 #define MAX_TMPENT_NR 256
 
