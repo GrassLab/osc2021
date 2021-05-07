@@ -17,13 +17,17 @@ struct task_struct {
     uint64_t x27;
     uint64_t x28;
     uint64_t fp;
-    uint64_t lr;
-    uint64_t sp_el0;
-    uint64_t elr_el1;
-    void* stack_alloc;
-    void* program_alloc;
+    void *lr;
+    void *sp_el0;
+    void *elr_el1;
+    void *sp;
+    void *stack_alloc;
+    void *kernel_stack_alloc;
+    void *program_alloc;
+    uint64_t pid;
+    uint64_t sleep_until;
 };
 
-static_assert(sizeof(task_struct) == 16 * 8, "task_struct is not valid");
+// static_assert(sizeof(task_struct) == 16 * 8, "task_struct is not valid");
 
 #endif

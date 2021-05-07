@@ -15,13 +15,13 @@ public:
     static uint8_t Recv();
 };
 
-class IO {
+class io {
 public:
-    IO operator<<(uint64_t val) {
+    io operator<<(uint64_t val) {
         MiniUART::PutUInt64(val);
         return *this;
     }
-    IO operator<<(const char* str) {
+    io operator<<(const char* str) {
         MiniUART::PutS(str);
         return *this;
     }

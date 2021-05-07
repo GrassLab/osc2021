@@ -1,3 +1,26 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+/*
+ * Copyright (C) 2013 ARM Ltd.
+ * Copyright (C) 2013 Linaro.
+ *
+ * This code is based on glibc cortex strings work originally authored by Linaro
+ * be found @
+ *
+ * http://bazaar.launchpad.net/~linaro-toolchain-dev/cortex-strings/trunk/
+ * files/head:/src/aarch64/
+ */
+
+ /*
+ * Fill in the buffer with character c (alignment handled by the hardware)
+ *
+ * Parameters:
+ *	x0 - buf
+ *	x1 - c
+ *	x2 - n
+ * Returns:
+ *	x0 - buf
+ */
+
 dstin		.req	x0
 val	    	.req	w1
 count		.req	x2

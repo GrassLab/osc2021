@@ -9,7 +9,7 @@ CPIO::CPIO(cpio_newc_header* header) {
         this->namesize = this->namesize * 16 + Hex2int(header->c_namesize[i]);
     }
     this->filename = reinterpret_cast<char*>(header) + sizeof(cpio_newc_header);
-    this->filecontent = this->filename + this->namesize;
+    this->filecontent = (char*)((uint64_t(this->filename + this->namesize) + 3) & ~3);
 }
 
 cpio_newc_header* CPIO::next() {

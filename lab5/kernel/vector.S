@@ -91,14 +91,11 @@ exception_vector_table:
     load_all
     eret
 
-/**
-x0-x5 syscall parameters
-x6 user space lr
-x8 system call identifier
- */
 .Lsvc_handler:
-    adr x6, _start
-    mov sp, x6
+    stp fp, lr, [sp, #-16]!
+    mov fp, sp
     adr x7, syscall_table
     ldr x7, [x7, x8, lsl #3]
-    br x7
+    blr x7
+    ldp fp, lr, [sp], #16
+    eret

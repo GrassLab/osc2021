@@ -1,26 +1,12 @@
 #include "../include/syscall.h"
+#include "../include/io.h"
 #include "../include/string.h"
 
-extern "C" {
-
-}
-
-int main(int argc, char** argv) {
-    char buffer[20];
-    char *hello = "Hello World\r\n";
-    uart_put(hello, strlen(hello));
-    // uart_put("argc: ", 6);
-    // u64toa(argc, buffer, 20);
-    // uart_put(buffer, strlen(buffer));
-    // uart_put("\r\n", 2);
-    for (int i = 0; i < argc; i++) {
-        uart_put(argv[i], strlen(argv[i]));
-        uart_put("\r\n", 2);
+int main(int argc, char **argv) {
+    io() << "Argv Test, pid " << getpid() << "\r\n";
+    for (int i = 0; i < argc; ++i) {
+        io() << (argv[i]) << "\r\n";
     }
-    uart_put("thread id: ", strlen("thread id: "));
-    u64toa(getpid(), buffer, 20);
-    uart_put(buffer, strlen(buffer));
-    uart_put("\r\n", 2);
-    // exec(argv[0], (const char**)argv);
-    return 0;
+    char *fork_argv[] = {"hello2", 0};
+    exec("hello2", (const char**)fork_argv);
 }

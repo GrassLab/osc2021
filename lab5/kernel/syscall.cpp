@@ -7,94 +7,53 @@
 #include "string.h"
 
 uint64_t total_threads = 0;
-
-#define BEGIN_SYS uint64_t lr; asm("mov %x0, lr":"=r"(lr))
-#define END_SYS asm("mov lr, %x0\neret"::"r"(lr))
-#define END_SYS_RET(x) asm("mov lr, %x0\n mov x0, %x1\n eret"::"r"(lr), "r"(x))
+uint64_t pid_counter = 0;
 
 extern "C" {
     void do_exit();
     void* memcpy(void* dst, void* src, uint64_t n);
+    void switch_to(task_struct *from, task_struct *to, uint64_t to_tpidr, ...);
+    uint64_t get_tpidr_el1();
+    void loop();
+    void set_eret_addr(void *addr);
+    void kernel_thread_start();
+    uint64_t fork_internal(task_struct *parent, task_struct *child, void *parent_stack, void *child_stack, void *parent_kernel_stack, void *child_kernel_stack);
+    void qemu_quit();
+    uint64_t get_timer();
 }
 
 
 static void sys_schedule() {
-    uint64_t current, target;
-    asm(R"(
-        mrs %x0, tpidr_el1
-    )":"=r"(current));
-    
-    target = (current + 1 < total_threads) ? current + 1 : 0;
-
-    asm(R"(
-        stp x19, x20, [%x0, 16 * 0]
-        stp x21, x22, [%x0, 16 * 1]
-        stp x23, x24, [%x0, 16 * 2]
-        stp x25, x26, [%x0, 16 * 3]
-        stp x27, x28, [%x0, 16 * 4]
-        stp fp, lr, [%x0, 16 * 5]
-        mrs x9, sp_el0
-        str x9, [%x0, 8 * 12]
-        mrs x9, elr_el1
-        str x9, [%x0, 8 * 13]
-
-        ldp x19, x20, [%x1, 16 * 0]
-        ldp x21, x22, [%x1, 16 * 1]
-        ldp x23, x24, [%x1, 16 * 2]
-        ldp x25, x26, [%x1, 16 * 3]
-        ldp x27, x28, [%x1, 16 * 4]
-        ldp fp, lr, [%x1, 16 * 5]
-        ldr x9, [%x1, 8 * 12]
-        msr sp_el0, x9
-        ldr x9, [%x1, 8 * 13]
-        msr elr_el1, x9
-        msr tpidr_el1, %x2
-        eret
-    )"::"r"(&tasks[current]), "r"(&tasks[target]), "r"(target));
+    uint64_t current = get_tpidr_el1();
+    uint64_t target = current;
+    while (true) {
+        target = (target + 1 < total_threads) ? target + 1 : 0;
+        if (get_timer() >= tasks[target].sleep_until) {
+            break;
+        }
+    }
+    switch_to(&tasks[current], &tasks[target], target);
 }
 
-static void sys_clone(void(*func)()) {
-    uint64_t current, target;
-    asm(R"(
-        mrs %x0, tpidr_el1
-    )":"=r"(current));
-    asm(R"(
-        stp x19, x20, [%x0, 16 * 0]
-        stp x21, x22, [%x0, 16 * 1]
-        stp x23, x24, [%x0, 16 * 2]
-        stp x25, x26, [%x0, 16 * 3]
-        stp x27, x28, [%x0, 16 * 4]
-        stp fp, lr, [%x0, 16 * 5]
-        mrs x9, sp_el0
-        str x9, [%x0, 8 * 12]
-        mrs x9, elr_el1
-        str x9, [%x0, 8 * 13]
-    )"::"r"(&tasks[current]));
-
+static void sys_clone(void *func) {
+    uint64_t current = get_tpidr_el1();
+    uint64_t target = total_threads;
     total_threads++;
-
-    target = total_threads - 1;
-
+    memcpy(&tasks[target], &tasks[current], sizeof(decltype(*tasks)));
+    tasks[target].pid = ++pid_counter;
+    tasks[target].lr = (void*)kernel_thread_start;
+    tasks[target].elr_el1 = func;
     tasks[target].stack_alloc = malloc(4096);
-    tasks[target].program_alloc = tasks[current].program_alloc;
-
-    asm(R"(
-        msr tpidr_el1, %x0
-        msr elr_el1, %x1
-        mov lr, %x2
-        mov %x0, #0x3c0
-        msr spsr_el1, %x0
-        msr sp_el0, %x3
-        eret
-    )"::"r"(target), "r"(func), "r"(do_exit), "r"(tasks[target].stack_alloc + 4096));
+    tasks[target].kernel_stack_alloc = malloc(4096);
+    tasks[target].sp_el0 = tasks[target].stack_alloc + 4096;
+    tasks[target].sp = tasks[target].kernel_stack_alloc + 4096;
+    tasks[target].sleep_until = 0;
 }
 
 
 static void sys_exit() {
-    uint64_t current, target;
-    asm(R"(
-        mrs %x0, tpidr_el1
-    )":"=r"(current));
+    uint64_t current = get_tpidr_el1();
+    uint64_t target;
     bool has_same_program = false;
     for (int i = 0; i < total_threads; i++) {
         if (i != current && tasks[i].program_alloc == tasks[current].program_alloc) {
@@ -106,13 +65,11 @@ static void sys_exit() {
         free(tasks[current].program_alloc);
     }
     free(tasks[current].stack_alloc);
+    free(tasks[current].kernel_stack_alloc);
     total_threads--;
     if (total_threads == 0) {
-        MiniUART::PutS("Quit\r\n");
-        asm(R"(
-            1: wfi
-            b 1b
-        )");
+        MiniUART::PutS("Kernel exit!! Shutting down\r\n");
+        qemu_quit();
     }
     if (total_threads != current) {
         tasks[current] = tasks[total_threads];
@@ -121,32 +78,18 @@ static void sys_exit() {
     else {
         target = 0;
     }
-    asm(R"(
-        ldp x19, x20, [%x0, 16 * 0]
-        ldp x21, x22, [%x0, 16 * 1]
-        ldp x23, x24, [%x0, 16 * 2]
-        ldp x25, x26, [%x0, 16 * 3]
-        ldp x27, x28, [%x0, 16 * 4]
-        stp fp, lr, [%x0, 16 * 5]
-        mrs x9, sp_el0
-        str x9, [%x0, 8 * 12]
-        mrs x9, elr_el1
-        str x9, [%x0, 8 * 13]
-        msr tpidr_el1, %x1
-        eret
-    )"::"r"(&tasks[target]), "r"(target));
+    switch_to(nullptr, &tasks[target], target);
 }
 
-static void sys_exec(char* name, char** argv) {
+void sys_exec(char* name, char** argv) {
     cpio_newc_header* header = (cpio_newc_header*)0x8000000;
     CPIO cpio(header);
     while (strcmp(cpio.filename, "TRILER!!!") != 0) {
         if (strcmp(cpio.filename, name) == 0) {
-            uint64_t pid;
-            asm("mrs %x0, tpidr_el1":"=r"(pid));
+            uint64_t tpidr = get_tpidr_el1();
             char* arg = (char*)malloc(4096);
             char** tmp_mem = (char**)malloc(4096);
-            char* sp = (char*)tasks[pid].stack_alloc + 4096;
+            char* sp_el0 = (char*)tasks[tpidr].stack_alloc + 4096;
             char* tmp = arg;
             int argc = 0;
             while(*argv != nullptr) {
@@ -160,13 +103,18 @@ static void sys_exec(char* name, char** argv) {
             memcpy(tmp, tmp_mem, (argc + 1) * sizeof(char*));
             free(tmp_mem);
             uint64_t arg_size = tmp - arg + (argc + 1) * sizeof(char*);
-            sp -= arg_size;
-            memcpy(sp, arg, arg_size);
+            sp_el0 -= arg_size;
+            memcpy(sp_el0, arg, arg_size);
             free(arg);
-            void* program = tasks[pid].program_alloc;
+            char *arg_final = sp_el0 + (tmp - arg);
+            for (int i = 0; i < argc + 1; i++) {
+                if (((char**)arg_final)[i] != nullptr)
+                    ((char**)arg_final)[i] -= (arg - ((char*)tasks[tpidr].stack_alloc) - 0x1000 + arg_size);
+            }
+            void* program = tasks[tpidr].program_alloc;
             bool has_same_program = false;
             for (int i = 0; i < total_threads; i++) {
-                if (i != pid && tasks[i].program_alloc == tasks[pid].program_alloc) {
+                if (i != tpidr && tasks[i].program_alloc == tasks[tpidr].program_alloc) {
                     has_same_program = true;
                     break;
                 }
@@ -175,14 +123,12 @@ static void sys_exec(char* name, char** argv) {
                 program = malloc(4096);
             }
             memcpy(program, cpio.filecontent, cpio.filesize);
-            asm(R"(
-                msr elr_el1, %x2
-                mov %x2, #0x3c0
-                msr spsr_el1, %x2
-                mov lr, %x3
-                msr sp_el0, %x4
-                eret
-            )"::"r"(argc), "r"(tmp - arg + sp), "r"(program), "r"(do_exit), "r"(sp));
+            tasks[tpidr].sp = tasks[tpidr].kernel_stack_alloc + 4096;
+            tasks[tpidr].lr = (void*)kernel_thread_start;
+            tasks[tpidr].elr_el1 = tasks[tpidr].program_alloc;
+            tasks[tpidr].sp_el0 = sp_el0;
+            tasks[tpidr].sleep_until = 0;
+            switch_to(nullptr, &tasks[tpidr], tpidr, argc, arg_final);
         }
         else {
             cpio = CPIO(cpio.next());
@@ -190,23 +136,41 @@ static void sys_exec(char* name, char** argv) {
     }
 }
 
-static void sys_putuart(char* str, size_t count) {
-    BEGIN_SYS;
+static size_t sys_putuart(char* str, size_t count) {
     MiniUART::PutS(str, count);
-    END_SYS_RET(count);
+    return count;
 }
 
-static void sys_getpid() {
-    BEGIN_SYS;
-    uint64_t pid;
-    asm ("mrs %x0, tpidr_el1":"=r"(pid));
-    END_SYS_RET(pid);
+static uint64_t sys_getpid() {
+    return tasks[get_tpidr_el1()].pid;
 }
 
-static void sys_getuart(char* str, size_t count) {
-    BEGIN_SYS;
-    count = MiniUART::GetS(str, count);
-    END_SYS_RET(count);
+static size_t sys_getuart(char* str, size_t count) {
+    return MiniUART::GetS(str, count);
+}
+
+static uint64_t sys_fork() {
+    uint64_t parent = get_tpidr_el1();
+    uint64_t parent_pid = tasks[parent].pid;
+    uint64_t child = total_threads++;
+    uint64_t child_pid = ++pid_counter;
+    tasks[child].pid = child_pid;
+    tasks[child].stack_alloc = malloc(4096);
+    tasks[child].kernel_stack_alloc = malloc(4096);
+    tasks[child].program_alloc = tasks[parent].program_alloc;
+    tasks[child].sleep_until = 0;
+    fork_internal(&tasks[parent], &tasks[child], tasks[parent].stack_alloc, tasks[child].stack_alloc, tasks[parent].kernel_stack_alloc, tasks[child].kernel_stack_alloc);
+    if (tasks[get_tpidr_el1()].pid != parent_pid) {
+        return 0;
+    }
+    return child_pid;
+}
+
+static uint64_t sys_delay(uint64_t cycles) {
+    uint64_t current_time = get_timer();
+    uint64_t current = get_tpidr_el1();
+    tasks[current].sleep_until = current_time + cycles;
+    sys_schedule();
 }
 
 typedef void(* syscall_fun)();
@@ -218,6 +182,8 @@ void (*syscall_table[])() = {
     syscall_fun(sys_exit),
     syscall_fun(sys_putuart),
     syscall_fun(sys_getpid),
-    syscall_fun(sys_getuart)
+    syscall_fun(sys_getuart),
+    syscall_fun(sys_fork),
+    syscall_fun(sys_delay)
 };
 
