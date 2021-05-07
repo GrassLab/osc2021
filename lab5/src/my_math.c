@@ -72,6 +72,11 @@ void int_to_hex(unsigned long n, char *s){
   s[idx] = '\0';
 }
 
+void ptr_to_hex(void *p, char *s){
+  unsigned long long a = (unsigned long long) p;
+  int_to_hex(a, s);
+}
+
 unsigned long hex_to_uint(char *s, int l){
   unsigned long r = 0;
   for (int i=0; i<l; i++){
