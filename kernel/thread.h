@@ -49,8 +49,6 @@ void thread_test(int test_id);
 
 void log_runqueue();
 
-// start.S
-//void switch_to(struct Context * prev, struct Context * next);
 void switch_to();
 
 #endif

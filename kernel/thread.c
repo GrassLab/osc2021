@@ -97,6 +97,7 @@ void schedule()
     struct Thread * current = current_thread();
     struct Thread * next = current->next;
 
+    // return to idle thread
     if (run_queue.begin == run_queue.end) return;
     if (current == run_queue.end) next = run_queue.begin;
 
@@ -120,16 +121,12 @@ void schedule()
     
     if (next->state != Thread_Wait) return;
 
-    uart_puts_h(current->context.lr);
-    uart_puts(" switch to ");
-    uart_puts_h(next->context.lr);
-    uart_puts(" ");
-    uart_puts_i(next->id);
-    uart_puts(" ");
-
-    //unsigned long test;
-    //asm volatile("msr %0, lr":"=r"(&test));
-    //uart_puts(test);
+    //uart_puts_h(current->context.lr);
+    //uart_puts(" switch to ");
+    //uart_puts_h(next->context.lr);
+    //uart_puts(" ");
+    //uart_puts_i(next->id);
+    //uart_puts(" ");
 
     switch_to(&current->context, &next->context);
 }
@@ -138,8 +135,6 @@ void kill_zombies()
 {
     struct Thread * current = run_queue.begin;
 
-    //uart_puts("---kill\n");
-    
     while(current != run_queue.end)
     {
         if (current->next->state == Thread_Exit)
@@ -168,7 +163,6 @@ void idle()
 {
     while(1)
     {
-   //     uart_puts("---Idle\n");
         kill_zombies();
         schedule();
     }
@@ -177,8 +171,6 @@ void idle()
 void exit()
 {
     struct Thread * current = current_thread();
-
-    uart_puts("---Exit\n");
 
     current->state = Thread_Exit;
 
@@ -231,8 +223,10 @@ void fork_test()
 
 void thread_test(int test_id)
 {
-    struct Thread * default_thread = thread_create(idle);
-    asm volatile("msr tpidr_el1, %0"::"r"(default_thread));
+    // current default thread
+    struct Thread * default_thread = thread_create(0); 
+    // push temp thread to tpidr, it will save by the firset context switch
+    asm volatile("msr tpidr_el1, %0"::"r"(default_thread)); 
 
     switch(test_id)
     {
@@ -241,8 +235,7 @@ void thread_test(int test_id)
         {
             thread_create(foo);
         }
-        schedule();
-        
+        idle();
         break;
 
         case 2:
