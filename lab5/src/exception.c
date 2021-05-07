@@ -81,15 +81,18 @@ void sync_handler(struct trapframe *arg, unsigned long type, unsigned long esr, 
 
 void svc_handler(struct trapframe *arg, unsigned long type, int iss){
   char ct[20];
+  unsigned long long ans_ull;
   switch(iss){
     case SVC_ISS_NOPE:
       uart_puts((char *) "[SVC] inside SVC handler\n");
       break;
     case SVC_ISS_GET_TIMER_VALUE:
-      get_core_timer_value((unsigned long long *)arg->x[0]);
+      ans_ull = get_core_timer_value();
+      arg->x[0] = ans_ull;
       break;
     case SVC_ISS_GET_TIMER_MS:
-      get_core_timer_ms((unsigned long long *)arg->x[0]);
+      ans_ull = get_core_timer_ms();
+      arg->x[0] = ans_ull;
       break;
     case SVC_ISS_PRINT_SYSTEM_TIME_ENABLE:
       print_system_time_enable();

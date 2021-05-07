@@ -51,6 +51,7 @@
 
 .macro  set_args_and_bl type_num bl_func
      save_all
+     mov x0, sp
      mov x1, \type_num
      mrs x2, esr_el1
      mrs x3, elr_el1

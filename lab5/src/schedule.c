@@ -26,10 +26,10 @@ void task_init(){
     task_pool[i].next = (i == TASK_MAX_NUM-1) ? 0 : &task_pool[i+1];
   }
   task_unuse = &task_pool[0];
-  int pid = task_create(idle, PRIORITY_MAX);
+  int pid = privilege_task_create(idle, PRIORITY_MAX);
   register unsigned long long r = (unsigned long long)(&task_pool[pid]);
   asm volatile("msr tpidr_el1, %0" : : "r"(r));
-  task_create(shell, PRIORITY_MAX-1);
+  privilege_task_create(shell, PRIORITY_MAX-1);
 }
 
 void task_exit(){
@@ -38,18 +38,37 @@ void task_exit(){
   schedule();
 }
 
-int task_create(void (*func)(), int priority){
+void task_start(){
+  struct task *current = get_current();
+  if (current->mode == KERNEL){
+    void (*func)() = current->invoke_func;
+    func();
+    task_exit();
+  }
+  else if(current->mode == USER){;
+  }
+  task_exit();
+}
+
+int task_create(void (*func)(), int priority, enum task_el mode){
   struct task *new_node = ll_pop_front<struct task>(&task_unuse);
   int pid = new_node->pid;
   new_node->state = RUNNING;
   new_node->priority = priority;
   new_node->counter = TASK_EPOCH;
   new_node->resched_flag = 0;
-  new_node->lr = (unsigned long long)func;
+  new_node->invoke_func = func;
+  new_node->mode = mode;
+  void (*func_lr)() = task_start;
+  new_node->lr = (unsigned long long)func_lr;
   new_node->fp = (unsigned long long)(&kstack_pool[pid][STACK_TOP_IDX]);
   new_node->sp = (unsigned long long)(&kstack_pool[pid][STACK_TOP_IDX]);
   ll_push_back<struct task>(&task_queue_head[priority], new_node);
   return pid;
+}
+
+int privilege_task_create(void (*func)(), int priority){
+  return task_create(func, priority, KERNEL);
 }
 
 void zombie_reaper(){

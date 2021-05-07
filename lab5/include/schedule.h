@@ -29,6 +29,11 @@ enum task_state{
   EXIT,
 };
 
+enum task_el{
+  USER,
+  KERNEL,
+};
+
 struct task{
   unsigned long long x19;
   unsigned long long x20;
@@ -48,6 +53,8 @@ struct task{
   int priority;
   int counter;
   int resched_flag;
+  void (*invoke_func)();
+  enum task_el mode;
   //struct cpu_context context;
   struct task *pre;
   struct task *next;
@@ -55,7 +62,8 @@ struct task{
 
 void task_init();
 void task_exit();
-int task_create(void (*func)(), int priority);
+int task_create(void (*func)(), int priority, enum task_el mode);
+int privilege_task_create(void (*func)(), int priority);
 void yield();
 void schedule();
 int get_pid();

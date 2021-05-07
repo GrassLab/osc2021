@@ -128,8 +128,7 @@ void invoke_cmd(char *cmd){
   }
   else if (str_cmp(argv[0], (char *) "timer") == 1){
     if (str_cmp(argv[1], (char *) "value")){
-      unsigned long long pct = 10;
-      svc_get_core_timer_value(&pct);
+      unsigned long long pct = svc_get_core_timer_value();
       char ct[0];
       int_to_str(pct, ct);
       uart_puts((char *) "Timer value = ");
@@ -137,8 +136,7 @@ void invoke_cmd(char *cmd){
       uart_puts((char *) "\n");
     }
     else if (str_cmp(argv[1], (char *) "sec")){
-      unsigned long long pct = 101;
-      svc_get_core_timer_ms(&pct);
+      unsigned long long pct = svc_get_core_timer_ms();
       print_timer(pct, (char *) "System time = ");
     }
     else if (str_cmp(argv[1], (char *) "enable")){
@@ -150,11 +148,11 @@ void invoke_cmd(char *cmd){
   }
   else if (str_cmp(argv[0], (char *) "demo") == 1){
     if (str_cmp(argv[1], (char *) "task1")){
-      task_create(task_demo_1, 3);
+      privilege_task_create(task_demo_1, 3);
       yield();
     }
     else if (str_cmp(argv[1], (char *) "task2")){
-      task_create(task_demo_2, 3);
+      privilege_task_create(task_demo_2, 3);
       yield();
     }
   }

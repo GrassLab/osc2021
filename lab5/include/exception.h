@@ -6,6 +6,11 @@
 # define SVC_ISS_PRINT_SYSTEM_TIME_ENABLE 3
 # define SVC_ISS_PRINT_SYSTEM_TIME_DISABLE 4
 # define SVC_ISS_SET_ONE_SHOT_TIMER  5
+# define SVC_ISS_GETPID  6
+# define SVC_ISS_UART_READ  7
+# define SVC_ISS_UART_WRITE  8
+# define SVC_ISS_EXEC  9
+# define SVC_ISS_EXIT  10
 
 # define IRQ_ENABLE()    asm volatile("msr DAIFClr, 0x2");
 # define IRQ_DISABLE()   asm volatile("msr DAIFSet, 0x2");
