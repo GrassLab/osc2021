@@ -42,21 +42,11 @@ void task_exit(){
 }
 
 void user_task_start(){
-  //uart_puts((char *)"task\n");
   struct task *current = get_current();
-  if (current->mode == KERNEL){
-    void (*func)() = current->invoke_func;
-    func();
-    task_exit();
-  }
-  else if(current->mode == USER){
-    struct task *current = get_current();
-    asm volatile("msr sp_el0, %0" : : "r"(&ustack_pool[current->pid][STACK_TOP_IDX]));
-    asm volatile("msr elr_el1, %0": : "r"(current->invoke_func));
-    asm volatile("msr spsr_el1, %0" : : "r"(SPSR_EL1_VALUE));
-    asm volatile("eret");
-  }
-  task_exit();
+  asm volatile("msr sp_el0, %0" : : "r"(&ustack_pool[current->pid][STACK_TOP_IDX]));
+  asm volatile("msr elr_el1, %0": : "r"(current->invoke_func));
+  asm volatile("msr spsr_el1, %0" : : "r"(SPSR_EL1_VALUE));
+  asm volatile("eret");
 }
 
 int task_create(void (*func)(), int priority, enum task_el mode){
@@ -75,8 +65,6 @@ int task_create(void (*func)(), int priority, enum task_el mode){
     void (*func_lr)() = user_task_start;
     new_node->lr = (unsigned long long)func_lr;
   }
-  //void (*func_lr)() = user_task_start;
-  //new_node->lr = (unsigned long long)func_lr;
   new_node->fp = (unsigned long long)(&kstack_pool[pid][STACK_TOP_IDX]);
   new_node->sp = (unsigned long long)(&kstack_pool[pid][STACK_TOP_IDX]);
   ll_push_back<struct task>(&task_queue_head[priority], new_node);
@@ -178,16 +166,40 @@ void sys_fork(struct trapframe* trapframe){
   // place child's kernel stack to right place
   child_task->sp = (unsigned long long)child_kstack - kstack_offset;
 
+  /*
+  int_to_hex((unsigned long long) parent_ustack, ct);
+  uart_puts(ct);
+  uart_puts(", ");
+  int_to_hex((unsigned long long) child_ustack, ct);
+  uart_puts(ct);
+  uart_puts("\n");
+  */
+
   // place child's user stack to right place
   struct trapframe* child_trapframe = (struct trapframe*) child_task->sp;
   child_trapframe->sp_el0 = (unsigned long long)child_ustack - ustack_offset;
 
+  /*
   child_trapframe->x[0] = 0;
   trapframe->x[0] = child_task->pid;
+  int_to_hex((unsigned long long) trapframe->sp_el0, ct);
+  uart_puts(ct);
+  uart_puts(", ");
+  int_to_hex((unsigned long long) child_trapframe->sp_el0, ct);
+  uart_puts(ct);
+  uart_puts("\n");
+  int_to_hex((unsigned long long) parent_task->sp, ct);
+  uart_puts(ct);
+  uart_puts(", ");
+  int_to_hex((unsigned long long) child_task->sp, ct);
+  uart_puts(ct);
+  uart_puts("\n");
+  */
   //IRQ_ENABLE();
 }
 
 void sys_exec(struct trapframe *arg){
+  //uart_puts("exec enter\n");
   void (*exec_func)() = (void(*)()) arg->x[0];
   char **input_argv = (char **) arg->x[1];
   int pid = get_pid();
@@ -219,10 +231,16 @@ void sys_exec(struct trapframe *arg){
   *argv_addr = (unsigned long long)argv;
   unsigned long long *argc_addr = (unsigned long long *)(argv-2);
   *argc_addr = argc;
-  arg->sp_el0 = (unsigned long long)(argv-3);
+  arg->sp_el0 = (unsigned long long)(argv-4);
   arg->elr_el1 = (unsigned long long) exec_func;
   arg->spsr_el1 = SPSR_EL1_VALUE;
   arg->x[1] = (unsigned long long) argv;
   arg->x[0] = argc;
+  /*
+  char ct[20];
+  int_to_hex(arg->sp_el0, ct);
+  uart_puts(ct);
+  uart_puts("\nexec done\n");
+  */
 
 }
