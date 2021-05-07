@@ -21,7 +21,6 @@ void thread_init()
         thread_table[i]->id = i;
         thread_table[i]->used = false;
         thread_table[i]->state = Thread_Wait;
-        
         thread_table[i]->next = NULL;
     }
 }
@@ -251,9 +250,6 @@ void thread_test(int test_id)
         default:
         break;
     }
-
-    int a= 0;
-    uart_puts_i(a++);
 
     return ;
 }

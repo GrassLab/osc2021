@@ -132,7 +132,7 @@ void buddy_log_pool()
 
 void push_list_tail(int num, int index)
 {
-    struct freelist_node * node = (struct freelist_node *)((char)BUDDY_LIST_START + BUDDY_LIST_NODE_SIZE * list_node_addr_counter);
+    struct freelist_node * node = (struct freelist_node *)(BUDDY_LIST_START + BUDDY_LIST_NODE_SIZE * list_node_addr_counter);
     struct freelist_node * current = &buddy_list[num];
     list_node_addr_counter++;
     char temp[10];
@@ -149,12 +149,13 @@ void push_list_tail(int num, int index)
         current->index = index;
     }
     else
-    {    
+    {
+            
         while(current->next != NULL)
         {
             current = current->next;
         }
-
+        
         current->next = node;
         current->next->index = index;
         current->next->prev = current;
@@ -191,6 +192,7 @@ int pop_list_head(int num)
 
 void buddy_initialize()
 {
+    
     for (int i = 1; i < FRAME_ARRAY_SIZE; ++i)
     {
         frame_array[i].val = CONTIGUOUS;
@@ -202,6 +204,7 @@ void buddy_initialize()
         buddy_list[i].prev = NULL;
         buddy_list[i].next = NULL;
     }
+    
     for (int i = 0; i < FRAME_ARRAY_SIZE; i += pow(2, BUDDY_LIST_SIZE - 1))
     {
         push_list_tail(BUDDY_LIST_SIZE - 1, i);
