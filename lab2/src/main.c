@@ -19,6 +19,7 @@ int main() {
     char filename[10];
     
     while(1) {
+        uart_puts("#");
         input(buf);
         slice_str(buf, cat, filename, 3);
         if(strcmp(buf, hello)) {
