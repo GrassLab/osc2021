@@ -9,10 +9,12 @@
 void main(void){
     DEBUG = 0;
     //init_timer_queue();
+    
     uart_init();
     buddy_init();
     dynamic_allocator_init();
     init_thread();
+    sys_init_vfs();
     //printf("hahaha %d\n", 123);
     // core_timer_enable();
     // while(uart_get() == '\0');

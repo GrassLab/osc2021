@@ -25,9 +25,10 @@ struct cmd cmd_list[] = {
     {.input = "setTimeout", .description = "regist callback function", .callback=sys_setTimeout},
     {.input = "DT", .description = "disable time core", .callback=sys_disable_timer},
     {.input = "lab5_1", .description="lab 5 requirement", .callback=__lab5},
-    {.input = "lab5_2", .description="lab 5 requirement 2", .callback=__lab5_2}
+    {.input = "lab5_2", .description="lab 5 requirement 2", .callback=__lab5_2},
+    {.input = "lab6", .description="lab6-1", .callback=__lab6}
 };
-
+FD_table fd_table;
 void show_el1_status_info(int spsr_el1, int elr_el1, int esr_el1){
     uart_puts("spsr_el1: ");    uart_printhex(spsr_el1); uart_puts("\r\n");
     uart_puts("elr_el1: ");    uart_printhex(elr_el1);   uart_puts("\r\n");
@@ -45,6 +46,37 @@ void __lab5(char* args){
 }
 void __lab5_2(char* args){
     thread_test2();
+}
+void __lab6(char* args){
+    thread_test2();
+    thread_test3();
+}
+void sys_init_vfs(){
+    vfs_init();
+}
+int sys_list_vfs(int fd, void * buf, int id){
+    struct file* f = thread_fd_entry(fd);
+    return vfs_list(f, buf, id);
+}
+int sys_open(const char *pathname, int flags){
+    // printf("sys open\n");
+    struct file* fentry = vfs_open(pathname, flags);
+    int fd = task_register_fd(fentry);
+    return fd;
+}
+void sys_close(int fd){
+    thread_info* cur = current_thread();
+    vfs_close(cur->fd_table.entry[fd]);
+    cur->fd_table.entry[fd] = 0;
+    return;
+}
+int sys_write(int fd, const void *buf, size_t len){
+    struct file* f = thread_fd_entry(fd);
+    return vfs_write(f, buf, len);
+}
+int sys_read(int fd, void *buf, size_t len){
+    struct file* f = thread_fd_entry(fd);
+    return vfs_read(f, buf, len);
 }
 void sys_disable_timer(char* args){
     core_timer_disable();
@@ -202,13 +234,16 @@ void swap(int* a, int* b){
     *b = tmp;
 }
 void* malloc(int size){
-    return (void*)(buddy_alloc(size)->addr); 
-    //return dynamic_alloc(size);
+    //return (void*)(buddy_alloc(size)->addr); 
+    return dynamic_alloc(size);
     // return (void*)(ptr->addr);
 }
+void* kmalloc(int size){
+    return dynamic_alloc(size);
+}
 void free(void* addr){
-    //dynamic_free(addr);
-    buddy_free((char*)addr);
+    dynamic_free(addr);
+    //buddy_free((char*)addr);
 }
 void sys_help(char* args){
     uart_puts("[Command] : [Description]\r\n");

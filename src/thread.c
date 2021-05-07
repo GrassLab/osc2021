@@ -29,6 +29,9 @@ thread_info* Thread(void* func){
     ptr->status = 0;
     ptr->next = nullptr;
     ptr->p_addr = ptr->p_size = ptr->child_pid = 0;
+    ptr->fd_table.fd_idx = 3;
+    for(int i = 0; i < FD_MAX; ++i)
+        ptr->fd_table.entry[i] = 0;
     add_to_run_queue(ptr);
     return ptr;
 }
@@ -74,6 +77,10 @@ thread_info *current_thread(){
     thread_info *ptr;
     asm volatile("mrs %0, tpidr_el1\n" : "=r"(ptr):);
     return ptr;
+}
+struct file *thread_fd_entry(int fd){
+    thread_info* ptr = current_thread();
+    return ptr->fd_table.entry[fd];
 }
 unsigned long get_pid(){
     return current_thread()->tid;
@@ -176,6 +183,19 @@ int fork(){
     schedule();
     return run_queue.head->child_pid;
 }
+int task_register_fd(struct file* entry){
+    thread_info* cur = current_thread();
+    cur->fd_table.entry[cur->fd_table.fd_idx] = entry;
+    int fd = cur->fd_table.fd_idx;
+    // find next available fd
+    for(int next = 1; next < FD_MAX; ++next){
+        int id = (next + cur->fd_table.fd_idx) % FD_MAX;
+        if((id >= 0 && id <= 2) || cur->fd_table.entry[id] != 0) continue;
+        cur->fd_table.fd_idx = id;
+        break;
+    }
+    return fd;
+}
 void copy_program(thread_info* parent, thread_info* child){
     //uart_puts("copy\r\n");
     parent->status ^= THREAD_FORK;
@@ -258,20 +278,27 @@ void thread_test(){
 }
 void exec_test(){
     char* argv[] = {"argv_test", "-o", "arg2", 0};
-    //char* argv[] = {};
-    // exec("user_program.img", argv);
-    exec("argv_test", argv);
-    //exec("fork_test", argv);
+    exec("hello_world", argv);
     return;
 }
 void thread_test2(){
     thread_pflag = 1;
-    // unsigned long sp_addr;
-    // asm volatile("ldr %0, [sp]\n":"=r"(sp_addr):);
-    // printf("[bef]svc, sp: %x\n", sp_addr);
     thread_info *idle_t = Thread(nullptr);
     asm volatile("msr tpidr_el1, %0\n"::"r"((unsigned long)idle_t));
     Thread(exec_test);
+    idle();
+    return;
+}
+void exec_ls(){
+    char* argv[] = {"ls", "/", 0};
+    exec("ls", argv);
+    return;
+}
+void thread_test3(){
+    thread_pflag = 1;
+    thread_info *idle_t = Thread(nullptr);
+    asm volatile("msr tpidr_el1, %0\n"::"r"((unsigned long)idle_t));
+    Thread(exec_ls);
     idle();
     return;
 }

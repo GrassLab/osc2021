@@ -3,7 +3,17 @@
 #include "system.h"
 #include "printf.h"
 #include "entry.h"
+#include "vfs.h"
+#define STDIN_FILENO 0
+#define STDOUT_FILENO 1
+#define STDERR_FILENO 2
+#define FD_MAX 256
 
+typedef struct FD_table
+{
+    int fd_idx;
+    struct file *entry[FD_MAX];
+} FD_table;
 typedef struct thread_info
 {
     unsigned long context[13 + 3 + 31]; // context: (10(reg), fp, lr, sp), (spsr_el1, elr_el1, sp_el0)(user reg)
@@ -11,6 +21,7 @@ typedef struct thread_info
     struct thread_info *next;
     int status;
     unsigned long p_addr, p_size, child_pid;
+    FD_table fd_table;
 } thread_info;
 
 typedef struct
@@ -46,3 +57,7 @@ void kill_zombies();
 void init_thread();
 void thread_test();
 void thread_test2();
+void exec_ls();
+void thread_test3();
+int task_register_fd(struct file *entry);
+struct file *thread_fd_entry(int fd);

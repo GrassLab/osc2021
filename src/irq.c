@@ -15,12 +15,14 @@ void sync_el0_handler(){
     asm volatile("\
 		str x0,[sp,-8]\n\
 		str x1,[sp,-16]\n\
+        str x2,[sp,-24]\n\
 	"::);
-	unsigned long x0,x1;
+	unsigned long x0,x1,x2;
 	asm volatile("\
 		ldr %0,[sp,-8]\n\
 		ldr %1,[sp,-16]\n\
-	":"=r"(x0),"=r"(x1):);
+        ldr %2,[sp,-24]\n\
+	":"=r"(x0),"=r"(x1),"=r"(x2):);
 
     unsigned long esr,svc, sp_addr;
 	asm volatile("mrs %0, esr_el1\n":"=r"(esr):);
@@ -60,6 +62,30 @@ void sync_el0_handler(){
         else if(svc == 6){
             int pid = fork();
             set_x0(pid);
+            return;
+        }
+        else if (svc == 7){
+            int fd = sys_open((char *)x0, (int)x1);
+            set_x0(fd);
+            return;
+        }
+        else if (svc == 8){
+            sys_close((int)x0);
+            return;
+        }
+        else if (svc == 9){
+            int size = sys_write((int)x0, (void *)x1, (size_t)x2);
+            set_x0(size);
+            return;
+        }
+        else if (svc == 10){
+            int size = sys_read((int)x0, (void *)x1, (size_t)x2);
+            set_x0(size);
+            return;
+        }
+        else if (svc == 11){
+            int size = sys_list_vfs((int)x0, (void *)x1, (int)x2);
+            set_x0(size);
             return;
         }
         else{

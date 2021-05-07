@@ -48,8 +48,12 @@ user_program:
 	-rm initramfs.cpio
 	cd ./user_code/prog1 && make
 	cd ./user_code/prog2 && make
+	cd ./user_code/prog3 && make
+	cd ./user_code/prog4 && make
 	cp ./user_code/prog1/argv_test ./user_code/rootfs/
 	cp ./user_code/prog2/fork_test ./user_code/rootfs/
+	cp ./user_code/prog3/hello_world ./user_code/rootfs/
+	cp ./user_code/prog4/ls ./user_code/rootfs/
 	cd ./user_code/rootfs/ && find . | cpio -o -H newc > ../../initramfs.cpio
 	
 	
