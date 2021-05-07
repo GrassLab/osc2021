@@ -15,7 +15,7 @@ void task_demo_1(){
     uart_puts(ct);
     uart_puts((char *)"\n");
   }
-  //task_exit();
+  task_exit();
 }
 
 
@@ -28,7 +28,7 @@ void task_demo_2(){
     uart_puts(ct);
     uart_puts((char *)"\n");
   }
-  //task_exit();
+  task_exit();
 }
 
 void task_route(int i){
@@ -53,7 +53,7 @@ void task_yield(){
     task_route(i);
     yield();
   }
-  //task_exit();
+  task_exit();
 }
 
 void task_occupy(){
@@ -61,5 +61,5 @@ void task_occupy(){
   for (int i=0; i<10; i++){
     task_route(i);
   }
-  //task_exit();
+  task_exit();
 }

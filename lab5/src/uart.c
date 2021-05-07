@@ -93,7 +93,7 @@ void uart_puts(char *s) {
     while(*s) {
         /* convert newline to carrige return + newline */
       if (*s == '\n') uart_write('\r');
-      uart_write(*s++);	    
+      uart_write(*s++);
     }
 }
 
@@ -110,4 +110,46 @@ void uart_flush(){
   while ( *AUX_MU_LSR & 0x01 ){
     flush_r = *AUX_MU_IO;
   }
+}
+
+int svc_uart_read(char *buf, int size){
+  int r = 0;
+  while(r < size){
+    //uart_puts((char *) "\r> ");
+    //uart_puts(cmd);
+    char c = uart_read();
+
+    if (c == '\n'){
+      buf[r] = c;
+      r++;
+      uart_write(c);
+      break;
+    }
+    else if ((int)c == 127 || (int)c == 8){
+      r--;
+      buf[r] = '\0';
+      uart_puts((char *) "\b \b");
+    }
+    else{
+      buf[r] = c;
+      r++;
+      uart_write(c);
+    }
+  }
+  if (r < size){
+    buf[r] = '\0';
+  }
+  return r;
+}
+
+int svc_uart_write(char *buf, int size){
+  int r = 0;
+  for (int i=0; i<size; i++){
+    if (buf[i] == '\0'){
+      break;
+    }
+    uart_write(buf[i]);
+    r++;
+  }
+  return r;
 }

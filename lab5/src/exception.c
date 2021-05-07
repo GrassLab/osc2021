@@ -3,6 +3,7 @@
 # include "uart.h"
 # include "mem_addr.h"
 # include "timer.h"
+# include "schedule.h"
 
 
 char vector_table_desc[16][30] = {
@@ -40,10 +41,12 @@ void general_exception_handler(struct trapframe *arg, unsigned long type, unsign
     default:
       break;
   }
+  schedule();
 }
 
 
 void sync_handler(struct trapframe *arg, unsigned long type, unsigned long esr, unsigned long elr){
+  /*
   char ct[20];
   uart_puts((char *) "Enter SYNC handler\n");
   uart_puts((char *) "[EXCEPTION] TYPE = ");
@@ -62,17 +65,20 @@ void sync_handler(struct trapframe *arg, unsigned long type, unsigned long esr, 
   uart_puts(ct);
   uart_puts((char *) "\n");
   uart_puts((char *) "[SYNC] EC = ");
+  */
   int ec = (esr >> 26) & 0b111111;
   int iss = esr & 0x1FFFFFF;
+  /*
   int_to_hex(ec, ct);
   uart_puts(ct);
   uart_puts((char *) ", ISS = ");
   int_to_hex(iss, ct);
   uart_puts(ct);
   uart_puts((char *) "\n");
+  */
   // check if SVC
   if (ec == ESR_EC_SVC){
-    uart_puts((char *) "[SYNC] Call SVC handler\n");
+    //uart_puts((char *) "[SYNC] Call SVC handler\n");
     svc_handler(arg, type, iss);
     return ;
   }
@@ -82,6 +88,7 @@ void sync_handler(struct trapframe *arg, unsigned long type, unsigned long esr, 
 void svc_handler(struct trapframe *arg, unsigned long type, int iss){
   char ct[20];
   unsigned long long ans_ull;
+  //int ans_int;
   switch(iss){
     case SVC_ISS_NOPE:
       uart_puts((char *) "[SVC] inside SVC handler\n");
@@ -103,6 +110,24 @@ void svc_handler(struct trapframe *arg, unsigned long type, int iss){
     case SVC_ISS_SET_ONE_SHOT_TIMER:
       set_one_shot_timer((struct one_shot_timer *)(arg->x[0]));
       break;
+    case SVC_ISS_GETPID:
+      arg->x[0] = get_pid();
+      break;
+    case SVC_ISS_UART_READ:
+      arg->x[0] = svc_uart_read((char *)arg->x[0], (int)arg->x[1]);
+      break;
+    case SVC_ISS_UART_WRITE:
+      arg->x[0] = svc_uart_write((char *)arg->x[0], (int)arg->x[1]);
+      break;
+    case SVC_ISS_EXEC:
+      sys_exec(arg);
+      break;
+    case SVC_ISS_EXIT:
+      task_exit();
+      break;
+    case SVC_ISS_FORK:
+      sys_fork(arg);
+      break;
     default:
       uart_puts((char *) "[SVC] unknown SVC number : ");
       int_to_hex(iss, ct);
@@ -110,7 +135,7 @@ void svc_handler(struct trapframe *arg, unsigned long type, int iss){
       uart_puts((char *) "\n");
       break;
   }
-  uart_puts((char *) "return\n");
+  //uart_puts((char *) "return\n");
 }
 
 void irq_handler(){

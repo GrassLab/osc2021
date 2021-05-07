@@ -149,4 +149,6 @@ FIQ_ar32_handler:
 Error_ar32_handler:
      set_args_and_bl #15 general_exception_handler
 
-
+.global return_from_fork
+return_from_fork:
+     load_all

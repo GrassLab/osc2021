@@ -39,3 +39,8 @@ exit:
   svc #10
   ret
 
+.global fork
+fork:
+  svc #11
+  ret
+

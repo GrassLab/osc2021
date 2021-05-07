@@ -1,3 +1,4 @@
+//# include "exception.h"
 
 # define TASK_MAX_NUM    100
 # define TASK_EPOCH      5
@@ -64,9 +65,13 @@ void task_init();
 void task_exit();
 int task_create(void (*func)(), int priority, enum task_el mode);
 int privilege_task_create(void (*func)(), int priority);
+int user_task_create(void (*func)(), int priority);
 void yield();
 void schedule();
 int get_pid();
+void sys_fork(struct trapframe* trapframe);
+void sys_exec(struct trapframe* trapframe);
 
 extern "C" struct task* get_current();
 extern "C" void switch_to(struct task *pre, struct task *next);
+extern "C" void return_from_fork();

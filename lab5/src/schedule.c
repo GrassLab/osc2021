@@ -1,7 +1,10 @@
 # include "schedule.h"
+# include "exception.h"
 # include "shell.h"
 # include "uart.h"
 # include "my_math.h"
+# include "my_string.h"
+# include "start.h"
 # include "linklist.c"
 
 struct task task_pool[TASK_MAX_NUM];
@@ -38,14 +41,20 @@ void task_exit(){
   schedule();
 }
 
-void task_start(){
+void user_task_start(){
+  //uart_puts((char *)"task\n");
   struct task *current = get_current();
   if (current->mode == KERNEL){
     void (*func)() = current->invoke_func;
     func();
     task_exit();
   }
-  else if(current->mode == USER){;
+  else if(current->mode == USER){
+    struct task *current = get_current();
+    asm volatile("msr sp_el0, %0" : : "r"(&ustack_pool[current->pid][STACK_TOP_IDX]));
+    asm volatile("msr elr_el1, %0": : "r"(current->invoke_func));
+    asm volatile("msr spsr_el1, %0" : : "r"(SPSR_EL1_VALUE));
+    asm volatile("eret");
   }
   task_exit();
 }
@@ -59,8 +68,15 @@ int task_create(void (*func)(), int priority, enum task_el mode){
   new_node->resched_flag = 0;
   new_node->invoke_func = func;
   new_node->mode = mode;
-  void (*func_lr)() = task_start;
-  new_node->lr = (unsigned long long)func_lr;
+  if (mode == KERNEL){
+    new_node->lr = (unsigned long long)func;
+  }
+  else{
+    void (*func_lr)() = user_task_start;
+    new_node->lr = (unsigned long long)func_lr;
+  }
+  //void (*func_lr)() = user_task_start;
+  //new_node->lr = (unsigned long long)func_lr;
   new_node->fp = (unsigned long long)(&kstack_pool[pid][STACK_TOP_IDX]);
   new_node->sp = (unsigned long long)(&kstack_pool[pid][STACK_TOP_IDX]);
   ll_push_back<struct task>(&task_queue_head[priority], new_node);
@@ -69,6 +85,10 @@ int task_create(void (*func)(), int priority, enum task_el mode){
 
 int privilege_task_create(void (*func)(), int priority){
   return task_create(func, priority, KERNEL);
+}
+
+int user_task_create(void (*func)(), int priority){
+  return task_create(func, priority, USER);
 }
 
 void zombie_reaper(){
@@ -129,4 +149,80 @@ void schedule(){
 int get_pid(){
   struct task *c = get_current();
   return c->pid;
+}
+
+void sys_fork(struct trapframe* trapframe){
+  //char ct[20];
+  IRQ_DISABLE();
+  struct task* parent_task = get_current();
+
+  int child_id = privilege_task_create(return_from_fork, parent_task->priority);
+  //int child_id = privilege_task_create(0, parent_task->priority);
+  struct task* child_task = &task_pool[child_id];
+
+  char* child_kstack = &kstack_pool[child_task->pid][STACK_TOP_IDX];
+  char* parent_kstack = &kstack_pool[parent_task->pid][STACK_TOP_IDX];
+  char* child_ustack = &ustack_pool[child_task->pid][STACK_TOP_IDX];
+  char* parent_ustack = &ustack_pool[parent_task->pid][STACK_TOP_IDX];
+
+  unsigned long long kstack_offset = parent_kstack - (char*)trapframe;
+  unsigned long long ustack_offset = parent_ustack - (char*)trapframe->sp_el0;
+
+  for (unsigned long long i = 0; i < kstack_offset; i++) {
+    *(child_kstack - i) = *(parent_kstack - i);
+  }
+  for (unsigned long long i = 0; i < ustack_offset; i++) {
+    *(child_ustack - i) = *(parent_ustack - i);
+  }
+
+  // place child's kernel stack to right place
+  child_task->sp = (unsigned long long)child_kstack - kstack_offset;
+
+  // place child's user stack to right place
+  struct trapframe* child_trapframe = (struct trapframe*) child_task->sp;
+  child_trapframe->sp_el0 = (unsigned long long)child_ustack - ustack_offset;
+
+  child_trapframe->x[0] = 0;
+  trapframe->x[0] = child_task->pid;
+  //IRQ_ENABLE();
+}
+
+void sys_exec(struct trapframe *arg){
+  void (*exec_func)() = (void(*)()) arg->x[0];
+  char **input_argv = (char **) arg->x[1];
+  int pid = get_pid();
+  char* ustack = &ustack_pool[pid][STACK_TOP_IDX];
+
+  int argc = 0;
+  int argv_total_len = 0;
+  while(input_argv[argc]){
+    argv_total_len += str_len(input_argv[argc])+1;
+    argc++;
+  }
+  char **argv = (char**)((unsigned long long)(ustack-argv_total_len) & (~15));
+  argv--;
+  *argv = 0;
+
+  for (int i = argc-1; i>=0; i--){
+    int strlen = str_len(input_argv[i]);
+    ustack -= (strlen+1);
+    argv--;
+    *argv = ustack;
+    str_cat(input_argv[i], ustack);
+  }
+  int ustack_offset = (unsigned long long) ustack%16;
+  ustack -= ustack_offset;
+  for (int i = 0; i<ustack_offset; i++){
+    ustack[i] = '\0';
+  }
+  unsigned long long *argv_addr = (unsigned long long *)(argv-1);
+  *argv_addr = (unsigned long long)argv;
+  unsigned long long *argc_addr = (unsigned long long *)(argv-2);
+  *argc_addr = argc;
+  arg->sp_el0 = (unsigned long long)(argv-3);
+  arg->elr_el1 = (unsigned long long) exec_func;
+  arg->spsr_el1 = SPSR_EL1_VALUE;
+  arg->x[1] = (unsigned long long) argv;
+  arg->x[0] = argc;
+
 }

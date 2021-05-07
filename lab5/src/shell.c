@@ -10,6 +10,7 @@
 # include "svc_call.h"
 # include "schedule.h"
 # include "demo.h"
+# include "user_demo.h"
 
 char *argv[SHELL_MAX_ARGC];
 
@@ -153,6 +154,10 @@ void invoke_cmd(char *cmd){
     }
     else if (str_cmp(argv[1], (char *) "task2")){
       privilege_task_create(task_demo_2, 3);
+      yield();
+    }
+    else if (str_cmp(argv[1], (char *) "user1")){
+      user_task_create(user_demo_test, 3);
       yield();
     }
   }
