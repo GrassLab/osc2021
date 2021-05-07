@@ -33,18 +33,14 @@ void task_demo_2(){
 
 void task_route(int i){
     char ct[20];
-    int daif = get_DAIF();
     uart_puts((char *) "Thraed PID : ");
     int_to_str(get_pid(), ct);
     uart_puts(ct);
     uart_puts((char *) " i : ");
     int_to_str(i, ct);
     uart_puts(ct);
-    uart_puts((char *) " daif : ");
-    int_to_hex(daif, ct);
-    uart_puts(ct);
     uart_puts((char *) "\n");
-    delay(50000000);
+    delay(500000);
 }
 
 void task_yield(){

@@ -148,6 +148,7 @@ int svc_uart_write(char *buf, int size){
     if (buf[i] == '\0'){
       break;
     }
+    if (buf[i] == '\n') uart_write('\r');
     uart_write(buf[i]);
     r++;
   }
