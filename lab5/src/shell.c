@@ -7,10 +7,11 @@
 # include "buddy.h"
 # include "mem.h"
 # include "timer.h"
-# include "svc_call.h"
+# include "oneshot_timer.h"
 # include "schedule.h"
 # include "demo.h"
 # include "user_demo.h"
+# include "user_lib.h"
 
 char *argv[SHELL_MAX_ARGC];
 
@@ -54,7 +55,10 @@ void invoke_cmd(char *cmd){
     uart_puts((char *) "Hello World!\n");
   }
   else if (str_cmp(argv[0], (char *) "help") == 1){
-    if (str_cmp(argv[1], (char *) "buddy") == 1){
+    if (argc == 1){
+      show_file((char *) "help/default");
+    }
+    else if (str_cmp(argv[1], (char *) "buddy") == 1){
       show_file((char *) "help/buddy");
     }
     else if (str_cmp(argv[1], (char *) "dma") == 1){
