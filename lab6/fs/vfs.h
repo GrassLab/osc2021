@@ -38,6 +38,7 @@ struct file_operations {
   int (*write)(struct file* file, const void* buf, size_t len);
   int(*read)(struct file* file, void* buf, size_t len);
 };
+
 struct vnode_operations {
   int (*lookup)(struct vnode* dir_node, struct vnode** target, const char* component_name);
   int (*create)(struct vnode* dir_node, struct vnode** target, const char* component_name);

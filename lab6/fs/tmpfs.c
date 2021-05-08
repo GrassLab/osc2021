@@ -179,7 +179,7 @@ static int lookup(struct vnode* dir_node, struct vnode** target, const char* com
       max_len = strlen(component_name);
     if(strncmp(inode->name, component_name, max_len) == 0)  {
       *target = inode->vnode;
-      printf("find node: %s\n", component_name);
+      //printf("find node: %s\n", component_name);
       return 0;  
     }
     inode = inode->sublings;
