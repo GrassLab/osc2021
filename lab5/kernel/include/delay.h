@@ -1,8 +1,5 @@
-#ifndef DELAY_H
-#define DELAY_H
+#pragma once
 
 #include "types.h"
 extern"C"
 void delay(uint64_t cycles);
-
-#endif

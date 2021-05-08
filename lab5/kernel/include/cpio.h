@@ -1,5 +1,4 @@
-#ifndef CPIO_H
-#define CPIO_H
+#pragma once
 
 #include "types.h"
 
@@ -32,5 +31,3 @@ public:
 private:
     int Hex2int(uint8_t hex);
 };
-
-#endif

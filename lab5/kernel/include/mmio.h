@@ -1,10 +1,9 @@
-#ifndef GPIO_H
-#define GPIO_H
+#pragma once
 
-#include "types.h"
+#include <types.h>
+#include <memory_addr.h>
 
-enum class MMIOREG {
-    MMIO_BASE       = 0x3F000000,
+enum class MMIOREG : uint64_t {
     AUX_ENABLES     = MMIO_BASE + 0x215004,
     AUX_MU_IO_REG   = MMIO_BASE + 0x215040,
     AUX_MU_IER_REG  = MMIO_BASE + 0x215044,
@@ -22,7 +21,8 @@ enum class MMIOREG {
     GPPUDCLK0       = MMIO_BASE + 0x200098,
     PM_RSTC         = MMIO_BASE + 0x10001C,
     PM_WDOG         = MMIO_BASE + 0x100024,
-    CORE0_TIMER_IRQ_CTRL = 0x40000040
+
+    CORE0_TIMER_IRQ_CTRL = CPU_MMIO_BASE + 0x000040
 };
 
 class MMIO {
@@ -35,5 +35,3 @@ public:
         return *reinterpret_cast<volatile uint32_t*>(addr);
     }
 };
-
-#endif

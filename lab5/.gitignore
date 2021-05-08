@@ -2,5 +2,5 @@
 *.elf
 *.img
 *.d
-rootfs/
+initramfs/
 initramfs.cpio

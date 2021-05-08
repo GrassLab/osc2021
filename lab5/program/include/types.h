@@ -1,5 +1,4 @@
-#ifndef TYPES_H
-#define TYPES_H
+#pragma once
 
 typedef unsigned long long int uint64_t;
 static_assert(sizeof(uint64_t) == 8);
@@ -22,5 +21,3 @@ typedef signed   char int8_t;
 static_assert(sizeof(int8_t) == 1);
 
 typedef int64_t size_t;
-
-#endif

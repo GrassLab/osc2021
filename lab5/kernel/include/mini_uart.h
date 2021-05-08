@@ -1,6 +1,5 @@
-  
-#ifndef MINI_UART_H
-#define MINI_UART_H
+#pragma once
+
 #include "types.h"
 
 class MiniUART {
@@ -26,5 +25,3 @@ public:
         return *this;
     }
 };
-
-#endif

@@ -1,7 +1,8 @@
-#ifndef IO_H
-#define IO_H
+#pragma once
 
 #include "syscall.h"
+
+static inline void uart_put_1(const char *str) { uart_put(str, strlen(str)); }
 
 class io {
 public:
@@ -23,5 +24,3 @@ public:
         return *this;
     }
 };
-
-#endif

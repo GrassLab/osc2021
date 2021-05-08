@@ -1,17 +1,18 @@
 
-#include "types.h"
-#include "thread.h"
-#include "memory.h"
-#include "mini_uart.h"
-#include "cpio.h"
-#include "string.h"
+#include <types.h>
+#include <thread.h>
+#include <memory.h>
+#include <mini_uart.h>
+#include <cpio.h>
+#include <string.h>
+#include <memory_addr.h>
 
 uint64_t total_threads = 0;
 uint64_t pid_counter = 0;
+task_struct *tasks = (task_struct*)TASK_STRUCT_BASE;
 
 extern "C" {
     void do_exit();
-    void* memcpy(void* dst, void* src, uint64_t n);
     void switch_to(task_struct *from, task_struct *to, uint64_t to_tpidr, ...);
     uint64_t get_tpidr_el1();
     void loop();
@@ -82,7 +83,7 @@ static void sys_exit() {
 }
 
 void sys_exec(char* name, char** argv) {
-    cpio_newc_header* header = (cpio_newc_header*)0x8000000;
+    cpio_newc_header* header = (cpio_newc_header*) INITRAMFS_BASE;
     CPIO cpio(header);
     while (strcmp(cpio.filename, "TRILER!!!") != 0) {
         if (strcmp(cpio.filename, name) == 0) {
@@ -166,7 +167,7 @@ static uint64_t sys_fork() {
     return child_pid;
 }
 
-static uint64_t sys_delay(uint64_t cycles) {
+static void sys_delay(uint64_t cycles) {
     uint64_t current_time = get_timer();
     uint64_t current = get_tpidr_el1();
     tasks[current].sleep_until = current_time + cycles;

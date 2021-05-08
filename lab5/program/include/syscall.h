@@ -1,5 +1,4 @@
-#ifndef SYSCALL_H
-#define SYSCALL_H
+#pragma once
 
 #include "types.h"
 #include "string.h"
@@ -15,7 +14,3 @@ extern "C" {
     uint64_t fork();
     void delay(uint64_t cycles);
 }
-
-static inline void uart_put_1(const char *str) { uart_put(str, strlen(str)); }
-
-#endif

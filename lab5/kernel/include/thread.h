@@ -1,9 +1,6 @@
-#ifndef THREAD_H
-#define THREAD_H
+#pragma once
 
-#include "types.h"
-
-#define tasks (reinterpret_cast<task_struct*>(0x60000))
+#include <types.h>
 
 struct task_struct {
     uint64_t x19;
@@ -28,6 +25,4 @@ struct task_struct {
     uint64_t sleep_until;
 };
 
-// static_assert(sizeof(task_struct) == 16 * 8, "task_struct is not valid");
-
-#endif
+extern task_struct* tasks;

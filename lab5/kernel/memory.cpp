@@ -1,11 +1,7 @@
-#include "memory.h"
-
-// #include "mini_uart.h>
-#include "types.h"
-
-extern "C"
-void* memset(void*, uint64_t c, uint64_t size);
-
+#include <memory.h>
+#include <types.h>
+#include <memory_addr.h>
+#include <memory_func.h>
 
 char* MemAlloc::malloc(uint32_t size) {
     if (size <= 0) {
@@ -21,7 +17,7 @@ char* MemAlloc::malloc(uint32_t size) {
     }
     else if (size <= 4096) {
         uint32_t size_pow = 0;
-        result = base + (buddy.Allocate(0) << 12);
+        result = (char*)MOMORY_ALLOC_BASE + (buddy.Allocate(0) << 12);
         left_size = 4096 - size;
         current_ptr = result + size;
     }
@@ -31,7 +27,7 @@ char* MemAlloc::malloc(uint32_t size) {
         while ((1 << (12 + size_pow)) < size) {
             size_pow++;
         }
-        result = base + (buddy.Allocate(size_pow) << 12);
+        result = (char *)MOMORY_ALLOC_BASE + (buddy.Allocate(size_pow) << 12);
         current_ptr = nullptr;
         left_size = 0;
     }
@@ -67,7 +63,7 @@ bool MemAlloc::free(char* ptr) {
         if (sameChunk(ptr, current_ptr)) {
             current_ptr = nullptr;
         }
-        buddy.Free((ptr - base) >> 12);
+        buddy.Free((ptr - (char*)MOMORY_ALLOC_BASE) >> 12);
     }
     return true;
 }
@@ -75,8 +71,7 @@ bool MemAlloc::free(char* ptr) {
 void MemAlloc::Init() {
     buddy.Init();
     allocated_memory_count = 0;
-    allocated_memory = (char**)memset((char**)(0x40000), 0, 0x1000);
-    base = (char*)0x10000000;
+    allocated_memory = (char**)memset((char**)(MEM_ALLOC_PTR_BASE), 0, 0x1000);
     left_size = 0;
     current_ptr = 0;
 }
