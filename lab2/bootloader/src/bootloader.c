@@ -6,7 +6,7 @@ void secondBootloader() {
     /*
     receive kernel from host machine
     */
-    int size;
+    int size = 0;
     volatile char input;
     char kernel_size[10];
     char flag[5];
@@ -25,19 +25,11 @@ void secondBootloader() {
 
     // receive kernel
     volatile unsigned char *kernel;
-    //unsigned int addr = 0x00080000;
     kernel = (unsigned char *) 0x80000;
 
     for (int i = 0; i < size; i++) {
-        //uart_puts("1 ");
         input = uart_getc();
-        //input = 'c';
-        //uart_puts("2 ");
-        //for (int k=0;k<100;k++) asm volatile("nop");
         kernel[i] = input;
-        //itoa(i, flag);
-        //uart_puts(flag);
-        //uart_puts("\n");
     }
     for(int i = 0; i < 10000; i++) {
         asm volatile("nop");
@@ -61,7 +53,32 @@ void main() {
                                  |___/                      \n\
     \n";
     uart_puts(helloworld);
-    secondBootloader();
+    char buf[20];
+    char *help = "help";
+    char *reboot = "reboot";
+    
+    while(1) {
+        uart_puts("#");
+        input(buf);
+        uart_send('\r');
+
+        if(strcmp(buf, help)) {
+            uart_puts("help: print all available commands\n");
+            uart_puts("reboot: reboot\n");
+            uart_puts("loadimg: Load kernel\n");
+        }
+        else if(strcmp(buf, reboot)) {
+            reset(1000);
+        }
+        else if (strcmp(buf, "loadimg")) {
+            secondBootloader();
+        }
+        else {
+            uart_puts("Error: ");
+            uart_puts(buf);
+            uart_puts(" command not found! Try <help> to check all available commands\n");
+        }
+    }
 }
 
 
