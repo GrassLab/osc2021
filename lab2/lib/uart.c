@@ -65,6 +65,12 @@ void uart_init()
     r=150; while(r--) { asm volatile("nop"); }
     *GPPUDCLK0 = 0;        // flush GPIO setup
     *AUX_MU_CNTL = 3;      // enable Tx, Rx
+
+    // flush buffer
+    while(*AUX_MU_LSR&0x01)
+    {
+        char c = (char)(*AUX_MU_IO);
+    }
 }
 
 /**

@@ -23,7 +23,7 @@ all:
 	mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -I$(INC) -c -g $(SRC)
 	make kernel
-	$(MAKE) -C bootloader
+	#$(MAKE) -C bootloader
 
 kernel:
 	$(LD) $(LDFLAGS) -o $(BUILD_DIR)/$(ELF) $(OBJ)
