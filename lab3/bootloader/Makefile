@@ -2,7 +2,7 @@ LD = aarch64-linux-gnu-ld
 LDFLAGS = -T linker.ld
 
 BUILD_DIR = ../build
-SRC = $(wildcard src/*.S) $(wildcard ../lib/*.c) $(wildcard src/*.c)
+SRC = $(wildcard src/*.S) $(wildcard ../lib/*.c) $(wildcard src/*.c) $(wildcard ../3rdparty/*)
 OBJ = boot.o $(filter-out boot.o, $(wildcard *.o))
 INC = $(wildcard ../lib/)
 
@@ -21,7 +21,7 @@ GDBFLAGS = -x ./debug.gdb
 
 all:
 	mkdir -p $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -I$(INC) -c -g $(SRC)
+	$(CXX) $(CXXFLAGS) -I../3rdparty -I$(INC) -c -g $(SRC)
 	make bootloader
 
 bootloader:

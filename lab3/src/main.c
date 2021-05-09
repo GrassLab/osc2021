@@ -18,7 +18,6 @@ int main() {
     char *reboot = "reboot";
     char cat[4];
     char filename[10];
-    char *str;
     
     while(1) {
         uart_puts("#");
@@ -42,6 +41,16 @@ int main() {
         else if (!strcmp(buf, "demo_frame")) {
             allocator_init();
             unsigned long *p1 = malloc(4096*3);
+            unsigned long *p2 = malloc(4096);
+            unsigned long *p3 = malloc(4096);
+
+            free(p1);
+            free(p3);
+            free(p2);
+        }
+        else if (!strcmp(buf, "demo_frame2")) {
+            allocator_init();
+            unsigned long *p1 = malloc(4096*5);
             unsigned long *p2 = malloc(4096);
             unsigned long *p3 = malloc(4096);
 

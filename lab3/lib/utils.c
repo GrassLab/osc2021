@@ -59,15 +59,12 @@ int atoi(char* s) {
 
 void itoa(int num, char *s) {
     int i = 0;
-    int tmp = num;
+    if(num == 0)
+        s[i++] = '0';
     while(num != 0) {
         int digit = num % 10;
         s[i++] = digit + '0';
         num /= 10;
-    }
-    if (!tmp) {
-        s[0] = '0';
-        i = 1;
     }
     s[i] = '\0';
     
@@ -80,7 +77,7 @@ void itoa(int num, char *s) {
 }
 
 void print(int x) {
-    char *str;
+    char str[20];
     itoa(x, str);
     uart_puts(str);
     uart_puts("\n");

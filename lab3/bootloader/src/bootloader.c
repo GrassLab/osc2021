@@ -31,12 +31,11 @@ void secondBootloader() {
         input = uart_getc();
         kernel[i] = input;
     }
-    
-    void (*jump)(void) = kernel;
-    uart_puts("Jumping to kernel\n");
-    for(int i = 0; i < 10000; i++) {
+    for(int i = 0; i < 100000; i++) {
         asm volatile("nop");
     }
+    void (*jump)(void) = kernel;
+    uart_puts("Jumping to kernel\n");
     jump();
 }
 
