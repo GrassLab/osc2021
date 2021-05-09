@@ -1,25 +1,71 @@
 #include "vfs.h"
 #include "dynamic_alloc.h"
 #include "tmpfs.h"
+#include "string.h"
+#include "io.h"
 
 struct mount* rootfs;
-extern struct filesystem tmpfs;
+struct filesystem_list fs_list = {
+    .count = 0,
+    .head = NULL,
+    .tail = NULL
+};
 
-void init_root()
+// extern struct file system tmpfs;
+
+void init_root(const char *name)
 {
-    // prepare the root mount struct
-    rootfs = malloc(sizeof(struct mount));
-    rootfs->fs = &tmpfs;
-    struct vnode *root_vnode = malloc(sizeof(struct vnode));
-    rootfs->root = root_vnode;
+    // get fs from pool
+    struct filesystem *fs = get_filesystem(name);
 
-    tmpfs_setup(&tmpfs, rootfs);
+    if (fs) {
+        // prepare the root mount struct
+        rootfs = malloc(sizeof(struct mount));
+        rootfs->fs = fs;
+        struct vnode *root_vnode = malloc(sizeof(struct vnode));
+        rootfs->root = root_vnode;
+        tmpfs_setup(fs, rootfs);
+    } else {
+        printf("no such filesystem: %s\n", name);
+    }
 }
 
 int register_filesystem(struct filesystem* fs) {
+    // create a file system node
+    struct filesystem_node *fs_node = malloc(sizeof(struct filesystem_node));
+    fs_node->fs = fs;
+    fs_node->next_node = NULL;
+
     // register the file system to the kernel.
+    if (fs_list.count == 0) {
+        fs_list.head = fs_node;
+        fs_list.tail = fs_node;
+    } else {
+        fs_list.tail->next_node = fs_node;
+        fs_list.tail = fs_node;
+    }
+
+    fs_list.count++;
     
     return 0;
+}
+
+struct filesystem *get_filesystem(const char *fs_name) {
+    struct filesystem_node *tmp_node;
+    if (fs_list.count > 0) {
+        tmp_node = fs_list.head;
+        
+        while(tmp_node) {
+            if (strcmp(tmp_node->fs->name, fs_name) == 0) {
+                return tmp_node->fs;
+            }
+
+            tmp_node = tmp_node->next_node;
+        }
+
+    }
+
+    return NULL;
 }
 
 struct file* vfs_open(const char* pathname, int flags) {

@@ -5,8 +5,11 @@
 #include "kernel.h"
 #include "base_ops.h"
 #include "vfs.h"
+#include "tmpfs.h"
 
 #include "io.h"
+
+extern struct filesystem tmpfs;
 
 void idle()
 {
@@ -22,7 +25,10 @@ void kernel_main()
     // initialization
     init_page_frame();
     init_thread_pool();
-    init_root();
+
+    // mount root file system
+    register_filesystem(&tmpfs);
+    init_root("tmpfs");
 
     // default pseudo thread to set first tpidr
     struct Thread t;
