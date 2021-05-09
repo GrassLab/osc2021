@@ -1,5 +1,5 @@
 SECTIONS {
-    . = 0x10000000;
+    . = 0x13000000;
     .text.start : {*(.text.start)}
     .bss  : { 
         __bss_start__ = .;

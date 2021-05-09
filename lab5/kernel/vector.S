@@ -3,18 +3,18 @@
 .balign 0x800
 .global exception_vector_table
 exception_vector_table:
-    b .Lsvc_handler // branch to a handler function.
+    b .Lexception_handler // branch to a handler function.
     .align 7 // entry size is 0x80, .align will pad 0
-    b .Ltimer_handler
+    b .Lexception_handler
     .align 7
     b .Lexception_handler
     .align 7
     b .Lexception_handler
     .align 7
 
-    b .Lsvc_handler
+    b .Lexception_handler
     .align 7
-    b .Ltimer_handler
+    b .Lexception_handler
     .align 7
     b .Lexception_handler
     .align 7
@@ -30,9 +30,9 @@ exception_vector_table:
     b .Lexception_handler
     .align 7
 
-    b .Lsvc_handler
+    b .Lexception_handler
     .align 7
-    b .Ltimer_handler
+    b .Lexception_handler
     .align 7
     b .Lexception_handler
     .align 7
@@ -81,9 +81,8 @@ exception_vector_table:
 .Lexception_handler:
     save_all
     bl kernel_exception
-1:
-    wfe
-    b 1b
+    load_all
+    eret
 
 .Ltimer_handler:
     save_all
@@ -94,6 +93,11 @@ exception_vector_table:
 .Lsvc_handler:
     stp fp, lr, [sp, #-16]!
     mov fp, sp
+    mrs x9, esr_el1
+    mov x10, #0x54000000
+    and x9, x9, x10
+    cmp x9, x10
+    b.ne .Lexception_handler
     adr x7, syscall_table
     ldr x7, [x7, x8, lsl #3]
     blr x7

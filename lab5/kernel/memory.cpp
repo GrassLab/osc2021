@@ -2,6 +2,7 @@
 #include <types.h>
 #include <memory_addr.h>
 #include <memory_func.h>
+#include <mini_uart.h>
 
 char* MemAlloc::malloc(uint32_t size) {
     if (size <= 0) {
@@ -43,7 +44,6 @@ static inline bool sameChunk(char* ptr1, char* ptr2) {
 
 bool MemAlloc::free(char* ptr) {
     if (ptr == nullptr) {
-        // IO() << "ptr should not be 0\r\n";
         return false;
     }
     bool hasSameChunk = false;

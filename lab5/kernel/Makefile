@@ -1,9 +1,3 @@
-CC       := aarch64-linux-gnu-gcc
-CXX      := aarch64-linux-gnu-g++
-LD       := aarch64-linux-gnu-ld
-OBJCOPY  := aarch64-linux-gnu-objcopy
-CCFLAGS  := -std=gnu17
-CXXFLAGS := -ffreestanding -nostdinc -nostdlib -nostdinc++ -nostartfiles -g -std=c++17 -MMD -Iinclude
 SRC      := $(wildcard *.cpp)
 ASM      := $(wildcard *.S)
 OBJ      := $(SRC:.cpp=.o) $(ASM:.S=.o)

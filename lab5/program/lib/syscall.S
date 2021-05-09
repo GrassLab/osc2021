@@ -20,3 +20,4 @@ gensys getpid   5
 gensys uart_get 6
 gensys fork     7
 gensys delay    8
+gensys wait     9

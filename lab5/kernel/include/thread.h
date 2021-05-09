@@ -2,7 +2,7 @@
 
 #include <types.h>
 
-struct task_struct {
+struct alignas(16) task_struct {
     uint64_t x19;
     uint64_t x20;
     uint64_t x21;
@@ -23,6 +23,8 @@ struct task_struct {
     void *program_alloc;
     uint64_t pid;
     uint64_t sleep_until;
+    uint64_t program_size;
+    uint64_t wait_pid;
 };
 
 extern task_struct* tasks;

@@ -27,7 +27,7 @@ public:
     char* filename;
     char* filecontent;
     cpio_newc_header* header;
-    cpio_newc_header* next();
+    cpio_newc_header* next;
 private:
     int Hex2int(uint8_t hex);
 };

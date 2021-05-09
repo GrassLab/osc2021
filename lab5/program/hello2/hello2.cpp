@@ -9,13 +9,17 @@ int main() {
     if ((ret = fork()) == 0) { // child
         io() << "pid: " << getpid() << ", cnt: " << cnt << ", ptr: " << &cnt << "\r\n";
         ++cnt;
-        fork();
+        int child = fork();
         while (cnt < 5) {
             io() << "pid: " << getpid() << ", cnt: " << cnt << ", ptr: " << &cnt << "\r\n";
             delay(10000000);
             ++cnt;
         }
+        if (child) {
+            wait(child);
+        }
     } else {
         io() << "parent here, pid " << getpid() << ", child " << ret << "\r\n";
+        wait(ret);
     }
 }

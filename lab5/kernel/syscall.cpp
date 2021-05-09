@@ -9,7 +9,6 @@
 
 uint64_t total_threads = 0;
 uint64_t pid_counter = 0;
-task_struct *tasks = (task_struct*)TASK_STRUCT_BASE;
 
 extern "C" {
     void do_exit();
@@ -23,17 +22,33 @@ extern "C" {
     uint64_t get_timer();
 }
 
-
-static void sys_schedule() {
+static void schedule_internal(bool save_current) {
     uint64_t current = get_tpidr_el1();
     uint64_t target = current;
     while (true) {
         target = (target + 1 < total_threads) ? target + 1 : 0;
         if (get_timer() >= tasks[target].sleep_until) {
-            break;
+            if (tasks[target].wait_pid == 0) {
+                break;
+            }
+            bool wait = false;
+            for (int i = 0; i < total_threads; i++) {
+                if (tasks[target].wait_pid == tasks[i].pid) {
+                    wait = true;
+                    break;
+                }
+            }
+            if (!wait) {
+                tasks[target].wait_pid = 0;
+                break;
+            }
         }
     }
-    switch_to(&tasks[current], &tasks[target], target);
+    switch_to(save_current ? &tasks[current] : nullptr, &tasks[target], target);
+}
+
+static void sys_schedule() {
+    schedule_internal(true);
 }
 
 static void sys_clone(void *func) {
@@ -54,7 +69,6 @@ static void sys_clone(void *func) {
 
 static void sys_exit() {
     uint64_t current = get_tpidr_el1();
-    uint64_t target;
     bool has_same_program = false;
     for (int i = 0; i < total_threads; i++) {
         if (i != current && tasks[i].program_alloc == tasks[current].program_alloc) {
@@ -74,18 +88,15 @@ static void sys_exit() {
     }
     if (total_threads != current) {
         tasks[current] = tasks[total_threads];
-        target = (current + 1) % total_threads;
     }
-    else {
-        target = 0;
-    }
-    switch_to(nullptr, &tasks[target], target);
+    schedule_internal(false);
 }
 
-void sys_exec(char* name, char** argv) {
+int sys_exec(char* name, char** argv) {
+    char buffer[25];
     cpio_newc_header* header = (cpio_newc_header*) INITRAMFS_BASE;
     CPIO cpio(header);
-    while (strcmp(cpio.filename, "TRILER!!!") != 0) {
+    while (strcmp(cpio.filename, "TRAILER!!!") != 0) {
         if (strcmp(cpio.filename, name) == 0) {
             uint64_t tpidr = get_tpidr_el1();
             char* arg = (char*)malloc(4096);
@@ -100,19 +111,18 @@ void sys_exec(char* name, char** argv) {
                 argv++;
             }
             tmp_mem[argc + 1] = nullptr;
-            tmp = (char*)(((uint64_t)tmp + 7) & ~7); // Align 8
+            tmp = (char*)(((uint64_t)tmp + 15) & ~15); // Align 16
             memcpy(tmp, tmp_mem, (argc + 1) * sizeof(char*));
             free(tmp_mem);
             uint64_t arg_size = tmp - arg + (argc + 1) * sizeof(char*);
+            arg_size = (arg_size + 15) & ~15; // Align 16
             sp_el0 -= arg_size;
             memcpy(sp_el0, arg, arg_size);
             free(arg);
             char *arg_final = sp_el0 + (tmp - arg);
-            for (int i = 0; i < argc + 1; i++) {
-                if (((char**)arg_final)[i] != nullptr)
-                    ((char**)arg_final)[i] -= (arg - ((char*)tasks[tpidr].stack_alloc) - 0x1000 + arg_size);
+            for (int i = 0; i < argc; i++) {
+                ((char**)arg_final)[i] -= (arg - ((char*)tasks[tpidr].stack_alloc) - 0x1000 + arg_size);
             }
-            void* program = tasks[tpidr].program_alloc;
             bool has_same_program = false;
             for (int i = 0; i < total_threads; i++) {
                 if (i != tpidr && tasks[i].program_alloc == tasks[tpidr].program_alloc) {
@@ -120,21 +130,23 @@ void sys_exec(char* name, char** argv) {
                     break;
                 }
             }
-            if (has_same_program) {
-                program = malloc(4096);
+            if (!has_same_program) {
+                free(tasks[tpidr].program_alloc);
             }
-            memcpy(program, cpio.filecontent, cpio.filesize);
+            tasks[tpidr].program_size = (cpio.filesize + 4095) & ~4095; // Align 4096
             tasks[tpidr].sp = tasks[tpidr].kernel_stack_alloc + 4096;
             tasks[tpidr].lr = (void*)kernel_thread_start;
-            tasks[tpidr].elr_el1 = tasks[tpidr].program_alloc;
+            tasks[tpidr].elr_el1 = tasks[tpidr].program_alloc = memcpy(malloc(tasks[tpidr].program_size), cpio.filecontent, cpio.filesize);
             tasks[tpidr].sp_el0 = sp_el0;
             tasks[tpidr].sleep_until = 0;
+            tasks[tpidr].wait_pid = 0;
             switch_to(nullptr, &tasks[tpidr], tpidr, argc, arg_final);
         }
         else {
-            cpio = CPIO(cpio.next());
+            cpio = CPIO(cpio.next);
         }
     }
+    return -1;
 }
 
 static size_t sys_putuart(char* str, size_t count) {
@@ -174,6 +186,12 @@ static void sys_delay(uint64_t cycles) {
     sys_schedule();
 }
 
+static void sys_wait(uint64_t pid) {
+    uint64_t current = get_tpidr_el1();
+    tasks[current].wait_pid = pid;
+    sys_schedule();
+}
+
 typedef void(* syscall_fun)();
 
 void (*syscall_table[])() = {
@@ -185,6 +203,7 @@ void (*syscall_table[])() = {
     syscall_fun(sys_getpid),
     syscall_fun(sys_getuart),
     syscall_fun(sys_fork),
-    syscall_fun(sys_delay)
+    syscall_fun(sys_delay),
+    syscall_fun(sys_wait),
 };
 
