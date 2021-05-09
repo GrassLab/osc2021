@@ -14,35 +14,60 @@ static const int _DO_LOG = 0;
 
 void syscall_routing(int num, struct trap_frame *tf) {
   switch (num) {
-  case SYS_GETPID:
+
+  case SYS_GETPID: {
     log(SYS_GETPID);
-    sys_getpid(tf);
+    int pid = sys_getpid();
+    tf->regs[0] = pid;
     break;
-  case SYS_UART_WRITE:
+  }
+
+  case SYS_UART_WRITE: {
     log(SYS_UART_WRITE);
-    sys_uart_write(tf);
+    const char *s = (const char *)tf->regs[0];
+    size_t size = (size_t)tf->regs[1];
+    size_t written = sys_uart_write(s, size);
+    tf->regs[0] = written;
     break;
-  case SYS_UART_READ:
+  }
+
+  case SYS_UART_READ: {
     log(SYS_UART_READ);
-    sys_uart_read(tf);
+    char *buf = (char *)tf->regs[0];
+    size_t size = tf->regs[1];
+    size_t read = sys_uart_read(buf, size);
+    tf->regs[0] = read;
     break;
-  case SYS_EXEC:
+  }
+
+  case SYS_EXEC: {
     log(SYS_EXEC);
-    sys_exec(tf);
+    const char *name = (const char *)tf->regs[0];
+    char *const *argv = (char *const *)(tf->regs[1]);
+    int ret = sys_exec(name, argv);
+    tf->regs[0] = ret;
     break;
-  case SYS_EXIT:
+  }
+
+  case SYS_EXIT: {
     log(SYS_EXIT);
-    sys_exit(tf);
+    sys_exit();
     break;
-  case SYS_FORK:
+  }
+
+  case SYS_FORK: {
     log(SYS_FORK);
-    sys_fork(tf);
+    int child_id = sys_fork();
+    tf->regs[0] = child_id;
     break;
-  default:
+  }
+
+  default: {
     uart_println("syscall not implemented: %d", num);
     while (1) {
       ;
     }
     break;
+  }
   }
 }

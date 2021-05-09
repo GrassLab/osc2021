@@ -77,10 +77,7 @@ void uart_init() {
   *AUX_MU_CNTL = 3; // enable Tx, Rx
 }
 
-// note: size_t uart_write(const char buf[], size_t size);
-void sys_uart_write(struct trap_frame *tf) {
-  const char *s = (const char *)tf->regs[0];
-  size_t size = (size_t)tf->regs[1];
+size_t sys_uart_write(const char s[], size_t size) {
   size_t written;
   for (written = 0; written < size; written++) {
     /* convert newline to carrige return + newline */
@@ -88,18 +85,16 @@ void sys_uart_write(struct trap_frame *tf) {
       uart_send('\r');
     uart_send(*s++);
   }
-  tf->regs[0] = written;
+  return written;
 }
 
-void sys_uart_read(struct trap_frame *tf) {
-  char *buf = (char *)tf->regs[0];
-  size_t size = tf->regs[1];
+size_t sys_uart_read(char buf[], size_t size) {
   size_t read = 0;
   for (read = 0; read < size - 1; read++) {
     buf[read] = uart_getc();
   }
   buf[read] = 0;
-  tf->regs[0] = read;
+  return read;
 }
 
 /**

@@ -1,5 +1,6 @@
 #pragma once
 #include "stdint.h"
+#include <stddef.h>
 
 #define TASK_STATUS_DEAD 0
 #define TASK_STATUS_ALIVE 1
@@ -35,14 +36,18 @@ struct task_struct {
   int status;
 
   // address of the program code allocaed in memory
-  void *entry_point;
+  void *code;
+  size_t code_size;
+
   //
   // stack
   //
 };
 
-struct task_struct *task_create(void *func, int tid);
+struct task_struct *task_create(void *func);
 void cur_task_exit();
+
+extern uint32_t new_tid;
 
 static inline void _wait() {
   for (uint64_t j = 0; j < (1 << 27); j++) {

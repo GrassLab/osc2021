@@ -11,9 +11,10 @@ void syscall_routing(int num, struct trap_frame *);
 #define SYS_EXIT 5
 #define SYS_FORK 6
 
-void sys_getpid(struct trap_frame *);
-void sys_uart_write(struct trap_frame *);
-void sys_uart_read(struct trap_frame *);
-void sys_exec(struct trap_frame *);
-void sys_exit(struct trap_frame *);
-void sys_fork(struct trap_frame *);
+int sys_getpid();
+size_t sys_uart_write(const char buf[], size_t size);
+size_t sys_uart_read(char buf[], size_t size);
+
+int sys_exec(const char *name, char *const args[]);
+void sys_exit();
+int sys_fork();

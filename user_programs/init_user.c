@@ -1,12 +1,14 @@
 #include "lib.h"
 int main() {
 
-  char *name = "./argv_test.out";
+  char *name;
+  name = "./argv_test.out";
   char *args[4];
   args[0] = "./argv_test.out";
   args[1] = "-o";
   args[2] = "arg2";
   args[3] = NULL;
+  // printf("args[0]: %s\n", args[0]);
   exec(name, (const char **)args);
   return 0;
 }

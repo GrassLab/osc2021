@@ -23,6 +23,7 @@ struct list_head run_queue;
 struct list_head exited;
 
 void proc_init() {
+  new_tid = 0;
   list_init(&run_queue);
   list_init(&exited);
 }
@@ -32,6 +33,9 @@ void task_schedule() {
   struct task_struct *next;
 
   struct task_entry *entry_next;
+#ifdef CFG_LOG_PROC_SCHED
+  _dump_runq();
+#endif
   if (!list_empty(&run_queue)) {
     while (1) {
       entry_next = (struct task_entry *)list_pop_front(&run_queue);
@@ -67,8 +71,8 @@ void kill_zombies() {
     list_del(entry);
     kfree(task);
     kfree(entry);
-    if (task->entry_point != NULL) {
-      kfree(task->entry_point);
+    if (task->code != NULL) {
+      kfree(task->code);
     }
   }
 }
