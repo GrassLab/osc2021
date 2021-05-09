@@ -4,3 +4,4 @@
 ch
 tmp
 *build*
+*.gch
