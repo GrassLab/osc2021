@@ -5,13 +5,12 @@
 #include "io.h"
 
 struct mount* rootfs;
+
 struct filesystem_list fs_list = {
     .count = 0,
     .head = NULL,
     .tail = NULL
 };
-
-// extern struct file system tmpfs;
 
 void init_root(const char *name)
 {
@@ -50,6 +49,7 @@ int register_filesystem(struct filesystem* fs) {
     return 0;
 }
 
+// get filesystem ptr by name from fs list
 struct filesystem *get_filesystem(const char *fs_name) {
     struct filesystem_node *tmp_node;
     if (fs_list.count > 0) {
