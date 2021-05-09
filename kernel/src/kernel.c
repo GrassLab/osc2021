@@ -4,6 +4,7 @@
 #include "system_call.h"
 #include "kernel.h"
 #include "base_ops.h"
+#include "vfs.h"
 
 #include "io.h"
 
@@ -21,6 +22,7 @@ void kernel_main()
     // initialization
     init_page_frame();
     init_thread_pool();
+    init_root();
 
     // default pseudo thread to set first tpidr
     struct Thread t;
