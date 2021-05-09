@@ -56,9 +56,9 @@ int try_fetch_file(char *filename) {
   unsigned long size;
   uint8_t *file = (uint8_t *)cpioGetFile((void *)RAMFS_ADDR, filename, &size);
   if (file != NULL) {
-    if (CFG_LOG_ENABLE) {
-      uart_println("  [fetchFile] file addr:%x , size:%d", file, size);
-    }
+#ifdef CFG_LOG_SHELL_SEARCH_FILE
+    uart_println("  [fetchFile] file addr:%x , size:%d", file, size);
+#endif
     for (unsigned long i = 0; i < size; i++) {
       if (file[i] == '\n' && i > 0 && file[i - 1] != '\r') {
         uart_println("");
@@ -132,9 +132,9 @@ void shell_input_line(struct Shell *sh) {
     case KI_LineFeed:
       flagExit = true;
       uart_puts("\r\n");
-      if (CFG_LOG_ENABLE) {
-        uart_println("buffer: '%s'", sh->data);
-      }
+#ifdef CFG_LOG_SHELL_BUFFER
+      uart_println("buffer: '%s'", sh->data);
+#endif
       break;
     default:
         // ignore other input

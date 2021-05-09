@@ -105,6 +105,7 @@ not_impl:
 
 _syn_handler:
     save_all
+    mov x0, sp
     bl syn_handler
     load_all
     eret
@@ -131,7 +132,7 @@ exception_vector_table:
     .align 7
 
     // Exception from current EL with SP_ELx
-    b not_impl   //  Synchronous
+    b _syn_handler  //  Synchronous
     .align 7
     b not_impl   //  IRQ
     .align 7

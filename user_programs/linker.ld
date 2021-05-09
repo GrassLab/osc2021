@@ -1,10 +1,11 @@
 SECTIONS
 {
   . = 0x80000;
-  __kernel_start = .;
   .text :
   {
-     *(.text)
+    /* always put main function at the start */
+    *(.text._runtime)
+    *(.text)
   }
   .rodata :
   {
@@ -19,5 +20,4 @@ SECTIONS
     *(.bss .bss.*)
   }
   . = ALIGN(4096);
-  _end = .;
 }

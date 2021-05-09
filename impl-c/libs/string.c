@@ -17,6 +17,24 @@ int strncmp(const char *x, const char *y, size_t n) {
   return 0;
 }
 
+void memcpy(char *dst, const char *src, size_t n) {
+  for (; n > 0; n--) {
+    *(dst++) = *(src++);
+  }
+}
+
+char *strcpy(char *dst, const char *src) {
+  char *out = dst;
+  while (1) {
+    *(dst++) = *(src++);
+    if (!*src) {
+      *dst = '\0';
+      break;
+    }
+  }
+  return out;
+}
+
 int strlen(const char *str) {
   const char *s;
   for (s = str; *s; ++s) {

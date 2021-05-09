@@ -27,6 +27,7 @@
 #include "uart.h"
 #include "gpio.h"
 #include "string.h"
+#include "syscall.h"
 #include <stdarg.h>
 
 /* Auxilary mini UART registers */
@@ -74,6 +75,26 @@ void uart_init() {
   }
   *GPPUDCLK0 = 0;   // flush GPIO setup
   *AUX_MU_CNTL = 3; // enable Tx, Rx
+}
+
+size_t sys_uart_write(const char s[], size_t size) {
+  size_t written;
+  for (written = 0; written < size; written++) {
+    /* convert newline to carrige return + newline */
+    if (*s == '\n')
+      uart_send('\r');
+    uart_send(*s++);
+  }
+  return written;
+}
+
+size_t sys_uart_read(char buf[], size_t size) {
+  size_t read = 0;
+  for (read = 0; read < size - 1; read++) {
+    buf[read] = uart_getc();
+  }
+  buf[read] = 0;
+  return read;
 }
 
 /**

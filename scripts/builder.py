@@ -41,6 +41,20 @@ def init_global():
             target_files=["kernel8.img", "kernel8.elf"],
             run_cross=False,
         ),
+        BuildProject(
+            keyword="user_programs",
+            project_folder="user_programs",
+            target_folder="res/rootfs",
+            target_files=[
+                "hello_world.out",
+                "get_pid.out",
+                "argv_test.out",
+                "init_user.out",
+                "fork_test.out",
+            ],
+            run_cross=True,
+            clean_target_folder=False,
+        ),
     ]
     targets = {r.keyword: r for r in recipies}
     console = Console()
@@ -51,12 +65,12 @@ def main():
     args = TypedArgs.parse()
     target = targets.get(args.target, None)
     if not target:
-        console.print(f"not valid target name: {args.target}")
+        console.print(f"🔨[builder]not valid target name: {args.target}")
         exit(1)
 
     op = args.operation
     if op not in ["build", "clean"]:
-        console.print(f"not valid operation: {args.operation}")
+        console.print(f"🔨[builder]not valid operation: {args.operation}")
         exit(1)
 
     success: bool = getattr(target, op)()
@@ -84,6 +98,7 @@ class BuildProject:
     project_folder: str
     target_folder: str
     target_files: Iterable[str]
+    clean_target_folder: bool = True
     run_env: str = field(init=False)
 
     run_cross: InitVar[bool] = False
@@ -107,7 +122,8 @@ class BuildProject:
         return True
 
     def clean(self) -> bool:
-        shutil.rmtree(self.target_folder, ignore_errors=True)
+        if self.clean_target_folder:
+            shutil.rmtree(self.target_folder, ignore_errors=True)
         if run_cmd(f"{self.run_env} make -C {self.project_folder} clean") is False:
             return False
         return True

@@ -1,7 +1,14 @@
 #include "cpio.h"
 #include "cfg.h"
+#include "log.h"
 #include "string.h"
 #include "uart.h"
+
+#ifdef CFG_LOG_CPIO
+static const int _DO_LOG = 1;
+#else
+static const int _DO_LOG = 0;
+#endif
 
 int _hexChar2Int(char c);
 int64_t _parseHexStr(const char *buf, int len);
@@ -115,9 +122,7 @@ uintptr_t _alignUp(uintptr_t n, unsigned long align) {
 int _cpioParseHeader(CpioNewcHeader *header, const char **filename,
                      uint64_t *_filesize, void **data, CpioNewcHeader **next) {
   if (strncmp(header->magic, CPIO_HEADER_MAGIC, 6)) {
-    if (CFG_LOG_ENABLE) {
-      uart_println("  [parseHeader] uncorrect header magic field");
-    }
+    log_println("  [parseHeader] uncorrect header magic field");
     return 1;
   }
 
@@ -126,19 +131,15 @@ int _cpioParseHeader(CpioNewcHeader *header, const char **filename,
       ((namesize = _parseHexStr(header->namesize, 8)) == -1)) {
     return -1;
   }
-  if (CFG_LOG_ENABLE) {
-    uart_println("  [parseHeader] found entry: size:%d, namesize:%d", filesize,
-                 namesize);
-  }
+  log_println("  [parseHeader] found entry: size:%d, namesize:%d", filesize,
+              namesize);
 
   // Get filename && filesize
   *filename = ((char *)header) + sizeof(CpioNewcHeader);
 
   // Ensure this file is not the trailer in CPIO indicating EOF.
   if (strncmp(*filename, CPIO_FOOTER_MAGIC, sizeof(CPIO_FOOTER_MAGIC)) == 0) {
-    if (CFG_LOG_ENABLE) {
-      uart_println("  [parseHeader] hit cpio footer");
-    }
+    log_println("  [parseHeader] hit cpio footer");
     return -1;
   }
 
