@@ -258,6 +258,7 @@ void sys_fork(trap_frame *tf){
     char buf[128];
     read_input(buf);
     unsigned long child_ustack = getHexFromString(buf);
+    //unsigned long child_ustack  = my_alloc(4096);
 
     //uart_printf("read done\n");
     //child_tf->elr_el1 = tf->elr_el1;
