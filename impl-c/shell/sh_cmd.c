@@ -29,7 +29,7 @@ static void cmdHelp();
 // static void cmdLoadUser();
 static void cmdReboot();
 
-Cmd cmdList[5] = {
+Cmd cmdList[] = {
     {.name = "hello", .help = "Greeting", .func = cmdHello},
     {.name = "ls", .help = "List files", .func = cmdLs},
     // {.name = "load_user",
