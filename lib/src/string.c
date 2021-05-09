@@ -1,7 +1,7 @@
 #include "string.h"
 #include "mini_uart.h"
 
-int strcmp(char *str1, char *str2)
+int strcmp(const char *str1, const char *str2)
 {
     int result = 1;
     int i = 0;
@@ -21,17 +21,19 @@ int strcmp(char *str1, char *str2)
     return result;
 }
 
-int strcpy(char *str1, char *str2)
+int strcpy(char *str1, const char *str2)
 {
-    int length = strlen(str2);
-    for (int i = 0; i < length; i++) {
+    int i = 0, length = strlen(str2);
+    for (; i < length; i++) {
         str1[i] = str2[i];
     }
+
+    str1[i] = '\0';
 
     return 0;
 }
 
-int strlen(char *str) 
+int strlen(const char *str) 
 {
     int len = 0;
     while (*str != '\0')
