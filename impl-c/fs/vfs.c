@@ -1,8 +1,17 @@
 #include "fs/vfs.h"
 
+#include "uart.h"
+
 struct mount *rootfs;
 
-void vfs_init() {}
+void mount_root_fs();
+
+void vfs_init() { mount_root_fs(); }
+
+void mount_root_fs() {
+  uart_println("do mount root fs");
+  ;
+}
 
 int register_filesystem(struct filesystem *fs) {
   // register the file system to the kernel.
