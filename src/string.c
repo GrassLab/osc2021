@@ -1,7 +1,7 @@
 #include "string.h"
 #include "math.h"
 
-int strcmp ( char * s1, char * s2 )
+int strcmp (const char * s1,const char * s2 )
 {
     /* 
     Returns 0 if str1 is same as str2. 
@@ -29,7 +29,7 @@ void strset (char * s1, int c, int size )
         s1[i] = c;
 }
 
-int strlen ( char * s )
+int strlen (const char * s )
 {
     int i = 0;
     while ( 1 )
