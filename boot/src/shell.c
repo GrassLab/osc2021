@@ -63,7 +63,7 @@ static void load_img() {
     }
 
     print("Kernel size: ");
-    print_int(kernel_size);
+    print_dec(kernel_size);
     unsigned int code_size = (unsigned int)(&_relocate_end - &_relocate_start);
     char *new_addr = (char*)((kernel_size / 0x10000 + 1) * 0x10000 + KERNEL_ADDR);
     char *old_addr = (char*)&_relocate_start;

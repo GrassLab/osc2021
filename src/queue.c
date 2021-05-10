@@ -4,6 +4,7 @@ void queue_init(queue_t *queue, void *buffer, unsigned int size) {
     queue->front = 0;
     queue->back = 0;
     queue->size = size;
+    queue->lock = false;
     queue->buffer = buffer;
 }
 

@@ -1,8 +1,9 @@
 #include "cpio.h"
 #include "utils.h"
 
-#define CPIO_LOAD_ADDR 0x20000000
-//#define CPIO_LOAD_ADDR 0x8000000
+//#define CPIO_LOAD_ADDR 0x20000000
+#define CPIO_LOAD_ADDR 0x8000000
+
 const unsigned int header_size = 110;
 
 cpio_t file_list[20];
@@ -54,4 +55,17 @@ void read_cpio_archive() {
         *(cpio_addr + pc) = '\0';
         file_count++;
     }
+}
+
+int search_file(const char *file_name) {
+    for (int i = 0; i < file_count; i++) {
+        if (!strcmp(file_list[i].file_name, file_name)) {
+            if (file_list[i].executable) {
+                return i;
+            } else {
+                return -1;
+            }
+        }
+    }
+    return -1;
 }

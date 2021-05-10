@@ -1,4 +1,6 @@
-/* Delay about time * 3~4 cycles */
+#include "utils.h"
+
+/* Delay time = time * 3~4 cycles */
 void delay(int time) {
     while (time--) {
         asm volatile("nop");

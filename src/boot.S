@@ -27,5 +27,5 @@ _start:
 		cbnz   x2, 3b
 
 
-4:	bl    main
+4:	bl    kernel_main
 		b     1b

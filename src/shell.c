@@ -3,7 +3,7 @@
 #include "cpio.h"
 #include "type.h"
 #include "mm.h"
-#include "exception.h"
+#include "set_int.h"
 
 #define CMD_LEN 128
 
@@ -44,7 +44,7 @@ static void execute_file(const char *file_name) {
                 char *exec_addr = (char*)EXEC_ADDR;
                 for (int j = 0; j < file_list[i].file_size; j++)
                     *(exec_addr + j) = *(file_list[i].file_content + j);
-                from_el1_to_el0(EXEC_ADDR);
+                //from_el1_to_el0(EXEC_ADDR);
             } else {
                 print("exec: ");
                 print(file_name);
@@ -217,9 +217,10 @@ static void get_cmd(char *s) {
 void run_shell() {
     char cmd[CMD_LEN];
     /* Print enter information */
-    async_write("==================================\n");
-    async_write("=== Raspberry Pi 3 Model b+ OS ===\n");
-    async_write("==================================\n");
+    //async_write("==================================\n");
+    //async_write("=== Raspberry Pi 3 Model b+ OS ===\n");
+    //async_write("==================================\n");
+    print("Start\n");
 
     for(int i = 0; i < 100; i++)
         addr[i] = NULL;
@@ -227,9 +228,10 @@ void run_shell() {
     addr_pos = 0;
 
     while (1) {
-        async_write("% ");
-        //get_cmd(cmd);
-        async_read(cmd);
+        //async_write("% ");
+        print("% ");
+        get_cmd(cmd);
+        //async_read(cmd);
         cmd_controler(cmd);
     }
 }

@@ -30,7 +30,7 @@ typedef struct {
 } page_t;
 
 typedef struct {
-    char  used;
+    char         used;
     unsigned int obj_size;
     unsigned int obj_used;
     unsigned int page_used;
@@ -39,7 +39,7 @@ typedef struct {
 } pool_t;
 
 typedef struct {
-    void *addr;
+    void        *addr;
     list_head_t list;
 } chunk_t;
 
@@ -147,7 +147,7 @@ static bool_t buddy_release_redundant(unsigned int order) {
     /* No memory */
     if (higher_order > MAX_ORDER)
         return false;
-    print("****************Release redundant***************\n");
+    //print("****************Release redundant***************\n");
     for (int i = higher_order; i > order; i--) {
         page_t *block = buddy_pop_block(free_list[i].head.next, i);
         unsigned int index = get_page_index(block) + pow(2, i - 1);
@@ -155,9 +155,9 @@ static bool_t buddy_release_redundant(unsigned int order) {
         page[index].order = i-1;
         buddy_push_block(&block->list, i - 1);
         buddy_push_block(&page[index].list, i - 1);
-        print_block(&page[index]);
+        //print_block(&page[index]);
     }
-    print("************************************************\n\n");
+    //print("************************************************\n\n");
     return true;
 }
 
@@ -165,17 +165,17 @@ static void buddy_merge(page_t *block) {
     unsigned int block_head = get_page_index(block);
     unsigned int order = block->order;
     unsigned int buddy;
-    print("*********************Find buddy********************\n");
+    //print("*********************Find buddy********************\n");
     for (; order < MAX_ORDER; order++) {
         buddy = block_head ^ (1 << order);
         /* Search buddy */
         if (order != page[buddy].order || page[buddy].used != (char)0)
             break;
-        print("Origin ");
+        /*print("Origin ");
         print_block(&page[block_head]);
         print("Buddy ");
         print_block(&page[buddy]);
-        print("-----------------------Merge-----------------------\n");
+        print("-----------------------Merge-----------------------\n");*/
         buddy_pop_block(&page[buddy].list, page[buddy].order);
         if (block_head < buddy) {
             page[buddy].order = -1;
@@ -185,8 +185,8 @@ static void buddy_merge(page_t *block) {
         }
         page[block_head].order++;
     }
-    print_block(&page[block_head]);
-    print("***************************************************\n\n");
+    //print_block(&page[block_head]);
+    //print("***************************************************\n\n");
     buddy_push_block(&page[block_head].list, page[block_head].order);
 }
 
@@ -199,18 +199,18 @@ static page_t* buddy_alloc(unsigned int order) {
 
     page_t* alloc_block = buddy_pop_block(free_list[order].head.next, order);
     alloc_block->used = 1;
-    print("****************Allocate pages***************\n");
+    /*print("****************Allocate pages***************\n");
     print_block(alloc_block);
-    print("*********************************************\n\n");
+    print("*********************************************\n\n");*/
     return alloc_block;
 }
 
 static void buddy_free(page_t *block) {
     block->used = 0;
     memset((void*)get_address(block), pow(2, block->order), 0);
-    print("******************Free pages*****************\n");
+    /*print("******************Free pages*****************\n");
     print_block(block);
-    print("*********************************************\n\n");
+    print("*********************************************\n\n");*/
     buddy_merge(block);
 }
 
@@ -242,12 +242,12 @@ static void pool_create(unsigned int size, unsigned int entry) {
 }
 
 static void* obj_alloc(unsigned int entry) {
-    print("Pool entry: ");
+    /*print("Pool entry: ");
     print_int(entry);
-    print("\n");
+    print("\n");*/
     pool_t *p = &pool[entry];
     if (p->head.next != &p->head) {
-        print("Get chunk from:  chunk buffer\n\n");
+        //print("Get chunk from:  chunk buffer\n\n");
         chunk_t *chu = list_entry(p->head.next, chunk_t, list);
         list_del(p->head.next);
         void *addr = chu->addr;
@@ -257,7 +257,7 @@ static void* obj_alloc(unsigned int entry) {
         return addr;
     }
 
-    print("Get chunk from:  page\n\n");
+    //print("Get chunk from:  page\n\n");
     p->obj_used++;
     if ((p->obj_size * (p->obj_used - 1)) >= PAGE_SIZE) {
         if ((p->page[p->page_used] = buddy_alloc(0)) == NULL)
@@ -269,7 +269,7 @@ static void* obj_alloc(unsigned int entry) {
 }
 
 static void obj_free(void *addr, unsigned int entry) {
-    print("Put chunk into chunk buffer\n");
+    //print("Put chunk into chunk buffer\n");
     pool_t *p = &pool[entry];
     memset(addr, p->obj_size, 0);
     chunk[chunk_pos].addr = addr;
@@ -279,7 +279,7 @@ static void obj_free(void *addr, unsigned int entry) {
 
 void* kmalloc(unsigned int size){
     if (size > (PAGE_SIZE / 2)) {
-        print("Use page allocator directly\n");
+        //print("Use page allocator directly\n");
         int order = 0;
         if (!(size % PAGE_SIZE))
             order--;

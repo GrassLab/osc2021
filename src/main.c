@@ -2,18 +2,53 @@
 #include "shell.h"
 #include "cpio.h"
 #include "mm.h"
-#include "exception.h"
-#define EXEC_ADDR      0x1000000
+#include "sched.h"
+#include "sys.h"
 
-int main() {
+void foo(void) {
+		thread_t *current = get_current();
+		for (int i = 0; i < 5; i++) {
+				print("Thread id: ");
+				print_int(current->pid);
+				print(", epoch: ");
+				print_int(i);
+				print("\n");
+				delay(1000000);
+				schedule();
+		}
+		thread_exit();
+}
+
+void user_test(void) {
+		char *argv[] = {"argv_test", "-o", "arg2", 0, 0};
+		do_exec("argv_test.img", argv, -1);
+}
+
+void user_test2(void) {
+		char *argv[] = {"fork_test", "-o", "arg2", 0, 0};
+		do_exec("fork_test.img", argv, -1);
+}
+
+static void kernel_init(void) {
 		uart_init();
 		read_cpio_archive();
-		/*int i = 1;
-		char *exec_addr = (char*)EXEC_ADDR;
-		for (int j = 0; j < file_list[i].file_size; j++)
-				*(exec_addr + j) = *(file_list[i].file_content + j);
-		from_el1_to_el0(EXEC_ADDR);*/
 		mm_init();
-		run_shell();
+		sched_init();
+}
+
+int kernel_main(void) {
+		kernel_init();
+
+		/* require 1 */
+		/*for (int i = 0; i < 5; i++)
+				thread_create(&foo);
+		idle();*/
+
+		/* require 2 */
+		thread_create(&user_test);
+		//thread_create(&user_test2);
+		idle();
+
+		//run_shell();
 		return 0;
 }

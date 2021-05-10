@@ -14,5 +14,6 @@ extern cpio_t file_list[20];
 extern unsigned int file_count;
 
 void read_cpio_archive();
+int search_file(const char *);
 
 #endif
