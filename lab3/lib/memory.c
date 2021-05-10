@@ -66,7 +66,18 @@ void frame_init() {
     Buddy *buddy = BUDDY_STRUCT_ADDR;
     Block *blocks = BLOCK_STRUCT_ADDR;
 
-    char *str; // for itoa
+    char str[20]; // for itoa
+    memset(str, 0, 20);
+    
+    /*
+    str[0] = '0';
+    str[1] = '1';
+    str[2] = '\0';
+    str[3] = '2';
+    str[4] = '3';
+    str[5] = '\0';
+    uart_puts(str);
+    */
 
     // initialize Blocks
     for (int i = 0; i < total_index; i++) {
@@ -92,14 +103,17 @@ void frame_init() {
     uart_puts("Frame size: ");
     itoa(FRAME_SIZE, str);
     uart_puts(str);
+    memset(str, 0, 20);
     uart_puts("B\n");
     uart_puts("Total available frame: ");
     itoa(total_frame, str);
     uart_puts(str);
+    memset(str, 0, 20);
     uart_puts("\n");
     uart_puts("Total block: ");
     itoa(total_index, str);
     uart_puts(str);
+    memset(str, 0, 20);
     uart_puts("\n");
 }
 
@@ -201,7 +215,8 @@ void block_update(Block *block) {
 int merge(Buddy *buddy, Block *deallocated) {
     if (!deallocated->index) return;
 
-    char *str; // for itoa
+    char str[20]; // for itoa
+    memset(str, 0, 20);
 
     int level = compute_level_with_index(deallocated->index);
 
@@ -218,8 +233,6 @@ int merge(Buddy *buddy, Block *deallocated) {
     Block *tmp;
     
     while (1) {
-        itoa(deallocated->index, str);
-
         // check if block buddy index is odd or even
         if (deallocated->index % 2) buddy_is_even = 1;
         else buddy_is_even = 0;
@@ -242,15 +255,18 @@ int merge(Buddy *buddy, Block *deallocated) {
             parent = child - offset;
 
             // print log
-            itoa(child->index, str);
             uart_puts("Block ");
+            itoa(child->index, str);
             uart_puts(str);
+            memset(str, 0, 20);
             uart_puts(" and Block ");
             itoa((child+1)->index, str);
             uart_puts(str);
+            memset(str, 0, 20);
             uart_puts(" are merged into Block ");           
             itoa(parent->index, str);
             uart_puts(str);
+            memset(str, 0, 20);
             uart_puts("\n");
 
             // merge
@@ -303,7 +319,8 @@ Block *release_redundant(Buddy *buddy, Block *unreleased, int level, int require
     int left_frame = required_frame;
     int flag;
     int tmp_valid;
-    char *str;
+    char str[20];
+    memset(str, 0, 20);
 
     int max_release = WhichPowerOfTwo((MAX_MEMORY - MIN_MEMORY) / FRAME_SIZE);
     int release_array[max_release];
@@ -327,6 +344,7 @@ Block *release_redundant(Buddy *buddy, Block *unreleased, int level, int require
             uart_puts("Block ");
             itoa(right_child->index, str);
             uart_puts(str);
+            memset(str, 0, 20);
             uart_puts(" is released!\n");
 
             tmp_valid = left_child->valid;
@@ -363,7 +381,8 @@ Block *release_redundant(Buddy *buddy, Block *unreleased, int level, int require
 }
 
 void free_frame(void *addr) {
-    char *str; // for itoa
+    char str[20]; // for itoa
+    memset(str, 0, 20);
     int merge_result = 0;
     int level;
     int total = 0;
@@ -374,11 +393,13 @@ void free_frame(void *addr) {
     uart_puts("freed address: 0x");
     dec_hex((unsigned long)addr, str);
     uart_puts(str);
+    memset(str, 0, 20);
     uart_puts(", Block id is: ");
 
     Block *deallocated = compute_block(addr);
     itoa(deallocated->index, str);
     uart_puts(str);
+    memset(str, 0, 20);
 
     // print log
     Block *log = deallocated;
@@ -387,6 +408,7 @@ void free_frame(void *addr) {
             uart_puts(" and ");
             itoa(log->allocated_chain->index, str);
             uart_puts(str);
+            memset(str, 0, 20);
             log = log->allocated_chain;
         }
         else break;
@@ -416,9 +438,11 @@ void free_frame(void *addr) {
     uart_puts("Total freed frame: ");
     itoa(total, str);
     uart_puts(str);
+    memset(str, 0, 20);
     uart_puts(", size: ");
     itoa(total*FRAME_SIZE, str);
     uart_puts(str);
+    memset(str, 0, 20);
     uart_puts("B\n");
 
     if (!merge_result) uart_puts("No merge!!!\n");
@@ -432,16 +456,19 @@ void *allocate_frame(unsigned long n) {
     4. split the level n-k block and insert to proper level, then goto 2
     5. release redundant frames
     */
-    char *str; // for itoa
+    char str[20]; // for itoa
+    memset(str, 0, 20);
     Buddy *buddy = (Buddy *)BUDDY_STRUCT_ADDR;
     unsigned long required_frame = frame_ceil(FRAME_SIZE, n);
 
     uart_puts("Requesting ");
     itoa(n, str);
     uart_puts(str);
+    memset(str, 0, 20);
     uart_puts("B (");
     itoa(required_frame, str);
     uart_puts(str);
+    memset(str, 0, 20);
     uart_puts(" frame)\n");
 
     // 1
@@ -490,15 +517,18 @@ void *allocate_frame(unsigned long n) {
             child2->previous = child1;
 
             // print log            
-            itoa(parent->index, str);
             uart_puts("Block ");
+            itoa(parent->index, str);
             uart_puts(str);
+            memset(str, 0, 20);
             uart_puts(" is split into Block ");
             itoa(child1->index, str);
             uart_puts(str);
+            memset(str, 0, 20);
             uart_puts(" and Block ");
             itoa(child2->index, str);
             uart_puts(str);
+            memset(str, 0, 20);
             uart_puts("\n");           
 
             parent = child1;
@@ -527,20 +557,24 @@ void *allocate_frame(unsigned long n) {
     itoa(allocated->index, str);
     uart_puts("Block ");
     uart_puts(str);
+    memset(str, 0, 20);
 
     while (allocated->allocated_chain) {
         uart_puts(", Block ");
         itoa(allocated->allocated_chain->index, str);
         uart_puts(str);
+        memset(str, 0, 20);
         allocated = allocated->allocated_chain;
     }
 
     uart_puts(" is allocated. Total frame: ");
     itoa(required_frame, str);
     uart_puts(str);
-    dec_hex((unsigned long)addr, str);
+    memset(str, 0, 20);
     uart_puts("\naddress: 0x");
+    dec_hex((unsigned long)addr, str);
     uart_puts(str);
+    memset(str, 0, 20);
     uart_puts("\n");
     return addr;
 }
@@ -616,16 +650,20 @@ void bucket_init() {
     unsigned long total_frame = pow(2, power);
     unsigned long total_index = pow(2, power+1) - 1;
     unsigned long start_index = total_index - total_frame;
-    char *str;
+    char str[20];
+    memset(str, 0, 20);
     uart_puts("Initialize bucket chunk allocator complete!\n");
     itoa(num_bucket, str);
     uart_puts(str);
+    memset(str, 0, 20);
     uart_puts(" frames are reserved for bucket allocator which are Block index ");
     itoa(start_index, str);
     uart_puts(str);
+    memset(str, 0, 20);
     uart_puts(" to ");
     itoa(start_index+num_bucket-1, str);
     uart_puts(str);
+    memset(str, 0, 20);
     uart_puts(".\n");
 }
 
@@ -680,10 +718,12 @@ Bucket *allocate_bucket(int level) {
         if (i != new_bucket->available_chunk-1) new_chunk[i].next = new_chunk + i + 1;
         else new_chunk[i].next = NULL;
     }
-    char *str;
+    char str[20];
+    memset(str, 0, 20);
     uart_puts("\nBucket level ");
     itoa(level, str);
     uart_puts(str);
+    memset(str, 0, 20);
     uart_puts(" is allocated\n");
 
     return new_bucket;
@@ -737,17 +777,21 @@ void *allocate_chunk(unsigned long n) {
     unsigned long chunk_size = owner->size;
     void *addr = (void *)(owner->addr + ret->index * chunk_size);
 
-    char *str;
+    char str[20];
+    memset(str, 0, 20);
     uart_puts("Requesting size ");
     itoa(n, str);
     uart_puts(str);
+    memset(str, 0, 20);
     uart_puts("B\n");
     uart_puts("chunk size ");
     itoa(owner->size, str);
     uart_puts(str);
+    memset(str, 0, 20);
     uart_puts("B is allocated\naddress is 0x");
     dec_hex((unsigned long)addr, str);
     uart_puts(str);
+    memset(str, 0, 20);
     uart_puts("\n");
 
     return addr;
@@ -809,13 +853,16 @@ int free_chunk(void *addr) {
         owner->available_chunk++;
         
         // print log
-        char *str;
+        char str[20];
+        memset(str, 0, 20);
         uart_puts("freed address: 0x");
         dec_hex((unsigned long)addr, str);
         uart_puts(str);
+        memset(str, 0, 20);
         uart_puts(", chunk size ");
         itoa(owner->size, str);
         uart_puts(str);
+        memset(str, 0, 20);
         uart_puts("B\n");
 
         if (owner->available_chunk == max_chunk) free_bucket(owner);        
@@ -832,11 +879,13 @@ void free_bucket(Bucket *freed) {
     if (freed->previous) {
         
         // print log
-        char *str;
+        char str[20];
+        memset(str, 0, 20);
         int level = WhichPowerOfTwo(freed->size / MIN_CHUNK_SIZE);
         uart_puts("Bucket level ");
         itoa(level, str);
         uart_puts(str);
+        memset(str, 0, 20);
         uart_puts(" is freed, ");
 
         free_frame(freed->addr);    
