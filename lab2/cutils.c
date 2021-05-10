@@ -12,7 +12,7 @@ char *align_down(char *addr, int alignment)
     return addr - r;
 }
 
-int strlen(char *str)
+int strlen(const char *str)
 { // '\0' doesn't count.
     int cnt;
     char *str_ptr;
@@ -124,7 +124,7 @@ unsigned long hex_string_to_unsigned_long(char *hex_str, int len)
     return num;
 }
 
-int dec_string_to_int(char *dec_str, int len)
+int dec_string_to_int(const char *dec_str, int len)
 {
     unsigned long num;
     int base;
@@ -157,4 +157,18 @@ int bit_clr(char *buf, int bit)
 {
     buf[bit / 8] &= ~(1 << (bit % 8));
     return 0;
+}
+
+int str_is_num(const char *str)
+{
+    char *str_ptr = str;
+    int flag = 0; // To avoid str is only null but nothing
+
+    while (*str_ptr != '\0') {
+        if (*str_ptr > '9' || *str_ptr < '0')
+            return 0;
+        flag = 1;
+        str_ptr++;
+    }
+    return flag;
 }

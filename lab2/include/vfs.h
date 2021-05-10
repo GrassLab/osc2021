@@ -59,6 +59,8 @@ struct filesystem {
 int tmpfs_setup_mount(struct filesystem* fs,
     struct mount* mount, struct vnode *root);
 
+void init_fops_pool();
+void init_vops_pool();
 void init_mnttab();
 struct mount *new_mount();
 void init_oftab();

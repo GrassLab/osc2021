@@ -226,6 +226,7 @@ int init_tmpfs()
     tmp_root.parent = &tmp_root;
     tmp_root.rsib = &tmp_root;
     tmp_root.type = DIRENT;
+    // uart_send_string("From init_tmpfs: A-1\r\n");
 
     /* Iterate initramfs */
     now = (struct cpio_newc_header*)INITRAMFS_BASE;
@@ -258,6 +259,7 @@ int init_tmpfs()
             tmpent_prev->rsib = tmpent_now;
             tmpent_now->parent = tmpent_prev->parent;
         }
+    // uart_send_string("From init_tmpfs: A-2\r\n");
 
         /* Setting tmpent.type */
         mode = hex_string_to_int(now->c_mode, 8);

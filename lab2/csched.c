@@ -277,6 +277,8 @@ int sys_exit()
     if (rm_from_ready(current) == -1)
         return -1;
     current->status = TASK_ZOMBIE;
+    for (int i = 0; i < 8; ++i)
+        sys_close(i);
     // Release all resources, except stack and struct task.
     schedule();
     return 0;

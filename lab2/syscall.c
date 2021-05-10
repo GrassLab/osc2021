@@ -204,7 +204,8 @@ int sys_write(int fd, const void *buf, int count)
 int sys_close(int fd)
 {
     int ret;
-    ret = vfs_close(current->fd_tab[fd]);
+    if (current->fd_tab[fd])
+        ret = vfs_close(current->fd_tab[fd]);
     current->fd_tab[fd] = 0;
 
     return ret;

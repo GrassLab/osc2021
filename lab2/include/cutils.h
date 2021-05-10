@@ -1,6 +1,6 @@
 char *align_upper(char *addr, int alignment);
 char *align_down(char *addr, int alignment);
-int strlen(char *str);
+int strlen(const char *str);
 void *memcpy(char *str1, const char *str2, int n);
 int strcpy(char *str1, const char *str2);
 int strcmp(const char *str1, const char *str2);
@@ -8,7 +8,8 @@ int strcmp_with_len(char *str1, char *str2, int len);
 char *strstr(char *haystack, char *needle);
 int hex_string_to_int(char *hex_str, int len);
 unsigned long hex_string_to_unsigned_long(char *hex_str, int len);
-int dec_string_to_int(char *dec_str, int len);
+int dec_string_to_int(const char *dec_str, int len);
 int bit_test(char *buf, int bit);
 int bit_set(char *buf, int bit);
 int bit_clr(char *buf, int bit);
+int str_is_num(const char *str);

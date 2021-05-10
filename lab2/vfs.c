@@ -1,5 +1,6 @@
 #include "include/vfs.h"
 #include "include/tmpfs.h"
+#include "include/procfs.h"
 #include "include/csched.h"
 #include "include/cutils.h"
 #include "include/mm.h"
@@ -9,7 +10,45 @@ struct mount mnt_tab[MAX_MNT_NR];
 struct filesystem fs_tab[MAX_FS_NR];
 struct vnode vnode_pool[MAX_VNODE_NR];
 struct file openfile_tab[MAX_FD_NR];
+struct file_operations fops_pool[MAX_VNODE_NR];
+struct vnode_operations vops_pool[MAX_VNODE_NR];
 extern struct task *current;
+
+void init_fops_pool()
+{
+    for (int i = 0; i < MAX_VNODE_NR; ++i) {
+        fops_pool[i].write = 0;
+    }
+}
+
+void init_vops_pool()
+{
+    for (int i = 0; i < MAX_VNODE_NR; ++i) {
+        vops_pool[i].lookup = 0;
+    }
+}
+
+struct file_operations *new_fops()
+{
+    for (int i = 0; i < MAX_VNODE_NR; ++i) {
+        if (!(fops_pool[i].write)) {
+            fops_pool[i].write = 1;
+            return &fops_pool[i];
+        }
+    }
+    return 0; // NULL
+}
+
+struct vnode_operations *new_vops()
+{
+    for (int i = 0; i < MAX_VNODE_NR; ++i) {
+        if (!(vops_pool[i].lookup)) {
+            vops_pool[i].lookup = 1;
+            return &vops_pool[i];
+        }
+    }
+    return 0; // NULL
+}
 
 void init_mnttab()
 {
@@ -129,8 +168,10 @@ struct vnode *new_vnode()
             vnode->internal = 0;
             vnode->on = 0;
             vnode->by = 0;
-            vnode->f_ops = (struct file_operations*)kmalloc(sizeof(struct file_operations));
-            vnode->v_ops = (struct vnode_operations*)kmalloc(sizeof(struct vnode_operations));
+            // vnode->f_ops = (struct file_operations*)kmalloc(sizeof(struct file_operations));
+            // vnode->v_ops = (struct vnode_operations*)kmalloc(sizeof(struct vnode_operations));
+            vnode->f_ops = new_fops();
+            vnode->v_ops = new_vops();
             return vnode;
         }
     }
@@ -150,7 +191,7 @@ struct vnode *get_vnode(const char *pathname, int level)
     // Example: get_vnode("/bin/aloha/file.c", root, type)
     // level == 3:  return vnode of "/bin"
     // level == 2:  return vnode of "/bin/aloha"
-    // level == 1: return vnode of "/bin/aloha/file.c"
+    // level == 1:  return vnode of "/bin/aloha/file.c"
     char buf[32], *buf_ptr;
     struct vnode *vnode_dir, *vnode_walk;
     int folder_nr;
@@ -183,6 +224,8 @@ struct vnode *get_vnode(const char *pathname, int level)
 
     /* Lookup downward */
     while ((folder_nr--) > 0) {
+        // if (vnode_dir->by) // This can be done by lookup function or here
+        //     vnode_dir = vnode_dir->by;
         vnode_dir->v_ops->lookup(vnode_dir, &vnode_walk, buf_ptr);
         if (!vnode_walk)
             return 0; // NULL

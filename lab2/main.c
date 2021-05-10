@@ -8,6 +8,7 @@
 #include "include/syslib.h"
 #include "include/vfs.h"
 #include "include/tmpfs.h"
+#include "include/procfs.h"
 // #include "include/initramfs.h"
 #include "utils.h"
 #define CMD_SIZE 64
@@ -390,7 +391,7 @@ int ls(char *path) {
         if (stat_and_next(fd, &dent))
             break;
         uart_send_string(dent.name);
-        uart_send_string("    ");
+        uart_send_string("  :  ");
         uart_send_int(dent.size);
         uart_send_string("\r\n");
     }
@@ -525,9 +526,10 @@ void user_logic_4(int argc, char **argv)
     ls(".");
     int fd = open("/mnt/a.txt", O_CREAT);
     write(fd, "Hi", 2);
+        uart_send_string("ASSERT: fd >= 0\r\n");
     close(fd);
     chdir("/mnt");
-    ls("..");
+    // ls("..");
     fd = open("./a.txt", 0);
     // assert(fd >= 0);
     if (fd >= 0)
@@ -553,6 +555,54 @@ void user_logic_4(int argc, char **argv)
     // assert(strncmp(buf, "Hi", 2) == 0);
     if (strcmp_with_len(buf, "Hi", 2) == 0)
         uart_send_string("ASSERT: strncmp(buf, \"Hi\", 2) == 0\r\n");
+    exit();
+}
+
+void user_logic_5(int argc, char **argv)
+{
+    int fd;
+    char buf[16];
+    mkdir("/proc", 0);
+    mount("procfs", "/proc", "procfs");
+    if ((fd = open("/proc/switch", 0)) < 0)
+        uart_send_string("Fail\r\n");
+    write(fd, "0", 1);
+    close(fd);
+
+    fd = open("/proc/hello", 0);
+    int sz = read(fd, buf, 16);
+    buf[sz] = '\0';
+    // printf("%s\n", buf); // should be hello
+    uart_send_string(buf);
+    uart_send_string("\r\n");
+    close(fd);
+
+    fd = open("/proc/switch", 0);
+    write(fd, "1", 1);
+    close(fd);
+
+    fd = open("/proc/hello", 0);
+    sz = read(fd, buf, 16);
+    buf[sz] = '\0';
+    // printf("%s\n", buf); //should be HELLO
+    uart_send_string(buf);
+    uart_send_string("\r\n");
+    close(fd);
+
+    if ((fd = open("/proc/1/status", 0)) < 0) // choose a created process's id here
+        uart_send_string("Open failed\r\n");
+    // ls("/proc/2");
+    sz = read(fd, buf, 16);
+    buf[sz] = '\0';
+    // printf("%s\n", buf); // process's status.
+    uart_send_string(buf);
+    uart_send_string("\r\n");
+    close(fd);
+
+    fd = open("/proc/999/status", 0); // choose a non-existed process's id here
+    // assert(fd < 0);
+    if (fd < 0)
+        uart_send_string("fd < 0\r\n");
     exit();
 }
 
@@ -587,7 +637,7 @@ void user_thread_2()
     // current->sig.sigpend = 1; // DEMO: raise signal itself
     // current->sig.user_handler[0] = (unsigned long)udh_1;
     // exec((unsigned long)user_logic_2, argv); // DEMO:
-    exec((unsigned long)user_logic_4, argv);
+    exec((unsigned long)user_logic_5, argv);
 
 }
 
@@ -784,11 +834,14 @@ int kernel_main(char *sp)
     init_sleepQueue();
     init_uartQueue();
 
+    init_fops_pool();
+    init_vops_pool();
     init_mnttab();
     init_oftab();
     init_vnode_pool();
     init_fstab();
     register_filesystem("tmpfs", (unsigned long)tmpfs_setup_mount);
+    register_filesystem("procfs", (unsigned long)procfs_setup_mount);
     init_root_filesystem(); // must be precede than init_tmpfs()
     init_tmpfs();
 
@@ -803,30 +856,10 @@ int kernel_main(char *sp)
     // thread_create((unsigned long)test_thread_2, "DDD\r\n");
     // thread_create((unsigned long)user_thread, 0);
     thread_create((unsigned long)user_thread_2, 0);
+delay(10000000);
 
 
-// char mybuf[100];
-// struct file *fh;
-// if (!(fh = vfs_open("/bin/binrec/test", 0)))
-//     uart_send_string("From main: open fail\r\n");
-// vfs_read(fh, mybuf, 100);
-// mybuf[100] = '\0';
-// uart_send_string(mybuf);
-// vfs_close(fh);
 
-
-// struct file *fh;
-// char *mybuf = "abcdefghij";
-// char sbuf[100];
-// fh = vfs_open("/bin/binrec/test2", O_CREAT);
-// vfs_write(fh, mybuf, 10);
-// vfs_write(fh, "qwertyuiop", 10);
-// vfs_close(fh);
-// fh = vfs_open("/bin/binrec/test2", 0);
-// vfs_read(fh, sbuf, 20);
-// sbuf[20] = '\0';
-// uart_send_string(sbuf);
-// vfs_close(fh);
     enable_irq();
     schedule();
     // shell();
