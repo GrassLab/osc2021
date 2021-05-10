@@ -23,7 +23,8 @@ void init_root(const char *name)
         rootfs->fs = fs;
         struct vnode *root_vnode = malloc(sizeof(struct vnode));
         rootfs->root = root_vnode;
-        tmpfs_setup(fs, rootfs);
+
+        rootfs->fs->setup_mount(fs, rootfs);
     } else {
         printf("no such filesystem: %s\n", name);
     }

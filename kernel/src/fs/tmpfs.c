@@ -23,6 +23,7 @@ struct file_operations tmpfs_f_ops = {
 int tmpfs_setup(struct filesystem *fs, struct mount* mount)
 {
     // migrate root from previous filesystem to tmpfs
+    mount->fs = fs;
     mount->root->mount = mount;
     mount->root->v_ops = &tmpfs_v_ops;
     mount->root->f_ops = &tmpfs_f_ops;
@@ -115,7 +116,6 @@ int tmpfs_create(struct vnode *dir_node, struct vnode **target, const char *comp
     }
 
     // component_name is now the last fragment
-
     struct vnode *vnode = create_tmpfs_vnode(component_name);
     append_child(parent, vnode);
 
