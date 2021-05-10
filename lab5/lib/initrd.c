@@ -192,36 +192,16 @@ unsigned long loadprogWithArgv(char *path, unsigned long a_addr, char **argv){
     }
 
     unsigned long sp_addr = argvPut(argv, a_addr);
-    //task_struct *cur = get_current();
-    //cur->context.lr = a_addr;
- //   uart_printf("addr: %x, sp_addr: %x\n", a_addr, sp_addr);
+
     asm volatile("mov x0, 0x340   \n"::);
-    //asm volatile("mov x0, 0x3c0   \n"::);
     asm volatile("msr spsr_el1, x0   \n"::);
     asm volatile("msr elr_el1, %0   \n"::"r"(a_addr));
     asm volatile("msr sp_el0, %0   \n"::"r"(sp_addr));
-  //  uart_printf("sp_el0:%x\n",sp_addr);
    core_timer_enable();
     asm volatile("mrs x3, sp_el0   \n"::);
     asm volatile("ldr x0, [x3, 0]   \n"::);
     asm volatile("ldr x1, [x3, 8]   \n"::);
-    //unsigned long elr;
-   // asm volatile("mrs x3, elr_el1   \n"::);
-   // asm volatile("str x3, [sp, -8]  \n"::);
-   // asm volatile("ldr %0, [sp, -8]   \n":"=r"(elr):);
-   // char* x = (char*)elr;
-   // for(int i =0 ; i< 10 ;++i){
-   //    uart_printf("%x",x[i]);
-
-   // }
-   // uart_puts("\n");
-   // uart_printf("elr:%x\n",elr);
-    //asm volatile("svc 0   \n"::);
-    //while(1);
     asm volatile("eret    \n"::);
-    //asm volatile("mrs x3, elr_el1  \n"::);
-    //asm volatile("br x3   \n"::);
-    //return sp_addr;
 }
 
 /**

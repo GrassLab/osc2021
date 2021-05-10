@@ -30,6 +30,7 @@ typedef struct _task_struct{
   cpu_context context;
   int id;
   int state;
+  unsigned long stack_addr;
 }task_struct;
 
 
