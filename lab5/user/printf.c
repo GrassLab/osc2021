@@ -119,7 +119,7 @@ typedef struct {
 
 
 void _putchar(char c) {
-  write(&c, 1);
+  uart_write(&c, 1);
 }
 
 // internal buffer output

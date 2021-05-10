@@ -14,6 +14,7 @@ enum {
     SYS_EXEC,
     SYS_GETPID,
     SYS_EXIT,
+    SYS_FORK,
     NR_syscalls
 };
 

@@ -1,5 +1,7 @@
+#include <asm/constant.h>
+
 .macro kernel_entry
-    sub sp, sp, #0x150
+    sub sp, sp, #PT_REGS_SIZE
     stp x0, x1, [sp, #0x0]
     stp x2, x3, [sp, #0x10]
     stp x4, x5, [sp, #0x20]
@@ -55,7 +57,7 @@
     ldp x26, x27, [sp, #0xd0]
     ldp x28, x29, [sp, #0xe0]
 
-    add sp, sp, #0x150
+    add sp, sp, #PT_REGS_SIZE
 .endm
 
 _el1_lower_el_aarch64_sync:

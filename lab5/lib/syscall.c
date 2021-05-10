@@ -2,6 +2,7 @@
 #include <uart.h>
 #include <exec.h>
 #include <current.h>
+#include <fork.h>
 
 inline void disable_interrupt() {
     write_sysreg(DAIFSet, 0xf);
@@ -12,13 +13,21 @@ inline void enable_interrupt() {
 }
 
 void sys_uart_read(struct pt_regs *regs) {
-    char c = _getchar();
-    regs->regs[0] = c;
+    char *buf = (char *)regs->regs[0];
+    int count = regs->regs[1];
+    for (int i = 0; i < count; i++) {
+        buf[i] = _getchar();
+    }
+    regs->regs[0] = count;
 }
 
 void sys_uart_write(struct pt_regs *regs) {
-    _putchar(regs->regs[0]);
-    regs->regs[0] = 0;
+    char *buf = (char *)regs->regs[0];
+    int count = regs->regs[1];
+    for (int i = 0; i < count; i++) {
+        _putchar(buf[i]);
+    }
+    regs->regs[0] = count;
 }
 
 void sys_exec(struct pt_regs *regs) {
@@ -26,7 +35,10 @@ void sys_exec(struct pt_regs *regs) {
     const char *path = (char *)regs->regs[0];
     const char **args = (const char **)regs->regs[1];
 
-    do_exec(path, args);
+    int ret = do_exec(path, args);
+    if (ret) {
+        regs->regs[0] = ret;
+    }
 }
 
 void sys_getpid(struct pt_regs *regs) {
@@ -35,8 +47,15 @@ void sys_getpid(struct pt_regs *regs) {
 
 /* TODO: fix this up */
 void sys_exit(struct pt_regs *regs) {
-    /* ensure we won't get inturrupted here */
+    /* ensure we won't get preempted here */
     //disable_interrupt();
+
+    kill_task(current, regs->regs[0]);
+    schedule();
+}
+
+void sys_fork(struct pt_regs *regs) {
+    do_fork(regs);
 }
 
 syscall syscall_table[NR_syscalls] = {
@@ -44,5 +63,6 @@ syscall syscall_table[NR_syscalls] = {
     [SYS_UART_WRITE] = &sys_uart_write,
     [SYS_EXEC] = &sys_exec,
     [SYS_GETPID] = &sys_getpid,
-    [SYS_EXIT] = &sys_exit
+    [SYS_EXIT] = &sys_exit,
+    [SYS_FORK] = &sys_fork
 };

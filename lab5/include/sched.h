@@ -41,6 +41,7 @@ struct task_struct {
     char *kstack;
     char *user_prog;
     pid_t pid;
+    int exitcode;
     unsigned need_sched;
     unsigned long timer;
     unsigned long last_tick;
@@ -58,5 +59,6 @@ void schedule_kthread(void *cb);
 struct task_struct *alloc_user_task(void *prog, const char *argv[]);
 void add_task(struct task_struct *);
 void del_task(struct task_struct *);
+void kill_task(struct task_struct *target, int status);
 
 #endif

@@ -17,6 +17,7 @@ void enable_core_timer() {
     write_sysreg(cntp_ctl_el0, 1LL);
 
     unsigned long frq = read_sysreg(cntfrq_el0);
+    printf("[kernel] CPU freq: %ld\n\r", frq);
 
     if (frq != CPU_HZ) {
         panic("[Kernel] CPU frequency unmatch")
