@@ -10,16 +10,20 @@
  *  static const int _DO_LOG = 0;
  * #endif
  */
+
+#define LOG_DIM_START ("\033[90;m")
+#define LOG_DIM_END ("\033[0m")
+
 #define log_println(fmt, ...)                                                  \
   do {                                                                         \
     if (_DO_LOG) {                                                             \
-      uart_println("%s" fmt "%s", "\033[90;m", ##__VA_ARGS__, "\033[0m");      \
+      uart_println("%s" fmt "%s", LOG_DIM_START, ##__VA_ARGS__, LOG_DIM_END);  \
     }                                                                          \
   } while (0)
 
 #define log_printf(fmt, ...)                                                   \
   do {                                                                         \
     if (_DO_LOG) {                                                             \
-      uart_printf("%s" fmt "%s", "\033[90;m", ##__VA_ARGS__, "\033[0m");       \
+      uart_printf("%s" fmt "%s", LOG_DIM_START, ##__VA_ARGS__, LOG_DIM_END);   \
     }                                                                          \
   } while (0)
