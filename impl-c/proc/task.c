@@ -67,46 +67,8 @@ int sys_getpid() {
 
 // Overwrite current user task and kernel task
 int sys_exec(const char *name, char *const args[]) {
-  struct task_struct *task = get_current();
-  log_println("[exec] name:%s cur_task: %d(%x)", name, task->id, task);
-
-  // unload previous task code
-  if (task->code) {
-    log_println("[exec] free code from previous process: %x", task->code);
-    kfree(task->code);
-    task->code_size = 0;
-  }
-
-  // address of the program code in memory
-  void *entry_point = load_program(name, &task->code_size);
-  log_println("[exec] load new program code at: %x", task->code);
-  task->code = entry_point;
-
-  // context under kernel mode
-  task->cpu_context.fp = (uint64_t)task + FRAME_SIZE;
-  task->cpu_context.lr = (uint64_t)entry_point;
-  task->cpu_context.sp = (uint64_t)task + FRAME_SIZE;
-
-  // reset stack pointer in user mode
-  task->user_sp = task->user_stack + FRAME_SIZE;
-
-  // place args into new
-  int argc;
-  char **user_argv;
-  uintptr_t new_sp;
-  place_args(task->user_sp, args, &argc, &user_argv, &new_sp);
-  task->user_sp = new_sp;
-
-  // Jump into user mode
-  asm volatile("mov x0, 0x340  \n"); // enable core timer interrupt
-  asm volatile("msr spsr_el1, x0  \n");
-  asm volatile("msr sp_el0, %0    \n" ::"r"(task->user_sp));
-  asm volatile("msr elr_el1, %0   \n" ::"r"(task->cpu_context.lr));
-
-  asm volatile("mov x0, %0 \n\
-                mov x1, %1 \n\
-                eret" ::"r"(argc),
-               "r"(user_argv));
+  exec_user(name, args);
+  // a scucess exec_user might never return
   return -1;
 }
 
@@ -166,6 +128,12 @@ void task_start_user() {
   uart_println("enter user startup");
   char *name = "./argv_test.out";
   char *args[4] = {"./argv_test.out", "-o", "arg2", NULL};
+
+  // Launch a user program thread (in el0) with this kernel thread
+  //
+  // Eversince this point, exceptions under el0 would be trap
+  // to the context of this kernel thread
+  // (Since we would call `eret` under this kernel thread)
   exec_user(name, args);
 }
 
@@ -176,8 +144,10 @@ void test_tasks() {
   root_task = task_create(idle);
   asm volatile("msr tpidr_el1, %0\n" ::"r"((uint64_t)root_task));
 
+  // create a task to bootup the very first user program
   task_create(task_start_user);
-  // task_create(foo);
+
+  task_create(foo);
   // task_create(foo);
   // task_create(foo);
 #ifdef CFG_LOG_PROC_SCHED
