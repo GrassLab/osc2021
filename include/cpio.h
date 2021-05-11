@@ -48,12 +48,12 @@ struct cpio_header {
  */
  // TODO:
  // Embed this object to cpio_parse_header function
-enum cpio_parse_header_result
-{
-    notValid = -1,
-    OK = 0,
-    EOF = 1
-};
+// enum cpio_parse_header_result
+// {
+//     notValid = -1,
+//     OK = 0,
+//     EOF = 1
+// };
 
 /**
  * Stores information about the underlying implementation.
