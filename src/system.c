@@ -48,7 +48,9 @@ void __lab5_2(char* args){
     thread_test2();
 }
 void __lab6(char* args){
+    printf("[Requirement]\n");
     thread_test2();
+    printf("[Elective 1]\n");
     thread_test3();
 }
 void sys_init_vfs(){

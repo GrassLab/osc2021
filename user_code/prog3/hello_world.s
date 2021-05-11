@@ -4,21 +4,18 @@
 	.section	.rodata
 	.align	3
 .LC0:
-	.string	"in hello world\n"
-	.align	3
-.LC1:
 	.string	"hello"
 	.align	3
-.LC2:
+.LC1:
 	.string	"world"
 	.align	3
-.LC3:
+.LC2:
 	.string	"Hello "
 	.align	3
-.LC4:
+.LC3:
 	.string	"World!"
 	.align	3
-.LC5:
+.LC4:
 	.string	"%s\n"
 	.text
 	.align	2
@@ -31,40 +28,37 @@ main:
 	str	x1, [x29, 16]
 	adrp	x0, .LC0
 	add	x0, x0, :lo12:.LC0
-	bl	uart_printf
+	mov	w1, 1
+	bl	open
+	str	w0, [x29, 140]
 	adrp	x0, .LC1
 	add	x0, x0, :lo12:.LC1
 	mov	w1, 1
 	bl	open
-	str	w0, [x29, 140]
+	str	w0, [x29, 136]
 	adrp	x0, .LC2
 	add	x0, x0, :lo12:.LC2
-	mov	w1, 1
-	bl	open
-	str	w0, [x29, 136]
+	mov	w2, 6
+	mov	x1, x0
+	ldr	w0, [x29, 140]
+	bl	write
 	adrp	x0, .LC3
 	add	x0, x0, :lo12:.LC3
 	mov	w2, 6
 	mov	x1, x0
-	ldr	w0, [x29, 140]
-	bl	write
-	adrp	x0, .LC4
-	add	x0, x0, :lo12:.LC4
-	mov	w2, 6
-	mov	x1, x0
 	ldr	w0, [x29, 136]
 	bl	write
 	ldr	w0, [x29, 140]
 	bl	close
 	ldr	w0, [x29, 136]
 	bl	close
-	adrp	x0, .LC1
-	add	x0, x0, :lo12:.LC1
+	adrp	x0, .LC0
+	add	x0, x0, :lo12:.LC0
 	mov	w1, 0
 	bl	open
 	str	w0, [x29, 136]
-	adrp	x0, .LC2
-	add	x0, x0, :lo12:.LC2
+	adrp	x0, .LC1
+	add	x0, x0, :lo12:.LC1
 	mov	w1, 0
 	bl	open
 	str	w0, [x29, 140]
@@ -90,8 +84,8 @@ main:
 	add	x1, x29, 32
 	strb	wzr, [x1, x0]
 	add	x1, x29, 32
-	adrp	x0, .LC5
-	add	x0, x0, :lo12:.LC5
+	adrp	x0, .LC4
+	add	x0, x0, :lo12:.LC4
 	bl	uart_printf
 	bl	exit
 	mov	w0, 0

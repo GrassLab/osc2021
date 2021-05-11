@@ -30,7 +30,7 @@ int tmpfs_setup_mount(struct filesystem *fs, struct mount *mount){
 }
 
 int tmpfs_write(struct file *file, const void *buf, size_t len){
-    printf("len : %d\n", len);
+    // printf("len : %d\n", len);
     for(int i = 0; i < len; ++i){
         ((tmpfs_entry*)(file->vnode->internal))->buf->buffer[file->f_pos++] = ((char*)buf)[i];
         if(((tmpfs_entry*)(file->vnode->internal))->buf->size < file->f_pos)

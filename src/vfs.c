@@ -89,7 +89,7 @@ int vfs_write(struct file *file, const void *buf, size_t len)
 {
     // 1. write len byte from buf to the opened file.
     // 2. return written size or error code if an error occurs.
-    printf("hihihi\n");
+    // printf("hihihi\n");
     return file->f_ops->write(file, buf, len);
 }
 int vfs_read(struct file *file, void *buf, size_t len)

@@ -1,7 +1,7 @@
 #include "lib/system_call.h"
 
 int main(int argc, char **argv){
-    uart_printf("in hello world\n");
+    // uart_printf("in hello world\n");
     char buf[100];
     int a = open("hello", O_CREAT);
     int b = open("world", O_CREAT);
