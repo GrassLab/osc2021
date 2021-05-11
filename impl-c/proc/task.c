@@ -45,6 +45,10 @@ struct task_struct *task_create(void *func) {
   t->status = TASK_STATUS_ALIVE;
   t->id = new_tid++;
 
+  // A task would only bind to a user thread if called with exec_user
+  t->user_stack = (uintptr_t)(NULL);
+  t->user_sp = (uintptr_t)(NULL);
+
   struct task_entry *entry =
       (struct task_entry *)kalloc(sizeof(struct task_entry));
   entry->task = t;
@@ -61,8 +65,50 @@ int sys_getpid() {
   return task->id;
 };
 
-// Overwrite current task
-int sys_exec(const char *name, char *const args[]) { return exec(name, args); }
+// Overwrite current user task and kernel task
+int sys_exec(const char *name, char *const args[]) {
+  struct task_struct *task = get_current();
+  log_println("[exec] name:%s cur_task: %d(%x)", name, task->id, task);
+
+  // unload previous task code
+  if (task->code) {
+    log_println("[exec] free code from previous process: %x", task->code);
+    kfree(task->code);
+    task->code_size = 0;
+  }
+
+  // address of the program code in memory
+  void *entry_point = load_program(name, &task->code_size);
+  log_println("[exec] load new program code at: %x", task->code);
+  task->code = entry_point;
+
+  // context under kernel mode
+  task->cpu_context.fp = (uint64_t)task + FRAME_SIZE;
+  task->cpu_context.lr = (uint64_t)entry_point;
+  task->cpu_context.sp = (uint64_t)task + FRAME_SIZE;
+
+  // reset stack pointer in user mode
+  task->user_sp = task->user_stack + FRAME_SIZE;
+
+  // place args into new
+  int argc;
+  char **user_argv;
+  uintptr_t new_sp;
+  place_args(task->user_sp, args, &argc, &user_argv, &new_sp);
+  task->user_sp = new_sp;
+
+  // Jump into user mode
+  asm volatile("mov x0, 0x340  \n"); // enable core timer interrupt
+  asm volatile("msr spsr_el1, x0  \n");
+  asm volatile("msr sp_el0, %0    \n" ::"r"(task->user_sp));
+  asm volatile("msr elr_el1, %0   \n" ::"r"(task->cpu_context.lr));
+
+  asm volatile("mov x0, %0 \n\
+                mov x1, %1 \n\
+                eret" ::"r"(argc),
+               "r"(user_argv));
+  return -1;
+}
 
 void task_copy(struct task_struct *dst, struct task_struct *src) {
   dst->status = src->status;
@@ -115,37 +161,12 @@ void foo() {
   cur_task_exit();
 }
 
-// This funciton is purely user code
-void user_startup() {
+// This function should be runned as a kernel task
+void task_start_user() {
   uart_println("enter user startup");
-  const char *name = "./init_user.out";
-  struct task_struct *task = get_current();
-  // address of the program code in memory
-  void *entry_point = load_program(name, &task->code_size);
-  uart_println("program loaded: %x", entry_point);
-
-  task->code = entry_point;
-
-  task->cpu_context.fp = (uint64_t)task + FRAME_SIZE;
-  task->cpu_context.lr = (uint64_t)entry_point;
-  task->cpu_context.sp = (uint64_t)task + FRAME_SIZE;
-
-  uart_println("finished, start switching");
-  asm volatile("mov x0, 0x340  \n"); // enable core timer interrupt
-  asm volatile("msr spsr_el1, x0  \n");
-  asm volatile("msr elr_el1, %0   \n" ::"r"(task->cpu_context.lr));
-  asm volatile("msr sp_el0, %0    \n" ::"r"(task->cpu_context.sp));
-
-  // enable the core timer’s interrupt in el0
-  timer_el0_enable();
-  timer_el0_set_timeout();
-
-  // unmask timer interrupt
-  asm volatile("mov x0, 2             \n");
-  asm volatile("ldr x1, =0x40000040   \n");
-  asm volatile("str w0, [x1]          \n");
-
-  asm volatile("eret              \n");
+  char *name = "./argv_test.out";
+  char *args[4] = {"./argv_test.out", "-o", "arg2", NULL};
+  exec_user(name, args);
 }
 
 void test_tasks() {
@@ -155,7 +176,7 @@ void test_tasks() {
   root_task = task_create(idle);
   asm volatile("msr tpidr_el1, %0\n" ::"r"((uint64_t)root_task));
 
-  task_create(user_startup);
+  task_create(task_start_user);
   // task_create(foo);
   // task_create(foo);
   // task_create(foo);
