@@ -52,5 +52,6 @@ void init_root(const char *name);
 int register_filesystem(struct filesystem* fs);
 struct filesystem *get_filesystem(const char *fs_name);
 
+struct file* vfs_open(const char* pathname, int flags);
 
 #endif

@@ -3,6 +3,7 @@
 #include "tmpfs.h"
 #include "string.h"
 #include "io.h"
+#include "cpio.h"
 
 struct mount* rootfs;
 
@@ -25,6 +26,9 @@ void init_root(const char *name)
         rootfs->root = root_vnode;
 
         rootfs->fs->setup_mount(fs, rootfs);
+
+        cpio_init_fs(root_vnode);
+
     } else {
         printf("no such filesystem: %s\n", name);
     }
@@ -73,6 +77,14 @@ struct file* vfs_open(const char* pathname, int flags) {
     // 1. Lookup pathname from the root vnode.
     // 2. Create a new file descriptor for this vnode if found.
     // 3. Create a new file if O_CREAT is specified in flags.
+
+    struct vnode *target;
+    if (rootfs->root->v_ops->lookup(rootfs->root, &target, pathname) == 0) {
+        printf("file name is: %s\n", ((struct tmpfs_internal *)target->internal)->name);
+    } else {
+        printf("not found!");
+    }
+
 
     return NULL;
 }

@@ -8,6 +8,8 @@
 #define RAMFS_ADDR (0x1000000)
 #endif
 
+#include "vfs.h"
+
 typedef struct cpio_newc_header CPIO_NEWC_HEADER;
 typedef enum CPIO_ATTR CPIO_ATTR;
 
@@ -51,5 +53,7 @@ int cpio_attr_value(CPIO_NEWC_HEADER *pRoot, CPIO_ATTR attr);
 void cpio_read(char *path);
 void cpio_exec(char *path, int argc, char *argv[]);
 void * cpio_content_addr(CPIO_NEWC_HEADER *targetAddr);
+CPIO_NEWC_HEADER *get_next_file(CPIO_NEWC_HEADER *pCurrentFile);
+void cpio_init_fs(struct vnode *root);
 
 #endif

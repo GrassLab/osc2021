@@ -58,8 +58,6 @@ int tmpfs_lookup(struct vnode* dir_node, struct vnode **target, const char* comp
     char frag[100] = { 0 };
     int offset = get_first_frag(frag, component_name);
     component_name += offset;
-    
-    printf("fragment is: %s\n", frag);
 
     struct vnode *tmp_vnode = dir_node;
     
@@ -69,7 +67,13 @@ int tmpfs_lookup(struct vnode* dir_node, struct vnode **target, const char* comp
         struct tmpfs_internal *r_sibling_internal = r_sibling->internal;
 
         if (strcmp(r_sibling_internal->name, frag) == 0) {
-            // sibling match, lookup its child
+            // sibling match
+            if (strlen(component_name) == 0) {
+                *target = r_sibling;
+                return 0;
+            }
+
+            // lookup its child
             return tmpfs_lookup(r_sibling_internal->l_child, target, component_name);
         }
 
@@ -91,7 +95,7 @@ int tmpfs_create(struct vnode *dir_node, struct vnode **target, const char *comp
         i = 0;
 
     // get the last slash index    
-    for (; i < len; i++) {
+    for (i = 0; i < len; i++) {
         if (component_name[i] == '/') {
             last_slash = i;
         }
@@ -119,8 +123,10 @@ int tmpfs_create(struct vnode *dir_node, struct vnode **target, const char *comp
     struct vnode *vnode = create_tmpfs_vnode(component_name);
     append_child(parent, vnode);
 
-    // TODO: return fd
-    // return open() ?
+    if (target) {
+        *target = vnode;
+    }
+
     return 0;
 }
 
@@ -176,8 +182,8 @@ void append_child(struct vnode *parent, struct vnode *node)
         struct tmpfs_internal *tmp_internal = tmp_node->internal;
 
         while (tmp_internal->r_sibling) {
-            tmp_internal = tmp_internal->r_sibling->internal;
             tmp_node = tmp_internal->r_sibling;
+            tmp_internal = tmp_node->internal;
         }
 
         tmp_internal = tmp_node->internal;
