@@ -126,7 +126,7 @@ void task_test2_init() {
 
 }
 
-void task_vfs_test_init() {
+void task_vfs_test1_init() {
   struct task_struct fake;
   
   disable_interrupt();
@@ -146,10 +146,37 @@ void task_vfs_test_init() {
 
 }
 
+void task_vfs_test2_init() {
+  struct task_struct fake;
+  
+  disable_interrupt();
+  //create idle task
+  privilege_task_create(idle_task);
+
+  privilege_task_create(user_ls_task);
+    
+  task_queue_pop(&run_queue);
+  
+  task_queue_status(&run_queue);
+
+  enable_interrupt();
+
+  switch_to(&fake, &task_pool[0]);
+
+
+}
+
 void user_vfs_task() {
   
   char *vfs_argv[] = {"vfs_test", 0};
   do_exec("vfs_test", vfs_argv);
+
+}
+
+void user_ls_task() {
+  
+  char *ls_argv[] = {"ls", "user", 0};
+  do_exec("ls", ls_argv);
 
 }
 

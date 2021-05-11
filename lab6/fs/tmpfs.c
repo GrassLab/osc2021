@@ -117,20 +117,45 @@ static int write(struct file* file, const void* buf, size_t len) {
 }
 
 static int read(struct file* file, void* buf, size_t len) {
-  struct tmpfs_inode *inode;
+  struct tmpfs_inode *inode, *trav_inode;
   struct tmpfs_block *block;
   size_t pos, read_bytes, read_len;
   
   inode = file->vnode->internal;
-  if(inode->type != file_t)
-    return -1;
+  read_bytes = 0;
+
+  if(inode->type == dir_t) {
+    //for ls
+    //empty directory 
+    if(inode->children == null)
+      return read_bytes;
+
+    //finish traverse
+    if(file->f_pos == -1)
+      return read_bytes;
+    
+    if(file->f_pos == 0) {
+      file->f_pos = (size_t)inode->children;
+    }
+    
+    trav_inode = (struct tmpfs_inode* )file->f_pos;
+
+    strncpy(buf, trav_inode->name, strlen(trav_inode->name));
+    read_bytes = strlen(trav_inode->name);
+
+    file->f_pos = (size_t)trav_inode->sublings;
+    
+    if((void*)file->f_pos == null)
+      file->f_pos = -1;
+    
+    return read_bytes;
+  }
   //EOF
   if(file->f_pos >= inode->size)
     return 0;  
   
   block = inode->block;
   pos = file->f_pos;
-  read_bytes = 0;
   //read bytes
   while(block != null) {
    if(pos < block->size) {
@@ -179,7 +204,8 @@ static int lookup(struct vnode* dir_node, struct vnode** target, const char* com
       max_len = strlen(component_name);
     if(strncmp(inode->name, component_name, max_len) == 0)  {
       *target = inode->vnode;
-      //printf("find node: %s\n", component_name);
+      //
+      printf("find node: %s\n", component_name);
       return 0;  
     }
     inode = inode->sublings;

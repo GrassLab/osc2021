@@ -107,7 +107,8 @@ void buddy_merge(void* address) {
       //remove buddy block in free list
       if(buddy_remove_block(buddy_block, merged_order) == -1) {
         uart_puts("error: not found buddy block in free list.\n");
-        return;
+        //should not happened
+        break;
       }
       //check the block num and buddy block num which is lower
       if(merged_idx > buddy_block_idx) {

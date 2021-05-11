@@ -32,7 +32,7 @@
   return 0;
 }*/
 
-int main() {
+/*int main() {
   printf("VFS Test\n");
   char buf[256];
   int a = open("hello", O_CREAT);
@@ -48,5 +48,19 @@ int main() {
   sz += read(a, buf + sz, 100);
   buf[sz] = '\0';
   printf("%s\n", buf); // should be Hello World!
+  return 0;
+}*/
+
+int main(int argc, char** argv) {
+  int fd = open(argv[1], 0);
+  char name[100];
+  int size;
+  // Modify the for loop to iterate the directory entries of the opened directory.
+  while(1) {
+    size = read(fd, name, 64);
+    if(size == 0)
+      break;
+    printf("Name: %s Size: %d\n", name, size);
+  }
   return 0;
 }

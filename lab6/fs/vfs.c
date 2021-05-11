@@ -25,6 +25,22 @@ struct file* vfs_open(const char* pathname, int flags) {
   char buff[FILE_NAME_LEN];
   int i, len;
   
+  if(strlen(pathname) == 1 && pathname[0] == '/') {
+    //root directory
+    _file = (struct file* )varied_malloc(sizeof(struct file));
+
+    if(_file == null)
+      return null;
+
+    // 2. Create a new file descriptor for this vnode if found.
+    _file->vnode = rootfs->root;
+    _file->f_pos = 0;
+    _file->flags = flags;
+    _file->f_ops = rootfs->root->f_ops;  
+    printf("root directory\n");
+    
+    return _file;
+  }
   i = 0;
   while(pathname[i] == '/')
     i++;

@@ -11,6 +11,7 @@
 #include <timer.h>
 #include <test.h>
 #include <sched.h>
+#include <vfs.h>
 
 void shell() {
   uart_puts("*****************************Hello World*****************************\r\n");
@@ -70,7 +71,8 @@ void do_command(char* command) {
     printf("disatimer: disable core timer interrupt.\n");
     printf("lab5_test1: kernel thread test\n");
     printf("lab5_test2: argv, fork test\n");
-    printf("lab6_test: vfs/tmpfs open, read, write test.\n");
+    printf("lab6_test1: vfs/tmpfs open, read, write test.\n");
+    printf("lab6_test2: ls [directory] test.\n");
   } 
   else if(strncmp(command, "hello", 6) == 0) {
     printf("Hello World!\n");
@@ -178,9 +180,18 @@ void do_command(char* command) {
     core_timer_enable();
     task_test2_init();
   }
-  else if(strncmp(command, "lab6_test", 10) == 0) {
+  else if(strncmp(command, "lab6_test1", 11) == 0) {
     core_timer_enable();
-    task_vfs_test_init();
+    task_vfs_test1_init();
+  }
+  else if(strncmp(command, "lab6_test2", 11) == 0) {
+    core_timer_enable();
+    task_vfs_test2_init();
+  }
+  else if(strncmp(command, "ls", 2) == 0) {
+    char name[FILE_NAME_LEN];
+    strncpy(name, command + 3, strlen(command) - 2);
+    ls(name);
   }
   else {
     printf("unknown command\n");
@@ -242,4 +253,29 @@ void readimg_jump(void* load_address, size_t img_size, size_t dtb_address) {
   "r" (load_address),
 	"r" (load_address): "x0");
   //((void (*)(void))(load_address))();
+}
+
+
+void ls(char *pathname) {
+  char name[FILE_NAME_LEN];
+  struct file* file;
+  size_t len;
+  file = vfs_open(pathname, 0);
+  
+  if(file != null) {
+
+    while(1) {
+      len = vfs_read(file, name, FILE_NAME_LEN);
+
+      if(len == 0) {
+        printf("\n");
+        break;
+      }
+      
+      printf("%s ", name);
+
+    }
+
+    vfs_close(file);
+  }
 }
