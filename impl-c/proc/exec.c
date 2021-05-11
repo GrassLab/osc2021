@@ -37,13 +37,13 @@ void *load_program(const char *name, /*ret*/ size_t *target_size) {
   return load_addr;
 }
 
-void exec_user(const char *name, char **argv) {
+void exec_user(const char *name, char *const argv[]) {
   struct task_struct *task = get_current();
   log_println("[exec] name:%s cur_task: %d(%x)", name, task->id, task);
 
   // load new program into memory
   size_t code_size;
-  void *entry_point = load_program(name, code_size);
+  void *entry_point = load_program(name, &code_size);
   log_println("[exec] load new program code at: %x", entry_point);
 
   // allocate a new user stack to use
@@ -65,13 +65,13 @@ void exec_user(const char *name, char **argv) {
   // (because argv might exists in the previous user stack)
   {
     // assign the new user_stack
-    if (task->user_stack != NULL) {
-      kfree(task->user_stack);
+    if (task->user_stack != (uintptr_t)NULL) {
+      kfree((void *)task->user_stack);
     }
     // unload previous task code
     if (task->code != NULL) {
       log_println("[exec] free code from previous process: %x", task->code);
-      kfree(task->code);
+      kfree((void *)task->code);
     }
   }
 
