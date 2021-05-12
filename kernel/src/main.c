@@ -2,6 +2,7 @@
 #include "exception.h"
 #include "mini_uart.h"
 #include "shell.h"
+#include "thread.h"
 #include "timer.h"
 
 void main() {
@@ -9,5 +10,6 @@ void main() {
   buddy_init();
   timeout_event_init();
   enable_interrupt();
+  thread_init();
   run_shell();
 }

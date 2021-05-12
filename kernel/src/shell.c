@@ -6,6 +6,7 @@
 #include "mini_uart.h"
 #include "printf.h"
 #include "string.h"
+#include "thread.h"
 #include "timer.h"
 
 void cmd_help() {
@@ -67,6 +68,8 @@ void cmd_set_timeout(char *args) {
   add_timer(timer_callback, args, duration);
 }
 
+void cmd_thread_test1() { thread_test(); }
+
 void clear_buffer() {
   buffer_pos = 0;
   for (int i = 0; i < MAX_BUFFER_SIZE; i++) {
@@ -121,6 +124,8 @@ void run_shell() {
       uart_async_puts("async puts\n");
     } else if (strncmp(buffer, "setTimeout", 10) == 0) {
       cmd_set_timeout(&buffer[11]);
+    } else if (strcmp(buffer, "t1") == 0) {
+      cmd_thread_test1();
     }
   }
 }

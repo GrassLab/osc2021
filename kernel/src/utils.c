@@ -63,3 +63,8 @@ uint64_t log2(uint64_t num) {
   }
   return 0;
 }
+
+void delay(int num) {
+  while (num--)
+    ;
+}

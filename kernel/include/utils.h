@@ -22,3 +22,4 @@ uint32_t get_value32(uint64_t addr, char endian);
 uint32_t be2le(uint32_t x);
 
 uint64_t log2(uint64_t num);
+void delay(int num);
