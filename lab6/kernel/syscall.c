@@ -220,6 +220,8 @@ void* exec_set_argv(void* stack, int argc, char* const argv[]) {
     memset((char *)stack + (strlen(argv[i])+ 1), 16 - r, 0);
   }
 
+  if(argc % 2 == 0)
+    stack -= sizeof(size_t);
   //set null
   stack -= sizeof(char *);
   *(char **)stack = null;
