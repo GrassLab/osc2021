@@ -1,8 +1,8 @@
 #include "sys.h"
 
-.globl call_sys_write
-call_sys_write:
-    mov w8, #SYS_WRITE_NUMBER
+.globl call_sys_print
+call_sys_print:
+    mov w8, #SYS_PRINT_NUMBER
     svc #0
     ret
 
@@ -60,3 +60,32 @@ call_sys_coreTimer_off:
     svc #0
     ret
 
+.globl call_sys_open
+call_sys_open:
+    mov w8, #SYS_OPEN
+    svc #0
+    ret
+
+.globl call_sys_close
+call_sys_close:
+    mov w8, #SYS_CLOSE
+    svc #0
+    ret
+
+.globl call_sys_write
+call_sys_write:
+    mov w8, #SYS_WRITE
+    svc #0
+    ret
+
+.globl call_sys_read
+call_sys_read:
+    mov w8, #SYS_READ
+    svc #0
+    ret
+
+.globl call_sys_read_directory
+call_sys_read_directory:
+    mov w8, #SYS_READ_DIRECTORY
+    svc #0
+    ret

@@ -24,6 +24,7 @@ struct pt_regs {
 int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg, unsigned long stack);
 int move_to_user_mode(unsigned long pc);
 struct pt_regs *task_pt_regs(struct task_struct *tsk);
+void _init_files_struct(struct task_struct *tsk);
 long assignPID();
 
 #endif

@@ -7,6 +7,7 @@
 #ifndef __ASSEMBLER__ 
 
 #include "list.h"
+#include "vfs.h"
 
 #define THREAD_SIZE                 4096
 
@@ -60,7 +61,8 @@ struct task_struct {
     unsigned long stack; 
     unsigned long flags;
     long pid;
-    struct list_head run_list;
+    struct list_head run_list; // TODO
+    struct files_struct files; // file descriptor table for each process
 };
 
 extern void schedule(void);

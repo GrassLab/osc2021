@@ -7,8 +7,9 @@
 #include "fork.h"
 #include "string.h"
 #include "timer.h"
+#include "vfs.h"
 
-void sys_write(char * buf) 
+void sys_print(char * buf) 
 {
     printf(buf);
 }
@@ -130,7 +131,7 @@ void *sys_malloc(int bytes)
 int sys_clone()
 {
     // TODO:
-    //   Not required in lab
+    // Not required in lab
     return 0;
 }
 
@@ -146,8 +147,124 @@ void sys_coreTimer_off()
     printf("[Core timer] interrupt disabled\n");
 }
 
+int sys_open(const char *pathname, int flags)
+{
+    preempt_disable();
+
+    struct file *fd = vfs_open(pathname, flags);
+
+    if (fd == NULL) {
+        printf("file path %s not exist\n", pathname);
+        return SYS_OPEN_FILE_ERROR;
+    }
+    
+    // fill in file descriptor table(fdt) for current task
+    struct task_struct *current_task = current; // get current task
+    
+    if (current_task->files.count >= NR_OPEN_DEFAULT) {
+        printf("[sys_open] File Desciprtor Table is full. Open file fail\n");
+        return SYS_OPEN_FILE_ERROR;
+    }
+    
+    // fill in fdt and update fdt info
+    int current_fd_idx = current_task->files.next_fd;
+    current_task->files.fd_array[current_fd_idx] = fd;
+    current_task->files.count++;
+    for (int i = (current_fd_idx+1) % NR_OPEN_DEFAULT;i != current_fd_idx;i = (i+1) % NR_OPEN_DEFAULT) {
+        // circularly search free entry in ftd
+        if (current_task->files.fd_array[i] == NULL){
+            current_task->files.next_fd = i;
+            break;
+        }
+    }
+    printf("[sys_open] current_fd_idx = %d\n", current_fd_idx);
+    printf("[sys_open] next_fd = %d\n", current_task->files.next_fd);
+
+    preempt_enable();
+
+    return current_fd_idx;
+    
+}
+
+int sys_close(int fd)
+{
+    preempt_disable();
+
+    struct task_struct *current_task = current; // get current task
+    struct file *file = current_task->files.fd_array[fd]; // get file
+    
+    // close file and clear fd entry in ftb 
+    int res = vfs_close(file);
+    current_task->files.fd_array[fd] = NULL;
+    current_task->files.count--;
+
+    // _vfs_dump_file_struct();
+
+    preempt_enable();
+
+    return res;
+}
+
+int sys_write(int fd, const void *buf, size_t len)
+{
+    preempt_disable();
+
+    struct task_struct *current_task = current; // get current task
+    struct file *file = current_task->files.fd_array[fd]; // get file
+    
+    if (file == NULL) {
+        printf("[sys_write] File Descriptor not exist.");
+        return -1;
+    }
+
+    // close file and clear fd entry in ftb 
+    int nr_byte_written = vfs_write(file, buf, len);
+
+    preempt_enable();
+    
+    return nr_byte_written;
+    
+}
+
+int sys_read(int fd, void *buf, size_t len)
+{
+    preempt_disable();
+
+    struct task_struct *current_task = current; // get current task
+    struct file *file = current_task->files.fd_array[fd]; // get file
+    
+    if (file == NULL) {
+        printf("[sys_read] File Descriptor not exist.");
+        return -1;
+    }
+
+    // close file and clear fd entry in ftb 
+    int nr_byte_read = vfs_read(file, buf, len);
+
+    preempt_enable();
+    
+    return nr_byte_read;
+}
+
+char *sys_read_directory(int fd)
+{
+    // TODO:
+    struct task_struct *current_task = current; // get current task
+    struct file *file = current_task->files.fd_array[fd]; // get file
+    
+    if (file == NULL) {
+        printf("[sys_read_directory] File Descriptor not exist.");
+        return NULL;
+    }
+
+    char *buf_ptr = vfs_read_directory(file);
+
+    return buf_ptr;
+}
+
 void * const sys_call_table[] = 
-    {sys_write, sys_uart_write, sys_uart_read, 
+    {sys_print, sys_uart_write, sys_uart_read, 
      sys_gitPID, sys_fork, sys_exec, 
      sys_exit, sys_malloc, sys_clone,
-     sys_coreTimer_on, sys_coreTimer_off};
+     sys_coreTimer_on, sys_coreTimer_off,
+     sys_open, sys_close, sys_write, sys_read, sys_read_directory};

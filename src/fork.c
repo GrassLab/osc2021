@@ -16,7 +16,7 @@
 int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg, unsigned long stack) {
     preempt_disable();
     struct task_struct *p;
-
+    
     p = (struct task_struct *) kmalloc(PAGE_SIZE);
     if (!p) { // NULL
         printf("[copy_process] Allocate memory fail");
@@ -52,6 +52,9 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
     // until it completes some initialization work.
     p->preempt_count = 1; 
     
+    // file descriptor table(file struct)
+    _init_files_struct(p);
+
     p->cpu_context.pc = (unsigned long)ret_from_fork;
     p->cpu_context.sp = (unsigned long)childregs;
     
@@ -83,6 +86,14 @@ int move_to_user_mode(unsigned long pc)
 struct pt_regs *task_pt_regs(struct task_struct *tsk) {
     unsigned long p = (unsigned long)tsk + THREAD_SIZE - sizeof(struct pt_regs);
     return (struct pt_regs *)p;
+}
+
+void _init_files_struct(struct task_struct *tsk)
+{
+    tsk->files.count = 0;
+    tsk->files.next_fd = 0;
+    for (int i = 0;i < NR_OPEN_DEFAULT;i++)
+        tsk->files.fd_array[i] = NULL;
 }
 
 long assignPID() 

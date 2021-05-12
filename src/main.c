@@ -9,6 +9,8 @@
 #include "sched.h"
 #include "sys.h"
 #include "cpio.h"
+#include "vfs.h"
+
 /* Initial Logo */
 //   ___  ____  ____ ___   ____   ___ ____  _  __   __                 
 //  / _ \/ ___||  _ \_ _| |___ \ / _ \___ \/ | \ \ / /   _ _ __   __ _ 
@@ -71,8 +73,8 @@ int exec_argv_test(int argc, char **argv) {
 }
 
 void user_process(){
-    /* Test syscall write */
-    // call_sys_write("[user_process]User process started\n");
+    /* Test syscall print */
+    // call_sys_print("[user_process]User process started\n");
     
     // /* Test syscall getPID */
     // int current_pid = call_sys_gitPID();
@@ -123,6 +125,34 @@ void kernel_process(){
     } 
 }
 
+void Lab6_kernel_to_user()
+{
+    int err = move_to_user_mode((unsigned long)&vfs_user_process_test);
+    if (err < 0){
+        printf("Error while moving process to user mode\n\r");
+    } 
+}
+
+void Lab6_vfs_test_demo()
+{
+    // Simple test
+    //vfs_test();
+
+    // Lab7 - Requirement 1
+    vfs_requirement1_test();
+    // Lab7 - Requirement 1, populate initramfs to root file system
+    printf("\n--------------> Lab6 req1 cpio population |  vfs_requirement1_read_file_populated_in_cpio() <--------------\n");
+    vfs_populate_initramfs();
+    vfs_requirement1_read_file_populated_in_cpio();
+
+    // Lab7 - Requirement 2, Eletive1
+    int res = copy_process(PF_KTHREAD, (unsigned long)&Lab6_kernel_to_user, 0, 0);
+    if (res < 0) {
+        printf("error while starting kernel process");
+    }
+
+    schedule();
+}
 
 int main()
 {
@@ -136,7 +166,8 @@ int main()
     mm_init();
 
     // Turn on core timer interrupt
-    core_timer_enable();
+    //core_timer_enable();
+
     // enable IRQ interrupt
     enable_irq();
     
@@ -144,31 +175,36 @@ int main()
 
     // say hello
     printf(init_logo);
-
     
-    /* Test cases */
+    // Initialize root file system
+    rootfs_init();
+
+    // vfs test cases
+    Lab6_vfs_test_demo();
+
+    /* Lab5 Test cases */
     // Requirement 1 - Implement the thread mechanism. 
-    for(int i = 0; i < 3; ++i) { // N should
-        int res = copy_process(PF_KTHREAD, (unsigned long)&foo, 0, 0);
-        if (res < 0) {
-         printf("error while starting kernel process");
-         return 0;
-       }
-    }
+    // for(int i = 0; i < 3; ++i) { // N should
+    //     int res = copy_process(PF_KTHREAD, (unsigned long)&foo, 0, 0);
+    //     if (res < 0) {
+    //      printf("error while starting kernel process");
+    //      return 0;
+    //    }
+    // }
 
-    //  Requirement 2 
-    int res = copy_process(PF_KTHREAD, (unsigned long)&kernel_process, 0, 0);
-    if (res < 0) {
-        printf("error while starting kernel process");
-        return 0;
-    }
+    // //  Requirement 2 
+    // int res = copy_process(PF_KTHREAD, (unsigned long)&kernel_process, 0, 0);
+    // if (res < 0) {
+    //     printf("error while starting kernel process");
+    //     return 0;
+    // }
     
-    // Elevtive 1 - Wait Queue
-    res = copy_process(PF_KTHREAD, (unsigned long)&test_waitQueue_uart_read, 0, 0);
-    if (res < 0) {
-        printf("error while starting kernel process");
-        return 0;
-    }
+    // // Elevtive 1 - Wait Queue
+    // res = copy_process(PF_KTHREAD, (unsigned long)&test_waitQueue_uart_read, 0, 0);
+    // if (res < 0) {
+    //     printf("error while starting kernel process");
+    //     return 0;
+    // }
 
     while (1) {
         // printf("In kernel main()\n");
