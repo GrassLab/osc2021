@@ -1,8 +1,8 @@
-#include <memory.h>
+#include <kernel/memory.h>
 #include <types.h>
-#include <memory_addr.h>
-#include <memory_func.h>
-#include <mini_uart.h>
+#include <kernel/memory_addr.h>
+#include <kernel/memory_func.h>
+#include <kernel/mini_uart.h>
 
 char* MemAlloc::malloc(uint32_t size) {
     if (size <= 0) {

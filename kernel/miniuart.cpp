@@ -1,7 +1,7 @@
-#include "mini_uart.h"
+#include <kernel/mini_uart.h>
 
-#include "mmio.h"
-#include "delay.h"
+#include <kernel/mmio.h>
+#include <kernel/delay.h>
 
 void MiniUART::Init() {
     uint32_t gpfsel1_value = MMIO::get(MMIOREG::GPFSEL1);

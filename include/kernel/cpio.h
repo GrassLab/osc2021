@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.h"
+#include <types.h>
 
 struct cpio_newc_header {
     char	   c_magic[6];

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <types.h>
-#include <memory_addr.h>
+#include <kernel/memory_addr.h>
 
 enum class MMIOREG : uint64_t {
     AUX_ENABLES     = MMIO_BASE + 0x215004,

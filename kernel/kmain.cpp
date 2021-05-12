@@ -1,6 +1,6 @@
-#include <mini_uart.h>
-#include <memory.h>
-#include <thread.h>
+#include <kernel/mini_uart.h>
+#include <kernel/memory.h>
+#include <kernel/thread.h>
 
 void sys_exec(char* name, char** argv);
 extern uint64_t total_threads;

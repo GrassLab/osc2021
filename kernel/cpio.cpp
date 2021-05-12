@@ -1,5 +1,5 @@
-#include <cpio.h>
-#include <string.h>
+#include <kernel/cpio.h>
+#include <kernel/string.h>
 
 CPIO::CPIO(cpio_newc_header* header) {
     this->filesize = 0;

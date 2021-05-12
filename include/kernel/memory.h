@@ -1,7 +1,7 @@
 #pragma once
 
-#include "types.h"
-#include "buddy.h"
+#include <types.h>
+#include <kernel/buddy.h>
 
 class MemAlloc {
     Buddy buddy;

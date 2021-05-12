@@ -1,4 +1,4 @@
-#include "../include/string.h"
+#include <string.h>
 
 size_t strlen(const char * str) {
     int offset = 0;

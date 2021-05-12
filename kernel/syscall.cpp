@@ -1,11 +1,11 @@
 
 #include <types.h>
-#include <thread.h>
-#include <memory.h>
-#include <mini_uart.h>
-#include <cpio.h>
-#include <string.h>
-#include <memory_addr.h>
+#include <kernel/thread.h>
+#include <kernel/memory.h>
+#include <kernel/mini_uart.h>
+#include <kernel/cpio.h>
+#include <kernel/string.h>
+#include <kernel/memory_addr.h>
 
 uint64_t total_threads = 0;
 uint64_t pid_counter = 0;

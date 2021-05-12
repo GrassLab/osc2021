@@ -1,5 +1,5 @@
-#include <string.h>
-#include <mini_uart.h>
+#include <kernel/string.h>
+#include <kernel/mini_uart.h>
 
 size_t strcpy_size(char* dst, const char* src) {
     uint64_t count = 0;

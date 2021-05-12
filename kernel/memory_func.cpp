@@ -1,4 +1,4 @@
-#include <memory_func.h>
+#include <kernel/memory_func.h>
 
 void *memset(void *s, int c, size_t n) {
     for (int i = 0; i < n; i++) {

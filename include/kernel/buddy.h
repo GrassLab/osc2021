@@ -1,9 +1,9 @@
 #pragma once
 
 #include <types.h>
-#include <memory_addr.h>
-#include <memory_func.h>
-#include <mini_uart.h>
+#include <kernel/memory_addr.h>
+#include <kernel/memory_func.h>
+#include <kernel/mini_uart.h>
 
 #define BUDDY_MAX_SIZE_POW 12
 #define BUDDY_INFO_COUNT (1 << BUDDY_MAX_SIZE_POW)

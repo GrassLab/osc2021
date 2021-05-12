@@ -1,5 +1,5 @@
-#include <mini_uart.h>
-#include <string.h>
+#include <kernel/mini_uart.h>
+#include <kernel/string.h>
 
 extern"C"
 void kernel_exception(uint64_t x0, uint64_t x1, uint64_t x2, uint64_t x3, uint64_t x4, uint64_t x5, uint64_t x6, uint64_t x7) {

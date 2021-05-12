@@ -1,6 +1,6 @@
-#include "../include/syscall.h"
-#include "../include/io.h"
-#include "../include/string.h"
+#include <syscall.h>
+#include <io.h>
+#include <string.h>
 
 int main(int argc, char **argv) {
     io() << "Argv Test, pid " << getpid() << "\r\n";

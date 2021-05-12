@@ -1,4 +1,4 @@
-#include <buddy.h>
+#include <kernel/buddy.h>
 
 void Buddy::Init() {
     static_assert(BUDDY_INFO_SIZE <= 0x10000, "Buddy size is not large enough");
