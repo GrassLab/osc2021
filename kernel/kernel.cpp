@@ -1,6 +1,8 @@
 #include <kernel/mini_uart.h>
 #include <kernel/string.h>
 
+extern "C" void reset();
+
 extern"C"
 void kernel_exception(uint64_t x0, uint64_t x1, uint64_t x2, uint64_t x3, uint64_t x4, uint64_t x5, uint64_t x6, uint64_t x7) {
     uint64_t esr_el1, spsr_el1, elr_el1, sctlr_el1, el, spsel;
@@ -29,7 +31,7 @@ void kernel_exception(uint64_t x0, uint64_t x1, uint64_t x2, uint64_t x3, uint64
     io() << "x6 = " << u64tohex(x6, buffer, sizeof(buffer)) << "\r\n";
     io() << "x7 = " << u64tohex(x7, buffer, sizeof(buffer)) << "\r\n";
     io() << "Unknown exception\r\n";
-    while (true);
+    reset();
 }
 
 

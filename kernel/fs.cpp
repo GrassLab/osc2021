@@ -3,11 +3,11 @@
 #include <kernel/string.h>
 #include <kernel/memory_func.h>
 
-int total_file_counts = 0;
-int first_free_block = -1;
-int first_untouched_block = 0;
-int first_free_entry = -1;
-int first_untouched_entry = 0;
+static int total_file_counts = 0;
+static int first_free_block = -1;
+static int first_untouched_block = 0;
+static int first_free_entry = -1;
+static int first_untouched_entry = 0;
 
 struct file_block {
     char content[4096];

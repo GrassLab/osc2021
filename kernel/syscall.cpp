@@ -70,6 +70,7 @@ static void sys_exit() {
     }
     free(tasks[current].stack_alloc);
     free(tasks[current].kernel_stack_alloc);
+    free(tasks[current].fd_entries);
     total_threads--;
     if (total_threads == 0) {
         MiniUART::PutS("Kernel exit!! Shutting down\r\n");
@@ -156,6 +157,7 @@ static uint64_t sys_fork() {
     uint64_t parent_pid = tasks[parent].pid;
     uint64_t child = total_threads++;
     uint64_t child_pid = ++pid_counter;
+    memcpy(&tasks[child], &tasks[parent], sizeof(tasks[0]));
     tasks[child].pid = child_pid;
     tasks[child].stack_alloc = malloc(4096);
     tasks[child].kernel_stack_alloc = malloc(4096);

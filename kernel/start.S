@@ -1,6 +1,7 @@
 .section ".text.boot"
 .global _start
 .global loop
+.global reset
 _start:
     mrs x0, CurrentEL
     lsr x0, x0, #2
@@ -19,10 +20,6 @@ _start:
     mov x0, #(3 << 20)
     orr x0, x1, x0
     msr cpacr_el1, x0
-// mrs x0, sctlr_el1
-// mov x1, #(~0b11010)
-// and x0, x0, x1
-// msr sctlr_el1, x0
     adr x5, exception_vector_table
     mov x6, #0x3c0
     msr vbar_el1, x5
@@ -40,4 +37,13 @@ _start:
     bl kmain
 loop:
     wfe
+    b loop
+reset:
+    mov x0, 0x20
+    movk x0, 0x5a00, lsl #16
+    mov x1, 0x1c
+    movk x1, 0x3f10, lsl #16
+    str w0, [x1]
+    movk x1, 0x24, lsl #0
+    str w0, [x1]
     b loop

@@ -72,12 +72,10 @@ fork_internal:
     stp x2, x3, [sp, #32]
     stp x4, x5, [sp, #48]
 
-    ldr x0, [sp, #40]
-    ldr x1, [sp, #32]
+    ldp x1, x0, [sp, #32]
     mov x2, #4096
     bl memcpy
-    ldr x0, [sp, #56]
-    ldr x1, [sp, #48]
+    ldp x1, x0, [sp, #48]
     mov x2, #4096
     bl memcpy
 

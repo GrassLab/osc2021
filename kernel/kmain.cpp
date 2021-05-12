@@ -16,12 +16,14 @@ void kmain() {
     tasks = (task_struct*)TASK_STRUCT_BASE;
     MiniUART::Init();
     allocator.Init();
+    memset(tasks, 0xcc, sizeof(tasks[0]));
     tasks[0].program_alloc = malloc(4096);
     tasks[0].stack_alloc = malloc(4096);
     tasks[0].kernel_stack_alloc = malloc(4096);
     tasks[0].fd_entries = malloc(4096);
     tasks[0].pid = ++pid_counter;
     tasks[0].first_free_fd = -1;
+    tasks[0].first_untouched_fd = 0;
     total_threads++;
     sys_exec("terminal", tmp);
 }

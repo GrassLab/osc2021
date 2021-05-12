@@ -6,30 +6,32 @@ CCFLAGS  := -std=gnu17
 CXXFLAGS := -ffreestanding -nostdinc -nostdlib -nostdinc++ -nostartfiles -g -std=c++17 -MMD -I$(CURDIR)/include
 export
 PROGS     := $(patsubst %,initramfs/%,$(filter-out include lib,$(patsubst program/%,%,$(shell find program -maxdepth 1 -mindepth 1 -type d))))
+ELFS      := $(patsubst initramfs/%,program/%.elf,$(PROGS))
 
-.PHONY: all build-program build-kernel
+.PHONY: all inter_kernel
 
 all: initramfs.cpio kernel8.img
 
 kernel8.img: kernel/kernel8.elf
 	$(OBJCOPY) -O binary kernel/kernel8.elf $@
 
-kernel/kernel8.elf: build-kernel
-	$(MAKE) build-kernel
-
-build-program:
-	$(MAKE) -C program
-
-build-kernel:
+kernel/kernel8.elf: inter_kernel
 	$(MAKE) -C kernel
 
-initramfs.cpio: $(PROGS) | build-program
-	$(MAKE) $(PROGS) && \
+inter_kernel:
+
+initramfs.cpio: $(PROGS)
 	cd initramfs && find . | cpio -o -H newc > ../initramfs.cpio
 
 $(PROGS):
 initramfs/%: program/%.elf | initramfs
 	$(OBJCOPY) -O binary $< $@
+
+$(ELFS): inter_elf
+	@rm -f inter_elf
+
+inter_elf:
+	$(MAKE) -C program
 
 initramfs:
 	mkdir -p $@
