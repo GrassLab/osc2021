@@ -1,13 +1,48 @@
 #ifndef SCHED_H
 #define SCHED_H
 
-#include "util.h"
+#include "mem.h"
 #include "trap.h"
+#include "util.h"
+#include "vfs.h"
+
+typedef struct mem_seg {
+  // low address
+  void *base;
+  // real size (copy use)
+  unsigned long size;
+  unsigned long ref_cnt;
+} mem_seg;
+
+typedef struct task_struct {
+  cdl_list ts_list;
+  cdl_list sibli;
+  cdl_list child;
+  cdl_list dead;
+  struct task_struct *parent;
+  void *sp;
+  unsigned long pid;
+  unsigned long st_timer_cnt;
+  unsigned long exc_lvl;
+  mem_seg *usr_sp;
+  mem_seg *usr_prog;
+  dentry *pwd;
+  cdl_list fd_list;
+  unsigned long fd_cnt;
+} task_struct;
 
 #define KERN_STACK_SIZE (PAGE_SIZE * 2)
 #define KERN_STACK_SIZE_CTZ (PAGE_SIZE_CTZ + 1)
 #define USR_STACK_SIZE (PAGE_SIZE * 2)
 extern unsigned long preemt_sched;
+
+#define sp_low(sp)                                           \
+  ((void *)((((unsigned long)(sp)-1) >> KERN_STACK_SIZE_CTZ) \
+            << KERN_STACK_SIZE_CTZ))
+
+#define sp_high(sp) (sp_low(sp) + KERN_STACK_SIZE)
+
+#define sp_to_ts(sp) ((task_struct *)sp_low(sp))
 
 void init_sched();
 void schedule();
@@ -40,5 +75,7 @@ void wait_on_list(cdl_list *l);
 void wake_list(cdl_list *l);
 
 void fork(void **el0_sp, saved_reg **el1_sp);
+
+static inline task_struct *get_taskstruct() { return sp_to_ts(get_sp()); }
 
 #endif

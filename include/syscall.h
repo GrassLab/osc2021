@@ -10,8 +10,8 @@
 #define SVC_MASK 0xffff
 
 #ifndef ASM
-unsigned long sys_read(unsigned long fd, char *buf, unsigned long size);
-unsigned long sys_write(unsigned long fd, const char *buf, unsigned long size);
+long sys_read(unsigned long fd, char *buf, unsigned long size);
+long sys_write(unsigned long fd, const char *buf, unsigned long size);
 #endif
 
 #endif

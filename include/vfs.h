@@ -1,75 +1,119 @@
-// #ifndef VFS_H
-// #define VFS_H
+#ifndef VFS_H
+#define VFS_H
 
-// #include <stddef.h>
+#include <stddef.h>
 
-// typedef struct inode {
-//   struct superblock *sb;
-//   unsigned long ref_cnt;
-//   void *inter;
-// } inode;
+#include "util.h"
 
-// typedef struct dentry {
-//   struct inode *node;
-// } dentry;
+// file system type
+typedef struct file_system_t {
+  cdl_list fs_list;
+  const char *name;
+  cdl_list sb_list;
+} file_system_t;
 
-// typedef struct file {
-//   struct inode *node;
-// } file;
+// super block for a file system
+typedef struct super_block {
+  cdl_list sb_list;      // sb list of fs
+  struct dentry *root;   // root dentry of this sb
+  struct dentry *mnt_p;  // dentry this sb mount on
+} super_block;
 
-// typedef struct superblock_ops {
-//   int (*mkdir)(const char *path, dentry *dir);
-//   int (*chdir)(const char *path, dentry *dir);
-//   int (*rmdir)(const char *path, dentry *dir);
-//   int (*rndir)(const char *name, dentry *dir);
-//   int (*opendir)(const char *path, dentry *dir, superblock *sb);
-//   int (*closedir)(dentry *dir);
-//   int (*listdir)(dentry *dir, int *size);
+// unique
+typedef struct inode {
+  struct super_block *i_sb;
+  struct inode_op *i_op;
+  unsigned long i_mode;
+  unsigned long i_size;
+  void *i_data;
+} inode;
 
-//   int (*open)(const char *path, dentry *dir, file *f, unsigned long flag);
-//   int (*read)(file *f, char *buf, size_t len);
-//   int (*write)(file *f, const char *buf, size_t len);
-//   int (*close)(file *f);
-//   int (*rnfile)(const char *name, file *f);
+// unique except hard link
+typedef struct dentry {
+  char *name;  // component name
+  struct dentry_op *d_op;
+  inode *d_inode;
+  struct dentry *parent;
+  cdl_list child;
+  cdl_list sibli;
+  struct super_block *mnt;  // mount point
+  void *d_data;
+  unsigned long ref_cnt;
+} dentry;
 
-// } superblock_ops;
+typedef struct file {
+  struct dentry *path;
+  struct file_op *f_op;
+  inode *f_inode;
+  unsigned long f_mode;  // open mode
+  unsigned long f_pos;   // read / write pos
+} file;
 
-// typedef struct superblock {
-//   int mount_id;
-//   struct superblock *parent;
-//   const char *name;
-//   struct mount_list *mnt_l;
-//   struct superblock_ops sb_ops;
-//   void *inter;
-// } superblock;
+typedef struct dirent {
+  char name[16];
+} dirent;
 
-// typedef struct vfsmount {
-//   int mount_id;
-//   struct superblock *sb;
-//   char *path;
-// };
+// open* and close* is required
+typedef struct inode_op {
+  // char * is component name possible null string
+  int (*create)(struct dentry *, const char *);
+  // char * is component name possible null string
+  int (*remove)(struct dentry *, const char *);
+  // char * is component name possible null string
+  int (*mkdir)(struct dentry *, const char *);
+  // char * is component name possible null string
+  int (*rmdir)(struct dentry *, const char *);
+  // dentry is the file to be open
+  int (*open)(struct dentry *, struct file **, unsigned long);
+  int (*close)(struct file *);
+  // char * is component name dentry * possible file node
+  int (*opendent)(struct dentry *, struct dentry **, const char *);
+  int (*closedent)(struct dentry *);
+  int (*getdent)(struct dentry *, unsigned long, struct dirent *);
+} inode_op;
 
-// struct mount_list {
-//   struct vfsmount mount;
-//   struct mount_list *next;
-// };
+typedef struct dentry_op {
+  int (*umount)(dentry *);
+} dentry_op;
 
-// int mkdir(const char *path, dentry *dir);
-// int rmdir(const char *path, dentry *dir);
-// // int rndir(const char *name, dentry *dir);
-// int opendir(const char *path, dentry *dir);
-// int closedir(dentry *dir);
-// int chdir(const char *path, dentry *dir);
-// // int listdir(dentry *dir, int *size);
+typedef struct file_op {
+  long (*read)(struct file *, char *, unsigned long);
+  long (*write)(struct file *, const char *, unsigned long);
+} file_op;
 
-// int open(const char *path, dentry *dir, file *f, unsigned long flag);
-// int read(file *f, char *buf, size_t len);
-// int write(file *f, const char *buf, size_t len);
-// int close(file *f);
-// // int rnfile(const char *name, file *f);
+int vfs_create(const char *path);
+int vfs_remove(const char *path);
+int vfs_mkdir(const char *path);
+int vfs_rmdir(const char *path);
+unsigned long vfs_open(const char *path, unsigned long flag);
+int vfs_close(unsigned long fd_num);
+int vfs_opendent(struct dentry **target, const char *path);
+int vfs_closedent(struct dentry *target);
+int vfs_getdent(struct dentry *target, unsigned long count,
+                struct dirent *dent);
+long vfs_read(unsigned long fd_num, char *buf, unsigned long size);
+long vfs_write(unsigned long fd_num, const char *buf, unsigned long size);
 
-// void init_rootfs(superblock *sb);
-// void init_dentry(dentry *dir);
-// void init_file(file *f);
+typedef struct file_discriptor {
+  cdl_list fd_list;
+  unsigned long fd_num;
+  file *f;
+} file_discriptor;
 
-// #endif
+#define METHOD_NOT_IMP -1
+#define INVALID_PATH -2
+#define INVALID_FD -3
+
+#define TYPE_DIR 1
+#define TYPE_FILE 2
+
+#define get_struct_head(stc, com, addr) \
+  ((stc *)((void *)addr + offsetof(stc, com)))
+
+void init_vfs();
+
+int vfs_mount(const char *dev, const char *mp, const char *fs);
+int vfs_chdir(const char *path);
+dentry *get_vfs_root();
+
+#endif

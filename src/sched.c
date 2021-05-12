@@ -3,7 +3,6 @@
 #include "cpio.h"
 #include "exc.h"
 #include "io.h"
-#include "mem.h"
 #include "timer.h"
 #include "trap.h"
 #include "util.h"
@@ -11,39 +10,9 @@
 cdl_list run_queue;
 unsigned long pid_cnt;
 
-typedef struct mem_seg {
-  // low address
-  void *base;
-  // real size (copy use)
-  unsigned long size;
-  unsigned long ref_cnt;
-} mem_seg;
-
-typedef struct task_struct {
-  cdl_list ts_list;
-  cdl_list sibli;
-  cdl_list child;
-  cdl_list dead;
-  struct task_struct *parent;
-  void *sp;
-  unsigned long pid;
-  unsigned long st_timer_cnt;
-  unsigned long exc_lvl;
-  mem_seg *usr_sp;
-  mem_seg *usr_prog;
-} task_struct;
-
 typedef struct pres_reg {
   unsigned long x29, x30, x27, x28, x25, x26, x23, x24, x21, x22, x19, x20;
 } pres_reg;
-
-#define sp_low(sp)                                           \
-  ((void *)((((unsigned long)(sp)-1) >> KERN_STACK_SIZE_CTZ) \
-            << KERN_STACK_SIZE_CTZ))
-
-#define sp_high(sp) (sp_low(sp) + KERN_STACK_SIZE)
-
-#define sp_to_ts(sp) ((task_struct *)sp_low(sp))
 
 unsigned long preemt_sched = 0;
 unsigned long time_slice;
@@ -65,6 +34,9 @@ void init_sched() {
   init_cdl_list(&(ts->child));
   init_cdl_list(&(ts->dead));
   ts->parent = NULL;
+  ts->pwd = get_vfs_root();
+  init_cdl_list(&(ts->fd_list));
+  ts->fd_cnt = 3;
   time_slice = timer_frq / 1024;
   preemt_sched = 1;
 }
@@ -87,7 +59,7 @@ void schedule() {
 
 void die() {
   task_struct *ts = sp_to_ts(get_sp());
-  log_hex("die", ts->pid, LOG_PRINT);
+  log_hex("die", ts->pid, LOG_DEBUG);
   disable_interrupt();
   if (ts->usr_sp != NULL) {
     ts->usr_sp->ref_cnt--;
@@ -108,6 +80,12 @@ void die() {
     ts->usr_prog = NULL;
   }
   enable_interrupt();
+  cdl_list *fd_itr = (ts->fd_list).bk;
+  while (fd_itr != &(ts->fd_list)) {
+    vfs_close(((file_discriptor *)fd_itr)->fd_num);   
+    fd_itr = (ts->fd_list).bk;
+  }
+  vfs_closedent(ts->pwd);
   // reparenting
   disable_interrupt();
   cdl_list *child_itr = ts->child.fd;
@@ -146,6 +124,9 @@ void thread_create(void *func) {
   ts->usr_prog = NULL;
   task_struct *pts = sp_to_ts(get_sp());
   ts->parent = pts;
+  ts->pwd = get_vfs_root();
+  init_cdl_list(&(ts->fd_list));
+  ts->fd_cnt = 3;
   disable_interrupt();
   push_cdl_list(&(pts->child), &(ts->sibli));
   enable_interrupt();
@@ -167,7 +148,7 @@ void reap_dead() {
   cdl_list *reap_list = &(sp_to_ts(get_sp())->dead);
   while (!cdl_list_empty(reap_list)) {
     task_struct *ts = pop_cdl_list(reap_list->fd);
-    log_hex("rip", ts->pid, LOG_PRINT);
+    log_hex("rip", ts->pid, LOG_DEBUG);
     kfree((void *)ts);
   }
 }
@@ -208,6 +189,11 @@ unsigned long clone() {
   new_ts->parent = ts;
   new_ts->exc_lvl = ts->exc_lvl;
   new_ts->sp = new_sp;
+  if(vfs_opendent(&(new_ts->pwd), "") < 0 || new_ts->pwd != ts->pwd) {
+    log("error clone pwd", LOG_ERROR);
+  }
+  init_cdl_list(&(new_ts->fd_list));
+  new_ts->fd_cnt = 3;
   init_cdl_list(&(new_ts->child));
   init_cdl_list(&(new_ts->dead));
   disable_interrupt();
@@ -224,7 +210,6 @@ unsigned long clone() {
   set_int_stat(int_stat + 1);
   clear_task_timer();
   enable_interrupt();
-
   if (get_pid() == ts->pid) {
     return new_ts->pid;
   } else {

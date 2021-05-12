@@ -41,25 +41,26 @@ void shell() {
   }
 }
 
-void print_pid() {
-  unsigned long pid = get_pid();
-  log_hex("st", pid, LOG_PRINT);
-  unsigned long cid = clone();
-  if (cid) {
-    cid = clone();
+void test_vfs() {
+  clone();
+  asm volatile("":::"memory");
+  // log_hex("ts", (unsigned long)(get_taskstruct()), LOG_PRINT);
+  log_hex("wd", (unsigned long)(get_taskstruct()->pwd), LOG_PRINT);
+  dentry *od;
+  if(vfs_opendent(&od, "") < 0) {
+    log("error vfs", LOG_ERROR);
   }
-  // wait_clock(1000000);
+  dentry *gr = get_vfs_root();
+  log_hex("od", (unsigned long)od, LOG_PRINT);
+  log_hex("gr", (unsigned long)gr, LOG_PRINT);
+  vfs_closedent(od);
+  vfs_closedent(gr);
 
-  if (cid) {
-    sleep(1);
-    wait();
-    wait();
-  } else {
-    pid = get_pid();
-    log_hex("st", pid, LOG_PRINT);
-    sleep(2);
+  if(vfs_opendent(&od, "") < 0) {
+    log("error vfs2", LOG_ERROR);
   }
-  // sleep(3);
+  log_hex("od2", (unsigned long)od, LOG_PRINT);
+  vfs_closedent(od);
 }
 
 void kernel() {
@@ -68,7 +69,7 @@ void kernel() {
   el2_to_el1_preserve_sp();
   set_el1_evt();
 
-  puts("Lab 5:");
+  puts("Lab 6:");
 
   reserve_mem((void *)0x0, 0x1000);  // spin table
   reserve_mem((void *)0x80000 - KERN_STACK_SIZE, KERN_STACK_SIZE);  // stack
@@ -82,14 +83,14 @@ void kernel() {
   core_timer_enable();
   init_nonblock_io();
 
+  init_vfs();
   init_sched();
 
   tick_rate = 0.001;
   tick();
 
-  for (int i = 0; i < 3; i++) {
-    thread_create(&print_pid);
-  }
+  thread_create(&test_vfs);
+  thread_create(&test_vfs);
   thread_create(&shell);
   idle();
 }

@@ -4,7 +4,7 @@
 #include "io.h"
 #include "sched.h"
 
-unsigned long sys_read(unsigned long fd, char *buf, unsigned long size) {
+long sys_read(unsigned long fd, char *buf, unsigned long size) {
   disable_interrupt();
   unsigned long i = 0;
   while (i < size && !recv_buf_empty()) {
@@ -13,7 +13,7 @@ unsigned long sys_read(unsigned long fd, char *buf, unsigned long size) {
   enable_interrupt();
   return i;
 }
-unsigned long sys_write(unsigned long fd, const char *buf, unsigned long size) {
+long sys_write(unsigned long fd, const char *buf, unsigned long size) {
   for (unsigned long i = 0; i < size; i++) {
     putc(buf[i]);
   }
