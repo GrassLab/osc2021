@@ -98,6 +98,10 @@ void cmd_handle() // parse command
 		uart_putstr("curEL    	    get current expcetion level\n");
 		uart_putstr("runUser 	    load and run a user program in the initramfs [svc.elf]\n");
 		uart_putstr("userTimer	    load and run a user program in the initramfs [svc.elf] (coreTimer)\n");
+		uart_putstr("asyncRead	    use uart interrupt and read \n");
+		uart_putstr("asyncWrite	    use uart interrupt and write \n");
+		uart_putstr("recover 	    disable interrupt \n");
+		uart_putstr("setTimeout [MESSAGE] [SECONDS]   set timer timeout and print message \n");
 	}
 	else if(strcmp(cmd, "reboot"))
 	{
@@ -185,6 +189,68 @@ void cmd_handle() // parse command
 		
 		uart_putstr("\n");		
 	}
+	else if(strcmp(cmd, "asyncRead"))
+	{
+		if(isSync == 1)
+		{
+			enable_interrupt();
+			isSync = 0;
+		}
+		uart_putstr("start async read command...");
+		uart_putstr("\n");		
+	}
+	else if(strcmp(cmd, "asyncWrite"))
+	{
+		if(isSync == 1)
+		{
+			enable_interrupt();
+			isSync = 0;
+		}
+		uart_async_putstr("This is async write string...");
+		uart_async_putstr("\n");		
+	}
+	else if(strcmp(cmd, "recover"))
+	{
+		if(isSync == 0)
+		{
+			disable_interrupt();
+			isSync = 1;
+			uart_putstr("disable_interrupt ...");
+		}
+		uart_putstr("\n");		
+	}
+	else if(strcmpn(cmd, "setTimeout", 9))
+	{
+		int second = 0;
+		char msg[20] = {0};
+		// get second and message
+		// setTimeout [MESSAGE] [SECONDS]
+		for(int i = 11; cmd[i] != '\0'; i++)
+		{
+			if(cmd[i] != ' ')
+			{
+				msg[i - 11] = cmd[i];
+			}
+			else
+			{
+				msg[i - 11] = '\0';
+				
+				for(int j = i + 1; cmd[j] != '\0'; j++)
+				{
+					if(cmd[j] >= '0' && cmd[j] <= '9') 
+						second = second * 10 + cmd[j] - '0';
+				}
+			}
+		}
+		
+		if(isSync == 1)
+		{
+			enable_interrupt();
+			isSync = 0;
+		}
+		
+		add_timer(print_timer_msg, msg, second);
+	}
 	else if(strlen(cmd) != 0)
 	{
 		uart_putstr("command \"");
@@ -197,9 +263,12 @@ void cmd_handle() // parse command
 
 void main()
 {
+	isSync = 1;
+	
 	cmd_init();
 	uart_init();
 	memory_init();
+	init_timeout();
 	
 	// put welcome ascii art
 	uart_putstr("\n");
@@ -219,7 +288,10 @@ void main()
 	char c2;
 	while(1)
 	{
-		c = uart_getchar();
+		if (isSync) // get char from user
+			c = uart_getchar();
+		else
+			c = uart_async_getchar(); 
 		
 		// https://codertw.com/%E7%A8%8B%E5%BC%8F%E8%AA%9E%E8%A8%80/45106/
 		switch(c)
@@ -245,8 +317,10 @@ void main()
 				}
 				break;
 			case '[':
-				c2 = uart_getchar(); // get char from user
-
+				if (isSync) // get char from user
+					c2 = uart_getchar();
+				else
+					c2 = uart_async_getchar(); 
 				if (c2 == 'A')	// cursor up
 				{
 					for(int i = 0; i < cmdSize; i++)	// clear input

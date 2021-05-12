@@ -1,9 +1,8 @@
 {
   "ExpandedNodes": [
     "",
-    "\\kernel",
-    "\\rootfs"
+    "\\kernel"
   ],
-  "SelectedNode": "\\kernel\\buddy.h",
+  "SelectedNode": "\\kernel\\timer.c",
   "PreviewInSolutionExplorer": false
 }

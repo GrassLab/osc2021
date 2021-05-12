@@ -26,3 +26,12 @@ core_timer_enable:
 	ldr x1, =CORE0_TIMER_IRQ_CTRL
 	str w0, [x1] // unmask timer interrupt
 	ret
+	
+.globl core_timer_disable
+core_timer_disable:
+	mov x0, 0
+	msr cntp_ctl_el0, x0 // disable
+	mov x0, 0
+	ldr x1, =CORE0_TIMER_IRQ_CTRL
+	str w0, [x1] // unmask timer interrupt
+	ret
