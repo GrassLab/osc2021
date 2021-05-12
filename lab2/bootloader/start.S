@@ -6,7 +6,7 @@ _start:
     mov    x22, x0
     /* let cores enter busy loop except core0 */
     mrs    x0, mpidr_el1
-    and    x0, x1, 3
+    and    x0, x0, 3
     cbz    x0, 3f
 4:  wfe
     b      4b
