@@ -467,9 +467,6 @@ int cd(const char *pathname){
         return -1;
     }
 
-    char buf[MAX_PATH];
-    int ret = vfs_vnode_path(dir, buf);
-    printf("\nret = %d, buf = %s\n", ret, buf);
-
+    vfs_vnode_path(dir, pwd);
     return 0;
 }

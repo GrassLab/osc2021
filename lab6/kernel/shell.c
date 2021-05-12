@@ -117,38 +117,6 @@ static void lab6(char *path){
     idle();
 }
 
-static void pwd_update(char *pathname){
-    trim_multiple_of(pathname, '/');
-
-    char *new = pathname;
-    char *next = strtok(pathname + 1, '/');
-
-    while(*new){
-        new++;
-    }
-
-    char *component_name;
-    while(next[0]){
-        component_name = next;
-        next = strtok(component_name, '/');
-
-        printf("component_name = %s\n", component_name);
-        printf("next = %s\n", next);
-
-        if(!strcmp(component_name, ".")){
-            continue;
-        }
-
-        *new++ = '/';
-        while(*component_name){
-            *new++ = *component_name++;
-        }
-    }
-
-
-    printf("ans = %s\n", pathname);
-}
-
 static void test_code(){
     mkdir("/one");
     fopen("one/two", O_CREAT);
