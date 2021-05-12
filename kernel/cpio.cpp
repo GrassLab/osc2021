@@ -7,8 +7,8 @@ CPIO::CPIO(cpio_newc_header* header) {
     this->header = header;
     char buffer[30];
     for (int i = 0; i < 8; i++) {
-        this->filesize = this->filesize * 16 + Hex2int(header->c_filesize[i]);
-        this->namesize = this->namesize * 16 + Hex2int(header->c_namesize[i]);
+        filesize = (filesize << 4) + Hex2int(header->c_filesize[i]);
+        namesize = (namesize << 4) + Hex2int(header->c_namesize[i]);
     }
     this->filename = reinterpret_cast<char*>(header) + sizeof(cpio_newc_header);
     this->filecontent = (char*)((uint64_t(this->filename + this->namesize) + 3) & ~3);
