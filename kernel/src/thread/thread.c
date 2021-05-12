@@ -45,6 +45,7 @@ void create_thread(void(*thread_func)())
     t->pid = sys_getpid();
     t->state = RUNNING;
     t->code = thread_func;
+    init_fd_table(&t->fd_table);
 
     // create and set stack initial value
     alloc_page((void **)&t->kernel_sp, THREAD_STACK_SIZE);

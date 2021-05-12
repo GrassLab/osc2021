@@ -4,6 +4,9 @@
 #include "string.h"
 #include "io.h"
 #include "cpio.h"
+#include "thread.h"
+#include "system_call.h"
+
 
 struct mount* rootfs;
 
@@ -114,6 +117,24 @@ int vfs_write(struct file* file, const void* buf, size_t len) {
 int vfs_read(struct file* file, void* buf, size_t len) {
     // 1. read min(len, readable file data size) byte to buf from the opened file.
     // 2. return read size or error code if an error occurs.
-    printf("vfs read\n");
     return file->f_ops->read(file, buf, len);
+}
+
+
+// open system call handler
+void do_open(const char* pathname, int flags)
+{
+    struct file *f = vfs_open(pathname, flags);
+    // insert into thread's fd table
+    struct Thread *thread = get_current_thread();
+    int fd = insert_fd(&thread->fd_table, f);
+
+    // return to user space
+    struct context *ctx = (struct context *)thread->kernel_sp;
+    ctx->reg[0] = fd;
+}
+
+int open(const char* pathname, int flags)
+{
+    return sys_open(pathname, flags);
 }

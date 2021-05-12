@@ -4,6 +4,8 @@
 #define THREAD_STACK_SIZE (5) // 2 ^ exp
 
 #include "def.h"
+#include "vfs.h"
+#include "fd.h"
 typedef enum {
     RUNNING,
     WAITING,
@@ -26,6 +28,8 @@ struct Thread {
     STATE state;
 
     void * code;
+
+    struct fd_table fd_table;
 
     struct Thread *prev;
     struct Thread *next;

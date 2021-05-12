@@ -56,5 +56,6 @@ struct filesystem *get_filesystem(const char *fs_name);
 
 struct file* vfs_open(const char* pathname, int flags);
 int vfs_read(struct file* file, void* buf, size_t len);
+int open(const char* pathname, int flags);
 
 #endif
