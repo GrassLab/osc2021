@@ -24,11 +24,8 @@ void init_root(const char *name)
         rootfs->fs = fs;
         struct vnode *root_vnode = malloc(sizeof(struct vnode));
         rootfs->root = root_vnode;
-
         rootfs->fs->setup_mount(fs, rootfs);
-
         cpio_init_fs(root_vnode);
-
     } else {
         printf("no such filesystem: %s\n", name);
     }
@@ -78,18 +75,33 @@ struct file* vfs_open(const char* pathname, int flags) {
     // 2. Create a new file descriptor for this vnode if found.
     // 3. Create a new file if O_CREAT is specified in flags.
 
+    struct file *f = NULL;
     struct vnode *target;
-    if (rootfs->root->v_ops->lookup(rootfs->root, &target, pathname) == 0) {
-        printf("file name is: %s\n", ((struct tmpfs_internal *)target->internal)->name);
-    } else {
-        printf("not found!");
+    int res = rootfs->root->v_ops->lookup(rootfs->root, &target, pathname);
+
+    if (flags == O_CREAT || res == 0) {
+
+        // deal with create
+        if (res != 0 && rootfs->root->v_ops->create(rootfs->root, &target, pathname) != 0) {
+            // no parent dir
+            return f;
+        }
+
+        // initialize file
+        f = malloc(sizeof(struct file));
+        f->vnode = target;
+        f->f_ops = target->f_ops;
+        f->f_pos = 0;
+        f->flags = flags;
     }
+    
 
 
-    return NULL;
+    return f;
 }
 int vfs_close(struct file* file) {
-    // 1. release the file descriptor
+    // 1. release the file descriptors
+    free(file);
 
     return 0;
 }
@@ -102,6 +114,6 @@ int vfs_write(struct file* file, const void* buf, size_t len) {
 int vfs_read(struct file* file, void* buf, size_t len) {
     // 1. read min(len, readable file data size) byte to buf from the opened file.
     // 2. return read size or error code if an error occurs.
-
-    return 0;
+    printf("vfs read\n");
+    return file->f_ops->read(file, buf, len);
 }

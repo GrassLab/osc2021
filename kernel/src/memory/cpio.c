@@ -7,6 +7,7 @@
 #include "process.h"
 #include "thread.h"
 #include "vfs.h"
+#include "tmpfs.h"
 
 void cpio_exec(char *path, int argc, char *argv[])
 {
@@ -125,6 +126,9 @@ void cpio_init_fs(struct vnode *root)
     char curName[20] = { 0 };
     int namesize = 0;
 
+    struct vnode *target = NULL;
+    struct tmpfs_internal *target_internal  = NULL;
+
     for (;;) {
         // clear previous name
         memset(curName, 0, 20);
@@ -142,9 +146,17 @@ void cpio_init_fs(struct vnode *root)
             break;
         }
 
-        if (root->v_ops->create(root, NULL, curName) != 0) {
+        if (root->v_ops->create(root, &target, curName) != 0) {
             printf("vnode \"%s\" create failed!\n", curName);
+
+            return;
         }
+
+        target_internal = target->internal;
+        target_internal->size = cpio_attr_value(pCurrentFile, C_FILESIZE);
+        target_internal->start_addr = cpio_content_addr(pCurrentFile);
+
+        // printf("vnode \"%s\"'s content address: %ld\n", curName, target_internal->start_addr);
 
         // proceed next file
         pCurrentFile = get_next_file(pCurrentFile);

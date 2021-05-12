@@ -110,7 +110,6 @@ int tmpfs_create(struct vnode *dir_node, struct vnode **target, const char *comp
     } else {
         char path[100] = { 0 }; // used to get parent
         strncpy(path, component_name, last_slash);
-        
         if (!tmpfs_lookup(dir_node, &parent, path)) {
             return -1;
         }
@@ -120,7 +119,7 @@ int tmpfs_create(struct vnode *dir_node, struct vnode **target, const char *comp
     }
 
     // component_name is now the last fragment
-    struct vnode *vnode = create_tmpfs_vnode(component_name);
+    struct vnode *vnode = create_tmpfs_vnode(parent, component_name);
     append_child(parent, vnode);
 
     if (target) {
@@ -133,12 +132,35 @@ int tmpfs_create(struct vnode *dir_node, struct vnode **target, const char *comp
 
 int tmpfs_write (struct file* file, const void* buf, size_t len)
 {
+    struct tmpfs_internal *internal = file->vnode->internal;
+    char *start = internal->start_addr;
+    start += file->f_pos;
+
+    size_t remain_len = internal->size - file->f_pos;
+    size_t cpy_len = remain_len >= len ? len : remain_len; // bound len
+
+    strncpy(start, buf, cpy_len);
+
+    file->f_pos += cpy_len;
+
     return 0;
 }
 
 int tmpfs_read (struct file* file, void* buf, size_t len)
 {
-    return 0;
+    struct tmpfs_internal *internal = file->vnode->internal;
+    char *start = internal->start_addr;
+
+    start += file->f_pos;
+
+    size_t remain_len = internal->size - file->f_pos;
+    size_t cpy_len = remain_len >= len ? len : remain_len; // bound len
+
+    strncpy(buf, start, cpy_len);
+
+    file->f_pos += cpy_len;
+
+    return cpy_len;
 }
 
 struct tmpfs_internal *create_tmpfs_vnode_internal(const char *name)
@@ -149,9 +171,13 @@ struct tmpfs_internal *create_tmpfs_vnode_internal(const char *name)
     return internal;
 }
 
-struct vnode *create_tmpfs_vnode(const char *name)
+struct vnode *create_tmpfs_vnode(struct vnode *parent, const char *name)
 {
     struct vnode *vnode = malloc(sizeof(struct vnode));
+    vnode->f_ops = parent->f_ops;
+    vnode->mount = parent->mount;
+    vnode->v_ops = parent->v_ops;
+
     vnode->internal = create_tmpfs_vnode_internal(name);
 
     return vnode;
@@ -174,13 +200,13 @@ int get_first_frag(char *buffer, const char *component_name)
 
 void append_child(struct vnode *parent, struct vnode *node)
 {
+    // printf("1\n");
     struct tmpfs_internal *parent_internal = parent->internal;
     if (!parent_internal->l_child) {
         parent_internal->l_child = node;
     } else {
         struct vnode *tmp_node = parent_internal->l_child;
-        struct tmpfs_internal *tmp_internal = tmp_node->internal;
-
+        struct tmpfs_internal *tmp_internal = tmp_node->internal; // this line has broken on rpi
         while (tmp_internal->r_sibling) {
             tmp_node = tmp_internal->r_sibling;
             tmp_internal = tmp_node->internal;

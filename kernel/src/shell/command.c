@@ -10,6 +10,7 @@
 #include "io.h"
 #include "thread.h"
 #include "system_call.h"
+#include "vfs.h"
 
 void exec_command(char *input)
 {
@@ -49,6 +50,17 @@ void exec_command(char *input)
         while ( 1 ) {
             sys_schedule();
         }
+    } else if (strcmp(input, "lookup") == 0) {
+        // struct file *hello = vfs_open("hello", O_CREAT);
+        // struct file *world = vfs_open("world", O_CREAT);
+
+        struct file *hello = vfs_open("/test", O_CREAT);
+
+        char buf[100] = { 0 };
+        vfs_read(hello, buf, 20);
+
+        printf("content of test: %s\n", buf);
+
     } else {
         printf("Try another command\r\n");
     }
