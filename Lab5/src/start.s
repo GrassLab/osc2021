@@ -1,4 +1,4 @@
-.macro save_task
+.macro save_all
 	str x0, [sp, -8]
 	mrs x0, tpidr_el1
 	//store x0&x1 later
@@ -27,7 +27,7 @@
 	stp x11, x12, [x9, 8 * 14]
 .endm
 
-.macro restore_task
+.macro load_all
 	mrs x9, tpidr_el1
 	ldr x10, [x9, 8 * 13]
 	ldp x11, x12, [x9, 8 * 14]
@@ -107,7 +107,7 @@ from_el2_to_el1:
 	
 	mov x0, #(3 << 20)
 	msr cpacr_el1, x0
-
+	
 	mov x0, 1
 	msr cntp_ctl_el0, x0
 	mov x0, 0
@@ -115,6 +115,7 @@ from_el2_to_el1:
 	mov x0, 2
 	ldr x1, =0x40000040
 	str w0, [x1]
+	
 	eret
 
 
@@ -160,19 +161,19 @@ exception_table:
 
 
 syn:
-	save_task
+	save_all
 	bl exception_handler
-	restore_task
+	load_all
 	eret
 
 irq:
-	save_task
+	save_all
 	bl interrupt_handler
-	restore_task
+	load_all
 	eret
 
 TODO:
-	save_task
+	save_all
 	bl error
-	restore_task
+	load_all
 	eret

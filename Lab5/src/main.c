@@ -9,7 +9,7 @@ enum shell_status {
 
 int main() {
     shell_init();
-    
+    allocator_init();
     
     //void* addr1 = kmalloc(8888);
     //void* addr2 = kmalloc(4096);

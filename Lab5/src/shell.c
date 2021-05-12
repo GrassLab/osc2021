@@ -140,11 +140,11 @@ void shell_controller(char* cmd) {
     else if(!strcmp(cmd, "load")){
         load(cpio_buf);
     }
-    else if(!strcmp(cmd, "test1")){
+    else if(!strcmp(cmd, "lab5-1")){
         threadtest1();
         
     }
-    else if(!strcmp(cmd, "test2")){
+    else if(!strcmp(cmd, "lab5-2")){
         threadtest2();
     }
     else if (!strcmp(cmd, "reboot")) {

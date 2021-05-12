@@ -53,9 +53,7 @@ void uart_write(unsigned int c){
 	do {
         asm volatile("nop");
     	} while (!(*AUX_MU_LSR & 0x20));
-	if(c=='\n'){//convert "\n" to "\r\n"
-		uart_write('\r');//recursive
-	}
+	
 	*AUX_MU_IO = c;
 }
 int uart_gets(char* s,int size,int display){

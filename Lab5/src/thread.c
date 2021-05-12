@@ -92,7 +92,7 @@ void threadSchedule(){
 }
 
 struct Task* threadCreate(void* func){
-	struct Task* new_task = (struct Task*)kmalloc(TASKSIZE);
+	struct Task* new_task = (struct Task*)falloc(TASKSIZE);
 
 	if((unsigned long) new_task %TASKSIZE){
 		uart_printf("new task no align\n");
@@ -130,7 +130,7 @@ void zombiesKill(){
 
 		while(tar->next && (tar->next->status & TASKEXIT)){
 			struct Task* tmp = tar->next->next;
-			kfree((unsigned long)tar->next);
+			ffree((unsigned long)(tar->next));
 			tar->next = tmp;
 			threadnum--;
 		}
@@ -250,11 +250,13 @@ void test1(){
 }
 
 void threadtest1(){
+	
 	struct Task* cur = threadCreate(0);
-
+	uart_printf("start test 1\n");
 	asm volatile("msr tpidr_el1, %0\n"::"r"((unsigned long) cur));
-
+	uart_printf("start test 1\n");
 	for(int i = 0; i < 3; i++){
+		uart_printf("start test 1\n");
 		threadCreate(test1);
 	}
 

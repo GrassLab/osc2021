@@ -232,14 +232,11 @@ unsigned long argvPut(char** argv, unsigned long ret){
 void load_argv(char* path, char** argv, unsigned long* task_a_addr, unsigned long* task_a_size){
 
     unsigned long size;
-    unsigned char *load_addr;
+    unsigned long load_addr;
 
-    if(!strcmp("app1", path)){
-      load_addr = (unsigned char*)0x10000;
-    }
-    else{
-      load_addr = (unsigned char*)0x20000;
-    }
+uart_puts("Please enter app load address (Hex): ");
+    load_addr = uart_getX(1);
+    uart_printf("find!\n");
     //cpio_load_program("app.img",load_addr, cpio_buf);
 
     uintptr_t ptr = (uintptr_t)cpio_buf;
@@ -259,7 +256,7 @@ void load_argv(char* path, char** argv, unsigned long* task_a_addr, unsigned lon
         unsigned filesize = h2i(header->c_filesize, 8);
        
         if (!strcmp(header->content_buf, path)) {
-            uart_printf("find!\n");
+            
             ptr += sizeof(struct cpio_newc_header);
             ptr = align_up(ptr + namesize, 4);
             
@@ -268,21 +265,23 @@ void load_argv(char* path, char** argv, unsigned long* task_a_addr, unsigned lon
               *task_a_size = filesize;
 
               char *content = (char *)ptr;
-              
+              unsigned char* target=(unsigned char*)load_addr;
               for(unsigned long long i = 0; i < filesize; i++){
-                load_addr[i] = content[i];
+                *target = *content;
+                target++;
+                content++;
                 //uart_printf("filesize %d \n",content[i]);
               }
             }
             uart_printf("start load ...\n");
-            uart_printf("load address %x\n", load_addr);
+           
             unsigned long sp_addr = argvPut(argv, load_addr);
-          
+            
             // change exception level
             // asm volatile("mov x0, 0x3c0  \n"); // disable timer interrupt, enable svn
             asm volatile("mov x0, 0x340  \n"); // enable core timer interrupt
             asm volatile("msr spsr_el1, x0  \n");
-            uart_printf("load address %x\n", load_addr);
+            //uart_printf("load address %x\n", load_addr);
             asm volatile("msr elr_el1, %0   \n" ::"r"(load_addr));
             asm volatile("msr sp_el0, %0    \n" ::"r"(sp_addr));
             
