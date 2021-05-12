@@ -6,21 +6,10 @@
 #include <kernel/cpio.h>
 #include <kernel/string.h>
 #include <kernel/memory_addr.h>
+#include <kernel/fs.h>
 
 uint64_t total_threads = 0;
 uint64_t pid_counter = 0;
-
-extern "C" {
-    void do_exit();
-    void switch_to(task_struct *from, task_struct *to, uint64_t to_tpidr, ...);
-    uint64_t get_tpidr_el1();
-    void loop();
-    void set_eret_addr(void *addr);
-    void kernel_thread_start();
-    uint64_t fork_internal(task_struct *parent, task_struct *child, void *parent_stack, void *child_stack, void *parent_kernel_stack, void *child_kernel_stack);
-    void qemu_quit();
-    uint64_t get_timer();
-}
 
 static void schedule_internal(bool save_current) {
     uint64_t current = get_tpidr_el1();
@@ -57,12 +46,12 @@ static void sys_clone(void *func) {
     total_threads++;
     memcpy(&tasks[target], &tasks[current], sizeof(decltype(*tasks)));
     tasks[target].pid = ++pid_counter;
-    tasks[target].lr = (void*)kernel_thread_start;
-    tasks[target].elr_el1 = func;
+    tasks[target].regs.lr = (void*)kernel_thread_start;
+    tasks[target].regs.elr_el1 = func;
     tasks[target].stack_alloc = malloc(4096);
     tasks[target].kernel_stack_alloc = malloc(4096);
-    tasks[target].sp_el0 = tasks[target].stack_alloc + 4096;
-    tasks[target].sp = tasks[target].kernel_stack_alloc + 4096;
+    tasks[target].regs.sp_el0 = tasks[target].stack_alloc + 4096;
+    tasks[target].regs.sp = tasks[target].kernel_stack_alloc + 4096;
     tasks[target].sleep_until = 0;
 }
 
@@ -134,10 +123,10 @@ int sys_exec(char* name, char** argv) {
                 free(tasks[tpidr].program_alloc);
             }
             tasks[tpidr].program_size = (cpio.filesize + 4095) & ~4095; // Align 4096
-            tasks[tpidr].sp = tasks[tpidr].kernel_stack_alloc + 4096;
-            tasks[tpidr].lr = (void*)kernel_thread_start;
-            tasks[tpidr].elr_el1 = tasks[tpidr].program_alloc = memcpy(malloc(tasks[tpidr].program_size), cpio.filecontent, cpio.filesize);
-            tasks[tpidr].sp_el0 = sp_el0;
+            tasks[tpidr].regs.sp = tasks[tpidr].kernel_stack_alloc + 4096;
+            tasks[tpidr].regs.lr = (void*)kernel_thread_start;
+            tasks[tpidr].regs.elr_el1 = tasks[tpidr].program_alloc = memcpy(malloc(tasks[tpidr].program_size), cpio.filecontent, cpio.filesize);
+            tasks[tpidr].regs.sp_el0 = sp_el0;
             tasks[tpidr].sleep_until = 0;
             tasks[tpidr].wait_pid = 0;
             switch_to(nullptr, &tasks[tpidr], tpidr, argc, arg_final);
@@ -170,6 +159,8 @@ static uint64_t sys_fork() {
     tasks[child].pid = child_pid;
     tasks[child].stack_alloc = malloc(4096);
     tasks[child].kernel_stack_alloc = malloc(4096);
+    tasks[child].fd_entries = malloc(4096);
+    memcpy(tasks[child].fd_entries, tasks[parent].fd_entries, 4096);
     tasks[child].program_alloc = tasks[parent].program_alloc;
     tasks[child].sleep_until = 0;
     fork_internal(&tasks[parent], &tasks[child], tasks[parent].stack_alloc, tasks[child].stack_alloc, tasks[parent].kernel_stack_alloc, tasks[child].kernel_stack_alloc);
@@ -205,5 +196,9 @@ void (*syscall_table[])() = {
     syscall_fun(sys_fork),
     syscall_fun(sys_delay),
     syscall_fun(sys_wait),
+    syscall_fun(open),
+    syscall_fun(read),
+    syscall_fun(write),
+    syscall_fun(close),
 };
 

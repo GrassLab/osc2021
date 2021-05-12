@@ -21,3 +21,7 @@ gensys uart_get 6
 gensys fork     7
 gensys delay    8
 gensys wait     9
+gensys open    10
+gensys read    11
+gensys write   12
+gensys close   13

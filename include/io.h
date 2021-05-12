@@ -1,6 +1,7 @@
 #pragma once
 
 #include <syscall.h>
+#include <string.h>
 
 static inline void uart_put_1(const char *str) { uart_put(str, strlen(str)); }
 

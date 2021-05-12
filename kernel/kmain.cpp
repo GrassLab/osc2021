@@ -15,18 +15,13 @@ void kmain() {
     };
     tasks = (task_struct*)TASK_STRUCT_BASE;
     MiniUART::Init();
-    // io() << "Kernel started!!\r\n";
-    // io() << "test 1\r\n";
     allocator.Init();
-    // io() << "Allocator started!!\r\n";
-    // memset(tasks, 0, sizeof(tasks[0]));
     tasks[0].program_alloc = malloc(4096);
-    // memset(tasks[0].program_alloc, 0, 4096);
     tasks[0].stack_alloc = malloc(4096);
-    // memset(tasks[0].stack_alloc, 0, 4096);
     tasks[0].kernel_stack_alloc = malloc(4096);
-    // memset(tasks[0].kernel_stack_alloc, 0, 4096);
+    tasks[0].fd_entries = malloc(4096);
     tasks[0].pid = ++pid_counter;
+    tasks[0].first_free_fd = -1;
     total_threads++;
     sys_exec("terminal", tmp);
 }

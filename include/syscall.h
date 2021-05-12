@@ -1,7 +1,7 @@
 #pragma once
 
 #include <types.h>
-#include <string.h>
+#include <files.h>
 
 extern "C" {
     void schedule();
@@ -14,4 +14,8 @@ extern "C" {
     uint64_t fork();
     void delay(uint64_t cycles);
     void wait(uint64_t pid);
+    int open(char *filename, int mode);
+    size_t read(int fd, char *buf, size_t count);
+    size_t write(int fd, char *buf, size_t count);
+    void close(int fd);
 }
