@@ -32,7 +32,7 @@ initramfs/%: program/%.elf | initramfs
 	$(OBJCOPY) -O binary $< $@
 
 initramfs:
-	mkdir $@
+	mkdir -p $@
 
 clean:
 	$(MAKE) -C kernel clean
