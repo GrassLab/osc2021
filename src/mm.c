@@ -14,7 +14,7 @@ void page_init()
         bookkeep[i].pfn = i;
         bookkeep[i].used = Free;
         bookkeep[i].phy_addr = LOW_MEMORY + i*PAGE_SIZE;
-        bookkeep[i].order = -1; 
+        bookkeep[i].order = -1;
     }
 }
 
@@ -254,8 +254,12 @@ void *obj_allocate(int token) {
     struct list_head *obj_freelist = obj_allocator_p->curr_page->free;
     if (obj_freelist != NULL) {
         // Allocate memory by free list in current page
+        #ifdef __DEBUG
+        printf("[obj_allocate] Use object freelist\n");
+        printf("[obj_allocate] obj_freelist->next = 0x%x\n", obj_freelist->next);
+        #endif //__DEBUG
         allocated_addr = obj_freelist;
-        obj_freelist = obj_freelist->next; // Point to next address of free object;
+        obj_allocator_p->curr_page->free = obj_freelist->next; // Point to next address of free object;
     }
     else {
         // Allocate memory to requested object 
