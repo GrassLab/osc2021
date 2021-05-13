@@ -42,7 +42,7 @@ void unlink(struct list_head *node) {
     struct list_head *next, *prev;
     next = node->next;
     prev = node->prev;
-    
+
     next->prev = prev;
     prev->next = next;
 }

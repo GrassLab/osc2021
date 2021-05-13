@@ -3,6 +3,8 @@
 #include <context_switch.h>
 #include <mm.h>
 #include <string.h>
+#include <interrupt.h>
+#include <sched.h>
 
 static struct task_struct *fork_context(struct pt_regs *regs) {
     struct task_struct *ts = kmalloc(sizeof(struct task_struct));
@@ -17,7 +19,7 @@ static struct task_struct *fork_context(struct pt_regs *regs) {
     trapframe->sp = (size_t)ts->stack + (regs->sp - (size_t)current->stack);
     trapframe->regs[0] = 0;
 
-    ts->pid = GLB_PID++;
+    ts->pid = get_next_pid();
 
     /* don't duplicate user program memory,
      * since in this lab we only put it into stop queue, we won't encounter UAF
@@ -33,9 +35,12 @@ static struct task_struct *fork_context(struct pt_regs *regs) {
 /* we use fork() to get all context, so trapframe will be construct first
  * so be careful to use this function only for fork syscall */
 static pid_t fork_user_thread(struct pt_regs *regs) {
+    disable_interrupt();
+
     struct task_struct *ts = fork_context(regs);
     add_task(ts);
 
+    enable_interrupt();
     return ts->pid;
 }
 

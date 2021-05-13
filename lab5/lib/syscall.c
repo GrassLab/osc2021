@@ -48,7 +48,7 @@ void sys_getpid(struct pt_regs *regs) {
 /* TODO: fix this up */
 void sys_exit(struct pt_regs *regs) {
     /* ensure we won't get preempted here */
-    //disable_interrupt();
+    disable_interrupt();
 
     kill_task(current, regs->regs[0]);
     schedule();

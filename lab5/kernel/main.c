@@ -15,9 +15,11 @@
 // void foo() {
 //     for(int i = 0; i < 10; ++i) {
 //         printf("Thread id: %d %d\n", current->pid, i);
-//         delay(10000000);
-//         schedule();
+//         delay(100000);
 //     }
+
+//     /* since we set lr in cpu_context,
+//      * after return the function will re execute itself again */
 // }
 
 // void main(void *_dtb_ptr) {
@@ -60,5 +62,6 @@ void main(void *_dtb_ptr) {
 
     enable_core_timer();
     enable_interrupt();
+
     while (1);
 }

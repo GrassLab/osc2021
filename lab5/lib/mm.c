@@ -3,6 +3,7 @@
 #include "uart.h"
 #include "list.h"
 #include "string.h"
+#include <preempt.h>
 
 #define FRAME_BASE ((uintptr_t) 0x10000000)
 #define FRAME_END ((uintptr_t) 0x20000000)

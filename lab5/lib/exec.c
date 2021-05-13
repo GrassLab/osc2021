@@ -7,6 +7,7 @@
 #include <context_switch.h>
 #include <elf.h>
 #include <printf.h>
+#include <interrupt.h>
 
 static uint32_t align_up(uint32_t size, int alignment) {
   return (size + alignment - 1) & -alignment;
@@ -17,9 +18,10 @@ static void *init_stack_args(char *stack, const char *argv[]) {
     unsigned argc = 0;
     unsigned s_size = 0;
     unsigned a_size;
-    while (s = argv[argc++]) {
+    while (s = argv[argc]) {
         /* TODO: validate pointer */
         s_size += strlen(s) + 1;
+        argc++;
     }
 
     s_size = align_up(s_size, 16);
@@ -41,8 +43,11 @@ static void *init_stack_args(char *stack, const char *argv[]) {
 }
 
 /* in-place substitute all task_struct data, return to new context */
-/* should always success */
+/* (is in-place substitute a bad idea ??) */
+/* (since we have to disable interrupt while modifing current) */
 static void replace_user_context(void *prog, void *entry, const char *argv[]) {
+    disable_interrupt();
+
     struct task_struct *ts = current;
 
     /* TODO: protect page with virtual memory */
@@ -98,6 +103,8 @@ FAILED:
 
 /* only used for kthread to initialize a userland process */
 static void exec_user_context(void *prog, void *entry, const char *argv[]) {
+    disable_interrupt();
+
     struct task_struct *ts = current;
 
     /* TODO: protect page with virtual memory */

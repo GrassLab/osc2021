@@ -7,9 +7,20 @@
 #include "list.h"
 #include "timer.h"
 
+size_t jiffies = 0;
+
+static inline void jiffies_inc() {
+    jiffies += 1;
+}
+
+size_t get_jiffies() {
+    return jiffies;
+}
+
+/* argument use ms as unit */
 void set_current_sleep(size_t t) {
-    current->timer = t;
-    task_pause(current);
+    current->timer = MS(t);
+    pause_task(current);
     schedule();
 }
 
@@ -17,13 +28,13 @@ void enable_core_timer() {
     write_sysreg(cntp_ctl_el0, 1LL);
 
     unsigned long frq = read_sysreg(cntfrq_el0);
-    printf("[kernel] CPU freq: %ld\n\r", frq);
+    printf("[Kernel] CPU freq: %ld\n\r", frq);
 
     if (frq != CPU_HZ) {
         panic("[Kernel] CPU frequency unmatch")
     }
-    /* set timer ~= 1/65536 second */
-    write_sysreg(cntp_tval_el0, CPU_HZ / TICK_PER_INT);
+
+    write_sysreg(cntp_tval_el0, CPU_HZ / TIMER_HZ);
 
     /* enable rpi3 timer interrupt */
     *CORE0_TIMER_IRQ_CTRL = 2;
@@ -31,9 +42,10 @@ void enable_core_timer() {
 
 /* we should ensure current got assigned before timer handler got triggered */
 void core_timer_handler() {
-    write_sysreg(cntp_tval_el0, CPU_HZ / TICK_PER_INT);
+    jiffies_inc();
+    write_sysreg(cntp_tval_el0, CPU_HZ / TIMER_HZ);
 
-    unsigned long tick = read_sysreg(cntpct_el0);
+    //unsigned long tick = read_sysreg(cntpct_el0);
     //size_t sec = tick / CPU_HZ;
     //size_t r = tick % CPU_HZ;
     //size_t sec_1 = (r*10) / CPU_HZ;
@@ -41,13 +53,8 @@ void core_timer_handler() {
     //printf("[%d.%d] Timer interrupt\n\r", sec, sec_1);
 
     struct task_struct *cur = current;
-    unsigned long elapsed_tick = tick - cur->last_tick;
 
-    if (elapsed_tick >= cur->remained_tick) {
-        cur->remained_tick = 0;
-        schedule();
-    } else {
-        cur->remained_tick -= elapsed_tick;
-        cur->last_tick = tick;
+    if (jiffies >= cur->timeout_tick) {
+        cur->need_resched = 1;
     }
 }

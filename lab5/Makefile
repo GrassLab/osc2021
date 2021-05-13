@@ -52,9 +52,11 @@ USER_CFLAGS := -mcpu=cortex-a53 -MMD \
 
 all: kernel8.img bootloader.img initramfs.cpio
 
-debug: KERNEL_CFLAGS += -DDEBUG
-debug: BOOTLOADER_CFLAGS += -DDEBUG
+debug: CFLAGS += -DDEBUG
 debug: all
+
+rpi3: CFLAGS += -DRPI3
+rpi3: all
 
 kernel8.img: $(KERNEL_OBJS)
 	$(LD) -Tkernel/linker.ld $^ -o kernel8.elf
