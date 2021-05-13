@@ -85,6 +85,8 @@ int sys_exec(const char *name, char* const argv[])
     for (int temp = i;i < strlen(extension) + temp;i++) {
         filename_buf[i] = extension[i - temp];
     }
+    filename_buf[i] = '\0';
+    
     void *target_addr = cpio_move_file((void *) INITRAMFS_ADDR, filename_buf, move_address);
     //void *target_addr = cpio_get_file((void *) INITRAMFS_ADDR, "fork_test.img", &unused); // why cause error?
     
