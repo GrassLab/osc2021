@@ -12,6 +12,7 @@
 # include "demo.h"
 # include "user_demo.h"
 # include "user_lib.h"
+# include "log.h"
 
 char *argv[SHELL_MAX_ARGC];
 
@@ -164,6 +165,20 @@ void invoke_cmd(char *cmd){
       user_task_create(user_demo_test, 3);
       yield();
     }
+  }
+  else if (str_cmp(argv[0], (char *) "logger") == 1){
+    if (str_cmp(argv[1], (char *) "status")){
+      switch(get_log_level()){
+        case SEVERE : uart_puts((char *)"Logger level = SEVERE\n"); break;
+        case WARNING: uart_puts((char *)"Logger level = WARNING\n");break;
+        case INFO:    uart_puts((char *)"Logger level = INFO\n");   break;
+        case FINE:    uart_puts((char *)"Logger level = FINE\n");   break;
+      }
+    }
+    else if (str_cmp(argv[1], (char *) "severe")) set_log_level(SEVERE);
+    else if (str_cmp(argv[1], (char *) "warning")) set_log_level(WARNING);
+    else if (str_cmp(argv[1], (char *) "info")) set_log_level(INFO);
+    else if (str_cmp(argv[1], (char *) "fine")) set_log_level(FINE);
   }
   else{
     uart_puts((char *) "Command [");
