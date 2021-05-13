@@ -49,7 +49,7 @@ void push_stock(struct node **head, int fd_number)
     // Create new Node
     struct node* temp = newNode(fd_number);
  
-    if ((*head)->fd_number < fd_number) {
+    if ((*head)->fd_number > fd_number) {
         // Insert New Node before head
         temp->next = *head;
         (*head) = temp;
@@ -78,17 +78,11 @@ int insert_fd(struct fd_table *table, struct file *f_addr)
     return first_fd_num;
 }
 
-void remove_fd(struct fd_table *table, struct file *f_addr)
+void remove_fd(struct fd_table *table, int fd)
 {
-    // find fd_number
-    int i, fd_number;
-    for (i = 0; i < MAX_FD_NUM; i++)
-    {
-        if (table->list[i] == f_addr) {
-            fd_number = i;
-            break;
-        }
-    }
+    struct file *f = table->list[fd];
 
-    push_stock(&table->stock_head, fd_number);
+    free(f);
+
+    push_stock(&table->stock_head, fd);
 }

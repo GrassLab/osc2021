@@ -112,7 +112,7 @@ int vfs_write(struct file* file, const void* buf, size_t len) {
     // 1. write len byte from buf to the opened file.
     // 2. return written size or error code if an error occurs.
 
-    return 0;
+    return file->f_ops->write(file, buf, len);
 }
 int vfs_read(struct file* file, void* buf, size_t len) {
     // 1. read min(len, readable file data size) byte to buf from the opened file.
@@ -125,6 +125,9 @@ int vfs_read(struct file* file, void* buf, size_t len) {
 void do_open(const char* pathname, int flags)
 {
     struct file *f = vfs_open(pathname, flags);
+    if (!f) {
+        printf("open failed\n");
+    }
     // insert into thread's fd table
     struct Thread *thread = get_current_thread();
     int fd = insert_fd(&thread->fd_table, f);
@@ -137,4 +140,55 @@ void do_open(const char* pathname, int flags)
 int open(const char* pathname, int flags)
 {
     return sys_open(pathname, flags);
+}
+
+
+void do_read(int fd, void* buf, size_t len)
+{
+   // get file 
+   struct Thread *thread = get_current_thread();
+
+   struct file *f = thread->fd_table.list[fd];
+
+   int readbytes = vfs_read(f, buf, len);
+
+    // return to user space
+    struct context *ctx = (struct context *)thread->kernel_sp;
+    ctx->reg[0] = readbytes;
+}
+
+int read(int fd, void* buf, size_t len)
+{
+    return sys_read(fd, buf, len);
+}
+
+void do_close(int fd)
+{
+    struct Thread *thread = get_current_thread();
+    
+
+    remove_fd(&thread->fd_table, fd);
+}
+
+int close(int fd)
+{
+    sys_close(fd);
+
+    return 0;
+}
+
+
+void do_write(int fd, void* buf, size_t len)
+{
+    struct Thread *thread = get_current_thread();
+    struct file *f = thread->fd_table.list[fd];
+    int writebytes = vfs_write(f, buf, len);
+    // return to user space
+    struct context *ctx = (struct context *)thread->kernel_sp;
+    ctx->reg[0] = writebytes;
+}
+
+int write(int fd, void* buf, size_t len)
+{
+    return sys_write(fd, buf, len);
 }

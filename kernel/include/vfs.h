@@ -3,7 +3,7 @@
 
 #include "def.h"
 
-#define O_CREAT (0)
+#define O_CREAT (10)
 
 struct vnode {
     struct mount *mount;
@@ -57,5 +57,8 @@ struct filesystem *get_filesystem(const char *fs_name);
 struct file* vfs_open(const char* pathname, int flags);
 int vfs_read(struct file* file, void* buf, size_t len);
 int open(const char* pathname, int flags);
+int read(int fd, void* buf, size_t len);
+int close(int fd);
+int write(int fd, void* buf, size_t len);
 
 #endif

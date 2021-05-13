@@ -12,6 +12,7 @@
 #include "system_call.h"
 #include "vfs.h"
 
+
 void exec_command(char *input)
 {
     if (strcmp(input, "help") == 0) {
@@ -53,13 +54,35 @@ void exec_command(char *input)
     } else if (strcmp(input, "lookup") == 0) {
         // struct file *hello = vfs_open("hello", O_CREAT);
         // struct file *world = vfs_open("world", O_CREAT);
-
-        struct file *hello = vfs_open("/test", O_CREAT);
-
         char buf[100] = { 0 };
-        vfs_read(hello, buf, 20);
+        int readbytes;
 
-        printf("content of test: %s\n", buf);
+        int fd = open("/test", O_CREAT);
+        readbytes = read(fd, buf, 20);
+        printf("fd: %d, read: %s, %d bytes\n", fd, buf, readbytes);
+        close(fd);
+
+        int fd2 = open("/test2", O_CREAT);
+        memset(buf, 0, 100);
+        readbytes = read(fd2, buf, 20);
+        printf("fd: %d, read: %s, %d bytes\n", fd2, buf, readbytes);
+        close(fd2);
+
+    } else if (strcmp(input, "write") == 0) {
+        char buf[100] = { 0 };
+        int a = open("hello", O_CREAT);
+        int b = open("world", O_CREAT);
+        write(a, "Hello ", 6);
+        write(b, "World!", 6);
+        close(a);
+        close(b);
+        b = open("hello", 0);
+        a = open("world", 0);
+        int sz;
+        sz = read(b, buf, 100);
+        sz += read(a, buf + sz, 100);
+        buf[sz] = '\0';
+        printf("%s\n", buf); // should be Hello World!
 
     } else {
         printf("Try another command\r\n");

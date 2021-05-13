@@ -53,6 +53,15 @@ void exception_handler(int svc_num)
         case 7:
             get_arg_and_do_open();
             break;
+        case 8:
+            get_arg_and_do_read();
+            break;
+        case 9:
+            get_arg_and_do_close();
+            break;
+        case 10:
+            get_arg_and_do_write();
+            break;
         default:
             break;
     }

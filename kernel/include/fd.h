@@ -22,5 +22,6 @@ struct node *newNode(int fd_number);
 int pop_stock(struct node** head);
 void push_stock(struct node **head, int fd_number);
 int insert_fd(struct fd_table *table, struct file *file);
+void remove_fd(struct fd_table *table, int fd);
 
 #endif
