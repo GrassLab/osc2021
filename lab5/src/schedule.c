@@ -179,9 +179,10 @@ void sys_fork(struct trapframe* trapframe){
   struct trapframe* child_trapframe = (struct trapframe*) child_task->sp;
   child_trapframe->sp_el0 = (unsigned long long)child_ustack - ustack_offset;
 
-  /*
+  
   child_trapframe->x[0] = 0;
   trapframe->x[0] = child_task->pid;
+  /*
   int_to_hex((unsigned long long) trapframe->sp_el0, ct);
   uart_puts(ct);
   uart_puts(", ");
