@@ -10,7 +10,7 @@ struct file_operations *tmpfs_f_ops = NULL;
 
 struct dentry* tmpfs_create_dentry(struct dentry *parent, const char *name, int type)
 {
-    printf("[tmpfs_create_dentry]\n");
+    //printf("[tmpfs_create_dentry]\n");
 
     struct dentry *d = (struct dentry *) kmalloc(sizeof(struct dentry));
     
@@ -31,7 +31,7 @@ struct dentry* tmpfs_create_dentry(struct dentry *parent, const char *name, int 
 
 struct vnode* tmpfs_create_vnode(struct dentry *dentry, int type)
 {
-    printf("[tmpfs_create_vnode]\n");
+    //printf("[tmpfs_create_vnode]\n");
     struct vnode *vnode = (struct vnode*) kmalloc(sizeof(struct vnode));
     vnode->dentry = dentry;
     vnode->v_type = type;
@@ -64,7 +64,7 @@ int tmpfs_register()
 
 int tmpfs_setup_mount(struct filesystem* fs, struct mount* mount, const char *component_name)
 {
-    printf("[tmpfs_setup_mount]\n");
+    //printf("[tmpfs_setup_mount]\n");
     mount->fs = fs;
     mount->root = tmpfs_create_dentry(NULL, component_name, DIRECTORY);
     
@@ -176,7 +176,7 @@ int tmpfs_read(struct file *file, void *buf, size_t len)
 
 int tmpfs_mkdir(struct vnode *parent, const char *component_name)
 {
-    printf("[tmpfs_mkdir]\n");
+    printf("[tmpfs_mkdir] dir name: %s%\n", component_name);
     tmpfs_create_dentry(parent->dentry, component_name, DIRECTORY);
 
     return 1;

@@ -125,6 +125,8 @@ void kernel_process(){
     } 
 }
 
+
+/* Lab6 Test cases*/
 void Lab6_kernel_to_user()
 {
     int err = move_to_user_mode((unsigned long)&vfs_user_process_test);
@@ -154,9 +156,17 @@ void Lab6_vfs_test_demo()
     schedule();
 }
 
+void jump_to_elevtive2_user_process()
+{
+    printf("xxxxxxx\n");
+    char* argv[] = {"vfs_elective2", "-o", "arg2", 0};
+    call_sys_exec("vfs_elective2", argv);
+    
+}
+
 void Lab6_vfs_eletive2()
 {
-    int err = move_to_user_mode((unsigned long)&vfs_user_process_test);
+    int err = move_to_user_mode((unsigned long)&jump_to_elevtive2_user_process);
     if (err < 0){
         printf("Error while moving process to user mode\n\r");
     } 
@@ -164,7 +174,7 @@ void Lab6_vfs_eletive2()
 
 void Lab6_vfs_eletive2_demo()
 {
-    int res = copy_process(PF_KTHREAD, (unsigned long)&vfs_elective2_user_process_test, 0, 0);
+    int res = copy_process(PF_KTHREAD, (unsigned long)&Lab6_vfs_eletive2, 0, 0);
     if (res < 0) {
         printf("error while starting kernel process");
     }
@@ -199,7 +209,7 @@ int main()
     // vfs test cases
     Lab6_vfs_test_demo();
     Lab6_vfs_eletive2_demo();
-    
+
     /* Lab5 Test cases */
     // Requirement 1 - Implement the thread mechanism. 
     // for(int i = 0; i < 3; ++i) { // N should

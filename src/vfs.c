@@ -111,17 +111,17 @@ int _vnode_path_traversal(struct vnode *rootnode, const char *pathname, struct v
         if (!strcmp(temp_component_name, "\0"))
         {
             // reach '\0' will be here, represent we find out the target file
-            printf("[_vnode_path_traversal] !strcmp(temp_component_name, '')!!!!!!!!!\n");
+            //printf("[_vnode_path_traversal] !strcmp(temp_component_name, '')!!!!!!!!!\n");
             return TRUE; // 
         }
         if (!strcmp(temp_component_name, "."))
         {
-            printf("[_vnode_path_traversal] !strcmp(temp_component_name, '.')!!!!!!!!!\n");
+            //printf("[_vnode_path_traversal] !strcmp(temp_component_name, '.')!!!!!!!!!\n");
             continue;
         }
         if (!strcmp(temp_component_name, ".."))
         {
-            printf("[_vnode_path_traversal] !strcmp(temp_component_name, '..')!!!!!!!!!\n");
+            //printf("[_vnode_path_traversal] !strcmp(temp_component_name, '..')!!!!!!!!!\n");
             
             if (rootnode->dentry->parent == NULL) // if rootnode is root of file system 
                 return VFS_NOT_VALID_PATH_ERROR;
@@ -410,11 +410,16 @@ int vfs_mount(const char* device, const char* mountpoint, const char* filesystem
         fs->setup_mount(fs, mt, target_component_name);
 
         target_file->dentry->mount = mt; // Say this directory is mount by other device/fs
+        // We don't need to register tmpfs filesystem again, because tmpfs is kernel rot file system
+        //register_filesystem(fs); 
+        
         // Assign parent of this mountpoint as original dentry for go back to original fs 
         mt->root->parent = target_file->dentry;
         //printf("mt->root->parent->name = %s\n", mt->root->parent->name);
         return TRUE;
     }
+
+    
     
     return FALSE;
 }
@@ -586,7 +591,7 @@ void vfs_user_process_test()
     printf("[vfs_user_process_test] read size = %d, content = %s\n", sz, buf); // should be Hello World!
 
     // Elective 1, ls syscall
-    printf("\n--------------------> Elevtive 1 - ls syscall <----------------------");
+    printf("\n--------------------> Elevtive 1 - ls syscall <----------------------\n");
     user_ls_process("/");
 
     call_sys_exit();
@@ -614,11 +619,6 @@ void vfs_elective2_user_process_test()
     if (fd >= 0) {
         printf("Error, mnt/a.txt should not exist!");
     }
-    
-    call_sys_chdir("/mnt");
-    printf("current->cwd = %s\n", current->cwd->name);
-    call_sys_chdir("..");
-    printf("current->cwd = %s\n", current->cwd->name);
 
     call_sys_unmount("/mnt");
     fd = call_sys_open("/mnt/a.txt", 0);
