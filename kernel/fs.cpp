@@ -3,24 +3,25 @@
 #include <kernel/string.h>
 #include <kernel/memory_func.h>
 
-static int total_file_counts = 0;
-static int first_free_block = -1;
-static int first_untouched_block = 0;
-static int first_free_entry = -1;
-static int first_untouched_entry = 0;
+ int total_file_counts = 0;
+int first_free_block = -1;
+int first_untouched_block = 0;
+int first_free_entry = -1;
+int first_untouched_entry = 0;
 
 struct file_block {
-    char content[4096];
+    char content[512];
 };
 
 
 static int get_free_block() {
     if (first_free_block != -1) {
         int result = first_free_block;
-        first_free_block = *((uint32_t*)&((file_block *)FILE_CONTENT_BASE)[result]);
+        first_free_block = ((uint32_t*)FILE_BLOCK_ENTRY)[result];
         return result;
     }
     else {
+        ((uint32_t*)FILE_BLOCK_ENTRY)[first_untouched_block] = -1;
         return first_untouched_block++;
     }
 }
@@ -29,6 +30,7 @@ static file_entry * creat(char *filename) {
     file_entry *file_entries = (file_entry*) FILE_ENTRY_BASE;
     int tpidr = get_tpidr_el1();
     file_entry *new_file_entry = nullptr;
+    int32_t *block_entries = (int32_t*) FILE_BLOCK_ENTRY;
     if (first_free_entry != -1) {
         new_file_entry = &file_entries[first_free_entry];
         first_free_entry = new_file_entry->next_free_entry;
@@ -38,6 +40,7 @@ static file_entry * creat(char *filename) {
     }
     total_file_counts++;
     new_file_entry->block = get_free_block();
+    block_entries[new_file_entry->block] = -1;
     strcpy_size(new_file_entry->filename, filename);
     new_file_entry->file_size = 0;
     return new_file_entry;
@@ -91,12 +94,31 @@ size_t read(int fd, char *buf, size_t count) {
     fd_entry * fd_entry_root = (fd_entry*)tasks[get_tpidr_el1()].fd_entries;
     file_block * file_block_root = (file_block*) FILE_CONTENT_BASE;
     fd_entry * target_fd_entry = fd_entry_root + fd;
-    file_block * target_file_block = file_block_root + target_fd_entry->entry->block;
+    int32_t * block_entry_root = (int32_t*) FILE_BLOCK_ENTRY;
+    uint32_t block_index = target_fd_entry->entry->block;
+    uint32_t block_offset = target_fd_entry->pos;
+    while (block_offset > sizeof(file_block)) {
+        block_index = block_entry_root[block_index];
+        block_offset -= sizeof(file_block);
+    }
+    file_block * target_file_block = file_block_root + block_index;
 
     uint32_t read_count = target_fd_entry->entry->file_size - target_fd_entry->pos > count ? count : target_fd_entry->entry->file_size - target_fd_entry->pos;
+    uint32_t read_bytes_left = read_count;
 
-    memcpy(buf, target_file_block->content + target_fd_entry->pos, read_count);
+    while (read_bytes_left > 0) {
+        uint32_t current_read = (read_bytes_left + block_offset > sizeof(file_block)) ? (sizeof(file_block) - block_offset) : read_bytes_left;
+        memcpy(buf, file_block_root[block_index].content + block_offset, current_read);
+        buf += current_read;
+        read_bytes_left -= current_read;
+        if (read_bytes_left > 0) {
+            block_index = block_entry_root[block_index];
+            block_offset = 0;
+        }
+    }
+
     target_fd_entry->pos += read_count;
+
     return read_count;
 }
 
@@ -104,14 +126,34 @@ size_t write(int fd, char *buf, size_t count) {
     fd_entry * fd_entry_root = (fd_entry*)tasks[get_tpidr_el1()].fd_entries;
     file_block * file_block_root = (file_block*) FILE_CONTENT_BASE;
     fd_entry * target_fd_entry = fd_entry_root + fd;
-    file_block * target_file_block = file_block_root + target_fd_entry->entry->block;
-
-    memcpy(target_file_block->content + target_fd_entry->pos, buf, count);
+    int32_t * block_entry_root = (int32_t*) FILE_BLOCK_ENTRY;
+    uint32_t block_index = target_fd_entry->entry->block;
+    uint32_t block_offset = target_fd_entry->pos;
+    while (block_offset > sizeof(file_block)) {
+        block_index = block_entry_root[block_index];
+        block_offset -= sizeof(file_block);
+    }
+    file_block * target_file_block = file_block_root + block_index;
+    uint32_t write_bytes_left = count;
+    while (write_bytes_left > 0) {
+        uint32_t current_write = (write_bytes_left + block_offset > sizeof(file_block)) ? (sizeof(file_block) - block_offset) : write_bytes_left;
+        memcpy(file_block_root[block_index].content + block_offset, buf, current_write);
+        buf += current_write;
+        write_bytes_left -= current_write;
+        if (write_bytes_left > 0) {
+            if (block_entry_root[block_index] < 0) {
+                int32_t new_block_index = get_free_block();
+                block_entry_root[new_block_index] = -1;
+                block_entry_root[block_index] = new_block_index;
+            }
+            block_index = block_entry_root[block_index];
+            block_offset = 0;
+        }
+    }
     target_fd_entry->pos += count;
-    if (target_fd_entry->pos > target_fd_entry->entry->file_size) {
+    if (target_fd_entry->entry->file_size < target_fd_entry->pos) {
         target_fd_entry->entry->file_size = target_fd_entry->pos;
     }
-
     return count;
 }
 

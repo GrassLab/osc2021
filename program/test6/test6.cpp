@@ -2,14 +2,14 @@
 
 int main() {
     char buf[100];
-    int a = open("hello", O_CREAT);
-    int b = open("world", O_CREAT);
+    int a = open("hello", O_CREAT | O_WRONLY);
+    int b = open("world", O_CREAT | O_WRONLY);
     write(a, "Hello ", 6);
     write(b, "World!", 6);
     close(a);
     close(b);
-    b = open("hello", 0);
-    a = open("world", 0);
+    b = open("hello", O_RDONLY);
+    a = open("world", O_RDONLY);
     int sz;
     sz = read(b, buf, 100);
     sz += read(a, buf + sz, 100);

@@ -1,6 +1,9 @@
 #include <kernel/mini_uart.h>
 #include <kernel/memory.h>
 #include <kernel/thread.h>
+#include <kernel/cpio.h>
+#include <kernel/string.h>
+#include <kernel/fs.h>
 
 void sys_exec(char* name, char** argv);
 extern uint64_t total_threads;
@@ -25,5 +28,14 @@ void kmain() {
     tasks[0].first_free_fd = -1;
     tasks[0].first_untouched_fd = 0;
     total_threads++;
+    
+    cpio_newc_header* header = (cpio_newc_header*) INITRAMFS_BASE;
+    CPIO cpio(header);
+    while (strcmp(cpio.filename, "TRAILER!!!") != 0) {
+        int fd = open(cpio.filename, O_WRONLY | O_CREAT);
+        write(fd, cpio.filecontent, cpio.filesize);
+        close(fd);
+        cpio = CPIO(cpio.next);
+    }
     sys_exec("terminal", tmp);
 }
