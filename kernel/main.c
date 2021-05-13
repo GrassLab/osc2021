@@ -5,6 +5,8 @@
 #include "cpio.h"
 #include "xcpt_func.h"
 #include "demo_func.h"
+#include "vfs.h"
+#include "tmpfs.h"
 
 #define PM_PASSWORD 0x5a000000
 #define PM_RSTC (volatile unsigned int*)0x3F10001c
@@ -50,6 +52,8 @@ int getpid(){
 void main() {
     uart_init();
     init_buckets();
+    filesystem* fs = kmalloc(sizeof(filesystem));
+    int temp = register_filesystem(fs);
 
     char *welcome = "\\                             .       .\n \\                           / `.   .\' \" \n \\                  .---.  <    > <    >  .---.\n   \\                 |   \\  \\ - ~ ~ - /  /    |\n         _____          ..-~             ~-..-~\n        |     |  \\~~~\\.\'                    `./~~~/\n       ---------  \\__/                        \\__/\n      .\'  O    \\     /               /       \\  \" \n     (_____,    `._.\'               |         }  \\/~~~/\n      `----.          /       }     |        /    \\__/\n            `-.      |       /      |       /      `. ,~~|\n                ~-.__|      /_ - ~ ^|      /- _      `..-\'   \n                     |     /        |     /     ~-.     `-. _  _  _\n                     |_____|        |_____|         ~ - . _ _ _ _ _>\n";
     uart_puts(welcome);
@@ -89,6 +93,12 @@ void main() {
             lab5_required_2();
             //from_el1_to_el0();
             //int i = getpid();
+        }
+        else if(!strcmp(input, "lab6-1")) {
+            lab6_required_1();
+        }
+        else if(!strcmp(input, "lab6-2")) {
+            lab6_required_2();
         }
         else {
             uart_puts("Error: ");

@@ -5,7 +5,7 @@
 #include "xcpt_func.h"
 #include "cpio.h"
 
-// volatile unsigned char *cpio_address_base = (unsigned char *) 0x20000000;
+//volatile unsigned char *cpio_address_base = (unsigned char *) 0x20000000;
 // on qemu
 volatile unsigned char *cpio_address_base = (unsigned char *) 0x08000000;
 
@@ -46,7 +46,7 @@ void getFileData(char *target) {
     uart_puts("Please enter file name: ");
     uart_read_line(target, 1);
     uart_send('\r');
-    unsigned char *cpio_address = cpio_address_base;
+    volatile unsigned char *cpio_address = cpio_address_base;
     while(1) {
         int file_size = 0;
         int name_size = 0;
@@ -84,7 +84,7 @@ void getFileData(char *target) {
 }
 
 void list_file() {
-    unsigned char *cpio_address = cpio_address_base;
+    volatile unsigned char *cpio_address = cpio_address_base;
     while(1) {
         int file_size = 0;
         int name_size = 0;
@@ -121,7 +121,7 @@ void load_user_program() {
     
     volatile unsigned char *prog_addr = (unsigned char *) 0x100000;
     unsigned long stack_top = (unsigned long) prog_addr + PROCESS_SIZE;
-    unsigned char *cpio_address = cpio_address_base;
+    volatile unsigned char *cpio_address = cpio_address_base;
 
     while(1) {
         int file_size = 0;
@@ -196,8 +196,8 @@ unsigned long argv_puts(char **argv, unsigned long stack_top) {
 
 unsigned long load_user_program_withArgv(char *name, char **argv) {
     uart_puts("Please enter app load address (Hex): ");
-    unsigned long *prog_addr = uart_getX(1);
-    unsigned long stack_top = (unsigned long) prog_addr + PROCESS_SIZE;
+    unsigned long *prog_addr = (unsigned long *)uart_getX(1);
+    unsigned long stack_top = (unsigned long)prog_addr + PROCESS_SIZE;
     volatile unsigned char *cpio_address = cpio_address_base;
     unsigned long * file_data = NULL;
     int file_size = 0;
@@ -239,4 +239,41 @@ unsigned long load_user_program_withArgv(char *name, char **argv) {
     stack_top = argv_puts(argv, stack_top);
     run_user_program((unsigned long)prog_addr, stack_top);
     return 1;
+}
+
+void *get_cpio_base() {
+    return (void *)cpio_address_base;
+}
+
+f_prop* get_file_property(void* addr) {
+    int file_size = 0;
+    int name_size = 0;
+    int mode = 0;
+    addr += 14;
+    mode = atoi(subStr((unsigned char *)addr, 8), 16);
+    unsigned long file_mode = (unsigned long)mode >> 12;
+    addr += 40;
+    file_size = atoi(subStr((unsigned char *)addr, 8), 16);
+    addr += 40;
+    name_size = atoi(subStr((unsigned char *)addr, 8), 16);
+
+    name_size += (name_size+110) % 4 != 0 ? 4 - (name_size+110) % 4 : 0;
+    file_size += file_size % 4 != 0 ? 4 - file_size % 4 : 0;
+        
+    addr += 16;
+
+    char *path_name = (char*)addr;
+
+    addr += name_size;
+    unsigned char *file_data = (unsigned char *)addr;
+    addr += file_size;
+    
+    f_prop *ret = kmalloc(sizeof(f_prop));
+    ret->fname = path_name;
+    ret->fdata = file_data;
+    ret->nsize = name_size;
+    ret->fsize = file_size;
+    ret->fmode = file_mode;
+    
+    return ret;
 }

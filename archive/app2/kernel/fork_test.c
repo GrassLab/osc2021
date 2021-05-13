@@ -5,6 +5,7 @@ int main(void) {
     int cnt = 1;
     int ret = 0;
     if ((ret = fork()) == 0) { // child
+        uart_printf("child\n");
         uart_printf("pid: %d, cnt: %d, ptr: %x\n", getpid(), cnt, &cnt);
         ++cnt;
         fork();
@@ -17,5 +18,6 @@ int main(void) {
     } else {
         uart_printf("parent here, pid %d, child %d\n", getpid(), ret);
     }
-    while(1);
+    exit();
+    return 0;
 }

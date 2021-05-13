@@ -1,1 +1,1 @@
-int strcmp(char *a, char *b);
+int strcmp(const char *a, const char *b);

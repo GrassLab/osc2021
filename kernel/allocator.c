@@ -109,10 +109,8 @@ void split_block(Node *p, int order, int block_size) {
 		
 		/* recursive */
 		hi = mid;
-
-		Node *list_head = &buckets[block_size];
-		
 		/*
+		Node *list_head = &buckets[block_size];
 		if(block_size >> 3) {
 			uart_puts("[list ");
 			uart_puts_int(block_size>>3);
@@ -146,8 +144,8 @@ Node* get_page_from_buckets(Node *p, int bucket_pagen, int required_pagen) {
 		Node *p = list_head->next;
 		/* If bucket[i] is not empty */
 		if(p) {
-      		int block_index = p->index;
 			/*
+      		int block_index = p->index;
 			if(i >> 3) {
 				uart_puts("[list ");
 				uart_puts_int(i-8);

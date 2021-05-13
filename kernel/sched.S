@@ -8,7 +8,7 @@ cpu_switch_to:
     stp x25, x26, [x0, 16 * 3]
     stp x27, x28, [x0, 16 * 4]
     stp x29, x30, [x0, 16 * 5] // x29 is fp, x30 is lr
-    mov x9, sp
+    mov x9, sp // save sp
     str x9, [x0, 16 * 6]
 
     ldp x19, x20, [x1, 16 * 0]

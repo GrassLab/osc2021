@@ -1,10 +1,10 @@
 #include "scheduler.h"
 #include "sched.h"
 #include "allocator.h"
-#include "entry.h"
 #include "utils.h"
 #include "uart.h"
-
+#include "cpio.h"
+#include "vfs.h"
 
 #define CREATE_SUCCESS 0
 #define CREATE_FAIL    1
@@ -49,44 +49,55 @@ int create_thread(unsigned long clone_flags, unsigned long func, unsigned long a
     p = (thread*) kmalloc(THREAD_SIZE);
     if(!p) return CREATE_FAIL;
 
-    pt_regs *childregs = task_pt_regs(p);
-	memzero((unsigned long)childregs, sizeof(pt_regs));
-	memzero((unsigned long)&p->cpu_context, sizeof(cpu_context));
-
 	if (clone_flags & PF_KTHREAD) {
-		p->cpu_context.x19 = func;
 		p->cpu_context.x20 = arg;
-	} else {
-		pt_regs * cur_regs = task_pt_regs(current);
-		*childregs = *cur_regs;
-		childregs->regs[0] = 0;
-		childregs->sp = stack + THREAD_SIZE;
-		p->stack = stack;
+        p->cpu_context.sp = (unsigned long)p + 4096;
+        p->cpu_context.fp = (unsigned long)p + 4096;
+        p->cpu_context.lr = func;
+        for(int i = 0; i < FD_MAX_SIZE; i++) {
+            p->fd_table[i] = 0;
+        }
+	} 
+    else {
+        // clone
+        unsigned char *dest = (unsigned char *)p;
+        unsigned char *src = (unsigned char *)current;
+        for(int i = 0; i < 4096; i++) {
+            dest[i] = src[i];    
+        }
+        for(int i = 0; i < FD_MAX_SIZE; i++) {
+            p->fd_table[i] = current->fd_table[i];
+        }
+
+        unsigned long k_delta = (unsigned long)p - (unsigned long)current;
+        p->cpu_context.ux0 = 0;
+        p->cpu_context.fp += k_delta;
+        p->cpu_context.sp += k_delta;
+        p->cpu_context.elr += 0x100000;
+        p->cpu_context.usp += 0x100000;
+        p->cpu_context.ufp += 0x100000;
+        p->cpu_context.ulr += 0x100000;
+
+        char *src_stack = (char *)current->cpu_context.usp;
+        char *dest_stack = (char *)p->cpu_context.usp;
+        for(int i = 0; i < 4096; i++) {
+            dest_stack[i] = src_stack[i];
+        }
 	}
 
     p->id = thread_count++;
     p->state = READY;
-    //t->priority = current->priority;
     p->priority = 2;
     p->counter = p->priority;
-
-    p->cpu_context.sp = (unsigned long)(p + THREAD_SIZE);
-    p->cpu_context.pc = (unsigned long)ret_from_fork;
     
     run_queue[p->id] = p;
     preempt_enable();
     
     // parent
-    
     return p->id;
-    
 }
 
 
-
-
-
-// todo: round-robin(consider priority)
 void scheduler() {
     preempt_disable();
     int next_index;
@@ -171,6 +182,11 @@ void idle() {
         for(int i = 0; i < MAX_THREAD_COUNT; i++) {
             thread *p = run_queue[i];
             if(p && p->state == DEAD) {
+                for(int i = 0; i < FD_MAX_SIZE; i++) {
+                    if(p->fd_table[i]) {
+                        vfs_close(p->fd_table[i]);
+                    }
+                }
                 free_page((unsigned long)p, THREAD_SIZE);
                 thread_count--;
             }
