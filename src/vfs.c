@@ -18,7 +18,7 @@ void rootfs_init()
 
     // mount root file system
     rootfs = (struct mount *) kmalloc(sizeof(struct mount));
-    tmpfs.setup_mount(&tmpfs, rootfs);
+    tmpfs.setup_mount(&tmpfs, rootfs, "/");
 }
 
 int register_filesystem(struct filesystem* fs) {
@@ -85,13 +85,12 @@ int _vnode_path_traversal(struct vnode *rootnode, const char *pathname, struct v
     int isNextVnodeFound = 0;
     char temp_component_name[DNAME_INLINE_LEN];
     struct vnode *temp_found_file; // temporal component name when traversal pathname
-    *target_file = rootnode; // target file will be root vnode
+    *target_file = rootnode;       // target file will be root vnode
     
-    // absolute path -> first char of pathname is '/'
+    // If pathname is absolute path -> first char of pathname is '/'
     if (pathname[0] == '/') {
         // edge case pathname contain single '/'
-        if (strlen(pathname) == 1) return TRUE; // find target '/'
-
+        if (strlen(pathname) == 1) return TRUE;
         path_idx++; // skip first '/'
     }
 
@@ -107,15 +106,54 @@ int _vnode_path_traversal(struct vnode *rootnode, const char *pathname, struct v
         }
         temp_component_name[i] = '\0';
         path_idx++; // for skip '/'
-        printf("[_vnode_path_traversal] path_idx(end idx) = %d, component name= %s\n", path_idx, temp_component_name);
+        // printf("[_vnode_path_traversal] path_idx(end idx) = %d, component name= %s\n", path_idx, temp_component_name);
+
+        if (!strcmp(temp_component_name, "\0"))
+        {
+            // reach '\0' will be here, represent we find out the target file
+            printf("[_vnode_path_traversal] !strcmp(temp_component_name, '')!!!!!!!!!\n");
+            return TRUE; // 
+        }
+        if (!strcmp(temp_component_name, "."))
+        {
+            printf("[_vnode_path_traversal] !strcmp(temp_component_name, '.')!!!!!!!!!\n");
+            continue;
+        }
+        if (!strcmp(temp_component_name, ".."))
+        {
+            printf("[_vnode_path_traversal] !strcmp(temp_component_name, '..')!!!!!!!!!\n");
+            
+            if (rootnode->dentry->parent == NULL) // if rootnode is root of file system 
+                return VFS_NOT_VALID_PATH_ERROR;
+            
+            // If this directory is mounted, should go to the parent directory vnode of the mountpoint. On the other word,
+            // go back to original directory vnode(Cross the Mountpoint).
+            if (rootnode->dentry->parent->mount != NULL) {
+                printf("[_vnode_path_traversal] .. Cross the mountpoint, rootnode->dentry->parent->name = %s!\n", rootnode->dentry->parent->name);
+                rootnode = rootnode->dentry->parent->vnode;
+            }
+
+            rootnode = rootnode->dentry->parent->vnode;
+            *target_file = rootnode;
+            printf("(*target_file)->dentry->name : %s\n", (*target_file)->dentry->name);
+            continue;
+        }
 
         // Find extracted component name in vnode's subdirectory(child)
         // Then check if search sucessfully or not
         isNextVnodeFound = rootnode->v_ops->lookup(rootnode, &temp_found_file, temp_component_name);
         if (isNextVnodeFound) { 
+            // If this directory mounted, should go to the mounted file system’s root directory vnode(cross the mountpoint)
+            // instead of the original vnode.
+            if (temp_found_file->dentry->mount != NULL) {
+                printf("[_vnode_path_traversal] Cross the mountpoint!\n");
+                temp_found_file = temp_found_file->dentry->mount->root->vnode;
+            }
+
             *target_file = temp_found_file; // update target_file each time if found next Vnode found
             if (!strcmp(temp_component_name, target_component_name)) {
                 // find out target file
+                *target_file = temp_found_file;
                 return TRUE;
             }
             else {
@@ -134,7 +172,7 @@ int _vnode_path_traversal(struct vnode *rootnode, const char *pathname, struct v
             }
             else {
                 // not valid path, terminate pathname traversal
-                return VFS_OPEN_FILE_NOT_VALID_PATH_ERROR;
+                return VFS_NOT_VALID_PATH_ERROR;
             }
         }
     }
@@ -145,19 +183,21 @@ int _vnode_path_traversal(struct vnode *rootnode, const char *pathname, struct v
 int _lookUp_pathname(const char* pathname, struct vnode **target_file, char *target_component_name)
 {
     struct vnode *rootnode;
-    int isFindTargetFile;
+    int loopUp_result;
 
     if (pathname[0] == '/') {
         // absolute path, lookup pathname from the root vnode
         rootnode = rootfs->root->vnode;
-        isFindTargetFile = _vnode_path_traversal(rootnode, pathname, target_file, target_component_name);
     } else {
-        // relative path
+        // relative path, lookup pathname from the current task vnode
+        rootnode = current->cwd->vnode; 
     }
+
+    loopUp_result = _vnode_path_traversal(rootnode, pathname, target_file, target_component_name);
 
     printf("[_lookUp_pathname] (*target_file)->dentry->name: %s\n", (*target_file)->dentry->name);
     // if target_file is found
-    return isFindTargetFile; 
+    return loopUp_result; 
     
 }
 
@@ -174,7 +214,7 @@ struct file* vfs_open(const char* pathname, int flags) {
     // 1. Find target_file node and target_component_name based on pathname. Lookup pathname.
     int loopUp_result = _lookUp_pathname(pathname, &target_file, target_component_name);
 
-    if (loopUp_result == VFS_OPEN_FILE_NOT_VALID_PATH_ERROR) {
+    if (loopUp_result == VFS_NOT_VALID_PATH_ERROR) {
         printf("Path %s not exsit!\n", pathname);
     }
 
@@ -191,7 +231,7 @@ struct file* vfs_open(const char* pathname, int flags) {
             struct file *fd = create_fd(created_file);
             return fd;
         } else {
-            printf("[vfs_open] 3. flags not O_CREAT, vfs_open do nothing\n");
+            printf("[vfs_open] 3. flags not O_CREAT, vfs_open do nothing, return NULL\n");
         }
     }
     return NULL;
@@ -234,6 +274,10 @@ int vfs_read(struct file* file, void* buf, size_t len) {
 
 void vfs_populate_initramfs()
 {
+    const char *initramfs_path = "/initramfs/";
+    int initramfs_path_len = strlen(initramfs_path);
+    vfs_mkdir(initramfs_path);
+
     struct cpio_header *header = (void *) INITRAMFS_ADDR;
 
     const char *current_filename;
@@ -253,9 +297,9 @@ void vfs_populate_initramfs()
 
         // printf("current_filename = %s \n", current_filename);
         char pathname[DNAME_INLINE_LEN];
-        pathname[0] = '/';
-        strcpy(pathname+1, current_filename);
-        //printf("%s\n", pathname);
+        strcpy(pathname, initramfs_path);
+        strcpy(pathname+initramfs_path_len, current_filename);
+        printf("[vfs_populate_initramfs] pathname = %s\n", pathname);
 
         cpio_file = vfs_open(pathname, O_CREAT);
         
@@ -280,8 +324,7 @@ char *vfs_read_directory(struct file *file)
 
     printf("[vfs_read_directory] The number of file in %s directory : %d\n", dir_dentry->name, counter);
 
-    // (DNAME_INLINE_LEN * 2 + 1), +1 for '\0'
-    // Here assume max file path is (DNAME_INLINE_LEN * 2 + 1)
+    // Here assume max file path is (DNAME_INLINE_LEN * 2 + 1), +1 for '\0'
     char *buf_filenames = kmalloc(counter * (DNAME_INLINE_LEN * 2 + 1) * sizeof(char));
 
     int buf_idx = 0;
@@ -289,8 +332,9 @@ char *vfs_read_directory(struct file *file)
         //printf("[vfs_ls] - %s%s\n", dir_dentry->name, pos->name);
         
         // copy path (exclude file name)
-        strcpy(&buf_filenames[buf_idx], dir_dentry->name);
-        buf_idx += strlen(dir_dentry->name);
+        // strcpy(&buf_filenames[buf_idx], dir_dentry->name);
+        // buf_idx += strlen(dir_dentry->name);
+
         // copy filename
         strcpy(&buf_filenames[buf_idx], pos->name);
         buf_idx += strlen(pos->name) + 1; // +1 for '\0' added in strcpy()
@@ -314,13 +358,98 @@ char *vfs_read_directory(struct file *file)
     return buf_filenames;
 }
 
+int vfs_mkdir(const char *pathname)
+{
+    struct vnode *target_file;
+    char target_component_name[DNAME_INLINE_LEN]; // The component name of target file
+    if (_lookUp_pathname(pathname, &target_file, target_component_name) == VFS_NOT_VALID_PATH_ERROR) {
+        printf("[vfs_mkdir] Path %s not exsit!\n", pathname);
+        return VFS_NOT_VALID_PATH_ERROR;
+    }
+
+    int res = target_file->v_ops->mkdir(target_file, target_component_name);
+    return res;
+}
+
+// change directory for current process
+int vfs_chdir(const char *pathname)
+{
+    struct vnode *target_file;
+    char target_component_name[DNAME_INLINE_LEN]; // The component name of target file
+    if (_lookUp_pathname(pathname, &target_file, target_component_name) == VFS_NOT_VALID_PATH_ERROR) {
+        printf("[vfs_chdir] Path %s not exsit!\n", pathname);
+        return VFS_NOT_VALID_PATH_ERROR;
+    }
+
+    struct task_struct *current_task = current;
+    current_task->cwd = target_file->dentry;
+
+    return TRUE;
+}
+
+int vfs_mount(const char* device, const char* mountpoint, const char* filesystem)
+{
+    printf("================== vfs_mount ==================\n");
+    struct vnode *target_file;
+    char target_component_name[DNAME_INLINE_LEN]; // The component name of target file
+
+    int loopUp_result = _lookUp_pathname(mountpoint, &target_file, target_component_name);
+    if (loopUp_result == VFS_NOT_VALID_PATH_ERROR || loopUp_result == FALSE) {
+        printf("[vfs_mount] Path %s not exsit!\n", mountpoint);
+        return VFS_NOT_VALID_PATH_ERROR;
+    }
+    
+    struct mount *mt = (struct mount *) kmalloc(sizeof(struct mount));
+    struct filesystem *fs = (struct filesystem *) kmalloc(sizeof(struct filesystem));
+    
+    if (!strcmp(filesystem, "tmpfs")) {
+        printf("[vfs_mount] tmpfs filesystem mount\n");
+        fs->name = (char *) kmalloc(sizeof(char) * strlen(filesystem));
+        strcpy(fs->name, filesystem);
+        fs->setup_mount = tmpfs_setup_mount;
+        fs->setup_mount(fs, mt, target_component_name);
+
+        target_file->dentry->mount = mt; // Say this directory is mount by other device/fs
+        // Assign parent of this mountpoint as original dentry for go back to original fs 
+        mt->root->parent = target_file->dentry;
+        //printf("mt->root->parent->name = %s\n", mt->root->parent->name);
+        return TRUE;
+    }
+    
+    return FALSE;
+}
+
+int vfs_unmount(const char* mountpoint)
+{
+    printf("================== vfs_unmount ==================\n");
+    struct vnode *target_file;
+    char target_component_name[DNAME_INLINE_LEN]; // The component name of target file
+
+    int loopUp_result = _lookUp_pathname(mountpoint, &target_file, target_component_name);
+    if (loopUp_result == VFS_NOT_VALID_PATH_ERROR || loopUp_result == FALSE) {
+        printf("[vfs_mount] Path %s not exsit!\n", mountpoint);
+        return VFS_NOT_VALID_PATH_ERROR;
+    }
+
+    if (target_file->dentry->parent->mount == NULL) {
+        printf("target_file->dentry->parent->name = %s\n", target_file->dentry->parent->name);
+        printf("The path %s not mounted before \n", mountpoint);
+        return FALSE;
+    }
+
+    // For simplicity purposes, we not free the memory and just set direcotry to unmount status(assign NULL achive unmount)
+    // TODO: For more robust funtionality, free all used memory
+    target_file->dentry->parent->mount = NULL;
+    return TRUE;
+}
+
 void vfs_print_directory_by_pathname(const char *pathname) 
 {
     struct file *file = vfs_open(pathname, 0);
     struct dentry *dir_dentry = file->vnode->dentry;
     struct dentry *pos;
     list_for_each_entry(pos, &dir_dentry->sub_dirs, list) {
-        printf("[vfs_ls] - %s%s\n", dir_dentry->name, pos->name);
+        printf("[vfs_ls] - %s\n", pos->name);
     }
 }
 
@@ -406,13 +535,34 @@ void vfs_requirement1_test()
 void vfs_requirement1_read_file_populated_in_cpio()
 {
     printf("\n--------------> vfs_requirement1_read_file_populated_in_cpio() <--------------");
-    const char *filename = "/new.txt";
+    const char *filename = "/initramfs/new.txt";
     struct file *a = vfs_open(filename, 0);
     char buf[500];
     int sz = vfs_read(a, buf, 100);
     printf("Content Size: %d, Content in %s file : \n", sz, filename);
     printf("%s\n", buf);
+
+    vfs_ls_print_test("/initramfs/");
     printf("\n");
+}
+
+/* ls <directory> user program to list the target directory. */
+void user_ls_process(const char *pathname)
+{
+    printf("=============== user_ls_process ===============");
+    int fd = call_sys_open(pathname, 0);
+    if (fd < 0) {
+        return;
+    }
+
+    char *buf_dir = call_sys_read_directory(fd);
+    int buf_idx = 0;
+    // print direcotry
+    printf("Requested pathname : %s\n", pathname);
+    while (buf_dir[buf_idx] != (uint8_t)EOF) {
+        printf("- %s\n", buf_dir + buf_idx);
+        buf_idx += strlen(buf_dir + buf_idx) + 1;
+    }
 }
 
 void vfs_user_process_test()
@@ -437,25 +587,101 @@ void vfs_user_process_test()
 
     // Elective 1, ls syscall
     printf("\n--------------------> Elevtive 1 - ls syscall <----------------------");
-    const char *pathname = "/";
-    int fd = call_sys_open(pathname, 0);
-    char *buf_dir = call_sys_read_directory(fd);
-    int buf_idx = 0;
-    // print direcotry
-    printf("Requested pathname : %s\n", pathname);
-    while (buf_dir[buf_idx] != (uint8_t)EOF) {
-        printf("- %s\n", buf_dir + buf_idx);
-        buf_idx += strlen(buf_dir + buf_idx) + 1;
-    }
-
+    user_ls_process("/");
 
     call_sys_exit();
 }
 
-void vfs_ls_print_test()
+void vfs_elective2_user_process_test()
 {
-    const char *pathname = "/";
-    printf("\n--------------------> Test ls <----------------------\n");
+    printf("--------------> Lab6 eletive2 | vfs_elective2_user_process_test()<--------------\n");
+    char buf[8];
+    call_sys_mkdir("mnt");
+    int fd = call_sys_open("/mnt/a.txt", O_CREAT);
+    call_sys_write(fd, "Hi", 2);
+    call_sys_close(fd);
+    call_sys_chdir("mnt");
+    fd = call_sys_open("./a.txt", 0);
+    if (fd < 0) {
+        printf("Open ./a.txt Error!\n");
+    }
+    int sz = call_sys_read(fd, buf, 2);
+    printf("size = %d, content = %s\n", sz, buf);
+
+    call_sys_chdir("..");
+    call_sys_mount("tmpfs", "mnt", "tmpfs");
+    fd = call_sys_open("mnt/a.txt", 0);
+    if (fd >= 0) {
+        printf("Error, mnt/a.txt should not exist!");
+    }
+    
+    call_sys_chdir("/mnt");
+    printf("current->cwd = %s\n", current->cwd->name);
+    call_sys_chdir("..");
+    printf("current->cwd = %s\n", current->cwd->name);
+
+    call_sys_unmount("/mnt");
+    fd = call_sys_open("/mnt/a.txt", 0);
+    if (fd < 0) {
+        printf("Open /mnt/a.txt Error!\n");
+    }
+    sz = call_sys_read(fd, buf, 2);
+    printf("size = %d, content = %s\n", sz, buf);
+
+    // call_sys_mkdir("newDir");
+    // call_sys_open("newDir/newFile", O_CREAT);
+    // call_sys_open("newDir/newFile87", O_CREAT);
+    // call_sys_open("newDir/newFile999", O_CREAT);
+
+
+    // vfs_ls_print_test("newDir");
+
+    // struct task_struct *current_task = current;
+
+    // printf("current_task->cwd = %s\n", current_task->cwd->name);
+
+
+    // sys_chdir("newDir");
+    // printf("current_task->cwd = %s\n", current_task->cwd->name);
+    // user_ls_process(".");
+
+    // sys_chdir("..");
+    // printf("current_task->cwd = %s\n", current_task->cwd->name);
+    // user_ls_process(".");
+
+    // // test mount
+    // call_sys_mkdir("mnt");
+    // call_sys_mount("tmpfs", "/mnt", "tmpfs");
+    // user_ls_process(".");
+
+    // sys_chdir("mnt");
+
+    // int fd = call_sys_open("/mnt/a.txt", O_CREAT);
+    // call_sys_write(fd, "Hi", 2);
+    // call_sys_close(fd);
+    // fd = call_sys_open("./a.txt", 0);
+    // char buf[100];
+    // int sz = call_sys_read(fd, buf, 10);
+    // printf("size = %d, content = %s\n\n", sz, buf);
+
+    // user_ls_process(".");
+    // fd = call_sys_open("/mnt/a.txt", 0);
+    // if (fd < 0) {
+    //     printf("Open file error\n");
+    // }
+    // call_sys_unmount("/mnt");
+    // user_ls_process("/mnt");
+    // fd = call_sys_open("/mnt/a.txt", 0);
+    // if (fd < 0) {
+    //     printf("Open file error\n");
+    // }
+   
+    call_sys_exit();
+}
+
+void vfs_ls_print_test(const char *pathname)
+{
+    printf("\n--------------------> vfs ls <----------------------\n");
     printf("Requested pathname : %s", pathname);
     vfs_print_directory_by_pathname(pathname);
     printf("-------------------------------------------------------\n");

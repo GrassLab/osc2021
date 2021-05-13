@@ -154,7 +154,6 @@ int sys_open(const char *pathname, int flags)
     struct file *fd = vfs_open(pathname, flags);
 
     if (fd == NULL) {
-        printf("file path %s not exist\n", pathname);
         return SYS_OPEN_FILE_ERROR;
     }
     
@@ -177,8 +176,8 @@ int sys_open(const char *pathname, int flags)
             break;
         }
     }
-    printf("[sys_open] current_fd_idx = %d\n", current_fd_idx);
-    printf("[sys_open] next_fd = %d\n", current_task->files.next_fd);
+    //printf("[sys_open] current_fd_idx = %d\n", current_fd_idx);
+    //printf("[sys_open] next_fd = %d\n", current_task->files.next_fd);
 
     preempt_enable();
 
@@ -262,9 +261,32 @@ char *sys_read_directory(int fd)
     return buf_ptr;
 }
 
+int sys_mkdir(const char *pathname)
+{
+    return vfs_mkdir(pathname);
+}
+
+int sys_chdir(const char *pathname)
+{
+    return vfs_chdir(pathname);
+}
+
+int sys_mount(const char* device, const char* mountpoint, const char* filesystem)
+{
+    return vfs_mount(device, mountpoint, filesystem);
+}
+
+int sys_unmount(const char* mountpoint)
+{
+    return vfs_unmount(mountpoint);
+}
+
+
 void * const sys_call_table[] = 
     {sys_print, sys_uart_write, sys_uart_read, 
      sys_gitPID, sys_fork, sys_exec, 
      sys_exit, sys_malloc, sys_clone,
      sys_coreTimer_on, sys_coreTimer_off,
-     sys_open, sys_close, sys_write, sys_read, sys_read_directory};
+     sys_open, sys_close, sys_write, 
+     sys_read, sys_read_directory, sys_mkdir, 
+     sys_chdir, sys_mount, sys_unmount};

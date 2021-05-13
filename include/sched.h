@@ -63,6 +63,7 @@ struct task_struct {
     long pid;
     struct list_head run_list; // TODO
     struct files_struct files; // file descriptor table for each process
+    struct dentry *cwd; // Current Working Directory
 };
 
 extern void schedule(void);

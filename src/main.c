@@ -154,6 +154,23 @@ void Lab6_vfs_test_demo()
     schedule();
 }
 
+void Lab6_vfs_eletive2()
+{
+    int err = move_to_user_mode((unsigned long)&vfs_user_process_test);
+    if (err < 0){
+        printf("Error while moving process to user mode\n\r");
+    } 
+}
+
+void Lab6_vfs_eletive2_demo()
+{
+    int res = copy_process(PF_KTHREAD, (unsigned long)&vfs_elective2_user_process_test, 0, 0);
+    if (res < 0) {
+        printf("error while starting kernel process");
+    }
+    schedule();
+}
+
 int main()
 {
     // set up serial console
@@ -181,7 +198,8 @@ int main()
 
     // vfs test cases
     Lab6_vfs_test_demo();
-
+    Lab6_vfs_eletive2_demo();
+    
     /* Lab5 Test cases */
     // Requirement 1 - Implement the thread mechanism. 
     // for(int i = 0; i < 3; ++i) { // N should

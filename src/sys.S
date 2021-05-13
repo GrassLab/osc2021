@@ -89,3 +89,28 @@ call_sys_read_directory:
     mov w8, #SYS_READ_DIRECTORY
     svc #0
     ret
+
+.globl call_sys_mkdir
+call_sys_mkdir:
+    mov w8, #SYS_MKDIR
+    svc #0
+    ret
+
+.globl call_sys_chdir
+call_sys_chdir:
+    mov w8, #SYS_CHDIR
+    svc #0
+    ret
+
+.globl call_sys_mount
+call_sys_mount:
+    mov w8, #SYS_MOUNT
+    svc #0
+    ret
+
+.globl call_sys_unmount
+call_sys_unmount:
+    mov w8, #SYS_UNMOUNT
+    svc #0
+    ret
+

@@ -24,6 +24,8 @@ struct dentry* tmpfs_create_dentry(struct dentry *parent, const char *name, int 
         list_add(&d->list, &parent->sub_dirs);
     }
     
+    d->mount = NULL;
+    
     return d;
 }
 
@@ -50,6 +52,7 @@ int tmpfs_register()
     tmpfs_v_ops = (struct vnode_operations *) kmalloc(sizeof(struct vnode_operations));
     tmpfs_v_ops->lookup = tmpfs_lookup;
     tmpfs_v_ops->create = tmpfs_create;
+    tmpfs_v_ops->mkdir = tmpfs_mkdir;
 
     // file operations
     tmpfs_f_ops = (struct file_operations *) kmalloc(sizeof(struct file_operations));
@@ -59,11 +62,11 @@ int tmpfs_register()
     return 0;
 }
 
-int tmpfs_setup_mount(struct filesystem* fs, struct mount* mount)
+int tmpfs_setup_mount(struct filesystem* fs, struct mount* mount, const char *component_name)
 {
     printf("[tmpfs_setup_mount]\n");
     mount->fs = fs;
-    mount->root = tmpfs_create_dentry(NULL, "/", DIRECTORY);
+    mount->root = tmpfs_create_dentry(NULL, component_name, DIRECTORY);
     
     printf("[tmpfs_setup_mount] New created dentry name = %s\n", mount->root->name);
 
@@ -79,8 +82,11 @@ int tmpfs_lookup(struct vnode *dir_node, struct vnode **target, const char *comp
     int isNextVnodeFound = FALSE;
     struct dentry *dir_dentry = dir_node->dentry;
     struct dentry *pos;
+    
     list_for_each_entry(pos, &dir_dentry->sub_dirs, list) {
+        #ifdef __FS_DEBUG
         printf("[tmpfs_lookup] pos->name = %s\n", pos->name);
+        #endif //__DEBUG
         if (!strcmp(pos->name, component_name)) {
             *target = pos->vnode;
             isNextVnodeFound = TRUE;
@@ -166,4 +172,12 @@ int tmpfs_read(struct file *file, void *buf, size_t len)
 
     // 2. return read size or error code if an error occurs.
     return i;
+}
+
+int tmpfs_mkdir(struct vnode *parent, const char *component_name)
+{
+    printf("[tmpfs_mkdir]\n");
+    tmpfs_create_dentry(parent->dentry, component_name, DIRECTORY);
+
+    return 1;
 }

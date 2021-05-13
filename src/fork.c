@@ -55,6 +55,9 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
     // file descriptor table(file struct)
     _init_files_struct(p);
 
+    // process current working directory for filesystem
+    p->cwd = rootfs->root;
+
     p->cpu_context.pc = (unsigned long)ret_from_fork;
     p->cpu_context.sp = (unsigned long)childregs;
     

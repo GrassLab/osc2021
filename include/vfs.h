@@ -16,7 +16,8 @@
 #define VFS_ERROR -1
 #define VFS_CREATE_FILE_ERROR -2
 
-#define VFS_OPEN_FILE_NOT_VALID_PATH_ERROR -2
+#define VFS_NOT_VALID_PATH_ERROR -2
+#define VFS_VALID_PATH 1
 #define VFS_OPEN_FILE_ERROR -1
 #define VFS_READ_FILE_ERROR -1
 #define VFS_WRITE_FILE_ERROR -1
@@ -42,6 +43,10 @@ struct dentry
 
     struct list_head list;     // child of parent list 
     struct list_head sub_dirs; // our children
+
+    // If it's directory and mounted by mount() function,
+    // it will point to specific mount struct. otherwise it's NULL
+    struct mount* mount; 
 };
 
 struct file 
@@ -61,14 +66,15 @@ struct mount
 
 struct filesystem
 {
-    const char *name;
-    int (*setup_mount)(struct filesystem* fs, struct mount* mount);
+    char *name;
+    int (*setup_mount)(struct filesystem* fs, struct mount* mount, const char *component_name);
 };
 
 struct vnode_operations
 {
     int (*lookup)(struct vnode *dir_node, struct vnode **target, const char *component_name);
     int (*create)(struct vnode *dir_node, struct vnode **target, const char *component_name);
+    int (*mkdir)(struct vnode *parent, const char *component_name);
 };
 
 struct file_operations
@@ -101,6 +107,11 @@ int vfs_close(struct file* file);
 int vfs_write(struct file *file, const void *buf, size_t len);
 int vfs_read(struct file *file, void *buf, size_t len);
 
+int vfs_mkdir(const char *pathname);
+int vfs_chdir(const char *pathname);
+int vfs_mount(const char* device, const char* mountpoint, const char* filesystem);
+int vfs_unmount(const char* mountpoint);
+
 char *vfs_read_directory(struct file *file);
 void vfs_print_directory_by_pathname(const char *pathname);
 void vfs_populate_initramfs();
@@ -115,6 +126,8 @@ void _vfs_dump_file_struct();
 void vfs_test();
 void vfs_requirement1_test();
 void vfs_requirement1_read_file_populated_in_cpio();
+void user_ls_process(const char *pathname);
 void vfs_user_process_test();
-void vfs_ls_print_test();
+void vfs_elective2_user_process_test();
+void vfs_ls_print_test(const char *pathname);
 #endif

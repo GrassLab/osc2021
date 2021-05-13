@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-#define __NR_syscalls	        16
+#define __NR_syscalls	        20
 
 #define SYS_PRINT_NUMBER        0 		// syscal numbers 
 #define SYS_UARTWRITE_NUMBER    1
@@ -21,6 +21,11 @@
 #define SYS_WRITE               13
 #define SYS_READ                14
 #define SYS_READ_DIRECTORY      15
+#define SYS_MKDIR               16
+#define SYS_CHDIR               17
+#define SYS_MOUNT               18
+#define SYS_UNMOUNT             19
+
 
 #ifndef __ASSEMBLER__
 
@@ -45,6 +50,10 @@ int sys_close(int fd);
 int sys_write(int fd, const void *buf, size_t len);
 int sys_read(int fd, void *buf, size_t len);
 char *sys_read_directory(int fd);
+int sys_mkdir(const char *pathname);
+int sys_chdir(const char *pathname);
+int sys_mount(const char* device, const char* mountpoint, const char* filesystem);
+int sys_unmount(const char* mountpoint);
 
 void call_sys_print(char * buf);
 int call_sys_uart_write(char buf[], size_t size);
@@ -61,6 +70,10 @@ int call_sys_close(int fd);
 int call_sys_write(int fd, const void *buf, size_t len);
 int call_sys_read(int fd, void *buf, size_t len);
 char *call_sys_read_directory(int fd);
+int call_sys_mkdir(const char *pathname);
+int call_sys_chdir(const char *pathname);
+int call_sys_mount(const char* device, const char* mountpoint, const char* filesystem);
+int call_sys_unmount(const char* mountpoint);
 
 #endif /*  __ASSEMBLER__ */
 #endif /*_SYS_H */
