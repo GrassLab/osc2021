@@ -1,0 +1,10 @@
+enum log_type{
+  SEVERE = 0,
+  WARNING = 1,
+  INFO = 2,
+  FINE = 3,
+};
+
+void log_puts(char *s, enum log_type level);
+void set_log_type(enum log_type level);
+enum log_type get_log_level();
