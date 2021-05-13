@@ -47,7 +47,6 @@ main:
 	b	.L5
 .L8:
 	nop
-	bl	exit
 	mov	w0, 0
 	ldp	x29, x30, [sp], 160
 	ret

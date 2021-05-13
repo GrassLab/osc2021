@@ -3,6 +3,6 @@
 
 _start:
     bl main
-    bl exit
 _hang:
+    bl exit
     b _hang
