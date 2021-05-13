@@ -158,7 +158,7 @@ static int read(struct file* file, void* buf, size_t len) {
   pos = file->f_pos;
   //read bytes
   while(block != null) {
-   if(pos < block->size) {
+    if(pos < block->size) {
       //in this block
       if(len <= block->size - pos) {
         memcpy((char *)buf + read_bytes, block->content + pos, len);
@@ -182,6 +182,8 @@ static int read(struct file* file, void* buf, size_t len) {
 
     block = block->next;
   }
+  
+  file->f_pos += read_bytes;
   
   return read_bytes;
 } 
