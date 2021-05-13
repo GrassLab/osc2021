@@ -63,7 +63,7 @@ void syscall_routing(int num, struct trap_frame *tf) {
 
   case SYS_FORK: {
     log(SYS_FORK);
-    int child_id = sys_fork();
+    int child_id = sys_fork(tf);
     tf->regs[0] = child_id;
     break;
   }

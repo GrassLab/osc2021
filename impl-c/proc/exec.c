@@ -81,9 +81,9 @@ void exec_user(const char *name, char *const argv[]) {
   task->code_size = code_size;
 
   // context under kernel mode
-  task->cpu_context.fp = (uint64_t)task + FRAME_SIZE;
+  task->cpu_context.fp = task->kernel_stack + FRAME_SIZE;
   task->cpu_context.lr = (uint64_t)entry_point;
-  task->cpu_context.sp = (uint64_t)task + FRAME_SIZE;
+  task->cpu_context.sp = task->kernel_stack + FRAME_SIZE;
 
   // Jump into user mode
   asm volatile("mov x0, 0x340  \n"); // enable core timer interrupt

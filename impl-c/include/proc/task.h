@@ -21,30 +21,18 @@ struct cpu_context {
   uint64_t sp; // kernel stack pointer
 };
 
-/**
- * task_struct
- * Each task actually occupy a entire memory frame
- * | task_struct|
- * |     --     |
- * |     ...    |
- * |    stack   |
- * |     ...    |
- */
 struct task_struct {
   struct cpu_context cpu_context;
   unsigned long id;
   int status;
 
-  uintptr_t user_stack; // pointer to user stack
-  uintptr_t user_sp;    // value of sp in el0
+  uintptr_t kernel_stack;
+  uintptr_t user_stack;
+  uintptr_t user_sp; // value of sp in el0
 
   // address of the program code allocaed in memory
   void *code;
   size_t code_size;
-
-  //
-  // kernel stack
-  //
 };
 
 struct task_struct *task_create(void *func);

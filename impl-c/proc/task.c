@@ -26,22 +26,26 @@ static const int _DO_LOG = 0;
 
 static void foo();
 
+extern void fork_child_eret();
+
 uint32_t new_tid = 0;
 
 struct task_struct *task_create(void *func) {
   struct task_struct *t;
-  t = (struct task_struct *)kalloc(FRAME_SIZE);
+  t = (struct task_struct *)kalloc(sizeof(struct task_struct));
   if (t == NULL) {
     log_println("[task] oops cannot allocate thread");
     return NULL;
   }
 
+  t->kernel_stack = (uintptr_t)kalloc(FRAME_SIZE);
+
   // Normal task is a kernel function, which has already been loaded to memory
   t->code = NULL;
   t->code_size = 0;
-  t->cpu_context.fp = (uint64_t)t + FRAME_SIZE;
+  t->cpu_context.fp = t->kernel_stack + FRAME_SIZE;
   t->cpu_context.lr = (uint64_t)func;
-  t->cpu_context.sp = (uint64_t)t + FRAME_SIZE;
+  t->cpu_context.sp = t->kernel_stack + FRAME_SIZE;
   t->status = TASK_STATUS_ALIVE;
   t->id = new_tid++;
 
@@ -72,33 +76,55 @@ int sys_exec(const char *name, char *const args[]) {
   return -1;
 }
 
-void task_copy(struct task_struct *dst, struct task_struct *src) {
-  dst->status = src->status;
-  dst->cpu_context = src->cpu_context;
-  // copy the entire code: (could be optimized)
-  if (src->code != NULL) {
-    dst->code = (char *)kalloc(FRAME_SIZE);
-    dst->code_size = src->code_size;
-    memcpy(dst->code, src->code, src->code_size);
+int sys_fork(const struct trap_frame *tf) {
+
+  struct task_struct *parent = get_current();
+
+  {
+    // just logging
+    uintptr_t el1_sp;
+    asm volatile("mov %0, sp" : "=r"(el1_sp));
+    log_println("current sp(sp_el1): %x", el1_sp);
   }
-}
 
-int sys_fork() {
-  struct task_struct *task = get_current();
-  // store current context into user code
-
-  // child task has been enqueued in to run_q
   struct task_struct *child = task_create(NULL);
-  task_copy(child, task);
 
-  // point to child Stack/Code
-  intptr_t to_child_stack = (intptr_t)child - (intptr_t)task;
-  intptr_t to_child_code = (intptr_t)child->code - (intptr_t)task->code;
-  child->cpu_context.fp += to_child_stack;
-  child->cpu_context.sp += to_child_stack;
-  child->cpu_context.lr += to_child_code;
+  // USER STACK
+  child->user_stack = (uintptr_t)kalloc(FRAME_SIZE);
+  memcpy((char *)child->user_stack, (const char *)parent->user_stack,
+         FRAME_SIZE);
 
-  // return child id
+  // KERNEL STACK
+  memcpy((char *)child->kernel_stack, (const char *)parent->kernel_stack,
+         FRAME_SIZE);
+
+  // CODE
+  // TODO: fix this
+  // parent should free memory
+  // parent should be collect after child
+  child->code = NULL;
+
+  // Child return
+  // direct to the exception return point
+  uintptr_t kstack_tf_offset = ((uintptr_t)tf) - parent->kernel_stack;
+  struct trap_frame *child_tf =
+      (struct trap_frame *)(child->kernel_stack + kstack_tf_offset);
+  child->cpu_context.sp = (uintptr_t)child_tf;
+  child->cpu_context.lr = (uint64_t)fork_child_eret;
+  child_tf->regs[0] = 0;
+
+  log_println("parent kstack:%x ustack:%x", parent->kernel_stack,
+              parent->user_stack);
+  log_println("   tf:%x ctx.fp:%x ctx.sp:%x ctx.lr: %x", tf,
+              parent->cpu_context.fp, parent->cpu_context.sp,
+              parent->cpu_context.lr);
+
+  log_println("child kstack:%x ustack:%x ", child->kernel_stack,
+              child->user_stack);
+  log_println("   tf:%x ctx.fp:%x ctx.sp:%x ctx.lr: %x", child_tf,
+              child->cpu_context.fp, child->cpu_context.sp,
+              child->cpu_context.lr);
+
   return child->id;
 }
 
