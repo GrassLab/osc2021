@@ -99,9 +99,9 @@ int sys_fork(const struct trap_frame *tf) {
          FRAME_SIZE);
 
   // CODE
-  // TODO: fix this
+  // TODO: fix this (memory leak)
   // parent should free memory
-  // parent should be collect after child
+  // parent should be collected after child
   child->code = NULL;
 
   // Child return
