@@ -5,6 +5,8 @@
 #include "inc/allocator.h"
 #include "inc/thread.h"
 #include "inc/tmpfs.h"
+#include "inc/sd.h"
+#include "inc/fat.h"
 
 #define min(a,b) ((a)<(b)?(a):(b))
 
@@ -223,10 +225,13 @@ void main(){
 	uart_init();
 	printHWInfo();
 	allocator_init();
+	sd_init();
 
-	file_operations fops;
-	tmpfs_fopsGet(&fops);
-	vfs_init(tmpfs_Setup,fops.write,fops.read);
+	//TODO: fat
+	//fat_Setup();
+	//
+
+	vfs_init(tmpfs_Setup);
 
 	shell();
 }

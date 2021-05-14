@@ -5,8 +5,6 @@
 
 static mount my_mount;
 static filesystem my_filesystem;
-static void* my_write_f;
-static void* my_read_f;
 
 const char* slashIgnore(const char* src,char* dst,int size){
 	for(int i=0;i<size;++i){
@@ -52,15 +50,12 @@ file* vfs_open(const char* pathname,int flags){
 	file* ret=(file*)dalloc(sizeof(file));
 	ret->node=child;
 	ret->f_pos=0;
-	ret->f_ops=(file_operations*)dalloc(sizeof(file_operations));
-	ret->f_ops->write=my_write_f;
-	ret->f_ops->read=my_read_f;
+	ret->f_ops=my_mount.root->f_ops;
 	ret->flags=flags;
 	return ret;
 }
 
 int vfs_close(file* f){
-	dfree((unsigned long)f->f_ops);
 	dfree((unsigned long)f);
 	return 0;
 }
@@ -73,10 +68,8 @@ int vfs_read(file* f,void* buf,unsigned long len){
 	return f->f_ops->read(f,buf,len);
 }
 
-void vfs_init(void* setup_mount_f,void* write_f,void* read_f){
+void vfs_init(void* setup_mount_f){
 	int (*setup_mount)(filesystem*,mount*)=setup_mount_f;
-	my_write_f=write_f;
-	my_read_f=read_f;
 
 	setup_mount(&my_filesystem,&my_mount);
 	uart_printf("%s have been setup.\n\n",my_filesystem.name);

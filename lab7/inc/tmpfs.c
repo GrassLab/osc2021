@@ -99,11 +99,6 @@ int tmpfs_Read(file* f,void* buf,unsigned long len){
 	}
 }
 
-void tmpfs_fopsGet(file_operations* fops){
-	fops->write=tmpfs_Write;
-	fops->read=tmpfs_Read;
-}
-
 void tmpfs_Dump(vnode* cur,int level){
 	Content* content=(Content*)(cur->internal);
 
