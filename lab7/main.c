@@ -228,7 +228,7 @@ void main(){
 	sd_init();
 
 	//TODO: fat
-	//fat_Setup();
+	fat_Setup();
 	//
 
 	vfs_init(tmpfs_Setup);
