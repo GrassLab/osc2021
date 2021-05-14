@@ -224,37 +224,37 @@ void buddy_dma_ll_show(){
   char tt[20];
   for (int i=0; i<BUDDY_DMA_SLOT_NUM; i++){
     int_to_str(i, tt);
-    buddy_uart_puts((char *) "Slot ", -1);
-    buddy_uart_puts(tt, -1);
-    buddy_uart_puts((char *) ", chunk size ", -1);
+    uart_puts((char *) "Slot ");
+    uart_puts(tt);
+    uart_puts((char *) ", chunk size ");
     int_to_str(dma_get_chunk_size(i), tt);
-    buddy_uart_puts(tt, -1);
+    uart_puts(tt);
     if (dma_head[i]){
-      buddy_uart_puts((char *) "\n", -1);
+      uart_puts((char *) "\n");
       struct dma_node *t = dma_head[i];
       while(t){
-        buddy_uart_puts((char *) "  ", -1);
+        uart_puts((char *) "  ");
         int it = 0;
         int used_chunk = t->max_chunk_num-t->free_chunk_num;
         int_to_str(used_chunk, tt);
-        buddy_uart_puts(tt, -1);
-        buddy_uart_puts((char *) "/", -1);
+        uart_puts(tt);
+        uart_puts((char *) "/");
         int_to_str(t->max_chunk_num, tt);
-        buddy_uart_puts(tt, -1);
+        uart_puts(tt);
         for (int j = used_chunk; j>0;it++){
           if (bitset_get(t->bitset, it, t->max_chunk_num) == 1){
-            int_to_hex(t->addr+it*i*BUDDY_DMA_UNIT_SIZE, tt);
-            buddy_uart_puts((char *) "   ", -1);
-            buddy_uart_puts(tt, -1);
+            int_to_hex(t->addr+it*t->chunk_size, tt);
+            uart_puts((char *) "   ");
+            uart_puts(tt);
             j--;
           }
         }
         t = t->next;
-        buddy_uart_puts((char *) "\n", -1);
+        uart_puts((char *) "\n");
       }
     }
     else{
-      buddy_uart_puts((char *) ": is null\n", -1);
+      uart_puts((char *) ": is null\n");
     }
   }
 }
