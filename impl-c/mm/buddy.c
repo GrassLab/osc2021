@@ -186,8 +186,7 @@ bool is_frame_wrapped_by_collison(Frame *node, StartupAllocator_t *sa) {
 void buddy_init_reserved(BuddyAllocater *alloc, StartupAllocator_t *sa) {
   Frame *node, *child1, *child2;
   int child_exp;
-
-#ifdef CFG_LOG_STARTUP
+#ifdef CFG_LOG_MEM_STARTUP
   MemRegion reg;
   for (int i = 0; i < sa->num_reserved; i++) {
     reg.addr = sa->_reserved[i].addr;
@@ -200,14 +199,14 @@ void buddy_init_reserved(BuddyAllocater *alloc, StartupAllocator_t *sa) {
     // split node
     list_del(&node->list_base);
     if (true == is_frame_wrapped_by_collison(node, sa)) {
-#ifdef CFG_LOG_STARTUP
+#ifdef CFG_LOG_MEM_STARTUP
       uart_println("collison -  remove node[%x, %x]", node->addr,
                    end_addr(node));
 #endif
       continue;
     }
 
-#ifdef CFG_LOG_STARTUP
+#ifdef CFG_LOG_MEM_STARTUP
     uart_println("collison -  node[%x, %x]", node->addr, end_addr(node));
 #endif
     child_exp = (node->exp) - 1;
@@ -216,14 +215,14 @@ void buddy_init_reserved(BuddyAllocater *alloc, StartupAllocator_t *sa) {
     child1->exp = child_exp;
     child2->exp = child_exp;
     if (false == is_frame_wrapped_by_collison(child1, sa)) {
-#ifdef CFG_LOG_STARTUP
+#ifdef CFG_LOG_MEM_STARTUP
       uart_println("collison -  push child[%x, %x]", child1->addr,
                    end_addr(child1));
 #endif
       list_push(&child1->list_base, &alloc->free_lists[child_exp]);
     }
     if (false == is_frame_wrapped_by_collison(child2, sa)) {
-#ifdef CFG_LOG_STARTUP
+#ifdef CFG_LOG_MEM_STARTUP
       uart_println("collison -  push child[%x, %x]", child2->addr,
                    end_addr(child2));
 #endif
