@@ -220,7 +220,7 @@ void sys_exec(struct trapframe *arg){
     ustack -= (strlen+1);
     argv--;
     *argv = ustack;
-    str_cat(input_argv[i], ustack);
+    str_copy(input_argv[i], ustack);
   }
   int ustack_offset = (unsigned long long) ustack%16;
   ustack -= ustack_offset;

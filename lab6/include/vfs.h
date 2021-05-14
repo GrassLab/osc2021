@@ -1,10 +1,27 @@
+# include "list.h"
 # define size_t unsigned long
+# define VFS_FILENAME_MAX_LEN 128
+
+enum dentry_type{
+  FILE = 0,
+  DIR = 1,
+  SDIR = 2,
+};
+
+struct dentry{
+  struct list_head list;
+  struct list_head childs;
+  struct vnode* vnode;
+  struct dentry* parent;
+  char name[VFS_FILENAME_MAX_LEN];
+  enum dentry_type type;
+};
 
 struct vnode{
   struct mount* mount;
+  int mode;
   struct vnode_operations* v_ops;
   struct file_operations* f_ops;
-  int mode;
   void* internal;
 };
 
@@ -30,12 +47,14 @@ struct file_operations {
   int (*read) (struct file* file, void* buf, size_t len);
 };
 
+
 struct vnode_operations {
   int (*lookup)(struct vnode* dir_node, struct vnode** target, const char* component_name);
   int (*create)(struct vnode* dir_node, struct vnode** target, const char* component_name);
   int (*mkdir)(struct vnode* dir_node, struct vnode** target, const char* component_name);
-  int (*ls)(struct vnode* dir_node, struct vnode** target, const char* component_name);
 };
+
+struct dentry* vfs_create_dentry(struct dentry* parent, char* name, enum dentry_type type);
 
 int register_filesystem(struct filesystem* fs);
 struct file* vfs_open(const char* pathname, int flags);

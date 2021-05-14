@@ -1,5 +1,7 @@
 # define MEM_TABLE_MAX_SIZE 4000
 
+# define MALLOC(type) (type*)malloc(sizeof(type))
+
 struct mem_node{
   unsigned long long addr;
   int bytes;

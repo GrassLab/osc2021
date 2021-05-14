@@ -23,7 +23,7 @@ int str_len(char *s){
   return r;
 }
 
-void str_cat(char *src, char *target){
+void str_copy(char *src, char *target){
   while(1){
     *target = *src;
     if (*src){

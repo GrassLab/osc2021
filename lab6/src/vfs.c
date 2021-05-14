@@ -1,9 +1,47 @@
 # include "vfs.h"
+# include "mem.h"
+# include "my_string.h"
 
-struct mount* rootfs;
+struct mount* rootmount;
+
+void vfs_init(){
+}
+
+struct vnode* vfs_create_vnode(){
+  struct vnode *new_vnode  = MALLOC(struct vnode);
+  return new_vnode;
+}
+
+struct dentry* vfs_create_dentry(struct dentry* parent, char* name, enum dentry_type type){
+  struct dentry *new_d  = MALLOC(struct dentry);
+  list_head_init(&new_d->list);
+  list_head_init(&new_d->childs);
+  new_d->vnode = vfs_create_vnode();
+  new_d->parent = parent;
+  str_copy(name, new_d->name);
+  if (type == DIR){
+    struct dentry *new_d1 = MALLOC(struct dentry);
+    struct dentry *new_d2 = MALLOC(struct dentry);
+    list_head_init(&new_d1->list);
+    list_head_init(&new_d1->childs);
+    list_head_init(&new_d2->list);
+    list_head_init(&new_d2->childs);
+    new_d1->vnode = new_d->vnode;
+    new_d2->vnode = (parent) ? parent->vnode : new_d->vnode;
+    new_d1->parent = 0;
+    new_d2->parent = 0;
+    new_d1->name[0] = '.';  new_d1->name[1] = '\0';
+    new_d2->name[0] = '.';  new_d2->name[1] = '.';  new_d2->name[2] = '\0';
+    new_d1->type = SDIR;
+    new_d2->type = SDIR;
+    list_add_prev(&new_d1->list, &new_d->childs);
+    list_add_prev(&new_d2->list, &new_d->childs);
+  }
+  return new_d;
+}
 
 int register_filesystem(struct filesystem* fs) {
-  return 0;
+  return fs->setup_mount(fs, &rootmount);
   // register the file system to the kernel.
 }
 
