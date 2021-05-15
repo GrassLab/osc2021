@@ -228,10 +228,14 @@ void main(){
 	sd_init();
 
 	//TODO: fat
-	fat_Setup();
+	filesystem fs;
+	mount mnt;
+	fat_Setup(&fs,&mnt);
+	vnode* target;
+	uart_printf("...%d\n",mnt.root->v_ops->lookup(mnt.root,&target,"1.TXT"));
 	//
 
-	vfs_init(tmpfs_Setup);
+	//vfs_init(tmpfs_Setup);
 
 	shell();
 }
