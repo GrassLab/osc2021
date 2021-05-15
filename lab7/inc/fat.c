@@ -34,6 +34,7 @@ typedef struct{
 	void* cache;
 	unsigned int capacity;
 	unsigned int len;
+	unsigned int dirty;
 }Content;
 
 static MetaData metadata;
@@ -74,6 +75,7 @@ void parseDentry(Dentry* dentry,vnode* node,int display){
 	content->type=type;
 	content->id=id;
 	content->cache=0;
+	content->len=len;
 }
 
 unsigned int getChainLen(unsigned int id){
@@ -101,9 +103,78 @@ unsigned int getChain(unsigned int id,unsigned char** buf){
 	}
 	return len;
 }
-int writeFAT(file* f,const void* buf,unsigned long len){return -1;}
-int readFAT(file* f,void* buf,unsigned long len){return -1;}
-int createFAT(vnode* dir_node,vnode** target,const char* component_name){return -1;}
+
+void syncFAT(file* f){
+	vnode* node=f->node;
+	Content* content=(Content*)(node->internal);
+	if(content->type==1)ERROR("TODO");
+	if(content->cache==0||content->dirty==0)return;
+	ERROR("TODO");
+}
+
+void initCache(Content* content){
+	unsigned char* buf;
+	unsigned int len=getChain(content->id,&buf);
+	content->cache=buf;
+	content->capacity=len;
+	content->dirty=0;
+}
+
+int writeFAT(file* f,const void* buf,unsigned long len){
+	vnode* node=f->node;
+	Content* content=(Content*)(node->internal);
+	if(content->type!=0)ERROR("invalid file type!");
+	if(content->cache==0)initCache(content);
+
+	char* cache=(char*)(content->cache);
+	if(f->f_pos+len > content->capacity){
+		char* new_cache=(char*)falloc((f->f_pos+len)*2);
+		for(int i=0;i<content->len;++i)new_cache[i]=cache[i];
+		content->capacity=(f->f_pos+len)*2;
+		content->cache=new_cache;
+		ffree((unsigned long)cache);
+		cache=new_cache;
+	}
+
+	const char* buffer=(const char*)buf;
+	for(int i=0;i<len;++i){
+		cache[f->f_pos]=buffer[i];
+		f->f_pos++;
+	}
+
+	if(content->len < f->f_pos){
+		content->len=f->f_pos;
+	}
+	content->dirty=1;
+
+	return len;
+}
+
+int readFAT(file* f,void* buf,unsigned long len){
+	vnode* node=f->node;
+	Content* content=(Content*)(node->internal);
+	if(content->type!=0)ERROR("invalid file type!");
+	if(content->cache==0)initCache(content);
+
+	char* cache=(char*)(content->cache);
+	char* buffer=(char*)buf;
+	int ret=0;
+	for(int i=f->f_pos;i<content->len;++i){
+		if(ret<len){
+			buffer[ret++]=cache[i];
+		}else{
+			break;
+		}
+	}
+
+	f->f_pos+=ret;
+	return ret;
+}
+
+int createFAT(vnode* dir_node,vnode** target,const char* component_name){
+	ERROR("TODO");
+	return -1;
+}
 
 int lookupFAT(vnode* dir_node,vnode** target,const char* component_name){
 	Content* content=(Content*)(dir_node->internal);
@@ -120,7 +191,7 @@ int lookupFAT(vnode* dir_node,vnode** target,const char* component_name){
 			childs[cnt]->v_ops=dir_node->v_ops;
 			childs[cnt]->f_ops=dir_node->f_ops;
 			childs[cnt]->internal=(void*)dalloc(sizeof(Content));
-			parseDentry((Dentry*)(buf+i),childs[cnt],0);
+			parseDentry((Dentry*)(buf+i),childs[cnt],1);
 			cnt++;
 		}
 		ffree((unsigned long)buf);
@@ -128,13 +199,17 @@ int lookupFAT(vnode* dir_node,vnode** target,const char* component_name){
 		content->cache=childs;
 		content->capacity=len/32;
 		content->len=cnt;
+		content->dirty=0;
 	}
 
-	vnode** childs=content->cache;
+	vnode** childs=(vnode**)(content->cache);
 	for(int i=0;i<content->len;++i){
-		Content* tmp=(Content*)(childs[i]->internal);
-		if(strcmp(component_name,tmp->name)==0){
-			*target=childs[i];
+		vnode* child=childs[i];
+		Content* child_content=(Content*)(child->internal);
+		if(strcmp(child_content->name,component_name)==0){
+			if(target){
+				*target=child;
+			}
 			return i;
 		}
 	}
@@ -156,6 +231,7 @@ void parseRoot(vnode* root){
 	root->f_ops=(file_operations*)dalloc(sizeof(file_operations));
 	root->f_ops->read=readFAT;
 	root->f_ops->write=writeFAT;
+	root->f_ops->sync=syncFAT;
 	root->internal=(void*)dalloc(sizeof(Content));
 
 	Content* content=(Content*)(root->internal);

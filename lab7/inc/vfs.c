@@ -68,6 +68,10 @@ int vfs_read(file* f,void* buf,unsigned long len){
 	return f->f_ops->read(f,buf,len);
 }
 
+void vfs_sync(file* f){
+	f->f_ops->sync(f);
+}
+
 void vfs_init(void* setup_mount_f){
 	int (*setup_mount)(filesystem*,mount*)=setup_mount_f;
 
