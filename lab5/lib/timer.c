@@ -6,9 +6,12 @@
 #include "sched.h"
 #include "list.h"
 #include "timer.h"
+#include "mm.h"
 
-size_t jiffies = 0;
+size_t jiffies;
+struct ktimer *timer_list;
 
+/* no need to mask since we don't permit nested IRQ */
 static inline void jiffies_inc() {
     jiffies += 1;
 }
@@ -17,11 +20,50 @@ size_t get_jiffies() {
     return jiffies;
 }
 
+void add_timer(struct ktimer *timer) {
+    timer->next = timer_list;
+    timer_list = timer;
+}
+
 /* argument use ms as unit */
-void set_current_sleep(size_t t) {
-    current->timer = MS(t);
+void task_sleep(size_t msec) {
+    disable_interrupt();
+
+    struct ktimer *timer = kmalloc(sizeof(struct ktimer));
+    timer->fn = (typeof(timer->fn))&restart_task;
+    timer->arg = (size_t)current;
+    timer->timeout_tick = get_jiffies() + MS(msec);
+    timer->need_gc = 0;
+    add_timer(timer);
     pause_task(current);
+
     schedule();
+    enable_interrupt();
+}
+
+void run_timers() {
+    struct ktimer **p = &timer_list;
+    struct ktimer *tp;
+
+    while (*p != NULL) {
+        tp = *p;
+
+        if (tp->need_gc) {
+            while (*p != NULL && tp->need_gc) {
+                struct ktimer *nxt = tp->next;
+                kfree(tp);
+                *p = nxt;
+                tp = *p;
+            }
+            continue;
+        }
+
+        if (get_jiffies() >= tp->timeout_tick) {
+            tp->fn(tp->arg);
+            tp->need_gc = 1;
+        }
+        p = &(*p)->next;
+    }
 }
 
 void enable_core_timer() {
@@ -31,7 +73,7 @@ void enable_core_timer() {
     printf("[Kernel] CPU freq: %ld\n\r", frq);
 
     if (frq != CPU_HZ) {
-        panic("[Kernel] CPU frequency unmatch")
+        panic("timer: CPU frequency unmatch")
     }
 
     write_sysreg(cntp_tval_el0, CPU_HZ / TIMER_HZ);

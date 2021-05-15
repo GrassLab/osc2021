@@ -100,7 +100,7 @@ el1_curr_el_sp0_serror:
 
 .balign 0x80
 el1_curr_el_spx_sync:
-    b el1_curr_el_spx_sync
+    b el1_sync_handler
 
 .balign 0x80
 el1_curr_el_spx_irq:

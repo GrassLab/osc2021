@@ -29,12 +29,12 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef _PRINTF_H_
-#define _PRINTF_H_
+#ifndef __PRINTF_H_
+#define __PRINTF_H_
 
 #include <stdarg.h>
 #include <stddef.h>
-
+#include <interrupt.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,7 +42,9 @@ extern "C" {
 
 #define panic(fmt, ...) \
     do { \
-        printf(fmt, ##__VA_ARGS__); \
+        disable_interrupt(); \
+        printf("[Kernel] panic in %s(): " fmt "\n\r", \
+            __func__, ##__VA_ARGS__); \
         while(1); \
     } while(0);
 

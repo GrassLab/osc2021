@@ -334,6 +334,8 @@ void *kmalloc(unsigned int size) {
         return NULL;
     }
 
+    disable_preempt();
+
     if (size < CACHE_MIN_SIZE) {
         size = CACHE_MIN_SIZE;
     }
@@ -353,6 +355,7 @@ void *kmalloc(unsigned int size) {
         cache = alloc_pages(pages);
     }
 
+    enable_preempt();
     return cache;
 }
 
@@ -382,6 +385,8 @@ void kfree(void *ptr) {
         return;
     }
 
+    disable_preempt();
+
     if (IS_MEM_CACHE(frame_array[idx])) {
         struct cache_meta *meta = frame_array[idx].cache;
 
@@ -409,4 +414,6 @@ void kfree(void *ptr) {
     } else {
         free_pages(ptr);
     }
+
+    enable_preempt();
 }

@@ -8,6 +8,7 @@
 #include "timer.h"
 #include "printf.h"
 #include "interrupt.h"
+#include <timer.h>
 #include <preempt.h>
 #include <atomic.h>
 
@@ -38,10 +39,33 @@ inline void add_task(struct task_struct *ts) {
 }
 
 void pause_task(struct task_struct *ts) {
+    if (ts->state != TASK_RUNNING) {
+        panic("task state inconsistent");
+    }
     ts->state = TASK_PAUSED;
+    ts->need_resched = 1;
     del_task(ts);
 
     insert_head(&paused_queue, &ts->list);
+}
+
+void restart_task(struct task_struct *ts) {
+    if (ts->state != TASK_PAUSED) {
+        panic("task state inconsistent");
+    }
+    ts->state = TASK_RUNNING;
+    del_task(ts);
+
+    insert_head(&run_queue, &ts->list);
+}
+
+void kill_task(struct task_struct *ts, int status) {
+    ts->state = TASK_STOPPED;
+    ts->need_resched = 1;
+    del_task(ts);
+
+    ts->exitcode = status;
+    insert_head(&stopped_queue, &ts->list);
 }
 
 void free_task(struct task_struct *ts) {
@@ -70,25 +94,13 @@ void schedule_kthread(void *cb) {
 
 static struct task_struct *pick_next_task() {
     if (list_empty(&run_queue)) {
-        panic("[Kernel] Scheduler: run queue is empty");
+        panic("scheduler: run queue is empty");
     }
     struct task_struct *ts = list_first_entry(&run_queue, struct task_struct, list);
     del_task(ts);
     insert_tail(&run_queue, &ts->list);
 
     return ts;
-}
-
-void wake_up_process(struct task_struct *ts) {
-
-}
-
-void kill_task(struct task_struct *ts, int status) {
-    ts->state = TASK_STOPPED;
-    del_task(ts);
-
-    ts->exitcode = status;
-    insert_head(&stopped_queue, &ts->list);
 }
 
 static void switch_task(struct task_struct *nxt) {
@@ -107,10 +119,9 @@ void set_init_thread() {
     add_task(cur);
 }
 
-/* calc & select next task to run */
+/* calc & select next task to run
+ * interrupt should be disabled before entering schedule() */
 void schedule() {
-    disable_interrupt();
-
     if (!current->need_resched || current->preempt_count > 0) {
         return;
     }
@@ -121,6 +132,4 @@ void schedule() {
 
     /* task get switch out & return from here */
     switch_task(nxt);
-
-    enable_interrupt();
 }

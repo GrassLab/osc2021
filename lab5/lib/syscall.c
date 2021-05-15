@@ -3,14 +3,7 @@
 #include <exec.h>
 #include <current.h>
 #include <fork.h>
-
-inline void disable_interrupt() {
-    write_sysreg(DAIFSet, 0xf);
-}
-
-inline void enable_interrupt() {
-    write_sysreg(DAIFClr, 0xf);
-}
+#include <interrupt.h>
 
 void sys_uart_read(struct pt_regs *regs) {
     char *buf = (char *)regs->regs[0];
@@ -45,13 +38,11 @@ void sys_getpid(struct pt_regs *regs) {
     regs->regs[0] = (size_t)current->pid;
 }
 
-/* TODO: fix this up */
 void sys_exit(struct pt_regs *regs) {
     /* ensure we won't get preempted here */
     disable_interrupt();
-
     kill_task(current, regs->regs[0]);
-    schedule();
+    enable_interrupt();
 }
 
 void sys_fork(struct pt_regs *regs) {

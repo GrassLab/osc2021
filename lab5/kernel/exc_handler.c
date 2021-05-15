@@ -21,7 +21,12 @@ void irq_handler(struct pt_regs *regs) {
         /* uart handler */
     }
 
+    run_timers();
     schedule();
+}
+
+void el1_sync_handler(struct pt_regs *regs) {
+    panic("segfault ocurred in EL1");
 }
 
 void sync_handler(struct pt_regs *regs) {
@@ -51,19 +56,20 @@ void sync_handler(struct pt_regs *regs) {
         break;
 
     case ESR_ELx_EC_BRK_LOW:
-        panic("[Kernel] panic: Breakpoint exception");
+        panic("Breakpoint exception");
 
     default:
-        panic("[Kernel] panic: Unknown exception: EC=0x%x, ISS=0x%x\n\r", ec, iss);
+        panic("Unknown exception: EC=0x%x, ISS=0x%x", ec, iss);
     }
 
+    disable_interrupt();
     schedule();
 }
 
 void svc_handler(struct pt_regs *regs) {
     unsigned nr = regs->regs[8];
     if (nr >= NR_syscalls) {
-        panic("[Kernel] svc_handler: Unknown syscall number %d\n\r", regs->regs[8]);
+        panic("Unknown syscall number %d", regs->regs[8]);
     }
 
     /* exit syscall wont return */

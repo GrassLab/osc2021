@@ -33,11 +33,6 @@ struct cpu_context {
 	unsigned long pc;
 };
 
-struct process_timer {
-	unsigned long timeout_tick;
-	struct task_struct *task;
-};
-
 struct task_struct {
     /* cpu_context need to be the first element of task_struct */
     struct cpu_context cpu_context;
@@ -50,7 +45,6 @@ struct task_struct {
     char *user_prog;
     pid_t pid;
     int exitcode;
-    unsigned long timer;
     unsigned long timeout_tick;
     state_t state;
     struct list_head list;
@@ -60,6 +54,7 @@ pid_t get_next_pid();
 void set_init_thread();
 void schedule();
 void pause_task(struct task_struct *);
+void restart_task(struct task_struct *);
 void schedule_kthread(void *cb);
 struct task_struct *alloc_user_task(void *prog, const char *argv[]);
 void add_task(struct task_struct *);
