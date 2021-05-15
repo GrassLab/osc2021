@@ -1,4 +1,5 @@
 # include "list.h"
+# include "log.h"
 
 void list_head_init(struct list_head *l) {
     l->next = l;

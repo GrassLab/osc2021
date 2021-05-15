@@ -6,6 +6,7 @@
 # include "timer.h"
 # include "exception.h"
 # include "schedule.h"
+# include "vfs.h"
 
 
 int main(){
@@ -21,6 +22,10 @@ int main(){
   uart_puts((char *) "Welcome to Eric's system ~\n");
   uart_puts((char *) "(Lab4)\n");
   uart_flush();
+  vfs_init();
+  vfs_do_mkdir("ttt");
+  vfs_do_mkdir("Hi");
+  vfs_list_tree();
   task_init();
   IRQ_ENABLE();
 

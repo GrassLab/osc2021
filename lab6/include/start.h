@@ -15,3 +15,5 @@
 # define SPSR_EL1_EL0        (0b0000 << 0)
 # define SPSR_EL1_VALUE      (SPSR_EL1_MASK | SPSR_EL1_EL0)
 
+# define SCTLR_VALUE_MMU_DISABLED 0
+

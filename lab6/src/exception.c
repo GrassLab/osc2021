@@ -46,6 +46,14 @@ void general_exception_handler(struct trapframe *arg, unsigned long type, unsign
 
 
 void sync_handler(struct trapframe *arg, unsigned long type, unsigned long esr, unsigned long elr){
+  int ec = (esr >> 26) & 0b111111;
+  int iss = esr & 0x1FFFFFF;
+  // check if SVC
+  if (ec == ESR_EC_SVC){
+    //uart_puts((char *) "[SYNC] Call SVC handler\n");
+    svc_handler(arg, type, iss);
+    return ;
+  }
   /*
   char ct[20];
   uart_puts((char *) "Enter SYNC handler\n");
@@ -65,10 +73,6 @@ void sync_handler(struct trapframe *arg, unsigned long type, unsigned long esr, 
   uart_puts(ct);
   uart_puts((char *) "\n");
   uart_puts((char *) "[SYNC] EC = ");
-  */
-  int ec = (esr >> 26) & 0b111111;
-  int iss = esr & 0x1FFFFFF;
-  /*
   int_to_hex(ec, ct);
   uart_puts(ct);
   uart_puts((char *) ", ISS = ");
@@ -76,12 +80,6 @@ void sync_handler(struct trapframe *arg, unsigned long type, unsigned long esr, 
   uart_puts(ct);
   uart_puts((char *) "\n");
   */
-  // check if SVC
-  if (ec == ESR_EC_SVC){
-    //uart_puts((char *) "[SYNC] Call SVC handler\n");
-    svc_handler(arg, type, iss);
-    return ;
-  }
 }
 
 

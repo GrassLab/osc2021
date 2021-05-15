@@ -25,6 +25,9 @@ _start:
     cbnz   w2, 3b
 
 4:
+    // Disable MMU
+    ldr    x1, =SCTLR_VALUE_MMU_DISABLED
+    msr    sctlr_el1, x1
     // EL1 users aarch64
     ldr    x1, =HCR_EL2_VALUE
     msr    hcr_el2, x1

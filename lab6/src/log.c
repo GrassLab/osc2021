@@ -1,7 +1,7 @@
 # include "log.h"
 # include "uart.h"
 
-enum log_type global_log_state = WARNING;
+enum log_type global_log_state = FINE;
 
 void log_puts(char *s, enum log_type level){
   if (level <= global_log_state){

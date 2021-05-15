@@ -2,10 +2,11 @@
 # define __LIST_H__
 
 struct list_head {
-    struct list_head *next, *prev;
+    struct list_head *next;
+    struct list_head *prev;
 };
 
-# define offsetof(TYPE, MEMBER) ((uint64_t)&((TYPE *)0)->MEMBER)
+# define offsetof(TYPE, MEMBER) ((unsigned long long)&((TYPE *)0)->MEMBER)
 
 # define container_of(ptr, type, member) ({                      \
         const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
