@@ -3,6 +3,7 @@
 #include "alloc.h"
 #include "cpio.h"
 #include "dtb.h"
+#include "exception.h"
 #include "mini_uart.h"
 #include "printf.h"
 #include "string.h"
@@ -42,7 +43,7 @@ void cmd_buddy_test() { buddy_test(); }
 
 void cmd_dma_test() { dma_test(); }
 
-void cmd_load_user_program(char *program_name) {
+void cmd_load_user_program(const char *program_name) {
   uint64_t spsr_el1 = 0x0;  // EL0t with interrupt enabled
   uint64_t target_addr = 0x30000000;
   uint64_t target_sp = 0x31000000;
@@ -68,7 +69,9 @@ void cmd_set_timeout(char *args) {
   add_timer(timer_callback, args, duration);
 }
 
-void cmd_thread_test1() { thread_test(); }
+void cmd_thread_test1() { thread_test1(); }
+
+void cmd_thread_test2() { thread_test2(); }
 
 void clear_buffer() {
   buffer_pos = 0;
@@ -126,6 +129,8 @@ void run_shell() {
       cmd_set_timeout(&buffer[11]);
     } else if (strcmp(buffer, "t1") == 0) {
       cmd_thread_test1();
+    } else if (strcmp(buffer, "t2") == 0) {
+      cmd_thread_test2();
     }
   }
 }

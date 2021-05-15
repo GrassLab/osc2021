@@ -4,6 +4,7 @@
 #include "shell.h"
 #include "thread.h"
 #include "timer.h"
+#include "printf.h"
 
 void main() {
   uart_init();

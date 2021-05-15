@@ -25,4 +25,5 @@ typedef struct {
 
 void cpio_ls();
 void cpio_cat(char *filename);
-void cpio_load_user_program(char *target_program, uint64_t target_addr);
+uint32_t cpio_load_user_program(const char *target_program,
+                                uint64_t target_addr);

@@ -1,34 +1,32 @@
 CC = aarch64-linux-gnu-gcc
-# ASMFLAGS = 
+CFLAGS = -Wall -g -ffreestanding -march=armv8-a
 LD = aarch64-linux-gnu-ld
 OBJCOPY = aarch64-linux-gnu-objcopy
 OBJCOPYFLAGS = -O binary
 
-
 BUILD_DIR = build
 SRC_DIR = src
+C_FILES = $(wildcard $(SRC_DIR)/*.c)
+TARGET_FILES = $(C_FILES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%)
+LINKER = $(SRC_DIR)/linker.ld
 
-all: user_program.img
+all: $(TARGET_FILES)
 
 clean:
 	rm $(BUILD_DIR)/*
 
-$(BUILD_DIR)/%_s.o: $(SRC_DIR)/%.S
-	mkdir -p $(@D)
-	$(CC) $(ASMFLAGS) -c $< -o $@
-
-ASM_FILES = $(wildcard $(SRC_DIR)/*.S)
-OBJ_FILES += $(ASM_FILES:$(SRC_DIR)/%.S=$(BUILD_DIR)/%_s.o)
-
-user_program.elf: $(OBJ_FILES)
-	$(LD) -o $(BUILD_DIR)/user_program.elf $(OBJ_FILES)
-
-user_program.img: user_program.elf
-	$(OBJCOPY) $(OBJCOPYFLAGS) $(BUILD_DIR)/user_program.elf $(BUILD_DIR)/user_program.img
-	cp build/user_program.img ../kernel/rootfs && \
+$(BUILD_DIR)/%: $(BUILD_DIR)/%.elf
+	$(OBJCOPY) $(OBJCOPYFLAGS) $< $@
+	cp $@ ../kernel/rootfs && \
 	cd ../kernel/rootfs && \
 	rm -f ../initramfs.cpio && \
 	find . | cpio -o -H newc > ../initramfs.cpio
 
-dump:
-	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/user_program.img -display none -d in_asm
+$(BUILD_DIR)/%.elf: $(BUILD_DIR)/%.o $(BUILD_DIR)/start.asmo
+	$(LD) -T $(LINKER) --gc-sections -g -o $@ $< $(BUILD_DIR)/start.asmo
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/start.asmo: $(SRC_DIR)/start.S
+	$(CC) $(CFLAGS) -c $< -o $@

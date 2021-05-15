@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gpio.h"
+#include "utils.h"
 
 /* Auxilary mini UART registers */
 #define AUXIRQ ((volatile unsigned int *)(MMIO_BASE + 0x00215000))
@@ -36,6 +37,7 @@ void uart_init();
 void uart_send(unsigned int c);
 char uart_getb();
 char uart_getc();
+uint32_t uart_gets(char *buf, uint32_t size);
 void uart_puts(char *s);
 
 void enable_uart_interrupt();
