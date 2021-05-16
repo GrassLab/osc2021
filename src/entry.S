@@ -1,3 +1,4 @@
+#define context_switch_size 0x400
 .macro vector_block label
     save_basic_reg
     b \label
@@ -14,7 +15,6 @@
     b error_handler
 .endm
 
-#define context_switch_size 0x400
 .macro save_basic_reg
     sub sp, sp, context_switch_size
     stp x0, x1, [sp, 0x00]
@@ -31,10 +31,9 @@
     stp x22, x23, [sp, 0xb0]
     stp x24, x25, [sp, 0xc0]
     stp x26, x27, [sp, 0xd0]
-    stp x28, x29, [sp, 0xf0]
-    str x30, [sp, 0x100]
+    stp x28, x29, [sp, 0xe0]
+    str x30, [sp, 0xf0]
 .endm
-
 .macro load_basic_reg
     ldp x0, x1, [sp, 0x00]
     ldp x2, x3, [sp, 0x10]
@@ -50,18 +49,22 @@
     ldp x22, x23, [sp, 0xb0]
     ldp x24, x25, [sp, 0xc0]
     ldp x26, x27, [sp, 0xd0]
-    ldp x28, x29, [sp, 0xf0]
-    ldr x30, [sp, 0x100]
+    ldp x28, x29, [sp, 0xe0]
+    ldr x30, [sp, 0xf0]
     add sp, sp, context_switch_size
 .endm
 
 .macro save_kernel_reg
     save_basic_reg
-    ldr lr, [sp, 0x110]
+    mrs x0, sp_el0
+    mrs x1, elr_el1
+    stp x0, x1, [sp, 0x100]
 .endm
 
 .macro load_kernel_reg
-    str lr, [sp, 0x110]
+    ldp x0, x1, [sp, 0x100]
+    msr sp_el0, x0
+    msr elr_el1, x1
     load_basic_reg
 .endm
 
@@ -88,7 +91,7 @@ exception_vector_table:
     todo_vector_block 7
 /* part 2 */
     .align 7
-    vector_block aarch64_sync
+    kvector_block aarch64_sync
     .align 7
     save_kernel_reg
     b aarch64_irq
@@ -114,26 +117,27 @@ sp_el0_vserror:
 sp_elx_sync:
 sp_elx_irq:
     bl sp_elx_irq_handler
-    load_kernel_reg
+    load_basic_reg
     eret
 
 sp_elx_fiq:
 sp_elx_vserror:
 
 #define svc_mask 0xfffff
+.global uart_sendi
 aarch64_sync:
-    mrs x10, elr_el1
-    sub x10, x10, #4
-    ldr x10, [x10]
-    ldr x11, =svc_mask
-    and x10, x10, x11
-    lsr x10, x10, #5    // svc imm
-    cmp x10, #0x80
+    mrs x0, esr_el1
+    ldr x1, =svc_mask
+    and x0, x0, x1
+    cmp x0, #0x80
     bne 1f
-    cmp x19, #60 // system call: exit
+    mov x0, sp
+    cmp x0, #60 // system call: exit
     beq process_exit
     bl sys_call_handler
-    load_basic_reg
+.global new_task_entry
+new_task_entry:
+    load_kernel_reg
     eret
 1:
     mov x0, #8
@@ -164,10 +168,8 @@ error_handler:
 from_el1_to_el0:
     save_basic_reg
     msr elr_el1, x0 // program start address
-    mov x0, 0x3c0
+    mov x0, 0x340
     msr spsr_el1, x0
-    mov x0, #0x70000
-    msr sp_el0, x0
     bl core_timer_enable
     eret
 
@@ -183,4 +185,26 @@ core_timer_enable:
     str w0, [x1] // unmask timer interrupt
     mov x0, 0x340
     msr spsr_el1, x0
+    ret
+
+.global switch_to
+switch_to:
+    stp x19, x20, [x0, 16 * 0]
+    stp x21, x22, [x0, 16 * 1]
+    stp x23, x24, [x0, 16 * 2]
+    stp x25, x26, [x0, 16 * 3]
+    stp x27, x28, [x0, 16 * 4]
+    stp fp, lr, [x0, 16 * 5]
+    mov x9, sp
+    str x9, [x0, 16 * 6]
+
+    ldp x19, x20, [x1, 16 * 0]
+    ldp x21, x22, [x1, 16 * 1]
+    ldp x23, x24, [x1, 16 * 2]
+    ldp x25, x26, [x1, 16 * 3]
+    ldp x27, x28, [x1, 16 * 4]
+    ldp fp, lr, [x1, 16 * 5]
+    ldr x9, [x1, 16 * 6]
+    mov sp,  x9
+    msr tpidr_el1, x1
     ret

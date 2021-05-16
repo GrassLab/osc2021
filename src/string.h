@@ -7,6 +7,7 @@ void strip_newline (char *buffer);
 int strcmp (char *str1, char *str2);
 int strlen (char *str);
 void strncopy (char *d, char *r, unsigned int len);
+void memcpy (u8 *d, u8 *s, unsigned int size);
 unsigned long htoui (char *b);
 unsigned long atoui (char *b);
 long atoi (char *b);

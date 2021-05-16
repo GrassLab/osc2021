@@ -118,3 +118,9 @@ long strfind (char *buffer, char *token) {
 
     return ptr;
 }
+
+void memcpy (u8 *dest, u8 *source, unsigned int size) {
+    for (int i = 0; i < size; i++) {
+        dest[i] = source[i];
+    }
+}

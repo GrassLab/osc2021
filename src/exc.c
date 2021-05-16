@@ -2,6 +2,7 @@
 #include "io.h"
 #include "utility.h"
 #include "mmio.h"
+#include "sched.h"
 
 void print_el1_exc () {
     kprintf("spsr_el1: %x\n", get_spsr_el1());
@@ -20,8 +21,9 @@ void irq_uart_handler () {
 }
 
 void irq_timer1_handler () {
-    kprint_time();
-    set_timer1(2);
+    //kprint_time();
+    set_timer1(0.1);
+    schedule();
 }
 
 void sp_elx_irq_handler () {
@@ -52,8 +54,8 @@ void sp_elx_irq_handler () {
     while (1); /* trap */
 }
 
-int sys_call_handler () {
-    u64 sys_num = get_x19();
+int sys_call_handler (struct trap_frame *tf) {
+    u64 sys_num = tf->x0;
     switch (sys_num) {
         /* show specific register */
         case 400:
@@ -61,15 +63,45 @@ int sys_call_handler () {
             kprintf("elr_el1: %x\n", get_elr_el1());
             kprintf("esr_el1: %x\n\n", get_esr_el1());
             break;
+
+        /* yield */
+        case 401:
+            schedule();
+            return 0;
+
+        /* create thread */
+        case 402:
+            create_thread(tf, (void *)(tf->x1));
+            return 0;
+        /* read */
+        case 0:
+            // TODO: add read fucntion
+            return 0;
+
+        /* write */
+        case 1:
+            kprintf("%s", (char *)(tf->x1));
+            return 0;
+
+        /* sleep */
+        case 35:
+        {
+            schedule_wait(tf->x1);
+            return 0;
+        }
+
+        /* get pid */
+        case 39:
+            _get_pid(tf);
+            return 0;
+        /* fork */
+        case 57:
+            fork_thread(tf);
+            return 0;
         /* exit */
         case 60:
             return 60;
-        /* read */
-        case 0:
-        /* write */
-        case 1:
-        /* open */
-        case 2:
+
         default:
             kprintf("Unsupported syscall: %d\n", sys_num);
     }
@@ -121,6 +153,9 @@ void aarch64_irq_handler () {
 }
 
 void exc_error (int error) {
+    kprintf("spsr_el1: %x\n", get_spsr_el1());
+    kprintf("elr_el1: %x\n", get_elr_el1());
+    kprintf("esr_el1: %x\n\n", get_esr_el1());
     switch (error) {
         case 0:
             kprintf("Unsupport exception: SP_EL0 sync\n");
@@ -189,7 +224,6 @@ void enable_core_timer () {
     set_cntp_ctl_el0(1); /* enable */
     u64 freq = time_freq();
     set_cntp_tval_el0(freq);
-    //*mmio(CORE0_TIMER_IRQ_CTRL) = 2;
     set_spsr_el1(0x340);
 }
 

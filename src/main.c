@@ -11,6 +11,35 @@
 #include "mm.h"
 #include "data_type.h"
 #include "utility.h"
+#include "sched.h"
+#include "lib.h"
+
+void foo () {
+    for (int i = 0; i < 10; i++) {
+        kprintf("thread id: %d %d\n", get_pid(), i);
+        sleep(1);
+    }
+    while(1);
+}
+
+void initd () {
+    for (int i = 0; i < 10; i++) {
+        thread(foo);
+    }
+
+    while(1);
+}
+
+void create_initd () {
+    struct task_struct *t = task_queue_pop_head(&unready_queue);
+    t->kstack_top = bs_malloc(STACK_SIZE);
+    t->stack_top = bs_malloc(STACK_SIZE);
+    current_task = t;
+    set_sp((u64)(t->kstack_top + STACK_SIZE));
+    set_sp_el0((u64)(t->stack_top + STACK_SIZE));
+    from_el1_to_el0(initd);
+}
+
 #define BUFFER_SIZE 64
 
 void parse_command (char *b) {
@@ -81,7 +110,9 @@ void parse_command (char *b) {
     }
     /* TODO: delete */
     else if (!strcmp(b, "test")) {
-        cpio_load_file_interface("./user-process");
+        //init_sched();
+        //cpio_load_file_interface("./user-process");
+        create_initd();
     }
     else if (!strcmp(b, "malloc_bins")) {
         show_malloc_bins();
@@ -124,6 +155,8 @@ int main () {
     dynamic_allocator_init();
 
     char buffer[BUFFER_SIZE];
+
+    init_sched();
 
     kprintf("\n");
     kprintf("+========================+\n");

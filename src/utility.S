@@ -65,6 +65,36 @@ get_x30:
     mov x0, x30
     ret
 
+.global get_fp
+get_fp:
+    mov x0, fp
+    ret
+
+.global get_sp
+get_sp:
+    mov x0, sp
+    ret
+
+.global get_lr
+get_lr:
+    mov x0, lr
+    ret
+
+.global get_new_task_entry
+get_new_task_entry:
+    ldr x0, =new_task_entry
+    ret
+
+.global set_sp
+set_sp:
+    mov sp, x0
+    ret
+
+.global set_sp_el0
+set_sp_el0:
+    msr sp_el0, x0
+    ret
+
 /*
  * PSTATE.{D, A, I, F}
  * D: Debug exception mask bit
