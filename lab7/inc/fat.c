@@ -302,13 +302,17 @@ void parseFAT32(){
 	readblock(metadata.partition_beg,buf);
 
 	if(buf[510]!=0x55||buf[511]!=0xaa)ERROR("invalid FAT signature!");
-	unsigned int sector_size=*(unsigned short*)(buf+11);
+	//unsigned int sector_size=*(unsigned short*)(buf+11);//need aligned
+	unsigned int sector_size=buf[12];
+	sector_size=(sector_size<<8)+buf[11];
 	if(sector_size!=512)ERROR("invalid sector_size!");
 	unsigned int cluster_size=*(unsigned char*)(buf+13);
 	if(cluster_size!=1)ERROR("invalid cluster_size!");
 	unsigned int table_beg=*(unsigned short*)(buf+14);
 	unsigned int table_num=buf[16];
-	unsigned int sector_num=*(unsigned short*)(buf+19);
+	//unsigned int sector_num=*(unsigned short*)(buf+19);//need aligned
+	unsigned int sector_num=buf[20];
+	sector_num=(sector_num<<8)+buf[19];
 	if(sector_num==0)sector_num=*(unsigned int*)(buf+32);
 	unsigned int table_size=*(unsigned short*)(buf+22);//sectors/table
 	if(table_size!=0)ERROR("not FAT32!");
@@ -331,9 +335,14 @@ void parseMBR(){
 	if(buf[510]!=0x55||buf[511]!=0xaa)ERROR("invalid MBR signature!");
 	if(buf[446]!=0x80)ERROR("invalid partition status!");
 	unsigned char* partition_entry=buf+446;
-	unsigned int beg=*(unsigned int*)(partition_entry+8);
-	unsigned int num=*(unsigned int*)(partition_entry+12);
-	//uart_printf("%d %d\n",start,size);
+	//unsigned int beg=*(unsigned int*)(partition_entry+8);//need aligned
+	//unsigned int num=*(unsigned int*)(partition_entry+12);//need aligned
+	for(int i=0;i<4;++i){
+		buf[i]=partition_entry[8+i];
+		buf[4+i]=partition_entry[12+i];
+	}
+	unsigned int beg=*(unsigned int*)(buf);
+	unsigned int num=*(unsigned int*)(buf+4);
 	metadata.partition_beg=beg;
 
 	ffree((unsigned long)buf);
