@@ -1,4 +1,4 @@
-# OSDI 2020 - LAB 05 Thread and User Process
+# OSDI 2020 - LAB 06 Virtual File System
 
 ## Author
 
@@ -7,28 +7,30 @@
 | 0856167    | Yunyung        | 許振揚| yungyung7654321@gmail.com  |
 
 ### Introduction
-Multitasking is the most important feature of an operating system. In this lab, we’ll learn how to create threads and how to switch between different threads to achieve multitasking. Moreover, we’ll learn how a user program becomes a user process and accesses services provided by the kernel through system calls.
+A file system manages data in storage mediums. Each file system has a specific way to store and retrieve the data. Hence, a virtual file system(VFS) is common in general-purpose OS to provide a unified interface for all file systems.
+
+In this lab, we’ll implement a memory-based file system(tmpfs) to get familiar with the concept of VFS. In the next lab, you’ll implement the FAT32 file system to access files from an SD card. It’s recommended to do both together.
 
 ### Goals of this lab
-- Understand how to create threads and user processes.
+- Understand how to set up a root file system.
 
-- Implement create theads and user processes.
+- Implement temporary file system (tmpfs) as root file system.
 
-- Implement syscall such as fork(), exec(), and so on.
+- Understand how to create, open, close, read, and write files.
 
-- Understand how to implement scheduler and context switch.
+- Implement VFS interface, including create, open, close, read, write, mkdir, chdir, ls <directory>, mount/unmount interface.
 
-- Implement round robin scheduler and context switch mechanism.
+- Implement multi-level VFS and absoute/relative pathname lookup.
 
-- Understand what’s preemption.
+- Understand how a user process access files through the virtual file system.
 
-- Implement user and kernel preemption
+- Implement a user process to access files through VFS.
 
-- Understand how to implement the waiting mechanism.
+- Understand how to mount a file system and look up a file across file systems.
 
-- Implement the waiting machanism 
+- Implement mount/unmount a file system and look up a file across file systems.
 
-- Understand what's POSIX signals and mechanism.
+- Understand how to design the procfs.
 
 ## Directory structure
 ```
@@ -57,7 +59,10 @@ Multitasking is the most important feature of an operating system. In this lab, 
 │   ├── fork.h
 │   ├── sched.h
 │   ├── sys.h
-│   └── wait.h
+│   ├── wait.h
+│   ├── vfs.h
+│   ├── fs.h
+│   └── tmpfs.h
 │
 ├── src                 # source files
 │   ├── command.c       # source file to process command
@@ -81,12 +86,16 @@ Multitasking is the most important feature of an operating system. In this lab, 
 │   ├── sys.c
 │   ├── wait.c 
 │   ├── sched.S
-│   └── sched.c  
+│   ├── sched.c
+│   ├── vfs.c 
+│   ├── fs.c
+│   └── tmpfs.c
 │ 
-├── rootfs              # file will be made as cpio archive / user program
+├── rootfs              # files and user programs will be made as cpio archive
 │   └── ...             # any file 
 │
-├── initramfs.cpio      # cpio archive of rootfs folder 
+├── .gitignore
+├── initramfs.cpio      # cpio archive contain files and user programs
 ├── LICENSE
 ├── link.ld             # linker script
 ├── Makefile 
@@ -117,6 +126,11 @@ Multitasking is the most important feature of an operating system. In this lab, 
 make
 ```
 
+## How to clean the build
+```
+make clean
+```
+
 ## Run on QEMU
 ```
 make run
@@ -132,6 +146,10 @@ make run_cpio
 ```
 $ sudo screen /dev/ttyUSB0 115200
 ```
+- miniUART with printed message saved to Logfile
+```
+$ sudo screen -L -Logfile log.txt /dev/ttyUSB0 115200
+```
 
 ## How to transmit actual kernel through UART
 - test by python3 srcipt
@@ -142,6 +160,6 @@ $ sudo screen /dev/ttyUSB0 115200
 - The python3 code is depend on pyserial module which can install py 
     ```
     // sudo is required
-    sudo pip3 install pyserial
+    $ sudo pip3 install pyserial
     ```
      
