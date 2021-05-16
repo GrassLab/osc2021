@@ -1,5 +1,4 @@
 #include "tmpfs.h"
-#include "allocator.h"
 #include "uart.h"
 #include "cpio.h"
 #include "error.h"
@@ -22,7 +21,7 @@ void cacheInit(Content* content){
 	if(content->capacity==0){
 		content->capacity=2;
 	}
-	content->cache=(void*)dalloc(content->capacity);
+	content->cache=(void*)alloc_page(content->capacity);
 	char* src=(char*)(content->data);
 	char* dst=(char*)(content->cache);
 	for(int i=0;i<content->size;++i){
@@ -38,11 +37,11 @@ int tmpfs_Write(file* f,const void* buf,unsigned long len){
 		char* cache=(char*)(content->cache);
 
 		if(f->f_pos+len > content->capacity){
-			char* new_cache=(char*)dalloc((f->f_pos+len)*2);
+			char* new_cache=(char*)alloc_page((f->f_pos+len)*2);
 			for(int i=0;i<content->size;++i)new_cache[i]=cache[i];
 			content->capacity=(f->f_pos+len)*2;
 			content->cache=new_cache;
-			dfree((unsigned long)cache);
+			free_page((unsigned long)cache, (content->capacity)/2);
 			cache=new_cache;
 		}
 
@@ -137,14 +136,14 @@ int tmpfs_Creat(vnode* dir_node,vnode** target,const char* component_name){
 		//TODO: move to larger array
 	}
 	
-	vnode* new_node=(vnode*)dalloc(sizeof(vnode));
+	vnode* new_node=(vnode*)alloc_page(sizeof(vnode));
 	new_node->mnt=dir_node->mnt;
 	new_node->v_ops=dir_node->v_ops;
 	new_node->f_ops=dir_node->f_ops;
-	new_node->internal=(Content*)dalloc(sizeof(Content));
+	new_node->internal=(Content*)alloc_page(sizeof(Content));
 
 	content=(Content*)new_node->internal;
-	content->name=(char*)dalloc(PREFIX_LEN);
+	content->name=(char*)alloc_page(PREFIX_LEN);
 	slashIgnore(component_name,content->name,PREFIX_LEN);
 	content->type=FILE_TYPE;
 	content->capacity=0;
@@ -182,20 +181,20 @@ int tmpfs_Lookup(vnode* dir_node,vnode** target,const char* component_name){
 
 int tmpfs_nodeInit(mount* mnt,vnode* root){
 	root->mnt=mnt;
-	root->v_ops=(vnode_operations*)dalloc(sizeof(vnode_operations));
+	root->v_ops=(vnode_operations*)alloc_page(sizeof(vnode_operations));
 	root->v_ops->lookup=tmpfs_Lookup;
 	root->v_ops->create=tmpfs_Creat;
-	root->f_ops=(file_operations*)dalloc(sizeof(file_operations));
+	root->f_ops=(file_operations*)alloc_page(sizeof(file_operations));
 	root->f_ops->write=tmpfs_Write;
 	root->f_ops->read=tmpfs_Read;
-	root->internal=(void*)dalloc(sizeof(Content));
+	root->internal=(void*)alloc_page(sizeof(Content));
 
 	Content* content=(Content*)(root->internal);
 	content->name=0;
 	content->type=DIR_TYPE;
 	content->capacity=DIR_CAP;
 	content->size=0;
-	content->data=(void*)dalloc(DIR_CAP*8);
+	content->data=(void*)alloc_page(DIR_CAP*8);
 
 	void* f=fbaseGet();
 	unsigned long size;
@@ -231,7 +230,7 @@ int tmpfs_nodeInit(mount* mnt,vnode* root){
 					content->type=DIR_TYPE;
 					content->capacity=DIR_CAP;
 					content->size=0;
-					content->data=(void*)dalloc(DIR_CAP*8);
+					content->data=(void*)alloc_page(DIR_CAP*8);
 				}else if(fmode==2){
 					content->type=FILE_TYPE;
 					content->capacity=size;
@@ -256,7 +255,7 @@ int tmpfs_nodeInit(mount* mnt,vnode* root){
 }
 
 int tmpfs_Setup(filesystem* fs,mount* mnt){
-	char* name=(char*)dalloc(6);
+	char* name=(char*)alloc_page(6);
 	//char tmp[]="tmpfs";//raspi bug!!
 	name[0]='t';
 	name[1]='m';
@@ -266,7 +265,7 @@ int tmpfs_Setup(filesystem* fs,mount* mnt){
 	name[5]=0;
 	fs->name=name;
 	fs->setup_mount=tmpfs_Setup;
-	mnt->root=(vnode*)dalloc(sizeof(vnode));
+	mnt->root=(vnode*)alloc_page(sizeof(vnode));
 	mnt->fs=fs;
 
 	tmpfs_nodeInit(mnt,mnt->root);

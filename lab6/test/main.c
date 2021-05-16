@@ -127,8 +127,8 @@ void terminal(){
 
 void main() {
     print_welcome(1);
-    //alloc_page_init(0x10000000, 0x20000000);
-    allocator_init();
+    alloc_page_init(0x10000000, 0x20000000);
+    //allocator_init();
     file_operations fops;
 	tmpfs_fopsGet(&fops);
 	vfs_init(tmpfs_Setup,fops.write,fops.read);

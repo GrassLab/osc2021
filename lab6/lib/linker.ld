@@ -3,7 +3,7 @@ __stack_size    = 0x00002000;
 MEMORY
 {
     code_ram   (rwx) : ORIGIN = 0x00080000, LENGTH = 0x10000
-    data_ram   (rwx) : ORIGIN = 0x00090000, LENGTH = __stack_top - 0x00090000
+    data_ram   (rwx) : ORIGIN = 0x00090000, LENGTH = __stack_top - 0x00086000
 }
 SECTIONS
 {       

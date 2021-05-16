@@ -1,5 +1,4 @@
 #include "vfs.h"
-#include "allocator.h"
 #include "error.h"
 #include "uart.h"
 
@@ -49,10 +48,10 @@ file* vfs_open(const char* pathname,int flags){
 		}
 	}
 
-	file* ret=(file*)dalloc(sizeof(file));
+	file* ret=(file*)alloc_page(sizeof(file));
 	ret->node=child;
 	ret->f_pos=0;
-	ret->f_ops=(file_operations*)dalloc(sizeof(file_operations));
+	ret->f_ops=(file_operations*)alloc_page(sizeof(file_operations));
 	ret->f_ops->write=my_write_f;
 	ret->f_ops->read=my_read_f;
 	ret->flags=flags;
@@ -60,8 +59,8 @@ file* vfs_open(const char* pathname,int flags){
 }
 
 int vfs_close(file* f){
-	dfree((unsigned long)f->f_ops);
-	dfree((unsigned long)f);
+	free_page((unsigned long)f->f_ops, sizeof(file_operations));
+	free_page((unsigned long)f, sizeof(file));
 	return 0;
 }
 

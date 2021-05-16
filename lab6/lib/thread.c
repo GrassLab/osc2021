@@ -1,6 +1,5 @@
 #include "thread.h"
 #include "uart.h"
-#include "allocator.h"
 #include "cpio.h"
 #include "vfs.h"
 #include "error.h"
@@ -50,7 +49,7 @@ void threadSchedule(){
 }
 
 Task* threadCreate(void* func){
-	Task* new_task=(Task*)falloc(TASKSIZE);
+	Task* new_task=(Task*)alloc_page(TASKSIZE);
 	if((unsigned long)new_task%TASKSIZE){//aligned
 		uart_printf("new_task isn't aligned!!\n");
 		while(1){}
@@ -87,7 +86,7 @@ void zombiesKill(){//called by idle()
 					vfs_close(tar->next->fd_table[i]);
 				}
 			}
-			ffree((unsigned long)(tar->next));
+			free_page((unsigned long)(tar->next), sizeof(Task));
 			tar->next=tmp;
 		}
 
