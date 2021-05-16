@@ -1,5 +1,5 @@
-#include "inc/uart.h"
-#include "inc/thread.h"
+#include "uart.h"
+#include "thread.h"
 
 void dumpState(){
 	unsigned long esr,elr,spsr;

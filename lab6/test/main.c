@@ -113,6 +113,9 @@ void terminal(){
 			}
 			vfs_close(f);
 		}
+        else if(strcmp(input,"lab6-2")==0){
+			threadTest();
+		}
         else {
             //if(!ls(input,1))
             uart_puts("Error: ");
@@ -124,7 +127,7 @@ void terminal(){
 
 void main() {
     print_welcome(1);
-    alloc_page_init(0x10000000, 0x20000000);
+    //alloc_page_init(0x10000000, 0x20000000);
     allocator_init();
     file_operations fops;
 	tmpfs_fopsGet(&fops);
