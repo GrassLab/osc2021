@@ -9,4 +9,12 @@ static inline void enable_interrupt() {
     asm("msr DAIFClr, 0xf");
 }
 
+static inline void __wfi() {
+    asm("wfi");
+}
+
+static inline void idle() {
+    while(1) __wfi();
+}
+
 #endif

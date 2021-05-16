@@ -1,5 +1,5 @@
-#include "stdlib.h"
-#include "syscall.h"
+#include <stdlib.h>
+#include <syscall.h>
 
 int getpid() {
     int ret;

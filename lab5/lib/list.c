@@ -1,5 +1,5 @@
-#include "uart.h"
-#include "list.h"
+#include <uart.h>
+#include <list.h>
 
 void list_init(struct list_head *node) {
     node->next = node;

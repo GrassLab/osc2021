@@ -1,8 +1,8 @@
-#include "dtb.h"
-#include "string.h"
-#include "mm.h"
-#include "list.h"
-#include "uart.h"
+#include <dtb.h>
+#include <string.h>
+#include <mm.h>
+#include <list.h>
+#include <uart.h>
 
 #define FDT_BEGIN_NODE 0x00000001
 #define FDT_END_NODE 0x00000002

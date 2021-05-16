@@ -1,8 +1,8 @@
 #ifndef __SCHED_H_
 #define __SCHED_H_
 #include <list.h>
-#include "sysreg.h"
-#include "current.h"
+#include <sysreg.h>
+#include <current.h>
 
 #define KSTACK_SIZE 0x2000
 #define USTACK_SIZE 0x2000

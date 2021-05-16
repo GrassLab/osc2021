@@ -1,11 +1,11 @@
-#include "printf.h"
-#include "sched.h"
-#include "mm.h"
-#include "sysreg.h"
-#include "syscall.h"
-#include "uart.h"
-#include "reg.h"
-#include "timer.h"
+#include <printf.h>
+#include <sched.h>
+#include <mm.h>
+#include <sysreg.h>
+#include <syscall.h>
+#include <uart.h>
+#include <peripheral.h>
+#include <timer.h>
 #include <current.h>
 #include <interrupt.h>
 #include <preempt.h>
@@ -13,11 +13,16 @@
 void svc_handler(struct pt_regs *regs);
 void segv_handler();
 
+void uart_handler() {
+    puts("UART interrupt!!");
+}
+
 void irq_handler(struct pt_regs *regs) {
     if (*CORE0_TIMER_IRQ_SRC & 2) {
         core_timer_handler();
 
     } else if (*AUXIRQ & 1) {
+        uart_handler();
         /* uart handler */
     }
 

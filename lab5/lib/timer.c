@@ -1,12 +1,12 @@
 #include <stdint.h>
-#include "sysreg.h"
-#include "reg.h"
-#include "printf.h"
-#include "current.h"
-#include "sched.h"
-#include "list.h"
-#include "timer.h"
-#include "mm.h"
+#include <sysreg.h>
+#include <peripheral.h>
+#include <printf.h>
+#include <current.h>
+#include <sched.h>
+#include <list.h>
+#include <timer.h>
+#include <mm.h>
 
 size_t jiffies;
 struct ktimer *timer_list;

@@ -1,5 +1,5 @@
-#ifndef __REG_H_
-#define __REG_H_
+#ifndef __PERIPHERAL_H_
+#define __PERIPHERAL_H_
 
 #include <stdint.h>
 #define __REG_TYPE volatile uint32_t

@@ -2,7 +2,7 @@
 #define __UTILS_H_
 
 #include <stddef.h>
-#include "mm.h"
+#include <mm.h>
 
 int strncmp(const char *a, const char *b, size_t n) {
   size_t i = 0;

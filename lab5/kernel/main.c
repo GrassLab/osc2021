@@ -1,8 +1,8 @@
-#include "printf.h"
-#include "timer.h"
-#include "sched.h"
-#include "dtb.h"
-#include "fs/cpio.h"
+#include <printf.h>
+#include <timer.h>
+#include <sched.h>
+#include <dtb.h>
+#include <fs/cpio.h>
 #include <interrupt.h>
 #include <exec.h>
 #include <asm/constant.h>
@@ -105,8 +105,6 @@ void shell() {
     }
 }
 
-
-
 void enable_fpu() {
     asm(
         "mrs x0, cpacr_el1\n\t"
@@ -115,16 +113,13 @@ void enable_fpu() {
     :::"x0");
 }
 
-void wtf() {
-    while(1);
-}
-
 void main(void *_dtb_ptr) {
     BUILD_BUG_ON(sizeof(struct pt_regs) != PT_REGS_SIZE);
 
     dtb_node *dtb = build_device_tree(_dtb_ptr);
     init_cpio_storage(dtb);
     set_init_thread();
+    mini_uart_init();
     /* enable for EL0 */
     enable_fpu();
 
@@ -133,5 +128,5 @@ void main(void *_dtb_ptr) {
     enable_core_timer();
     enable_interrupt();
 
-    while(1);
+    idle();
 }

@@ -2,7 +2,7 @@
 #define __DTB_H_
 #include <stdint.h>
 #include <stddef.h>
-#include "list.h"
+#include <list.h>
 
 typedef struct dtb_prop {
   char *name;

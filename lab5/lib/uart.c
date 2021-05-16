@@ -1,4 +1,5 @@
-#include "reg.h"
+#include <peripheral.h>
+#include <interrupt.h>
 
 #define DATA_READY_BIT (1 << 0)
 #define TRANSMITTER_EMPTY_BIT (1 << 5)
@@ -30,22 +31,18 @@ void mini_uart_init() {
     *AUX_MU_CNTL_REG = 3;
 
     /* enable transmit/receive interrupt */
-    *AUX_MU_IER_REG = RECEIVE_INT_ENABLE_BIT | TRANSMIT_INT_ENABLE_BIT;
+    *AUX_MU_IER_REG = RECEIVE_INT_ENABLE_BIT;
     *INPUT_ENABLE_REGISTER_1 = AUX_INT_ENABLE_BIT;
 }
 
-static void __wfe() {
-    //asm("wfe");
-}
-
 void _putchar(char c) {
-    while (!(*AUX_MU_LSR_REG & TRANSMITTER_EMPTY_BIT));
+    while (!(*AUX_MU_LSR_REG & TRANSMITTER_EMPTY_BIT)) __wfi();
 
     *(char *)AUX_MU_IO_REG = c;
 }
 
 char _getchar() {
-    while (!(*AUX_MU_LSR_REG & DATA_READY_BIT));
+    while (!(*AUX_MU_LSR_REG & DATA_READY_BIT)) __wfi();
 
     return *AUX_MU_IO_REG & 0xff;
 }
@@ -53,7 +50,7 @@ char _getchar() {
 /* TODO: wfe not work ? */
 void read_uart(char *buffer, int len) {
     for (int i = 0; i < len; i++) {
-        while (!(*AUX_MU_LSR_REG & DATA_READY_BIT)) __wfe();
+        while (!(*AUX_MU_LSR_REG & DATA_READY_BIT)) __wfi();
         buffer[i] = *AUX_MU_IO_REG & 0xff;
     }
 }
@@ -62,7 +59,7 @@ int readline_uart(char *buffer) {
     char c = '\0';
     int count = 0;
     while (c != NEWLINE) {
-        while (!(*AUX_MU_LSR_REG & DATA_READY_BIT)) __wfe();
+        while (!(*AUX_MU_LSR_REG & DATA_READY_BIT)) __wfi();
         c = *AUX_MU_IO_REG & 0xff;
         buffer[count++] = c;
     }
@@ -73,7 +70,7 @@ int readline_uart(char *buffer) {
 
 void write_uart(const char *buffer, int count) {
     for (int i = 0; i < count; i++) {
-        while (!(*AUX_MU_LSR_REG & TRANSMITTER_EMPTY_BIT)) __wfe();
+        while (!(*AUX_MU_LSR_REG & TRANSMITTER_EMPTY_BIT)) __wfi();
         *(char *)AUX_MU_IO_REG = buffer[i];
     }
 }
@@ -87,7 +84,7 @@ int interact_readline_uart(char *buffer) {
     char c = '\0';
     int count = 0;
     while (c != NEWLINE) {
-        while (!(*AUX_MU_LSR_REG & DATA_READY_BIT)) __wfe();
+        while (!(*AUX_MU_LSR_REG & DATA_READY_BIT)) __wfi();
         c = *AUX_MU_IO_REG & 0xff;
         buffer[count++] = c;
         if (c != NEWLINE) {
@@ -104,7 +101,7 @@ int interact_readline_uart(char *buffer) {
 void print_uart(const char *buffer) {
     int i = 0;
     while (buffer[i] != '\0') {
-        while (!(*AUX_MU_LSR_REG & TRANSMITTER_EMPTY_BIT)) __wfe();
+        while (!(*AUX_MU_LSR_REG & TRANSMITTER_EMPTY_BIT)) __wfi();
         *(char *)AUX_MU_IO_REG = buffer[i];
         i++;
     }

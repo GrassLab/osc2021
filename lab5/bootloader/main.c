@@ -1,6 +1,6 @@
-#include "printf.h"
-#include "uart.h"
-#include "reset.h"
+#include <printf.h>
+#include <uart.h>
+#include <reset.h>
 
 extern char _kernel[];
 extern char *_dtb;

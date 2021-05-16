@@ -33,15 +33,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "printf.h"
-#include "uart.h"
+#include <printf.h>
+#include <uart.h>
 
 
 // define this globally (e.g. gcc -DPRINTF_INCLUDE_CONFIG_H ...) to include the
 // printf_config.h header file
 // default: undefined
 #ifdef PRINTF_INCLUDE_CONFIG_H
-#include "printf_config.h"
+#include <printf_config.h>
 #endif
 
 // #define PRINTF_SUPPORT_FLOAT

@@ -1,9 +1,9 @@
-#include "fs.h"
-#include "stat.h"
-#include "sched.h"
-#include "mm.h"
-#include "string.h"
-#include "fs/cpio.h"
+#include <fs.h>
+#include <stat.h>
+#include <sched.h>
+#include <mm.h>
+#include <string.h>
+#include <fs/cpio.h>
 #include <context_switch.h>
 #include <elf.h>
 #include <printf.h>

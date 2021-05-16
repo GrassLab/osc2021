@@ -1,10 +1,10 @@
 #include <stdint.h>
 #include <stddef.h>
-#include "printf.h"
-#include "string.h"
-#include "fs/cpio.h"
-#include "mm.h"
-#include "dtb.h"
+#include <printf.h>
+#include <string.h>
+#include <fs/cpio.h>
+#include <mm.h>
+#include <dtb.h>
 
 static const char *cpio_buf, *cpio_end;
 

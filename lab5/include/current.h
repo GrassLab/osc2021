@@ -1,7 +1,7 @@
 #ifndef __CURRENT_H_
 #define __CURRENT_H_
 
-#include "sched.h"
+#include <sched.h>
 
 /* in order for linker to work, we need to make it static,
  * since static inline functions are always resolved within the translation unit */
