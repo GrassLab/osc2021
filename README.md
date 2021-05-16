@@ -9,7 +9,7 @@
 ### Introduction
 A file system manages data in storage mediums. Each file system has a specific way to store and retrieve the data. Hence, a virtual file system(VFS) is common in general-purpose OS to provide a unified interface for all file systems.
 
-In this lab, we’ll implement a memory-based file system(tmpfs) to get familiar with the concept of VFS. In the next lab, you’ll implement the FAT32 file system to access files from an SD card. It’s recommended to do both together.
+In this lab, we’ll implement a memory-based file system(tmpfs) to get familiar with the concept of VFS. In the next lab, we’ll implement the FAT32 file system to access files from an SD card. It’s recommended to do both together.
 
 ### Goals of this lab
 - Understand how to set up a root file system.
