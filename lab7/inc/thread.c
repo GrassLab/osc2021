@@ -234,6 +234,7 @@ void loadFSApp(char* path,unsigned long a_addr,char** argv,unsigned long* task_a
 
 	*task_a_addr=a_addr;
 	*task_a_size=vfs_read(f,(void*)a_addr,0x10000);
+	vfs_close(f);
 	if((*task_a_size)>=0x10000)ERROR("app is too large!");
 
 	uart_puts("loading...\n");
