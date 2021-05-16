@@ -25,16 +25,18 @@ void add_timer(struct ktimer *timer) {
     timer_list = timer;
 }
 
-/* argument use ms as unit */
-void task_sleep(size_t msec) {
-    disable_interrupt();
-
+void timeout(void (*fn)(size_t), size_t arg, size_t msec) {
     struct ktimer *timer = kmalloc(sizeof(struct ktimer));
-    timer->fn = (typeof(timer->fn))&restart_task;
-    timer->arg = (size_t)current;
+    timer->fn = fn;
+    timer->arg = arg;
     timer->timeout_tick = get_jiffies() + MS(msec);
     timer->need_gc = 0;
     add_timer(timer);
+}
+
+void task_sleep(size_t msec) {
+    disable_interrupt();
+    timeout((timeout_cb)restart_task, (size_t)current, msec);
     pause_task(current);
 
     schedule();

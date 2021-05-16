@@ -13,12 +13,13 @@
 #define TICK_PER_INT (CPU_HZ / TIMER_HZ)
 #define MS(n) (n / MSEC_PER_TICK)
 
+typedef void (*timeout_cb)(size_t);
 /* TODO: find a way to impl `stop_timer()`
  * we may need to know all the reference to timer */
 struct ktimer {
     struct ktimer *next;
 	unsigned long timeout_tick;
-    void (*fn)(size_t);
+    timeout_cb fn;
 	size_t arg;
     char need_gc;
 };
@@ -28,6 +29,7 @@ void core_timer_handler();
 size_t get_jiffies();
 void add_timer(struct ktimer *);
 void run_timers();
+void timeout(void (*fn)(size_t), size_t arg, size_t msec);
 void task_sleep(size_t msec);
 
 #endif

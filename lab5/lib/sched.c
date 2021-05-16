@@ -31,11 +31,15 @@ pid_t get_next_pid() {
 }
 
 inline void del_task(struct task_struct *ts) {
+    disable_preempt();
     unlink(&ts->list);
+    enable_preempt();
 }
 
 inline void add_task(struct task_struct *ts) {
+    disable_preempt();
     insert_tail(&run_queue, &ts->list);
+    enable_preempt();
 }
 
 void pause_task(struct task_struct *ts) {
@@ -119,8 +123,7 @@ void set_init_thread() {
     add_task(cur);
 }
 
-/* calc & select next task to run
- * interrupt should be disabled before entering schedule() */
+/* schedule() will enable interrupt after context switching */
 void schedule() {
     if (!current->need_resched || current->preempt_count > 0) {
         return;
