@@ -48,5 +48,5 @@ file* vfs_open(const char* pathname, int flags);
 int vfs_close(file* f);
 int vfs_write(file* f,const void* buf,unsigned long len);
 int vfs_read(file* f,void* buf,unsigned long len);
-void vfs_init(void* setup_mount_f);
 void vfs_sync(file* f);
+void vfs_init(void* setup_mount_f);

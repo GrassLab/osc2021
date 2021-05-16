@@ -141,15 +141,7 @@ void shell(){
 			unsigned long ret=uart_getX(1);
 			dfree(ret);
 		}else if(strcmp(buffer,"loadapp")==0){
-			char path[100];
-			unsigned long a_addr,a_size;
-			uart_puts("APP path: ");
-			uart_gets(path,100,1);
-			uart_puts("Please enter app load address (Hex): ");
-			a_addr=uart_getX(1);
-			uart_puts("Please enter app size (Dec): ");
-			a_size=uart_getU(1);
-			loadApp(path,a_addr,a_size);
+			threadTest();
 		}else if(strcmp(buffer,"lab5-1")==0){
 			threadTest1();
 		}else if(strcmp(buffer,"lab5-2")==0){
@@ -194,8 +186,6 @@ void shell(){
 				uart_printf("...%s\n",buf);
 			}
 			vfs_close(f);
-		}else if(strcmp(buffer,"lab6-2")==0){
-			threadTest();
 		}else{
 			uart_puts("Error: No such command \"");
 			uart_puts(buffer);
@@ -227,21 +217,7 @@ void main(){
 	allocator_init();
 	sd_init();
 
-	//TODO: fat
 	vfs_init(fat_Setup);
-	file* f=vfs_open("TEST/1.TXT",0);
-	for(int i=0;i<100;++i){
-		vfs_write(f,"123",3);
-	}
-
-	vfs_sync(f);
-
-	file* ff=vfs_open("TEST/1.TXT",0);
-	char buf[101];
-	int ret=vfs_read(ff,buf,50);
-	buf[ret]=0;
-	uart_printf("%d: [%s]\n",ret,buf);
-	//
 
 	shell();
 }

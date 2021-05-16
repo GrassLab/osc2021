@@ -28,6 +28,7 @@ typedef struct{
 }Dentry;
 
 typedef struct{
+	vnode* parent;
 	unsigned char name[13];
 	unsigned char type;//dir:1, file:0
 	unsigned int id;
@@ -39,7 +40,7 @@ typedef struct{
 
 static MetaData metadata;
 
-void parseDentry(Dentry* dentry,vnode* node,int display){
+void parseDentry(Dentry* dentry,vnode* node,vnode* parent,int display){
 	//name
 	unsigned char name[13];
 	int cnt=0;
@@ -47,11 +48,12 @@ void parseDentry(Dentry* dentry,vnode* node,int display){
 		if(dentry->name1[i]==' ')break;
 		name[cnt++]=dentry->name1[i];
 	}
-	name[cnt++]='.';
+	int flag=1;
 	for(int i=0;i<3;++i){
-		if(dentry->name2[i]==' '){
-			if(i==0)cnt--;
-			break;
+		if(dentry->name2[i]==' ')break;
+		if(flag){
+			name[cnt++]='.';
+			flag=0;
 		}
 		name[cnt++]=dentry->name2[i];
 	}
@@ -68,9 +70,15 @@ void parseDentry(Dentry* dentry,vnode* node,int display){
 	//type
 	unsigned int type=(dentry->attr&0x10)>0;
 
-	if(display)uart_printf("%s %d %d %d\n",name,id,len,type);
+	if(display)
+		uart_printf("Parent: %s, File: %s, firstSector: %d, Bytes: %d, Directory: %d\n",((Content*)(parent->internal))->name,name,id,len,type);
 
+	node->mnt=parent->mnt;
+	node->v_ops=parent->v_ops;
+	node->f_ops=parent->f_ops;
+	node->internal=(void*)dalloc(sizeof(Content));
 	Content* content=(Content*)(node->internal);
+	content->parent=parent;
 	for(int i=0;i<13;++i)content->name[i]=name[i];
 	content->type=type;
 	content->id=id;
@@ -107,9 +115,61 @@ unsigned int getChain(unsigned int id,unsigned char** buf){
 void syncFAT(file* f){
 	vnode* node=f->node;
 	Content* content=(Content*)(node->internal);
+	vnode* parent=content->parent;
 	if(content->type==1)ERROR("TODO");
 	if(content->cache==0||content->dirty==0)return;
-	ERROR("TODO");
+	content->dirty=0;
+
+	{//update table
+		int old_blks=getChainLen(content->id);
+		int cur_blks=content->len/512;
+		if(content->len%512)cur_blks++;
+		if(old_blks>cur_blks)ERROR("old_blks>cur_blks");
+		int tail=content->id;
+		while(metadata.table[tail]<0xFFFFFF8)tail=metadata.table[tail];
+		for(int i=0;old_blks<cur_blks&&i<metadata.table_size*512/4;++i){
+			if(metadata.table[i]!=0)continue;
+			metadata.table[tail]=i;
+			tail=i;
+			metadata.table[tail]=0xFFFFFF8;
+			old_blks++;
+		}
+		for(int i=0;i<metadata.table_size;++i){
+			readblock(metadata.table_beg+i,((char*)(metadata.table))+i*512);
+		}
+	}
+	{//update data
+		unsigned char* data=(unsigned char*)(content->cache);
+		int cur=content->id;
+		for(int i=0;i<content->len;i+=512){
+			writeblock(metadata.data_beg+cur,data);
+			data+=512;
+			cur=metadata.table[cur];
+		}
+	}
+	{//update parent
+		int pos=-1;
+		vnode** childs=(vnode**)(((Content*)(parent->internal))->cache);
+		int child_num=((Content*)(parent->internal))->len;
+		for(int i=0;i<child_num;++i){
+			vnode* child=childs[i];
+			Content* child_content=(Content*)(child->internal);
+			if(strcmp(content->name,child_content->name)==0){
+				pos=i;
+				break;
+			}
+		}
+		if(pos==-1)ERROR("sync a unknown file!");
+		int dirsize=512/32;
+		int cur=((Content*)(parent->internal))->id;
+		for(int i=0;i<pos/dirsize;++i)cur=metadata.table[cur];
+		char* buf=(char*)falloc(512);
+		readblock(metadata.data_beg+cur,buf);
+		Dentry* dentry=(Dentry*)(buf+(pos%dirsize)*32);
+		dentry->len=content->len;
+		writeblock(metadata.data_beg+cur,buf);
+		ffree((unsigned long)buf);
+	}
 }
 
 void initCache(Content* content){
@@ -187,11 +247,7 @@ int lookupFAT(vnode* dir_node,vnode** target,const char* component_name){
 		for(int i=0;i<len;i+=32){
 			if(buf[i]==0)break;
 			childs[cnt]=(vnode*)dalloc(sizeof(vnode));
-			childs[cnt]->mnt=0;
-			childs[cnt]->v_ops=dir_node->v_ops;
-			childs[cnt]->f_ops=dir_node->f_ops;
-			childs[cnt]->internal=(void*)dalloc(sizeof(Content));
-			parseDentry((Dentry*)(buf+i),childs[cnt],1);
+			parseDentry((Dentry*)(buf+i),childs[cnt],dir_node,1);
 			cnt++;
 		}
 		ffree((unsigned long)buf);

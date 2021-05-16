@@ -115,11 +115,6 @@ void zombiesKill(){//called by idle()
 	while(1){
 		while(tar->next&&(tar->next->status&TASKEXIT)){
 			Task* tmp=tar->next->next;
-			for(int i=0;i<FD_TABLE_SIZE;++i){
-				if(tar->next->fd_table[i]){
-					vfs_close(tar->next->fd_table[i]);
-				}
-			}
 			ffree((unsigned long)(tar->next));
 			tar->next=tmp;
 		}
@@ -189,10 +184,71 @@ void idle(){
 		zombiesKill();
 		doFork();
 		threadSchedule();
+		if(rq.beg==rq.end)break;
 	}
 }
 
 /*--------------------------------------------*/
+
+unsigned long putArgv(char** argv,unsigned long ret){
+	int cnt1=0,cnt2=0;
+	for(int i=0;;++i){
+		cnt1++;//with null
+		if(!argv[i])break;
+
+		for(int j=0;;++j){
+			cnt2++;//with null
+			if(!argv[i][j])break;
+		}
+	}
+
+	int sum=8+8+8*cnt1+cnt2;
+	ret=(ret-sum);
+	//alignment
+	ret=ret-(ret&15);
+
+	char* tmp=(char*)ret;
+	*(unsigned long*)tmp=cnt1-1;
+	tmp+=8;
+	*(unsigned long*)tmp=(unsigned long)(tmp+8);
+	tmp+=8;
+	char* buffer=tmp+8*cnt1;
+	for(int i=0;i<cnt1;++i){
+		if(i+1==cnt1){
+			*(unsigned long*)tmp=0;
+		}else{
+			*(unsigned long*)tmp=(unsigned long)buffer;
+			tmp+=8;
+			for(int j=0;;++j){
+				*buffer=argv[i][j];
+				buffer++;
+				if(!argv[i][j])break;
+			}
+		}
+	}
+	return ret;
+}
+
+void loadFSApp(char* path,unsigned long a_addr,char** argv,unsigned long* task_a_addr,unsigned long* task_a_size){
+	file* f=vfs_open(path,0);
+
+	*task_a_addr=a_addr;
+	*task_a_size=vfs_read(f,(void*)a_addr,0x10000);
+	if((*task_a_size)>=0x10000)ERROR("app is too large!");
+
+	uart_puts("loading...\n");
+	unsigned long sp_addr=putArgv(argv,a_addr);
+	asm volatile("mov x0, 0x340			\n");//enable interrupt
+	asm volatile("msr spsr_el1, x0		\n");
+	asm volatile("msr elr_el1, %0		\n"::"r"(a_addr));
+	asm volatile("msr sp_el0, %0		\n"::"r"(sp_addr));
+
+	asm volatile("mrs x3, sp_el0		\n"::);
+	asm volatile("ldr x0, [x3, 0]		\n"::);
+	asm volatile("ldr x1, [x3, 8]		\n"::);
+
+	asm volatile("eret					\n");
+}
 
 int tidGet(){
 	Task* cur;
@@ -204,13 +260,18 @@ void exec(char* path,char** argv){//TODO: reset sp
 	unsigned long a_addr;
 	uart_puts("Please enter app load address (Hex): ");
 	a_addr=uart_getX(1);
-	loadApp_with_argv(path,a_addr,argv,&(rq.beg->a_addr),&(rq.beg->a_size));
-	exit();
+	loadFSApp(path,a_addr,argv,&(rq.beg->a_addr),&(rq.beg->a_size));
+	ERROR("exec fail!");
 }
 
 void exit(){
 	Task* cur;
 	asm volatile("mrs %0, tpidr_el1\n":"=r"(cur):);
+	for(int i=0;i<FD_TABLE_SIZE;++i){
+		if(cur->fd_table[i]){
+			sys_close(i);
+		}
+	}
 	cur->status|=TASKEXIT;
 	threadSchedule();
 
@@ -244,6 +305,7 @@ int sys_close(int fd){
 	Task* cur;
 	asm volatile("mrs %0, tpidr_el1\n":"=r"(cur):);
 	if(cur->fd_table[fd]){
+		vfs_sync(cur->fd_table[fd]);
 		vfs_close(cur->fd_table[fd]);
 		cur->fd_table[fd]=0;
 	}
@@ -294,6 +356,7 @@ void threadTest(){
 	threadCreate(foo);
 
 	idle();
+	ffree((unsigned long)cur);
 }
 
 void foo1(){
