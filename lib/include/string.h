@@ -2,6 +2,7 @@
 #define STRING_H
 #include "args.h"
 
+void memset (char *dst, char n, unsigned int size);
 void mem_set (char *dst, char value, unsigned long size);
 void strip_newline (char *buffer);
 int strcmp (char *str1, char *str2);

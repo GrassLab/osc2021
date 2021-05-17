@@ -10,6 +10,7 @@ int get_pid ();
 int fork ();
 int exec(char *f, char *args[]);
 void exit (int flag);
+int wait ();
 /* release cpu resource */
 void yield ();
 void api_test();

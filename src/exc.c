@@ -130,6 +130,11 @@ int sys_call_handler (struct trap_frame *tf) {
             schedule_kill();
             return 60;
 
+        /* wait */
+        case 61:
+            release_children_thread(tf);
+            return 0;
+
         default:
             kprintf("Unsupported syscall: %d\n", sys_num);
     }

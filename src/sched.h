@@ -39,5 +39,6 @@ void schedule ();
 void schedule_wait (unsigned long time);
 void schedule_kill ();
 void _get_pid (struct trap_frame * tf);
+void release_children_thread (struct trap_frame *tf);
 
 #endif

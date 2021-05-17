@@ -54,6 +54,12 @@ exit:
     svc 0x80
     ret
 
+.global wait
+wait:
+    mov x0, #61
+    svc 0x80
+    ret
+
 .global api_test
 api_test:
     mov x0, #400

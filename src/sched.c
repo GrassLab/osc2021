@@ -225,6 +225,20 @@ void schedule_kill () {
     _schedule();
 }
 
-void _get_pid (struct trap_frame * tf) {
+void _get_pid (struct trap_frame *tf) {
     tf->x0 = current_task->id;
+}
+
+
+void release_children_thread (struct trap_frame *tf) {
+    struct task_struct *t= task_queue_pop_head(&suspend_queue);
+    if (!t) {
+        tf->x0 = 0;
+        return;
+    }
+
+    tf->x0 = t->id;
+    bs_free((void *)(t->stack_top));
+    bs_free((void *)(t->kstack_top));
+    task_queue_add_task(&unready_queue, t);
 }

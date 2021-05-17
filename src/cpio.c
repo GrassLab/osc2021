@@ -213,7 +213,7 @@ void *cpio_load_file (char *path) {
         kprintf("No such file: %s\n", path);
         return NULL;
     }
-    u64 size = (index->filesize & page_size) + page_size;
+    u64 size = (index->filesize & PAGE_SIZE) + PAGE_SIZE;
     char *addr = bs_malloc(size);
     if (!addr)
         return NULL;

@@ -35,13 +35,21 @@ void initd1 () {
         thread(foo);
     }
 
-    while(1) ;
+    while (1) {
+        int pid = wait();
+        if (pid)
+            printf("release process %d\n", pid);
+    }
 }
 
 void initd2 () {
     thread(user_test);
 
-    while(1) ;
+    while (1) {
+        int pid = wait();
+        if (pid)
+            printf("release process %d\n", pid);
+    }
 }
 
 void create_initd (void (* init_func)(void)) {
