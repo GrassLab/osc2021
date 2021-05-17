@@ -25,10 +25,10 @@ void wait(struct waitqueue *wq) {
     struct node *node = kmalloc(sizeof(struct node));
     node->ts = current;
 
-    disable_preempt();
+    size_t flags = disable_irq_save();
     node->next = wq->list;
     wq->list = node;
-    enable_preempt();
+    irq_restore(flags);
 
     pause_task(current);
 
