@@ -3,7 +3,7 @@
 #include <uart.h>
 #include <list.h>
 #include <string.h>
-#include <preempt.h>
+#include <interrupt.h>
 
 #define FRAME_BASE ((uintptr_t) 0x10000000)
 #define FRAME_END ((uintptr_t) 0x20000000)
@@ -334,11 +334,11 @@ void *kmalloc(unsigned int size) {
         return NULL;
     }
 
-    disable_preempt();
-
     if (size < CACHE_MIN_SIZE) {
         size = CACHE_MIN_SIZE;
     }
+
+    size_t flag = disable_irq_save();
 
     void *cache;
     if (align_up_exp(size) < PAGE_SIZE) {
@@ -355,7 +355,8 @@ void *kmalloc(unsigned int size) {
         cache = alloc_pages(pages);
     }
 
-    enable_preempt();
+    irq_restore(flag);
+
     return cache;
 }
 
@@ -385,7 +386,7 @@ void kfree(void *ptr) {
         return;
     }
 
-    disable_preempt();
+    size_t flag = disable_irq_save();
 
     if (IS_MEM_CACHE(frame_array[idx])) {
         struct cache_meta *meta = frame_array[idx].cache;
@@ -415,5 +416,5 @@ void kfree(void *ptr) {
         free_pages(ptr);
     }
 
-    enable_preempt();
+    irq_restore(flag);
 }

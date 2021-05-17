@@ -20,12 +20,6 @@ struct list_head run_queue = LIST_HEAD_INIT(run_queue);
 struct list_head paused_queue = LIST_HEAD_INIT(paused_queue);
 struct list_head stopped_queue = LIST_HEAD_INIT(stopped_queue);
 
-/* should be spawned by kernel in order to manage slept process */
-// void timer_daemon() {
-
-// }
-
-/* should not be interrupted */
 pid_t get_next_pid() {
     return atomic_fetch_add(GLB_PID, 1);
 }
@@ -43,17 +37,23 @@ inline void add_task(struct task_struct *ts) {
 }
 
 void pause_task(struct task_struct *ts) {
+    disable_preempt();
+
     if (ts->state != TASK_RUNNING) {
         panic("task state inconsistent");
     }
     ts->state = TASK_PAUSED;
-    ts->need_resched = 1;
+    ts->need_resched = 1; /* TODO: fix this shit */
     del_task(ts);
 
     insert_head(&paused_queue, &ts->list);
+
+    enable_preempt();
 }
 
 void restart_task(struct task_struct *ts) {
+    disable_preempt();
+
     if (ts->state != TASK_PAUSED) {
         panic("task state inconsistent");
     }
@@ -61,15 +61,21 @@ void restart_task(struct task_struct *ts) {
     del_task(ts);
 
     insert_head(&run_queue, &ts->list);
+
+    enable_preempt();
 }
 
 void kill_task(struct task_struct *ts, int status) {
+    disable_preempt();
+
     ts->state = TASK_STOPPED;
     ts->need_resched = 1;
     del_task(ts);
 
     ts->exitcode = status;
     insert_head(&stopped_queue, &ts->list);
+
+    enable_preempt();
 }
 
 void free_task(struct task_struct *ts) {
@@ -123,11 +129,12 @@ void set_init_thread() {
     add_task(cur);
 }
 
-/* schedule() will enable interrupt after context switching */
 void schedule() {
     if (!current->need_resched || current->preempt_count > 0) {
         return;
     }
+
+    size_t flags = disable_irq_save();
 
     struct task_struct *nxt = pick_next_task();
     nxt->timeout_tick = get_jiffies() + MS(DEFAULT_TIMEOUT);
@@ -135,4 +142,6 @@ void schedule() {
 
     /* task get switch out & return from here */
     switch_task(nxt);
+
+    irq_restore(flags);
 }

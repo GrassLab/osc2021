@@ -13,20 +13,17 @@
 void svc_handler(struct pt_regs *regs);
 void segv_handler();
 
-void uart_handler() {
-    puts("UART interrupt!!");
-}
-
 void irq_handler(struct pt_regs *regs) {
     if (*CORE0_TIMER_IRQ_SRC & 2) {
         core_timer_handler();
-
-    } else if (*AUXIRQ & 1) {
-        uart_handler();
-        /* uart handler */
+        run_timers();
     }
 
-    run_timers();
+    if (*AUXIRQ & 1) {
+        // why does `*AUX_MU_IIR_REG & 1 == 0` not work ?
+        uart_handler();
+    }
+
     schedule();
 }
 
@@ -67,7 +64,6 @@ void sync_handler(struct pt_regs *regs) {
         panic("Unknown exception: EC=0x%x, ISS=0x%x", ec, iss);
     }
 
-    disable_interrupt();
     schedule();
 }
 

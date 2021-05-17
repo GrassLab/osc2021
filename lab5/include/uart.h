@@ -1,6 +1,7 @@
 #ifndef __UART_H_
 #define __UART_H_
 
+void uart_handler();
 void mini_uart_init();
 void _putchar(char c);
 char _getchar();

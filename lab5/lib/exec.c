@@ -8,6 +8,7 @@
 #include <elf.h>
 #include <printf.h>
 #include <interrupt.h>
+#include <preempt.h>
 
 static uint32_t align_up(uint32_t size, int alignment) {
   return (size + alignment - 1) & -alignment;
@@ -44,9 +45,9 @@ static void *init_stack_args(char *stack, const char *argv[]) {
 
 /* in-place substitute all task_struct data, return to new context */
 /* (is in-place substitute a bad idea ??) */
-/* (since we have to disable interrupt while modifing current) */
+/* TODO: check if disable preempt is enough */
 static void replace_user_context(void *prog, void *entry, const char *argv[]) {
-    disable_interrupt();
+    disable_preempt();
 
     struct task_struct *ts = current;
 
@@ -64,6 +65,8 @@ static void replace_user_context(void *prog, void *entry, const char *argv[]) {
 
     trapframe->pc = (size_t)entry;
     trapframe->sp = (size_t)ustack_top;
+
+    enable_preempt();
 }
 
 int do_exec(const char *path, const char *argv[]) {
@@ -119,7 +122,7 @@ static void exec_user_context(void *prog, void *entry, const char *argv[]) {
 
     trapframe->pc = (size_t)entry;
     trapframe->sp = (size_t)stack_top;
-    trapframe->pstate = 0; /* TODO: enable interrupt */
+    trapframe->pstate = 0;
 
     asm(
         "mov sp, %0\n\t"

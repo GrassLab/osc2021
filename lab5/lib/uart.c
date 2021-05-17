@@ -1,5 +1,7 @@
 #include <peripheral.h>
 #include <interrupt.h>
+#include <waitqueue.h>
+#include <ringbuffer.h>
 
 #define DATA_READY_BIT (1 << 0)
 #define TRANSMITTER_EMPTY_BIT (1 << 5)
@@ -9,6 +11,18 @@
 
 /* terminal send \x0d instead of \x0a */
 #define NEWLINE '\r'
+
+static struct waitqueue *read_wait_queue;
+static struct ring_buffer *read_ring_buf;
+
+void uart_handler() {
+    /* received bytes */
+    if (*AUX_MU_IIR_REG & 4) {
+        char c = *AUX_MU_IO_REG & 0xff;
+        write_buffer(read_ring_buf, 1, &c);
+        wakeup(read_wait_queue);
+    }
+}
 
 void mini_uart_init() {
     int r;
@@ -30,28 +44,32 @@ void mini_uart_init() {
     *AUX_MU_IIR_REG = 6;
     *AUX_MU_CNTL_REG = 3;
 
-    /* enable transmit/receive interrupt */
+    /* enable receive interrupt */
     *AUX_MU_IER_REG = RECEIVE_INT_ENABLE_BIT;
     *INPUT_ENABLE_REGISTER_1 = AUX_INT_ENABLE_BIT;
+
+    read_ring_buf = alloc_ring_buffer(0x200);
+    read_wait_queue = alloc_waitqueue();
 }
 
 void _putchar(char c) {
-    while (!(*AUX_MU_LSR_REG & TRANSMITTER_EMPTY_BIT)) __wfi();
+    while (!(*AUX_MU_LSR_REG & TRANSMITTER_EMPTY_BIT));
 
     *(char *)AUX_MU_IO_REG = c;
 }
 
 char _getchar() {
-    while (!(*AUX_MU_LSR_REG & DATA_READY_BIT)) __wfi();
+    char c;
+    while (read_buffer(read_ring_buf, 1, &c) != 1)
+        wait(read_wait_queue);
 
-    return *AUX_MU_IO_REG & 0xff;
+    return c;
 }
 
-/* TODO: wfe not work ? */
 void read_uart(char *buffer, int len) {
     for (int i = 0; i < len; i++) {
-        while (!(*AUX_MU_LSR_REG & DATA_READY_BIT)) __wfi();
-        buffer[i] = *AUX_MU_IO_REG & 0xff;
+        while (read_buffer(read_ring_buf, 1, &buffer[i]) != 1)
+            wait(read_wait_queue);
     }
 }
 
@@ -59,8 +77,8 @@ int readline_uart(char *buffer) {
     char c = '\0';
     int count = 0;
     while (c != NEWLINE) {
-        while (!(*AUX_MU_LSR_REG & DATA_READY_BIT)) __wfi();
-        c = *AUX_MU_IO_REG & 0xff;
+        while (read_buffer(read_ring_buf, 1, &c) != 1)
+            wait(read_wait_queue);
         buffer[count++] = c;
     }
 
@@ -70,7 +88,7 @@ int readline_uart(char *buffer) {
 
 void write_uart(const char *buffer, int count) {
     for (int i = 0; i < count; i++) {
-        while (!(*AUX_MU_LSR_REG & TRANSMITTER_EMPTY_BIT)) __wfi();
+        while (!(*AUX_MU_LSR_REG & TRANSMITTER_EMPTY_BIT));
         *(char *)AUX_MU_IO_REG = buffer[i];
     }
 }
@@ -84,8 +102,9 @@ int interact_readline_uart(char *buffer) {
     char c = '\0';
     int count = 0;
     while (c != NEWLINE) {
-        while (!(*AUX_MU_LSR_REG & DATA_READY_BIT)) __wfi();
-        c = *AUX_MU_IO_REG & 0xff;
+        while (read_buffer(read_ring_buf, 1, &c) != 1)
+            wait(read_wait_queue);
+
         buffer[count++] = c;
         if (c != NEWLINE) {
             write_uart(&c, 1);
@@ -101,7 +120,7 @@ int interact_readline_uart(char *buffer) {
 void print_uart(const char *buffer) {
     int i = 0;
     while (buffer[i] != '\0') {
-        while (!(*AUX_MU_LSR_REG & TRANSMITTER_EMPTY_BIT)) __wfi();
+        while (!(*AUX_MU_LSR_REG & TRANSMITTER_EMPTY_BIT));
         *(char *)AUX_MU_IO_REG = buffer[i];
         i++;
     }

@@ -75,6 +75,7 @@ int atoi(const char *s) {
     return n;
 }
 
+#include <peripheral.h>
 void shell() {
     enable_interrupt();
 

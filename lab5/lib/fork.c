@@ -6,9 +6,17 @@
 #include <interrupt.h>
 #include <sched.h>
 
+/* for userland */
 static struct task_struct *fork_context(struct pt_regs *regs) {
     struct task_struct *ts = kmalloc(sizeof(struct task_struct));
+
+    size_t flags = disable_irq_save();
     *ts = *current;
+    irq_restore(flags);
+
+    ts->need_resched = 0;
+    ts->preempt_count = 0;
+
     ts->kstack = kmalloc(KSTACK_SIZE);
     ts->stack = kmalloc(USTACK_SIZE);
     memcpy(ts->stack, current->stack, USTACK_SIZE);
@@ -35,15 +43,12 @@ static struct task_struct *fork_context(struct pt_regs *regs) {
 /* we use fork() to get all context, so trapframe will be construct first
  * so be careful to use this function only for fork syscall */
 static pid_t fork_user_thread(struct pt_regs *regs) {
-    disable_interrupt();
-
     struct task_struct *ts = fork_context(regs);
     add_task(ts);
 
-    enable_interrupt();
     return ts->pid;
 }
 
-int do_fork(struct pt_regs *regs) {
+size_t do_fork(struct pt_regs *regs) {
     return fork_user_thread(regs);
 }

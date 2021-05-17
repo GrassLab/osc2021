@@ -15,6 +15,7 @@ CC := $(CROSS_COMPILE)gcc
 LD := $(CROSS_COMPILE)ld
 BUILD_DIR := build
 KERNEL_SRC_DIRS := lib kernel
+BOOTLOADER_SRC_DIRS := bootloader
 USER_SRC_DIRS := user
 USER_BIN_SRC_DIRS := initramfs
 
@@ -22,9 +23,9 @@ KERNEL_SRCS := $(shell find $(KERNEL_SRC_DIRS) -name '*.[cS]')
 KERNEL_OBJS := $(KERNEL_SRCS:%=$(BUILD_DIR)/%.o)
 KERNEL_DEPS := $(KERNEL_OBJS:.o=.d)
 
-BL_SRCS := lib/uart.c lib/printf.c bootloader/startup.S bootloader/main.c
-BL_OBJS := $(BL_SRCS:%=$(BUILD_DIR)/%.o)
-BL_DEPS := $(BL_OBJS:.o=.d)
+BOOTLOADER_SRCS := $(shell find $(BOOTLOADER_SRC_DIRS) -name '*.[cS]')
+BOOTLOADER_OBJS := $(BOOTLOADER_SRCS:%=$(BUILD_DIR)/%.o)
+BOOTLOADER_DEPS := $(BOOTLOADER_OBJS:.o=.d)
 
 USER_SRCS := $(shell find $(USER_SRC_DIRS) -name '*.[cS]')
 USER_OBJS := $(USER_SRCS:%=$(BUILD_DIR)/%.o)
@@ -36,7 +37,7 @@ USER_BIN_DEPS := $(USER_BIN_OBJS:.o=.d)
 
 # shit, we need to wrap a $() outside the deps list to not get
 # makefile confused that is another makefile (debug with `make --debug=v`)
-DEPS := $($(KERNEL_DEPS),$(BL_DEPS),$(USER_DEPS),$(USER_BIN_DEPS))
+DEPS := $($(KERNEL_DEPS),$(BOOTLOADER_DEPS),$(USER_DEPS),$(USER_BIN_DEPS))
 
 CFLAGS := -mcpu=cortex-a53+nofp -MMD \
 	-fno-common -ffreestanding -O0 \
@@ -62,7 +63,7 @@ kernel8.img: $(KERNEL_OBJS)
 	$(LD) -Tkernel/linker.ld $^ -o kernel8.elf
 	$(CROSS_COMPILE)objcopy -O binary kernel8.elf kernel8.img
 
-bootloader.img: $(BL_OBJS)
+bootloader.img: $(BOOTLOADER_OBJS)
 	$(LD) -Tbootloader/linker.ld $^ -o bootloader.elf
 	$(CROSS_COMPILE)objcopy -O binary bootloader.elf bootloader.img
 

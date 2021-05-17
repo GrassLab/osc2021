@@ -35,12 +35,12 @@ void timeout(void (*fn)(size_t), size_t arg, size_t msec) {
 }
 
 void task_sleep(size_t msec) {
-    disable_interrupt();
+    size_t flags = disable_irq_save();
     timeout((timeout_cb)restart_task, (size_t)current, msec);
     pause_task(current);
 
     schedule();
-    enable_interrupt();
+    irq_restore(flags);
 }
 
 void run_timers() {

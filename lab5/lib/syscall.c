@@ -4,6 +4,7 @@
 #include <current.h>
 #include <fork.h>
 #include <interrupt.h>
+#include <preempt.h>
 
 void sys_uart_read(struct pt_regs *regs) {
     char *buf = (char *)regs->regs[0];
@@ -28,10 +29,7 @@ void sys_exec(struct pt_regs *regs) {
     const char *path = (char *)regs->regs[0];
     const char **args = (const char **)regs->regs[1];
 
-    int ret = do_exec(path, args);
-    if (ret) {
-        regs->regs[0] = ret;
-    }
+    regs->regs[0] = do_exec(path, args);
 }
 
 void sys_getpid(struct pt_regs *regs) {
@@ -39,14 +37,11 @@ void sys_getpid(struct pt_regs *regs) {
 }
 
 void sys_exit(struct pt_regs *regs) {
-    /* ensure we won't get preempted here */
-    disable_interrupt();
     kill_task(current, regs->regs[0]);
-    enable_interrupt();
 }
 
 void sys_fork(struct pt_regs *regs) {
-    do_fork(regs);
+    regs->regs[0] = do_fork(regs);
 }
 
 syscall syscall_table[NR_syscalls] = {
