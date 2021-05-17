@@ -16,28 +16,42 @@
 
 void foo () {
     for (int i = 0; i < 10; i++) {
-        kprintf("thread id: %d %d\n", get_pid(), i);
+        printf("thread id: %d %d\n", get_pid(), i);
         sleep(1);
     }
-    while(1);
+    exit(0);
 }
 
-void initd () {
-    for (int i = 0; i < 10; i++) {
+void user_test () {
+    char *argv[] = {"argv_test", "-o", "arg2", 0};
+    exec("argv_test", argv);
+    exit(0);
+}
+
+
+void initd1 () {
+    int N = 5;
+    for(int i = 0; i < N; ++i) {
         thread(foo);
     }
 
-    while(1);
+    while(1) ;
 }
 
-void create_initd () {
+void initd2 () {
+    thread(user_test);
+
+    while(1) ;
+}
+
+void create_initd (void (* init_func)(void)) {
     struct task_struct *t = task_queue_pop_head(&unready_queue);
     t->kstack_top = bs_malloc(STACK_SIZE);
     t->stack_top = bs_malloc(STACK_SIZE);
     current_task = t;
     set_sp((u64)(t->kstack_top + STACK_SIZE));
     set_sp_el0((u64)(t->stack_top + STACK_SIZE));
-    from_el1_to_el0(initd);
+    from_el1_to_el0(init_func);
 }
 
 #define BUFFER_SIZE 64
@@ -109,10 +123,14 @@ void parse_command (char *b) {
         show_boot_info();
     }
     /* TODO: delete */
+    else if (!strcmp(b, "lab5-demo1")) {
+        create_initd(initd1);
+    }
+    else if (!strcmp(b, "lab5-demo2")) {
+        create_initd(initd2);
+    }
+
     else if (!strcmp(b, "test")) {
-        //init_sched();
-        //cpio_load_file_interface("./user-process");
-        create_initd();
     }
     else if (!strcmp(b, "malloc_bins")) {
         show_malloc_bins();

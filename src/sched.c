@@ -5,6 +5,7 @@
 #include "string.h"
 #include "utility.h"
 #include "time.h"
+#include "cpio.h"
 
 #define MAX_TASK_NUM 50
 
@@ -22,7 +23,14 @@ struct task_queue unready_queue = {
     .num = 0,
 };
 
-struct task_queue running_queue = { .head = NULL,
+struct task_queue running_queue = {
+    .head = NULL,
+    .tail = NULL,
+    .num = 0,
+};
+
+struct task_queue suspend_queue = {
+    .head = NULL,
     .tail = NULL,
     .num = 0,
 };
@@ -64,16 +72,28 @@ void init_sched () {
     }
 }
 
-void fork_thread (struct trap_frame *tf) {
+struct task_struct *init_task_struct () {
     struct task_struct *t = task_queue_pop_head(&unready_queue);
     t->timestamp = 0;
     if (!t) {
-        tf->x0 = ~(u64)0;
+        return NULL;
     }
 
     t->stack_top = bs_malloc(STACK_SIZE);
     t->kstack_top = bs_malloc(STACK_SIZE);
     t->kcontext.sp = (u64)(t->kstack_top + STACK_SIZE - context_switch_size);
+    t->kcontext.lr = get_new_task_entry();
+
+    return t;
+}
+
+void fork_thread (struct trap_frame *tf) {
+    struct task_struct *t = init_task_struct();
+    if (!t) {
+        tf->x0 = ~(u64)0;
+        return;
+    }
+
     memcpy((u8 *)(t->kcontext.sp), (u8 *)tf, context_switch_size);
     /* copy stack data */
     memcpy((u8 *)(t->stack_top), (u8 *)(current_task->stack_top), STACK_SIZE);
@@ -81,22 +101,18 @@ void fork_thread (struct trap_frame *tf) {
     struct trap_frame *tmp = (struct trap_frame *)(t->kcontext.sp);
     tf->x0 = t->id; // parent process will get child process's id
     tmp->x0 = 0;
+    tmp->sp = tf->sp - (u64)(current_task->stack_top) + (u64)(t->stack_top);
     // TODO: modify child's sp and lr registers
 
-    t->kcontext.lr = get_new_task_entry();
     task_queue_add_task(&running_queue, t);
 }
 
 void create_thread (struct trap_frame *tf, void *addr) {
-    struct task_struct *t = task_queue_pop_head(&unready_queue);
-    t->timestamp = 0;
+    struct task_struct *t = init_task_struct();
     if (!t) {
         tf->x0 = ~(u64)0;
+        return;
     }
-    t->stack_top = bs_malloc(STACK_SIZE);
-    t->kstack_top = bs_malloc(STACK_SIZE);
-    t->kcontext.sp = (u64)(t->kstack_top + STACK_SIZE - context_switch_size);
-    t->kcontext.lr = get_new_task_entry();
 
     struct trap_frame *tmp = (struct trap_frame *)(t->kcontext.sp);
     tf->x0 = t->id;
@@ -107,17 +123,43 @@ void create_thread (struct trap_frame *tf, void *addr) {
     task_queue_add_task(&running_queue, t);
 }
 
+void exec_thread_cpio (struct trap_frame *tf) {
+    struct task_struct *t = current_task;
 
-int sched_add_running_task () {
-    if (unready_queue.num) {
-        unready_queue.num--;
-        struct task_struct *ptr = unready_queue.head;
-        unready_queue.head = ptr->next;
-        if (!unready_queue.head)
-            unready_queue.tail = NULL;
+    char *fileName = (char *)(tf->x1);
+    void *addr = cpio_load_file(fileName);
+    if (!addr) {
+        return;
     }
-    return -1;
+    void *pre_stack = t->stack_top;
+    t->stack_top = bs_malloc(STACK_SIZE);
+
+    tf->lr = (u64)addr;
+    unsigned int args_space = 24;
+    int i = 0;
+    for (char **tmp = (char **)(tf->x2); *tmp; tmp++) {
+        args_space += 8 + strlen(*tmp) + 1;
+        i++;
+    }
+    args_space += 16 - args_space % 16;
+    void *sp = (void *)(t->stack_top + STACK_SIZE) - args_space;
+    tf->sp = (u64)sp;
+
+    *(int *)sp = i;
+    ((void **)sp)[1] = sp + 16;
+    ((void **)sp)[i + 2] = (void *)0xfff;
+
+    char *string_ptr = sp + 8 * (i + 3);
+
+    char **tmp = (char **)(tf->x2);
+    for (int j = 0; j < i; j++) {
+        ((void **)sp)[2 + j] = string_ptr;
+        strncopy(string_ptr, tmp[j], strlen(tmp[j]) + 1);
+        string_ptr += strlen(tmp[j]) + 1;
+    }
+    bs_free(pre_stack);
 }
+
 
 void activate_waiting_queue () {
     float current_time = get_time();
@@ -158,6 +200,8 @@ void _schedule () {
         task_queue_add_task(&running_queue, current);
     else if (current->flag == SLEEP)
         task_queue_add_task(&waiting_queue, current);
+    else if (current->flag == KILL)
+        task_queue_add_task(&suspend_queue, current);
 
     /* context switch */
     switch_to(&(current->kcontext), &(candidate->kcontext));
@@ -173,6 +217,11 @@ void schedule () {
 void schedule_wait (unsigned long time) {
     current_task->timestamp = get_time() + (double)time / 1000000000;
     current_task->flag = SLEEP;
+    _schedule();
+}
+
+void schedule_kill () {
+    current_task->flag = KILL;
     _schedule();
 }
 

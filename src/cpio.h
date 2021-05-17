@@ -62,5 +62,6 @@ void cpio_show_files ();
 void cpio_cat_file (char *path);
 void cpio_cat_interface (char *buffer);
 int cpio_load_file_interface (char *buffer);
+void *cpio_load_file (char *path);
 
 #endif

@@ -17,16 +17,8 @@ TARGET := kernel8
 GDB := gdb-multiarch
 MINI-UART := -serial null -serial stdio
 
-# flag
-BOOTLOADER := bootloader
-#TEST_IMG := $(BOOTLOADER).img
-TEST_IMG := $(TARGET).img
-UART := UART_MINI # UART_MINI or UART_PL011
-CCFLAG := -Wall -ffreestanding -nostdinc -nostdlib -nostartfiles -Og -g -D$(UART) -I$(DIR)
-
 # APP
 APP_DIR := app
-APP := user-process
 
 # cpio archive
 CPIO_DIR := rootfs
@@ -38,11 +30,25 @@ QEMU_CPIO := -initrd $(CPIO)
 DTB := config/bcm2710-rpi-3-b-plus.dtb
 QEMU_DTB := -dtb $(DTB)
 
-all:  $(BOOTLOADER).img $(TARGET).img $(APP_DIR)/$(APP) $(CPIO)
+# libary
+LIB_DIR := lib
+LIB_C_SRC := $(wildcard $(LIB_DIR)/src/*.c)
+LIB_C_OBJ := $(patsubst %.c, $(BUILD_DIR)/%.o, $(notdir $(LIB_C_SRC)))
+LIB_ASM_SRC := $(wildcard $(LIB_DIR)/src/*.S)
+LIB_ASM_OBJ := $(patsubst %.S, $(BUILD_DIR)/%.o, $(notdir $(LIB_ASM_SRC)))
+
+# flag
+BOOTLOADER := bootloader
+#TEST_IMG := $(BOOTLOADER).img
+TEST_IMG := $(TARGET).img
+UART := UART_MINI # UART_MINI or UART_PL011
+CCFLAG := -Wall -ffreestanding -nostdinc -nostdlib -nostartfiles -Og -g -D$(UART) -I$(DIR) -I$(LIB_DIR)/include
+
+all:  APP $(BOOTLOADER).img $(TARGET).img $(CPIO)
 
 # kernel
-$(TARGET).img: $(C_OBJ) $(APP_DIR)/$(APP) $(ASM_OBJ)
-	$(LINKER) -T $(LD) -o $(TARGET).elf $(C_OBJ) $(ASM_OBJ)
+$(TARGET).img: $(C_OBJ) $(ASM_OBJ) $(LIB_C_OBJ) $(LIB_ASM_OBJ)
+	$(LINKER) -T $(LD) -o $(TARGET).elf $(C_OBJ) $(ASM_OBJ) $(LIB_C_OBJ) $(LIB_ASM_OBJ)
 	$(OBJCOPY) -O binary $(TARGET).elf $(TARGET).img
 
 $(BUILD_DIR)/%.o: $(DIR)/%.c
@@ -53,16 +59,26 @@ $(BUILD_DIR)/%.o: $(DIR)/%.S
 	@mkdir -p $(BUILD_DIR)
 	$(COMPILER) $(CCFLAG) -c $< -o $@
 
+# libary
+$(BUILD_DIR)/%.o: $(LIB_DIR)/src/%.c
+	@mkdir -p $(BUILD_DIR)
+	$(COMPILER) $(CCFLAG) -c $< -o $@
+
+$(BUILD_DIR)/%.o: $(LIB_DIR)/src/%.S
+	@mkdir -p $(BUILD_DIR)
+	$(COMPILER) $(CCFLAG) -c $< -o $@
+
+# apps
+APP:
+	cd lib && make
+	cd $(APP_DIR) && make
+
+
 # bootloader
 $(BOOTLOADER).img:
 	@cd $(BOOTLOADER) && make
 	@cp $(BOOTLOADER)/$(BOOTLOADER).img ./
 	@cp $(BOOTLOADER)/$(BOOTLOADER).elf ./
-
-# APP
-$(APP_DIR)/$(APP):
-	@cd $(APP_DIR) && make
-	cp $(APP_DIR)/$(APP) $(CPIO_DIR)
 
 # cpio archive
 $(CPIO): $(CPIO_FILES)
@@ -93,4 +109,5 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -rf $(CPIO)
 	rm -f $(TARGET).elf $(TARGET).img
-	rm -rf $(APP_DIR)/build $(APP_DIR)/$(APP)
+	cd $(APP_DIR) && make clean
+	cd lib && make clean

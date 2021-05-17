@@ -207,24 +207,25 @@ void copy_data (char *dst, char *source, u64 size) {
     }
 }
 
-int cpio_load_file (char *path) {
+void *cpio_load_file (char *path) {
     CPIO_index *index = cpio_find_file(path);
     if (!index) {
         kprintf("No such file: %s\n", path);
-        return 0;
+        return NULL;
     }
     u64 size = (index->filesize & page_size) + page_size;
     char *addr = bs_malloc(size);
     if (!addr)
-        return 0;
+        return NULL;
 
     copy_data(addr, index->data, index->filesize);
-    from_el1_to_el0((u64)addr + 0x78);
-    return 1;
+    return addr;
 }
 
 int cpio_load_file_interface (char *buffer) {
     if (!(buffer[0] == '.') || !(buffer[1] == '/'))
         return 0;
-    return cpio_load_file(&buffer[2]);
+    if (cpio_load_file(&buffer[2]))
+        return 1;
+    return 0;
 }

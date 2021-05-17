@@ -18,7 +18,9 @@ extern void set_spsr_el1 (u64 value);
 extern void set_sp_el0 (u64 value);
 extern void set_sp (u64 value);
 extern void enable_DAIF_irq ();
+extern void enable_DAIF ();
 extern void disable_DAIF_irq ();
+extern void disable_DAIF ();
 
 extern u64 time_counter ();
 extern u64 time_freq ();

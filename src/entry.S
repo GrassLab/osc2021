@@ -10,8 +10,8 @@
 .endm
 
 .macro todo_vector_block num
+    save_kernel_reg
     mov x0, #\num
-    save_basic_reg
     b error_handler
 .endm
 
@@ -84,7 +84,7 @@ exception_vector_table:
     .align 7
     todo_vector_block 4
     .align 7
-    vector_block sp_elx_irq
+    kvector_block sp_elx_irq
     .align 7
     todo_vector_block 6
     .align 7
@@ -117,7 +117,7 @@ sp_el0_vserror:
 sp_elx_sync:
 sp_elx_irq:
     bl sp_elx_irq_handler
-    load_basic_reg
+    load_kernel_reg
     eret
 
 sp_elx_fiq:
@@ -126,17 +126,17 @@ sp_elx_vserror:
 #define svc_mask 0xfffff
 .global uart_sendi
 aarch64_sync:
+    //bl disable_DAIF
     mrs x0, esr_el1
     ldr x1, =svc_mask
     and x0, x0, x1
     cmp x0, #0x80
     bne 1f
     mov x0, sp
-    cmp x0, #60 // system call: exit
-    beq process_exit
     bl sys_call_handler
 .global new_task_entry
 new_task_entry:
+    //bl enable_DAIF_irq
     load_kernel_reg
     eret
 1:
@@ -159,6 +159,7 @@ aarch32_fiq:
 aarch32_vserror:
 
 error_handler:
+    mov x1, sp
     bl exc_error
 1:
     b 1b

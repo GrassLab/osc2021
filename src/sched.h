@@ -25,16 +25,19 @@ struct task_queue {
 };
 
 extern struct task_struct *current_task;
-extern struct task_queue waiting_queue, unready_queue, running_task;
+extern struct task_queue waiting_queue, unready_queue, running_task,
+        suspend_queue;
 
 struct task_struct *task_queue_pop_head (struct task_queue *q);
 
 void init_sched ();
 void fork_thread (struct trap_frame *tf);
 void create_thread (struct trap_frame *tf, void *addr);
+void exec_thread_cpio (struct trap_frame *tf);
 
 void schedule ();
 void schedule_wait (unsigned long time);
+void schedule_kill ();
 void _get_pid (struct trap_frame * tf);
 
 #endif
