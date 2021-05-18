@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "tmpfs.h": "c",
+        "string.h": "c",
+        "typeinfo": "cpp"
+    }
+}
