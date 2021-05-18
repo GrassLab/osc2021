@@ -55,9 +55,9 @@ void uart_init()
     *AUX_MU_IIR = 0xc6;    // disable interrupts
     *AUX_MU_BAUD = 270;    // 115200 baud
     /* map UART1 to GPIO pins */
-    r = *GPFSEL1;
-    r &= ~((7<<12)|(7<<15)); // gpio14, gpio15
-    r |= (2<<12)|(2<<15);    // alt5
+    r=*GPFSEL1;
+    r&=~((7<<12)|(7<<15)); // gpio14, gpio15
+    r|=(2<<12)|(2<<15);    // alt5
     *GPFSEL1 = r;
     *GPPUD = 0;            // enable pins 14 and 15
     r=150; while(r--) { asm volatile("nop"); }
@@ -65,7 +65,6 @@ void uart_init()
     r=150; while(r--) { asm volatile("nop"); }
     *GPPUDCLK0 = 0;        // flush GPIO setup
     *AUX_MU_CNTL = 3;      // enable Tx, Rx
-
 
     // flush buffer
     while(*AUX_MU_LSR&0x01)
@@ -108,32 +107,3 @@ void uart_puts(char *s) {
         uart_send(*s++);
     }
 }
-
-// read a line
-/*
-void uart_read(char *s) {
-    int index = 0;
-    char tmp = 'a';
-    while(1) {
-        tmp = uart_getc();
-        if (tmp != '\0') {
-            s[index] = tmp;
-            index++;
-            uart_puts(index);
-            uart_puts("\n");
-        }
-        else {
-            uart_puts("break");
-            break;
-        }
-    }
-*/
-    /*
-    char c;
-    do {
-        index++;
-        c = uart_getc();
-        uart_send(c);
-        s[index] = c;
-    } while (c != '\n');
-    */
