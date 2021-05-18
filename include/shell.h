@@ -3,6 +3,10 @@
 
 #define MAX_BUFFER_LEN 256
 
+#define KERNEL_SHELL_DISABLE 0
+#define KERNEL_SHELL_ENABLE  1
+extern int kernel_shell_status;
+
 enum SPECIAL_CHARACTER
 {
     BACK_SPACE = '\177',

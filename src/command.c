@@ -5,7 +5,7 @@
 #include "printf.h"
 #include "utils.h"
 #include "timer.h"
-
+#include "sys.h"
 void input_buffer_overflow_message ( char cmd[] )
 {
     uart_puts("Follow command: \"");
@@ -72,7 +72,7 @@ void command_reboot ()
     *PM_WDOG = PM_PASSWORD | 0x20;
     *PM_RSTC = PM_PASSWORD | 100;
     
-	while(1);
+    while(1);
 }
 
 void command_cpio_ls(void *initramfs_addr) {
@@ -135,12 +135,12 @@ void command_current_el()
 
 void commnad_coreTimerOn()
 {
-    asm volatile("svc #2");
+    core_timer_enable();
 }
 
 void commnad_coreTimerOff()
 {
-    asm volatile("svc #3");
+    core_timer_disable();
 }
 
 void coomand_setTimeout(char *buf)

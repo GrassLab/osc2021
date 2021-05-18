@@ -11,7 +11,7 @@
 #define MAX_ORDER                  9 
 #define MAX_ORDER_SIZE             (1 << MAX_ORDER)
 
-#define LOW_MEMORY                 0x90000
+#define LOW_MEMORY                 0x200000
 
 #define FIND_BUDDY_PFN(pfn, order) ((pfn) ^ (1<<(order)))
 #define FIND_LBUDDY_PFN(pfn, order)((pfn) & (~(1<<(order))))
@@ -21,7 +21,7 @@
 #define MAX_ALLOCATAED_OBJ_SIZE     2048 // At most 2048 bytes (half of a page frame)
 
 #define MIN_KMALLOC_ORDER           3
-#define MAX_KMALLOC_ODER            11
+#define MAX_KMALLOC_ORDER           11
 
 #define PFN_MASK                    0x0000FFFFFFFFF000
 #define PHY_ADDR_TO_PFN(addr)       (((((unsigned long)(addr)) - LOW_MEMORY) & PFN_MASK) >> PAGE_SHIFT)
@@ -139,6 +139,14 @@ void kfree(void *addr) ;
  *  mm_init - Initialize system of memory management 
  */
 void mm_init();
+
+
+#ifndef __ASSEMBLER__
+
+void memcpy(unsigned long dst, unsigned long src, unsigned long n);
+void memzero(unsigned long src, unsigned long n);
+
+#endif
 
 #endif /* _MM_H */
 

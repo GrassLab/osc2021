@@ -1,7 +1,7 @@
 #include "string.h"
 #include "math.h"
 
-int strcmp ( char * s1, char * s2 )
+int strcmp (const char * s1,const char * s2 )
 {
     /* 
     Returns 0 if str1 is same as str2. 
@@ -29,7 +29,7 @@ void strset (char * s1, int c, int size )
         s1[i] = c;
 }
 
-int strlen ( char * s )
+int strlen (const char * s )
 {
     int i = 0;
     while ( 1 )
@@ -104,8 +104,8 @@ void reverse ( char * s )
     for ( i = 0; i < strlen(s) / 2; i++ ) 
     {
         temp = s[strlen(s) - i - 1];
-        s[strlen(s) - i - 1] = s[0];
-        s[0] = temp;
+        s[strlen(s) - i - 1] = s[i];
+        s[i] = temp;
     }
 }
 
@@ -121,4 +121,14 @@ int strncmp(const char *a, const char *b, unsigned long n)
         }
     }
     return 0;
+}
+
+int strcpy(char *dest, const char *src) {
+    int i = 0;
+    while (src[i] != '\0') {
+        dest[i] = src[i];
+        i++;
+    }
+    dest[i] = '\0';
+    return i;
 }

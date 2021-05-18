@@ -5,12 +5,16 @@
 #include "cpio.h"
 #include "printf.h"
 #include "mm.h"
-#include "exception.h"
+#include "entry.h"
+
+
+int kernel_shell_status = KERNEL_SHELL_ENABLE;
 
 extern int uart_read_idx;
 extern char UART_READ_BUFFER[MAX_BUFFER_LEN];
 extern int uart_transmit_idx;
 extern char UART_TRANSMIT_BUFFER[MAX_BUFFER_LEN];
+
 void shell_start () 
 {
     int buffer_counter = 0;
@@ -31,6 +35,7 @@ void shell_start ()
     // read input
     while(1)
     {
+        //input_char = uart_getc();
         input_char = read_transmit_asynchronous_procoessing(buffer, &buffer_counter);
         
         input_parse = parse ( input_char );

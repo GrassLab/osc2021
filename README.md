@@ -1,4 +1,4 @@
-# OSDI 2020 - LAB 04  Exception and Interrupt
+# OSDI 2020 - LAB 06 Virtual File System
 
 ## Author
 
@@ -7,37 +7,32 @@
 | 0856167    | Yunyung        | 許振揚| yungyung7654321@gmail.com  |
 
 ### Introduction
-An exception is an event that causes the currently executing program to relinquish the CPU to the corresponding handler. With the exception mechanism, an operating system can
+A file system manages data in storage mediums. Each file system has a specific way to store and retrieve the data. Hence, a virtual file system(VFS) is common in general-purpose OS to provide a unified interface for all file systems.
 
-1. do proper handling when an error occurs during execution.
-
-2. A user program can generate an exception to get the corresponding operating system’s service.
-
-3. A peripheral device can force the currently executing program to relinquish the CPU and execute its handler.
+In this lab, we’ll implement a memory-based file system(tmpfs) to get familiar with the concept of VFS. In the next lab, we’ll implement the FAT32 file system to access files from an SD card. It’s recommended to do both together.
 
 ### Goals of this lab
-- Understand what’s exception levels in Armv8-A.
+- Understand how to set up a root file system.
 
-- Understand what’s exception handling.
+- Implement temporary file system (tmpfs) as root file system.
 
-- Understand what’s interrupt.
+- Understand how to create, open, close, read, and write files.
 
-- Understand how rpi3’s peripherals interrupt the CPU by interrupt controllers.
+- Implement VFS interface, including create, open, close, read, write, mkdir, chdir, ls <directory>, mount/unmount interface.
 
-- Implement synchronous exception and asynchronous interrupt handler from peripheral devices in Armv8-A.
+- Implement multi-level VFS and absoute/relative pathname lookup.
 
-- Load an user program and switch between kernel mode(EL1) and user mode(EL0).
- 
-- Implement core timer interrput handler and miniUART asynchronous read/write.
+- Understand how a user process access files through the virtual file system.
 
-- Understand how to multiplex a timer.
+- Implement a user process to access files through VFS.
 
-- Implenment a timer multiplexing.
+- Understand how to mount a file system and look up a file across file systems.
 
-- Understand how to concurrently handle I/O devices.
+- Implement mount/unmount a file system and look up a file across file systems.
+
+- Understand how to design the procfs.
 
 ## Directory structure
-mm.h and mm.c is key files in our implementation.
 ```
 .
 ├── bootloader          # Bootloader to load actual kernel in run time through miniUART(UART1)
@@ -60,7 +55,14 @@ mm.h and mm.c is key files in our implementation.
 │   ├── utils.h
 │   ├── entry.h
 │   ├── exception.h
-│   └── timer.h
+│   ├── timer.h
+│   ├── fork.h
+│   ├── sched.h
+│   ├── sys.h
+│   ├── wait.h
+│   ├── vfs.h
+│   ├── fs.h
+│   └── tmpfs.h
 │
 ├── src                 # source files
 │   ├── command.c       # source file to process command
@@ -73,16 +75,27 @@ mm.h and mm.c is key files in our implementation.
 │   ├── cpio.c          # source file to parse "New ASCII Format" cpio archive
 │   ├── uart.c          # source file to process uart interface and implement uart asynchronous read/write cooperate with shell in shell.c
 │   ├── mm.c            # Implementation of buudy system and object allocator(slab) for memory allocation
+│   ├── mm.S   
 │   ├── utils.S        
 │   ├── entry.S 
 │   ├── exception.c  
-│   ├── timer.S   
-│   └── timer.c    
+│   ├── timer.S 
+│   ├── timer.c 
+│   ├── fork.c 
+│   ├── sys.S 
+│   ├── sys.c
+│   ├── wait.c 
+│   ├── sched.S
+│   ├── sched.c
+│   ├── vfs.c 
+│   ├── fs.c
+│   └── tmpfs.c
 │ 
-├── rootfs              # file will be made as cpio archive
+├── rootfs              # files and user programs will be made as cpio archive
 │   └── ...             # any file 
 │
-├── initramfs.cpio      # cpio archive of rootfs folder 
+├── .gitignore
+├── initramfs.cpio      # cpio archive contain files and user programs
 ├── LICENSE
 ├── link.ld             # linker script
 ├── Makefile 
@@ -92,6 +105,7 @@ mm.h and mm.c is key files in our implementation.
 
 
 ## Simple Shell
+**In this lab, kernel shell is disable**
 | command           | description                        | 
 | ------------------| -----------------------------------| 
 | hello             | print Hello World!                 |
@@ -112,6 +126,11 @@ mm.h and mm.c is key files in our implementation.
 make
 ```
 
+## How to clean the build
+```
+make clean
+```
+
 ## Run on QEMU
 ```
 make run
@@ -127,6 +146,10 @@ make run_cpio
 ```
 $ sudo screen /dev/ttyUSB0 115200
 ```
+- miniUART with printed message saved to Logfile
+```
+$ sudo screen -L -Logfile log.txt /dev/ttyUSB0 115200
+```
 
 ## How to transmit actual kernel through UART
 - test by python3 srcipt
@@ -137,6 +160,6 @@ $ sudo screen /dev/ttyUSB0 115200
 - The python3 code is depend on pyserial module which can install py 
     ```
     // sudo is required
-    sudo pip3 install pyserial
+    $ sudo pip3 install pyserial
     ```
      

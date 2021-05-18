@@ -43,6 +43,9 @@
 #define PM_RSTC         ((volatile unsigned int*)0x3F10001C)
 #define PM_WDOG         ((volatile unsigned int*)0x3F100024)
 #define PM_PASSWORD     (0x5a000000)
+
+#define UART_READ_READY 1
+
 /**
  * Set baud rate and characteristics (115200 8N1) and map to GPIO
  */
@@ -77,8 +80,14 @@ void enable_uart_transmit_interrupt();
 void enable_uart_read_interrupt();
 
 /**
- * mini UART read/write interrupt handler
+ * mini UART read/write interrupt handler for kernel shell
  */
-void uart_irq_handler();
+void shell_uart_irq_handler();
 
+/**
+ * For uart wait queue
+ */
+void uart_read_irq_wakeUp_handler();
+void block_uart_read();
+int uart_read_status();
 #endif

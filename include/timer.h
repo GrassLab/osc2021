@@ -38,9 +38,11 @@ void setNextTimerEventInterrupt();
 
 void dumpTimerEvent(timer_event_t *timerEvent);
 
-void dumpyTimerEventList();
+void dumpTimerEventList();
 
 void print_timeoutEventInfo(timer_event_t *timeout_event);
+
+void print_timestamp();
 
 uint64_t get_system_time();
 

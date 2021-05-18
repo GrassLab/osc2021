@@ -14,7 +14,7 @@ void page_init()
         bookkeep[i].pfn = i;
         bookkeep[i].used = Free;
         bookkeep[i].phy_addr = LOW_MEMORY + i*PAGE_SIZE;
-        bookkeep[i].order = -1; 
+        bookkeep[i].order = -1;
     }
 }
 
@@ -254,8 +254,12 @@ void *obj_allocate(int token) {
     struct list_head *obj_freelist = obj_allocator_p->curr_page->free;
     if (obj_freelist != NULL) {
         // Allocate memory by free list in current page
+        #ifdef __DEBUG
+        printf("[obj_allocate] Use object freelist\n");
+        printf("[obj_allocate] obj_freelist->next = 0x%x\n", obj_freelist->next);
+        #endif //__DEBUG
         allocated_addr = obj_freelist;
-        obj_freelist = obj_freelist->next; // Point to next address of free object;
+        obj_allocator_p->curr_page->free = obj_freelist->next; // Point to next address of free object;
     }
     else {
         // Allocate memory to requested object 
@@ -398,7 +402,7 @@ void dump_obj_alloc(obj_allocator_t *obj_allocator_p)
 
 void __init_kmalloc()
 {
-    for (int i = MIN_KMALLOC_ORDER;i <= MAX_KMALLOC_ODER;i++) {
+    for (int i = MIN_KMALLOC_ORDER;i <= MAX_KMALLOC_ORDER;i++) {
         register_obj_allocator(1 << i);
     }
 }
@@ -412,7 +416,7 @@ void *kmalloc(int size)
     void *allocated_addr;
 
     // Object allocator
-    for (int i = MIN_KMALLOC_ORDER;i <= MAX_KMALLOC_ODER;i++) {
+    for (int i = MIN_KMALLOC_ORDER;i <= MAX_KMALLOC_ORDER;i++) {
         if (size <= (1<<i)) {
             allocated_addr = obj_allocate(i - MIN_KMALLOC_ORDER);
 
@@ -473,15 +477,15 @@ void mm_init()
     /**
      *  Test Buddy memory Allocator
      */
-    int allocate_test1[] = {1};
-    int test1_size = sizeof(allocate_test1) / sizeof(int);
-    page_t *(one_pages[test1_size]);
-    for (int i = 0;i < test1_size;i++) {
-        page_t *one_page = buddy_block_alloc(allocate_test1[i]); // Allocate one page frame
-        //printf("\n Allocated Block{ pfn(%d), order(%d), phy_addr_16(0x%x) }: %u\n", one_page->pfn, one_page->order, one_page->phy_addr);
-        one_pages[i] = one_page;
-    }
-    buddy_block_free(one_pages[0]);
+    // int allocate_test1[] = {1};
+    // int test1_size = sizeof(allocate_test1) / sizeof(int);
+    // page_t *(one_pages[test1_size]);
+    // for (int i = 0;i < test1_size;i++) {
+    //     page_t *one_page = buddy_block_alloc(allocate_test1[i]); // Allocate one page frame
+    //     //printf("\n Allocated Block{ pfn(%d), order(%d), phy_addr_16(0x%x) }: %u\n", one_page->pfn, one_page->order, one_page->phy_addr);
+    //     one_pages[i] = one_page;
+    // }
+    // buddy_block_free(one_pages[0]);
 
     /**
      *  Test object allcator

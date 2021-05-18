@@ -48,12 +48,12 @@ struct cpio_header {
  */
  // TODO:
  // Embed this object to cpio_parse_header function
-enum cpio_parse_header_result
-{
-    notValid = -1,
-    OK = 0,
-    EOF = 1
-};
+// enum cpio_parse_header_result
+// {
+//     notValid = -1,
+//     OK = 0,
+//     EOF = 1
+// };
 
 /**
  * Stores information about the underlying implementation.
@@ -98,4 +98,5 @@ void *cpio_get_file(void *archive, const char *name, unsigned long *size);
  */
 void cpio_ls(void *archive);
 
+void *cpio_move_file(void *archive, const char *name, unsigned long move_addr);
 #endif /* _LIB_CPIO_H_ */
