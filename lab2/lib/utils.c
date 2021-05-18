@@ -38,7 +38,10 @@ int slice_str(char *input, char *output, char *filename, int length) {
 
     int index = 0;
     while (1) {
-        if (!input[length+1+index]) return 1;
+        if (!input[length+1+index]) {
+            filename[index] = '\0';
+            return 1;
+        }
         filename[index] = input[length+1+index];
         index++;
     }
@@ -84,8 +87,8 @@ void itoa(int num, char *s) {
 
 int ls(char *input, int readfile) {
     // 0x8000000 for qemu, 0x20000000 for raspi 3
-    volatile unsigned char *kernel = (unsigned char *) 0x8000000;
-    //volatile unsigned char *kernel = (unsigned char *) 0x20000000;
+    //volatile unsigned char *kernel = (unsigned char *) 0x8000000;
+    volatile unsigned char *kernel = (unsigned char *) 0x20000000;
     volatile unsigned char *filename;
     volatile unsigned char *filedata;
     int header_offset = 0x6E;

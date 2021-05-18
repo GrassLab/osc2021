@@ -1,12 +1,12 @@
 LD = aarch64-linux-gnu-ld
 LDFLAGS = -T linker.ld
 
-BUILD_DIR = ../build
+BUILD_DIR = build
 SRC = $(wildcard src/*.S) $(wildcard ../lib/*.c) $(wildcard src/*.c)
 OBJ = boot.o $(filter-out boot.o, $(wildcard *.o))
 INC = $(wildcard ../lib/)
 
-BOOT = bootloader
+BOOT = kernel8
 ELF = $(BOOT).elf
 IMG = $(BOOT).img
 

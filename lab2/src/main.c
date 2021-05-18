@@ -22,7 +22,7 @@ int main() {
         uart_puts("#");
         input(buf);
         uart_send('\r');
-        
+
         slice_str(buf, cat, filename, 3);
         if(strcmp(buf, hello)) {
             uart_puts("Hello World!\n");
