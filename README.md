@@ -9,6 +9,7 @@
 ## TODO
 - [ ] switch from el2 to el1
 - [ ] Add a command that can load a user program in the initramfs. Then, use eret to jump to the start address.
+- [ ] Fix buddy system and dynamic allocator
 
 ## Support Feature
 - bootloader will relocate itself

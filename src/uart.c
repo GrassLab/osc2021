@@ -40,7 +40,6 @@ int read_line (char *buffer, u32 size) {
     }
 
     /* disable irq */
-    disable_DAIF_irq();
     long anchor = read_start, i = 0;
     for (; i < size - 1 && anchor != read_end; i++,
             anchor = (anchor + 1) % BUFFER_SIZE) {
@@ -53,7 +52,6 @@ int read_line (char *buffer, u32 size) {
     read_start = anchor;
     buffer[i + 1] = '\0';
     /* enable irq */
-    enable_DAIF_irq();
     return i;
 }
 

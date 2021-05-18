@@ -2,6 +2,8 @@
 #include "io.h"
 #include "utility.h"
 #include "mmio.h"
+#include "sched.h"
+#include "uart.h"
 
 void print_el1_exc () {
     kprintf("spsr_el1: %x\n", get_spsr_el1());
@@ -20,11 +22,22 @@ void irq_uart_handler () {
 }
 
 void irq_timer1_handler () {
-    kprint_time();
-    set_timer1(2);
+    // TODO reduce time window
+    set_timer1(0.01);
+    schedule();
 }
 
+#define CNTPNSIRQ_INTERRUPT 0x2
 void sp_elx_irq_handler () {
+    u32 core0_source = *mmio(CORE0_INTERRUPT_SOURCE);
+    /* first level interrupt */
+    switch (core0_source) {
+        case CNTPNSIRQ_INTERRUPT:
+            kprintf("into sp_elx\n");
+            irq_timer1_handler();
+            return;
+    }
+
     u64 pending = *mmio(IRQ1_PENDING);
     pending |= (u64)(*mmio(IRQ2_PENDING)) << 32;
     switch (pending) {
@@ -52,8 +65,8 @@ void sp_elx_irq_handler () {
     while (1); /* trap */
 }
 
-int sys_call_handler () {
-    u64 sys_num = get_x19();
+int sys_call_handler (struct trap_frame *tf) {
+    u64 sys_num = tf->x0;
     switch (sys_num) {
         /* show specific register */
         case 400:
@@ -61,22 +74,73 @@ int sys_call_handler () {
             kprintf("elr_el1: %x\n", get_elr_el1());
             kprintf("esr_el1: %x\n\n", get_esr_el1());
             break;
-        /* exit */
-        case 60:
-            return 60;
+
+        /* yield */
+        case 401:
+            schedule();
+            return 0;
+
+        /* create thread */
+        case 402:
+            create_thread(tf, (void *)(tf->x1));
+            return 0;
+
+        /* stack info */
+        case 403:
+        {
+            *(void **)(tf->x1) = current_task->stack_top;
+            *(void **)(tf->x2) = current_task->kstack_top;
+            *(void **)(tf->x3) = (void *)(tf->sp);
+            return 0;
+        }
+
         /* read */
         case 0:
+            read_line((char *)(tf->x1), tf->x2);
+            return 0;
+
         /* write */
         case 1:
-        /* open */
-        case 2:
+            kprintf("%s", (char *)(tf->x1));
+            return 0;
+
+        /* sleep */
+        case 35:
+        {
+            schedule_wait(tf->x1);
+            return 0;
+        }
+
+        /* get pid */
+        case 39:
+            _get_pid(tf);
+            return 0;
+        /* fork */
+        case 57:
+            fork_thread(tf);
+            return 0;
+
+        /* exec */
+        case 59:
+            exec_thread_cpio(tf);
+            return 0;
+
+        /* exit */
+        case 60:
+            schedule_kill();
+            return 60;
+
+        /* wait */
+        case 61:
+            release_children_thread(tf);
+            return 0;
+
         default:
             kprintf("Unsupported syscall: %d\n", sys_num);
     }
     return 1;
 }
 
-#define CNTPNSIRQ_INTERRUPT 0x2
 void aarch64_irq_handler () {
     u32 core0_source = *mmio(CORE0_INTERRUPT_SOURCE);
     /* first level interrupt */
@@ -120,7 +184,10 @@ void aarch64_irq_handler () {
     while (1); /* trap */
 }
 
-void exc_error (int error) {
+void exc_error (int error, struct trap_frame *tf) {
+    kprintf("spsr_el1: %x\n", get_spsr_el1());
+    kprintf("elr_el1: %x\n", get_elr_el1());
+    kprintf("esr_el1: %x\n\n", get_esr_el1());
     switch (error) {
         case 0:
             kprintf("Unsupport exception: SP_EL0 sync\n");
@@ -174,6 +241,16 @@ void exc_error (int error) {
             kprintf("Unkown exception: %d\n", error);
     }
 
+    kprintf("x0: %x\n", tf->x0);
+    kprintf("x1: %x\n", tf->x1);
+    kprintf("x2: %x\n", tf->x2);
+    kprintf("x3: %x\n", tf->x3);
+    kprintf("x4: %x\n", tf->x4);
+    kprintf("x5: %x\n", tf->x5);
+    kprintf("x6: %x\n", tf->x6);
+    kprintf("sp: %x\n", tf->sp);
+    kprintf("lr: %x\n", tf->lr);
+
     /* trap */
     while (1) ;
 }
@@ -189,7 +266,6 @@ void enable_core_timer () {
     set_cntp_ctl_el0(1); /* enable */
     u64 freq = time_freq();
     set_cntp_tval_el0(freq);
-    //*mmio(CORE0_TIMER_IRQ_CTRL) = 2;
     set_spsr_el1(0x340);
 }
 

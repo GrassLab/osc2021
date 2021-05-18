@@ -12,7 +12,7 @@
 #define m_used_bit 0x0000000000000001
 #define m_last_chunk_bit 0x0000000000000002
 #define page_start(addr) ((addr) & page_mask)
-#define page_end(addr) ((mask - page_size + 1) & (addr + page_size - 1))
+#define page_end(addr) ((mask - PAGE_SIZE + 1) & (addr + PAGE_SIZE - 1))
 #define malloc_struct_size (sizeof(malloc_struct))
 
 /* 4 GB */
@@ -307,7 +307,7 @@ void show_list () {
 #define bs_used_bit 0b10000000
 #define bs_size_bit 0b00111111
 #define bs_get_bucket_index(off) (((u64)bs_table_addr[off] & bs_size_bit) - 1)
-#define bs_get_page_size(off) ((1 << bs_get_bucket_index(off)) * page_size)
+#define bs_get_page_size(off) ((1 << bs_get_bucket_index(off)) * PAGE_SIZE)
 #define bs_get_val(off) ((u64)bs_table_addr[off])
 
 typedef struct bs_frame_list {
@@ -325,7 +325,7 @@ u8 *bs_table_addr = NULL;
 BS_frame_head *bs_frame_bucket = NULL;
 
 BS_frame *bs_pop_bucket (void *addr) {
-    u64 offset = (u64)addr / page_size;
+    u64 offset = (u64)addr / PAGE_SIZE;
     u64 index = bs_get_bucket_index(offset);
 
     for (BS_frame **ptr = &bs_frame_bucket[index].head; *ptr;
@@ -341,8 +341,8 @@ BS_frame *bs_pop_bucket (void *addr) {
 }
 
 void bs_table_set (u64 start, u64 end, u8 is_used) {
-    u64 size = (end - start) / page_size;
-    u64 offset = start / page_size;
+    u64 size = (end - start) / PAGE_SIZE;
+    u64 offset = start / PAGE_SIZE;
     u64 bottom = offset + size;
 
     u64 order = 1;
@@ -355,8 +355,8 @@ void bs_table_set (u64 start, u64 end, u8 is_used) {
                 usedb |= bs_used_bit;
             else {
                 BS_frame *frame = m_malloc(sizeof(BS_frame));
-                frame->addr = (void *)(offset * page_size);
-                frame->size = order * page_size;
+                frame->addr = (void *)(offset * PAGE_SIZE);
+                frame->size = order * PAGE_SIZE;
                 frame->next = bs_frame_bucket[i].head;
                 bs_frame_bucket[i].head = frame;
                 bs_frame_bucket[i].num += 1;
@@ -375,8 +375,8 @@ void bs_table_set (u64 start, u64 end, u8 is_used) {
                 usedb |= bs_used_bit;
             else {
                 BS_frame *frame = m_malloc(sizeof(BS_frame));
-                frame->addr = (void *)(offset * page_size);
-                frame->size = order * page_size;
+                frame->addr = (void *)(offset * PAGE_SIZE);
+                frame->size = order * PAGE_SIZE;
                 frame->next = bs_frame_bucket[i].head;
                 bs_frame_bucket[i].head = frame;
                 bs_frame_bucket[i].num += 1;
@@ -390,10 +390,10 @@ void bs_table_set (u64 start, u64 end, u8 is_used) {
 
 /* index of bucket lists */
 u8 bs_page_index (u64 size) {
-    if (size < page_size)
+    if (size < PAGE_SIZE)
         return 0;
     u8 i = 0;
-    size /= (2 * page_size);
+    size /= (2 * PAGE_SIZE);
     for (; size; i++) size /= 2;
 
     return i;
@@ -497,7 +497,7 @@ int bs_scann_table (u64 ptr, u64 size) {
             return 0;
         }
 
-        u64 val = bs_get_page_size(tmp) / page_size;
+        u64 val = bs_get_page_size(tmp) / PAGE_SIZE;
         buf += val;
         tmp += val;
     }
@@ -508,8 +508,8 @@ int bs_scann_table (u64 ptr, u64 size) {
     /* pop all nodes */
     buf = 0;
     for (u64 tmp = ptr; buf < size;) {
-        m_free(bs_pop_bucket((void *)(page_size * tmp)));
-        u64 val = bs_get_page_size(tmp) / page_size;
+        m_free(bs_pop_bucket((void *)(PAGE_SIZE * tmp)));
+        u64 val = bs_get_page_size(tmp) / PAGE_SIZE;
         buf += val;
         tmp += val;
     }
@@ -518,7 +518,7 @@ int bs_scann_table (u64 ptr, u64 size) {
 }
 
 void bs_merge (u64 offset) {
-    u64 size = bs_get_page_size(offset) / page_size;
+    u64 size = bs_get_page_size(offset) / PAGE_SIZE;
     u64 ptr = 0;
 
     /* right part */
@@ -530,7 +530,7 @@ void bs_merge (u64 offset) {
 
     if (!bs_scann_table(ptr, size))
         return;
-    m_free(bs_pop_bucket((void *)(page_size * offset)));
+    m_free(bs_pop_bucket((void *)(PAGE_SIZE * offset)));
 
     if (offset % (size * 2))
         ptr = offset - size;
@@ -545,7 +545,7 @@ void bs_merge (u64 offset) {
         else
             tmp = ptr + size;
 
-        if (tmp > memory_size / page_size)
+        if (tmp > memory_size / PAGE_SIZE)
             break;
 
         if (bs_get_val(tmp) & bs_used_bit)
@@ -566,13 +566,13 @@ void bs_merge (u64 offset) {
     }
     if (ptr % size)
         ptr -= size / 2;
-    bs_table_set(ptr * page_size, (ptr + size) * page_size, 0);
-    log("buddy system", "merge", ptr * page_size, (ptr + size) * page_size);
+    bs_table_set(ptr * PAGE_SIZE, (ptr + size) * PAGE_SIZE, 0);
+    log("buddy system", "merge", ptr * PAGE_SIZE, (ptr + size) * PAGE_SIZE);
 }
 
 void bs_free (void *addr) {
     /* look up bs_table */
-    u64 offset = (u64)addr / page_size;
+    u64 offset = (u64)addr / PAGE_SIZE;
 
     log("buddy system", "free", (u64)addr, (u64)addr + bs_get_page_size(offset));
     bs_table_set((u64)addr, (u64)addr + bs_get_page_size(offset), 0);
@@ -635,6 +635,8 @@ void *dynamic_malloc (u64 size) {
 }
 
 void dynamic_free(void *addr) {
+    if (!addr)
+        return;
     malloc_struct *whole_chunk = (malloc_struct *)((u64)addr - 0x10);
     u64 size = whole_chunk->info & 0xfffffffffffffff0;
     whole_chunk->info &= (~m_used_bit);    /* clear used bit */
