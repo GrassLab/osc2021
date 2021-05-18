@@ -2,6 +2,8 @@
 # include "uart.h"
 # include "my_math.h"
 # include "linklist.c"
+# include "exception.h"
+# include "schedule.h"
 
 unsigned long long core_timer_freq;
 unsigned long long print_timer_peroid;  // unit : ms
@@ -10,6 +12,8 @@ struct timer_object *timer_inuse;
 struct timer_object *timer_unuse;
 
 int print_system_time_flag = 0;
+
+struct one_shot_timer watchingdog_t;
 
 void print_timer(unsigned long long ms, char *comment){
   uart_puts(comment);
@@ -37,6 +41,18 @@ void print_timer(unsigned long long ms, char *comment){
   uart_puts((char *) " s\n");
 }
 
+void watchingdog_cb(int token){
+  //uart_puts((char *) "Wating dog\n");
+  struct task *c = get_current();
+  c->counter--;
+  if(c->counter <= 0){
+    c->resched_flag = 1;
+  }
+  set_one_shot_timer(&watchingdog_t);
+  IRQ_ENABLE();
+  schedule();
+}
+
 extern "C"
 void core_timer_init(){
   register unsigned int enable = 1;
@@ -54,13 +70,17 @@ void core_timer_init(){
   }
   timer_unuse = &timer_object_list[0];
   timer_inuse = 0;
+
+  watchingdog_t.ms = 100;
+  watchingdog_t.token = -1;
+  watchingdog_t.func = watchingdog_cb;
+  set_one_shot_timer(&watchingdog_t);
 }
 
 void timer_queue_insert(unsigned long long tval, int token, void (*func)(int)){
   core_timer_disable();
   struct timer_object *new_node = ll_pop_front<struct timer_object>(&timer_unuse);
-  unsigned long long t;
-  get_core_timer_value(&t);
+  unsigned long long t = get_core_timer_value();
   new_node->reg_cval = t;
   t += tval;
   new_node->target_cval = t;
@@ -128,31 +148,32 @@ void core_timer_interrupt_handler(){
   else{
     uart_puts((char *) "\n");
     print_timer(reg_cval/(core_timer_freq/1000), (char *) "Command executed time = ");
-    unsigned long long cur_ms;
-    get_core_timer_ms(&cur_ms);
+    unsigned long long cur_ms = get_core_timer_ms();
     print_timer(cur_ms, (char *) "Current time = ");
     invoke_func(token);
   }
 }
 
-void get_core_timer_value(unsigned long long* r){
+unsigned long long get_core_timer_value(){
+  //unsigned long long *r = (unsigned long long *)arg->x[0];
   register unsigned long long pct;
   asm volatile("mrs %0, cntpct_el0" : "=r"(pct));
-  *r = pct;
+  return pct;
+  //*r = pct;
 }
 
-void get_core_timer_ms(unsigned long long *r){
+unsigned long long get_core_timer_ms(){
+  //unsigned long long *r = (unsigned long long *)arg->x[0];
   register unsigned long long pct;
   register unsigned long long freq;
   asm volatile("mrs %0, cntfrq_el0" : "=r"(freq));
   asm volatile("mrs %0, cntpct_el0" : "=r"(pct));
-  *r = pct/(freq/1000);
+  return pct/(freq/1000);
 }
 
 void print_system_timer_cb(int token){
   if (print_system_time_flag){
-    register unsigned long long ms;
-    get_core_timer_ms(&ms);
+    register unsigned long long ms = get_core_timer_ms();
     print_timer(ms, (char *) "System time = ");
     set_next_pst_tval();
   }
@@ -167,6 +188,7 @@ void set_next_pst_tval(){
 }
 
 void set_one_shot_timer(struct one_shot_timer *n){
+  //struct one_shot_timer *n = (struct one_shot_timer *)arg->x[0];
   register unsigned long long tval = core_timer_freq*(n->ms)/1000;
   timer_queue_insert(tval, n->token, n->func);
 }

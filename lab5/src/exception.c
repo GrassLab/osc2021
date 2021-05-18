@@ -3,6 +3,7 @@
 # include "uart.h"
 # include "mem_addr.h"
 # include "timer.h"
+# include "schedule.h"
 
 
 char vector_table_desc[16][30] = {
@@ -24,7 +25,7 @@ char vector_table_desc[16][30] = {
   "0x780, sError-AArch32",
 };
 
-void general_exception_handler(unsigned long arg, unsigned long type, unsigned long esr, unsigned long elr){
+void general_exception_handler(struct trapframe *arg, unsigned long type, unsigned long esr, unsigned long elr){
   switch(type){
     case 0:
     case 4:
@@ -40,10 +41,12 @@ void general_exception_handler(unsigned long arg, unsigned long type, unsigned l
     default:
       break;
   }
+  schedule();
 }
 
 
-void sync_handler(unsigned long arg, unsigned long type, unsigned long esr, unsigned long elr){
+void sync_handler(struct trapframe *arg, unsigned long type, unsigned long esr, unsigned long elr){
+  /*
   char ct[20];
   uart_puts((char *) "Enter SYNC handler\n");
   uart_puts((char *) "[EXCEPTION] TYPE = ");
@@ -62,34 +65,41 @@ void sync_handler(unsigned long arg, unsigned long type, unsigned long esr, unsi
   uart_puts(ct);
   uart_puts((char *) "\n");
   uart_puts((char *) "[SYNC] EC = ");
+  */
   int ec = (esr >> 26) & 0b111111;
   int iss = esr & 0x1FFFFFF;
+  /*
   int_to_hex(ec, ct);
   uart_puts(ct);
   uart_puts((char *) ", ISS = ");
   int_to_hex(iss, ct);
   uart_puts(ct);
   uart_puts((char *) "\n");
+  */
   // check if SVC
   if (ec == ESR_EC_SVC){
-    uart_puts((char *) "[SYNC] Call SVC handler\n");
+    //uart_puts((char *) "[SYNC] Call SVC handler\n");
     svc_handler(arg, type, iss);
     return ;
   }
 }
 
 
-void svc_handler(unsigned long arg, unsigned long type, int iss){
+void svc_handler(struct trapframe *arg, unsigned long type, int iss){
   char ct[20];
+  unsigned long long ans_ull;
+  //int ans_int;
   switch(iss){
     case SVC_ISS_NOPE:
       uart_puts((char *) "[SVC] inside SVC handler\n");
       break;
     case SVC_ISS_GET_TIMER_VALUE:
-      get_core_timer_value((unsigned long long *)arg);
+      ans_ull = get_core_timer_value();
+      arg->x[0] = ans_ull;
       break;
     case SVC_ISS_GET_TIMER_MS:
-      get_core_timer_ms((unsigned long long *)arg);
+      ans_ull = get_core_timer_ms();
+      arg->x[0] = ans_ull;
       break;
     case SVC_ISS_PRINT_SYSTEM_TIME_ENABLE:
       print_system_time_enable();
@@ -98,7 +108,25 @@ void svc_handler(unsigned long arg, unsigned long type, int iss){
       print_system_time_disable();
       break;
     case SVC_ISS_SET_ONE_SHOT_TIMER:
-      set_one_shot_timer((struct one_shot_timer *)arg);
+      set_one_shot_timer((struct one_shot_timer *)(arg->x[0]));
+      break;
+    case SVC_ISS_GETPID:
+      arg->x[0] = get_pid();
+      break;
+    case SVC_ISS_UART_READ:
+      arg->x[0] = svc_uart_read((char *)arg->x[0], (int)arg->x[1]);
+      break;
+    case SVC_ISS_UART_WRITE:
+      arg->x[0] = svc_uart_write((char *)arg->x[0], (int)arg->x[1]);
+      break;
+    case SVC_ISS_EXEC:
+      sys_exec(arg);
+      break;
+    case SVC_ISS_EXIT:
+      task_exit();
+      break;
+    case SVC_ISS_FORK:
+      sys_fork(arg);
       break;
     default:
       uart_puts((char *) "[SVC] unknown SVC number : ");
@@ -107,7 +135,7 @@ void svc_handler(unsigned long arg, unsigned long type, int iss){
       uart_puts((char *) "\n");
       break;
   }
-  uart_puts((char *) "return\n");
+  //uart_puts((char *) "return\n");
 }
 
 void irq_handler(){
@@ -116,4 +144,11 @@ void irq_handler(){
   if (core0_intr_src & (1 << 1)){
     core_timer_interrupt_handler();
   }
+  IRQ_ENABLE();
+}
+
+int get_DAIF(){
+  register unsigned long long daif;
+  asm volatile ("mrs %0, DAIF" : "=r"(daif));
+  return daif;
 }
