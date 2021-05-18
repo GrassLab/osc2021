@@ -53,7 +53,7 @@ void exception_entry()
 	// if core timer enable, not show message
 	unsigned long long cntp_ctl_el0;
 	asm volatile("mrs %0, cntp_ctl_el0" : "=r"(cntp_ctl_el0));	
-	if(cntp_ctl_el0 == 1)
+	if(cntp_ctl_el0 != 0)
 		return;
 	
 	unsigned long long spsr_el1, elr_el1, esr_el1;
@@ -98,9 +98,9 @@ void no_exception_handle()
 }
 
 /*
-*	irq_interrupt
+*	lowerEL_irq_interrupt
 *   
-*   The method use for irq interrupt handle
+*   The method use for lowerEL irq interrupt handle
 *	1. distinguish interrupt source : core timer or uart
 *	2. use different exception_handle handle different interrupt
 *  
@@ -113,7 +113,60 @@ void no_exception_handle()
 *   4. after exception_handle, enable interrupt    
 *
 */
-void irq_interrupt()
+void lowerEL_irq_interrupt()
 {
-	core_timer_handle();
+	disable_interrupt();
+	
+	unsigned int core_irq = (*CORE0_IRQ_SOURCE & (1 << 1));	
+	unsigned int uart_irq = (*IRQ_PENDING_1 & AUX_IRQ);
+	
+	// ARM core timer irq interrupt
+	if(core_irq)
+		core_timer_handle();
+	// uart irq interrupt
+	else if(uart_irq)
+		uart_interrupt_handler();
+	
+	enable_interrupt();
+}
+
+void currentEL_irq_interrupt()
+{
+	disable_interrupt();
+	
+	unsigned int core_irq = (*CORE0_IRQ_SOURCE & (1 << 1));	
+	unsigned int uart_irq = (*IRQ_PENDING_1 & AUX_IRQ);
+	
+	// ARM core timer irq interrupt
+	if(core_irq)
+		timout_handle();
+	// uart irq interrupt
+	else if(uart_irq)
+		uart_interrupt_handler();
+	
+	enable_interrupt();
+}
+
+/*
+*	enable_interrupt
+*   
+*   DAIFClr register : enable D,A,I,F
+*	0xf = 1111 ,  represent D,A,I,F enable all   
+*
+*/
+void enable_interrupt() 
+{ 
+	asm volatile("msr DAIFClr, 0xf"); 
+}
+
+/*
+*	disable_interrupt
+*   
+*   DAIFSet register : disable D,A,I,F
+*	0xf = 1111 ,  represent D,A,I,F disable all   
+*
+*/
+void disable_interrupt() 
+{ 
+	asm volatile("msr DAIFSet, 0xf");
 }

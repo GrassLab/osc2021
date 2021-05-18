@@ -103,9 +103,14 @@ lowerEL_sync_handler:
     eret
 
 lowerEL_irq_handler:
+    save_all
+    bl lowerEL_irq_interrupt	// exception.c
+    load_all
+    eret
+
 currentEL_irq_handler:
     save_all
-    bl irq_interrupt	// exception.c
+    bl currentEL_irq_interrupt	// exception.c
     load_all
     eret
 	

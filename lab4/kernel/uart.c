@@ -2,6 +2,11 @@
 #include "auxilary.h"
 #include "uart.h"
 
+char read_buf[MAX_UART_BUFFER];
+char write_buf[MAX_UART_BUFFER];
+int read_buf_start, read_buf_end;
+int write_buf_start, write_buf_end;
+
 /**
  * Set baud rate and characteristics (115200 8N1) and map to GPIO
  */
@@ -57,6 +62,8 @@ void uart_init()
     *GPPUDCLK0 = 0;        					   // Remove the clock
 	
     *AUX_MU_CNTL = 3;      // enable Tx, Rx
+	
+	uart_interrupt_init();
 }
 
 /*
@@ -103,4 +110,145 @@ void uart_putstr(char *s)
             uart_sendchar('\r');
         uart_sendchar(*s++);
     }
+}
+
+/*
+*	uart_interrupt_init()
+*
+*   1. enable uart read interrupt
+*   2. initial read，write buffer parameter
+*   3. enable_uart_interrupt
+*
+*   AUX_MU_IER
+*   https://cs140e.sergio.bz/docs/BCM2837-ARM-Peripherals.pdf  p.12
+*
+*   0' bit : enable or disable receive interrupt (read)   
+*   1' bit : enable or disable transmit interrupt (write)
+*
+*   0: disable read & write (00)
+*   1: enable read, disable write (01)
+*   2: enable write, disable read (10)
+*   3: enable read & write (11)
+*/
+void uart_interrupt_init()
+{
+	*AUX_MU_IER = 1;
+	read_buf_start = read_buf_end = 0;
+	write_buf_start = write_buf_end = 0;
+	enable_uart_interrupt();
+}
+
+void enable_uart_interrupt() 
+{ 
+	*ENABLE_IRQS_1 = AUX_IRQ; 
+}
+
+void disable_uart_interrupt() 
+{ 
+	*DISABLE_IRQS_1 = AUX_IRQ; 
+}
+
+void enable_write_interrupt() 
+{ 
+	*AUX_MU_IER |= 0x2; 
+}
+
+void disable_write_interrupt() 
+{ 
+	*AUX_MU_IER &= ~(0x2); 
+}
+
+/*
+*	uart_interrupt_handler()
+*	
+*	1. critical section： before handle，disable interrupt; after handle，enable interrupt
+*   2. AUX_MU_IIR https://cs140e.sergio.bz/docs/BCM2837-ARM-Peripherals.pdf p.13
+*      0x4 = read, 0x2 = write
+*   3. AUX_MU_LSR https://cs140e.sergio.bz/docs/BCM2837-ARM-Peripherals.pdf p.15
+*      0x1 = data ready, 0x20 = transmitter empty
+*   4. if read, we read byte to reade buffer end inex, and if buffer end index is end ,  index = 0，循環 
+*   5. if write
+*	   5.1 if write buffer full, disable write interrupt and break;
+*      5.2 get char form write buffer start index and send 	
+*      2.2 if buffer start = max size,  start = 0，循環 
+*/
+void uart_interrupt_handler() 
+{
+	disable_uart_interrupt();
+
+	if (*AUX_MU_IIR & 0x4) // read
+	{
+		while (*AUX_MU_LSR & 0x1)
+		{
+			char c = (char)(*AUX_MU_IO);
+			read_buf[read_buf_end++] = c;
+
+			if (read_buf_end == MAX_UART_BUFFER) 
+				read_buf_end = 0;
+		}
+	} 
+	else if (*AUX_MU_IIR & 0x2) // write
+	{
+		while (*AUX_MU_LSR & 0x20) 
+		{
+			if (write_buf_start == write_buf_end) 
+			{
+				disable_write_interrupt();
+				break;
+			}
+		  
+			char c = write_buf[write_buf_start++];
+			*AUX_MU_IO = c;
+		  
+			if (write_buf_start == MAX_UART_BUFFER) 
+			    write_buf_start = 0;
+		}
+	}
+
+	enable_uart_interrupt();
+}
+
+/*
+*	uart_async_getchar()
+*	
+*   1. wait until there are new data
+*   2. read a char form read buffer start index
+*   3. if buffer start index is end, index = 0
+*/
+char uart_async_getchar() 
+{
+	// wait until there are new data
+	while (read_buf_start == read_buf_end) 
+	{
+		asm volatile("nop");
+	}
+
+	char c = read_buf[read_buf_start++];
+	if (read_buf_start == MAX_UART_BUFFER) 
+		read_buf_start = 0;
+	
+	return c;
+}
+
+/*
+*	uart_async_putstr(s*)
+*	
+*   1. input char to writer buffer end
+*   2. '\n' -> '\r\n'
+*   3. if buffer end index is end, index = 0
+*   4. enable write intrrupt to transmit 
+*/
+void uart_async_putstr(char *s) 
+{
+	for (int i = 0; s[i]; i++) 
+	{
+		if (s[i] == '\n') 
+			write_buf[write_buf_end++] = '\r';
+		
+		write_buf[write_buf_end++] = s[i];		
+		if (write_buf_end == MAX_UART_BUFFER) 
+			write_buf_end = 0;
+	}
+		
+	enable_write_interrupt();
 }
