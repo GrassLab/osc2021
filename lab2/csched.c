@@ -4,6 +4,8 @@
 #include "include/mini_uart.h"
 #include "include/cirq.h"
 #include "utils.h"
+#include "include/vfs.h"
+#include "include/syslib.h"
 
 struct task task_pool[MAX_TASK_NR];
 struct task *readyQueue;
@@ -133,7 +135,7 @@ int rm_from_queue(void* args)
         old->prev = 0;
         add_to_ready(old);
         wa->free = 1; // release struct wait_args
-        return;
+        return 0;
     }
     old->prev->next = old->next;
     old->next->prev = old->prev;
@@ -156,7 +158,7 @@ int sleep(int seconds)
 
     rm_from_ready(current);
     add_to_waitQueue(current, sleepQueue);
-    tqe_add(seconds * TICKS_FOR_ITR, rm_from_queue, (void*)wa);
+    tqe_add(seconds * TICKS_FOR_ITR, (void * (*)(void *))rm_from_queue, (void*)wa);
     schedule();
 
     return 0;
@@ -168,12 +170,17 @@ void init_ts_pool()
         task_pool[i].free = 1;
 }
 
+extern struct mount *rootfs_mount;
+
 struct task *new_ts()
 {
     for (int i = 0; i < MAX_TASK_NR; ++i) {
         if (task_pool[i].free) {
             task_pool[i].free = 0;
             task_pool[i].pid = i;
+            task_pool[i].wd = rootfs_mount->root;
+            for (int j = 0; j < 8; ++j)
+                task_pool[i].fd_tab[j] = 0;
             return &task_pool[i];
         }
     }
@@ -270,6 +277,8 @@ int sys_exit()
     if (rm_from_ready(current) == -1)
         return -1;
     current->status = TASK_ZOMBIE;
+    for (int i = 0; i < 8; ++i)
+        sys_close(i);
     // Release all resources, except stack and struct task.
     schedule();
     return 0;

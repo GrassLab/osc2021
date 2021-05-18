@@ -54,6 +54,8 @@ struct task {
     struct trap_frame *tf;
     struct sig_struct sig;
     struct task *next, *prev;
+    struct file *fd_tab[8];
+    struct vnode *wd;
 };
 
 struct trap_frame {

@@ -2,8 +2,8 @@ CFLAGS = -Wall -g -O0 -ffreestanding -nostdinc -nostdlib -nostartfiles
 # %.o: %.c
 # 	aarch64-linux-gnu-gcc $(CFLAGS) -c $< -o $@
 
-kernel8.img: boot.o utils.o uart.o mm.o cutils.o dtp.o test.o syscall.o entry.o irq.o cirq.o csched.o sched.o syslib.o main.o
-	aarch64-linux-gnu-ld -nostdlib -nostartfiles -Iinclude boot.o utils.o uart.o mm.o cutils.o dtp.o test.o syscall.o entry.o irq.o cirq.o csched.o sched.o syslib.o main.o -T linker.ld -o kernel8.elf
+kernel8.img: boot.o utils.o uart.o mm.o cutils.o dtp.o test.o syscall.o entry.o irq.o cirq.o csched.o sched.o syslib.o vfs.o tmpfs.o procfs.o main.o
+	aarch64-linux-gnu-ld -nostdlib -nostartfiles -Iinclude boot.o utils.o uart.o mm.o cutils.o dtp.o test.o syscall.o entry.o irq.o cirq.o csched.o sched.o syslib.o vfs.o tmpfs.o procfs.o main.o -T linker.ld -o kernel8.elf
 	aarch64-linux-gnu-objcopy -O binary kernel8.elf kernel8.img
 
 boot.o: boot.S
@@ -48,7 +48,16 @@ sched.o: sched.S
 syslib.o: syslib.S
 	aarch64-linux-gnu-gcc $(CFLAGS) -c syslib.S -o syslib.o
 
-main.o: main.c
+vfs.o: vfs.c
+	aarch64-linux-gnu-gcc $(CFLAGS) -c vfs.c -o vfs.o
+
+tmpfs.o: tmpfs.c include/dtp.h
+	aarch64-linux-gnu-gcc $(CFLAGS) -c tmpfs.c -o tmpfs.o
+
+procfs.o: procfs.c
+	aarch64-linux-gnu-gcc $(CFLAGS) -c procfs.c -o procfs.o
+
+main.o: main.c include/dtp.h
 	aarch64-linux-gnu-gcc $(CFLAGS) -c main.c -o main.o
 
 clean:
