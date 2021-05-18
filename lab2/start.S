@@ -13,7 +13,7 @@ _start:
     b 1b
 2:  
     // set stack before our code
-    ldr x1, =__stack_top
+    ldr x1, =_start
     mov sp, x1
 
     // clear bss
@@ -30,3 +30,4 @@ clear_bss:
 
 4:  
     b main
+    

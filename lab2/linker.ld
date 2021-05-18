@@ -1,10 +1,8 @@
 ENTRY(_start)
 
-__stack_top = 0x92000;
-
 SECTIONS
 {
-    . = 0x80000;
+    . = 0x60000;
     .text : { KEEP(*(.text.boot)) }
     .text :  { *(.text) }
     .rodata : { *(.rodata) }
