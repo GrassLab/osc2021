@@ -1,0 +1,6 @@
+*.o
+*.elf
+*.img
+*.d
+initramfs/
+initramfs.cpio
