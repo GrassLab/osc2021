@@ -34,5 +34,7 @@ from_el2_to_el1:
 	mov x0, 0x3c5
 	msr spsr_el2, x0
 	msr elr_el2, lr 
+	mov x0, #(3 << 20)
+	msr cpacr_el1, x0
 	eret
 

@@ -1,5 +1,5 @@
 CC = aarch64-linux-gnu-gcc
-CFLAG = -g -fPIC -Iinclude -fno-stack-protector -nostdlib -nostartfiles -ffunction-sections -fno-builtin
+CFLAG = -fPIC -Iinclude -fno-stack-protector -nostdlib -nostartfiles -ffunction-sections -fno-builtin
 
 SRC_DIR = src/
 BUILD_DIR = build/
@@ -32,7 +32,7 @@ clean:
 	-rm kernel8.elf kernel8.img
 
 test:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -initrd ../initramfs.cpio
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -display none -initrd ./initramfs.cpio
 gdb:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -S -s -initrd ../initramfs.cpio
 test_lab2:
@@ -45,10 +45,15 @@ check:
 	aarch64-linux-gnu-readelf -s kernel8.elf
 
 user_program:
-	$(CC) $(CFLAG) -c user_program.S -o user_program.elf
-	aarch64-linux-gnu-objcopy -O binary user_program.elf user_program.img
-	-rm ../initramfs.cpio
-	cp ./user_program.img ../rootfs
-	cd ../rootfs && find . | cpio -o -H newc > ../initramfs.cpio
+	-rm initramfs.cpio
+	cd ./user_code/prog1 && make
+	cd ./user_code/prog2 && make
+	cd ./user_code/prog3 && make
+	cd ./user_code/prog4 && make
+	cp ./user_code/prog1/argv_test ./user_code/rootfs/
+	cp ./user_code/prog2/fork_test ./user_code/rootfs/
+	cp ./user_code/prog3/hello_world ./user_code/rootfs/
+	cp ./user_code/prog4/ls ./user_code/rootfs/
+	cd ./user_code/rootfs/ && find . | cpio -o -H newc > ../../initramfs.cpio
 	
 	

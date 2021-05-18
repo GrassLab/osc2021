@@ -11,3 +11,9 @@ int strlen(const char* s){
     }
     return len;
 }
+void strcpy(char* dst, const char* content){
+    int i = 0;
+    do{
+        dst[i] = content[i];
+    }while(content[i++] != '\0');
+}

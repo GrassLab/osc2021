@@ -5,7 +5,8 @@ DMA_header *mem_pool;
 
 uint32_t __align_8byte(uint32_t size){
     // 8 bytes alignment
-    return (size & 0x07) ? (size & 0xfffffff8) + 8 : size;
+    unsigned int padding = 32 - (size + DMA_HEADER_SIZE) % 32;
+    return size + padding;
 }
 uint8_t __address_to_entry(uint64_t address){
     return (uint8_t)((address - MEMORY_START) / PAGE_SIZE);
