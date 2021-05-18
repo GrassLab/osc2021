@@ -130,7 +130,7 @@ void uart_puts_int(int i) {
     uart_puts(ch);
 }
 
-void uart_puts_hex(unsigned int i) {
+void uart_puts_hex(unsigned long i) {
     unsigned int n;
     int c;
     int flag = 0;
@@ -140,4 +140,40 @@ void uart_puts_hex(unsigned int i) {
         n += n > 9 ? 0x37 : 0x30;
         if(flag) uart_send(n);
     }
+}
+
+// support syscall
+int uart_read_buff(char* s,int size,int display){
+	for(int i=0;;++i){
+		if(i==size){
+			uart_puts("buffer overflow!\n");
+			return i;
+		}
+
+		s[i]=uart_getc();
+		if(display)uart_send(s[i]);
+
+		if(s[i]=='\n'){
+			s[i]=0;
+			return i;
+		}
+	}
+}
+
+unsigned long uart_getX(int display){
+	unsigned long ret=0;
+	char c;
+	while(1){
+		c=uart_getc();
+		if(display)uart_send(c);
+		if(c=='\n')break;
+		if(c>='0'&&c<='9'){
+			ret=ret*16+c-'0';
+		}else if(c>='a'&&c<='f'){
+			ret=ret*16+c-'a'+10;
+		}else if(c>='A'&&c<='F'){
+			ret=ret*16+c-'A'+10;
+		}
+	}
+	return ret;
 }

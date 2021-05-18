@@ -1,4 +1,4 @@
-int strcmp(char *a, char *b) {
+int strcmp(const char *a, const char *b) {
     while(*a != '\0') {
         if(*a != *b) return 1;
         a++;

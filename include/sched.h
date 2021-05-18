@@ -1,0 +1,1 @@
+void cpu_switch_to(thread* prev, thread* next);

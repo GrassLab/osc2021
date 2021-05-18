@@ -82,20 +82,20 @@ void print_free_list() {
 }
 
 void init_buckets() {
-	for(int i = 0; i > BUCKETS_NUM; i++) {
+	for(int i = 0; i < BUCKETS_NUM; i++) {
 		Node *list_head = &buckets[i];
 		list_head->next = NULL;
 		list_head->index = -1;
 	}
-	Node *p = BASE_MEM + 4096*0;
+	Node *p = (Node *)((unsigned long)BASE_MEM + 4096*0);
     node_init(p, 0);
     list_push(&buckets[BUCKETS_NUM-1], p);
 	uart_puts("=====Init frame freelist=====\n");
-	print_free_list();
+	// print_free_list();
 }
 
 void split_block(Node *p, int order, int block_size) {
-	uart_puts("=====Release redundant block=====\n");
+	//uart_puts("=====Release redundant block=====\n");
 	int hi = p->index + (1 << block_size); 
 	int lo = p->index;
 	while(block_size > order) {
@@ -103,22 +103,21 @@ void split_block(Node *p, int order, int block_size) {
 		block_size = block_size - 1;
 
 		/* add the bottom half of the block to free_list */
-		Node *new_node = BASE_MEM + (1 << PAGE_SIZE_LOG2)*mid;
+		Node *new_node = (Node *)((unsigned long)BASE_MEM + (1 << PAGE_SIZE_LOG2)*mid);
 		node_init(new_node, mid);
 		list_push(&buckets[block_size], new_node);
 		
 		/* recursive */
 		hi = mid;
-
+		/*
 		Node *list_head = &buckets[block_size];
-		
 		if(block_size >> 3) {
 			uart_puts("[list ");
 			uart_puts_int(block_size>>3);
 			uart_puts("] add block: index ");
 			uart_puts_int((list_head->next->index) >> 8);
 			uart_puts(", address 0x");
-			uart_puts_hex(new_node);
+			uart_puts_hex((unsigned long)new_node);
 			uart_puts("\n");
 		}
 		
@@ -128,31 +127,32 @@ void split_block(Node *p, int order, int block_size) {
 			uart_puts("] add block: index ");
 			uart_puts_int(list_head->next->index);
 			uart_puts(", address 0x");
-			uart_puts_hex(new_node);
+			uart_puts_hex((unsigned long)new_node);
 			uart_puts("\n");
 		}
-		print_free_list();
+		*/
+		// print_free_list();
 	}
-	uart_puts("\n");
+	//uart_puts("\n");
 }
 
 /* find a block from buckets which has the size at least 2^order * 4KB */
 Node* get_page_from_buckets(Node *p, int bucket_pagen, int required_pagen) {
-	uart_puts("=====Finding free block=====\n");
+	// uart_puts("=====Finding free block=====\n");
     for(int i = bucket_pagen; i < BUCKETS_NUM ; i++) {
 		Node *list_head = &buckets[i];
 		Node *p = list_head->next;
 		/* If bucket[i] is not empty */
 		if(p) {
+			/*
       		int block_index = p->index;
-
 			if(i >> 3) {
 				uart_puts("[list ");
 				uart_puts_int(i-8);
 				uart_puts("] find block: index ");
 				uart_puts_int(block_index >> 8);
 				uart_puts(", address 0x");
-				uart_puts_hex(p);
+				uart_puts_hex((unsigned long)p);
 				uart_puts("\n");
 				uart_puts("\n");
 			}
@@ -163,26 +163,27 @@ Node* get_page_from_buckets(Node *p, int bucket_pagen, int required_pagen) {
 				uart_puts("] find block: index ");
 				uart_puts_int(block_index);
 				uart_puts(", address 0x");
-				uart_puts_hex(p);
+				uart_puts_hex((unsigned long)p);
 				uart_puts("\n");
 				uart_puts("\n");
 			}
-
+			*/
 			list_remove(list_head, p);
 			if(i > required_pagen) split_block(p, required_pagen, i);
         	return p;
       	}
     }
-    return -1; // No block can use
+    return NULL; // No block can use
 }
 
 
-void* malloc(unsigned int size) {
+void* kmalloc(unsigned int size) {
 	int page_n = (size >> PAGE_SIZE_LOG2);
     page_n += size % (1 << PAGE_SIZE_LOG2) == 0 ? 0 : 1;
 	int kbpage_n = (size >> 12);
     kbpage_n += size % (1 << 12) == 0 ? 0 : 1;
-    uart_puts("=====Malloc=====\n");
+	/*
+    uart_puts("=====KMalloc=====\n");
     uart_puts("need ");
     uart_puts_int(size);
     uart_puts(" bytes, equal to ");
@@ -191,7 +192,8 @@ void* malloc(unsigned int size) {
 	uart_puts_int(kbpage_n);
 	uart_puts(" 4KB pages\n");
 	uart_puts("\n");
-	print_free_list();
+	*/
+	// print_free_list();
 
 	unsigned int start_bucket = 0;
 	int temp = page_n;
@@ -206,20 +208,20 @@ void* malloc(unsigned int size) {
         /* buckets is not empty */
         if(list_head->next) {
             Node *p = get_page_from_buckets(list_head, i, start_bucket);
-
-			uart_puts("=====Malloc success=====\n");
+			/*
+			uart_puts("=====KMalloc success=====\n");
             uart_puts("allocate at 0x");
-            uart_puts_hex(p);
+            uart_puts_hex((unsigned long)p);
 			uart_puts(", index ");
 			uart_puts_int(p->index);
             uart_puts("\n");
 			uart_puts("\n");
-			
+			*/
             return p;
         }
     }
-	print_free_list();
-    uart_puts("(error) malloc fail!\n");
+	// print_free_list();
+    uart_puts("(error) kmalloc fail!\n");
     return 0;
 }
 
@@ -243,10 +245,11 @@ int merge_block(int index, int bucket_index) {
 				/* merge the block index with block target, then add the new merged block into next level bucket */
 				index = target > index ? index : target;
 				Node *next_buckets = &buckets[i+1];
-				Node *new_node = BASE_MEM + index * PAGE_SIZE;
+				Node *new_node = (Node *)((unsigned long)BASE_MEM + index * PAGE_SIZE);
 				node_init(new_node, index);
 				list_push(next_buckets, new_node);
 
+				/*
 				if(i >> 3) {
 					uart_puts("[list ");
 					uart_puts_int(i-8);
@@ -271,7 +274,8 @@ int merge_block(int index, int bucket_index) {
 					uart_puts_int(index);
 					uart_puts("\n");
 				}
-				print_free_list();
+				*/
+				// print_free_list();
 			}
 			p = p->next;
 		}
@@ -294,6 +298,7 @@ void free_page(unsigned long addr, unsigned int size) {
 		temp = temp >> 1;
 	}
 	bucket_index += page_n & (page_n-1) ? 1 : 0;
+	/*
 	if(bucket_index >> 3) {
 		uart_puts("=====Free block=====\n");
 		uart_puts("free the block start from index ");
@@ -309,14 +314,16 @@ void free_page(unsigned long addr, unsigned int size) {
 		uart_puts_int(bucket_index);
 	}
 	uart_puts("\n");
+	*/
 	int merge = -1;
 	merge = merge_block(index, bucket_index);
 	/* no merge */
 	if(merge == -1) {
 		Node *list_head = &buckets[bucket_index];
-		Node *new_node = addr;
+		Node *new_node = (Node *)addr;
 		node_init(new_node, index);
 		list_push(list_head, new_node);
+		/*
 		uart_puts("buddy is not free\n");
 
 		if(bucket_index >> 3) {
@@ -325,7 +332,7 @@ void free_page(unsigned long addr, unsigned int size) {
 			uart_puts("] add block: index ");
 			uart_puts_int(index >> 8);
 			uart_puts(", address 0x");
-			uart_puts_hex(addr);
+			uart_puts_hex((unsigned int)addr);
 		}
 		
 		else {
@@ -334,9 +341,10 @@ void free_page(unsigned long addr, unsigned int size) {
 			uart_puts("] add block: index ");
 			uart_puts_int(index);
 			uart_puts(", address 0x");
-			uart_puts_hex(addr);
+			uart_puts_hex((unsigned int)addr);
 		}
 		uart_puts("\n");
 		uart_puts("\n");
+		*/
 	}
 }

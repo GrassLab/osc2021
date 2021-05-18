@@ -1,4 +1,6 @@
-int atoi(char* s, int base) {
+#include "utils.h"
+
+int atoi(unsigned char* s, int base) {
     int i = 0;
     int num = 0;
     int negative = 0;
