@@ -5,11 +5,15 @@
 #include <dev/Console.h>
 #include <dev/Mailbox.h>
 #include <dev/MiniUART.h>
-#include <fs/Initramfs.h>
+#include <fs/TmpFS.h>
+#include <fs/VirtualFileSystem.h>
 #include <kernel/ExceptionManager.h>
 #include <kernel/TimerMultiplexer.h>
 #include <mm/MemoryManager.h>
+#include <proc/Task.h>
 #include <proc/TaskScheduler.h>
+
+static const char* kernel_panic_msg = "Kernel panic - not syncing: ";
 
 namespace valkyrie::kernel {
 
@@ -35,7 +39,7 @@ class Kernel {
   ExceptionManager& _exception_manager;
   TimerMultiplexer& _timer_multiplexer;
   TaskScheduler& _task_scheduler;
-  Initramfs& _initramfs;
+  VFS& _vfs;
 };
 
 
@@ -49,18 +53,26 @@ template <typename... Args>
   console::clear_color();
   printk("");
   console::set_color(console::Color::RED, /*bold=*/true);
-  printf("Kernel panic: ");
+  printf(kernel_panic_msg);
   console::set_color(console::Color::YELLOW);
   printf(fmt, forward<Args>(args)...);
   console::clear_color();
 
-  printk("SP = 0x%x\n", stack_pointer);
+  printk("SP = 0x%x ", stack_pointer);
+  /*
+  if (Task::current()) {
+    printf("PID = %d", Task::current()->get_pid());
+  }
+  */
+  puts("");
 
-  MemoryManager::get_instance().dump_slob_allocator_info();
+
+  //MemoryManager::get_instance().dump_slob_allocator_info();
 
   printk("");
   console::set_color(console::Color::RED, /*bold=*/true);
-  printf("---[ end Kernel panic: ");
+  printf("---[ end ");
+  printf(kernel_panic_msg);
   console::set_color(console::Color::YELLOW);
   printf(fmt, forward<Args>(args)...);
   console::clear_color();

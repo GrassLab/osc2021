@@ -173,6 +173,11 @@ void BuddyAllocator::free_list_del_head(Block* block) {
     Kernel::panic("kernel heap corrupted: free_list_del_head(nullptr)\n");
   }
 
+  if (unlikely(block->order < 0 || block->order >= MAX_ORDER)) {
+    Kernel::panic("kernel heap corrupted: block (0x%x) = {0x%x, 0x%x}\n",
+                  block, block->next, block->order);
+  }
+
   if (unlikely(!_free_lists[block->order])) {
     return;
   }
@@ -184,6 +189,11 @@ void BuddyAllocator::free_list_del_head(Block* block) {
 void BuddyAllocator::free_list_add_head(Block* block) {
   if (unlikely(!block)) {
     Kernel::panic("kernel heap corrupted: free_list_add_head(nullptr)\n");
+  }
+
+  if (unlikely(block->order < 0 || block->order >= MAX_ORDER)) {
+    Kernel::panic("kernel heap corrupted: block (0x%x) = {0x%x, 0x%x}\n",
+                  block, block->next, block->order);
   }
 
   if (unlikely(_free_lists[block->order] == block)) {

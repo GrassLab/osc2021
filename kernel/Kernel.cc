@@ -1,6 +1,8 @@
 // Copyright (c) 2021 Marco Wang <m.aesophor@gmail.com>. All rights reserved.
 #include <kernel/Kernel.h>
 
+#include <fs/CPIOArchive.h>
+
 namespace valkyrie::kernel {
 
 Kernel& Kernel::get_instance() {
@@ -15,7 +17,7 @@ Kernel::Kernel()
       _exception_manager(ExceptionManager::get_instance()),
       _timer_multiplexer(TimerMultiplexer::get_instance()),
       _task_scheduler(TaskScheduler::get_instance()),
-      _initramfs(Initramfs::get_instance()) {}
+      _vfs(VFS::get_instance()) {}
 
 
 void Kernel::run() {
@@ -29,6 +31,10 @@ void Kernel::run() {
   printk("enabling timer interrupts\n");
   _timer_multiplexer.get_arm_core_timer().enable();
   */
+ 
+  printk("VFS: mounting rootfs...\n");
+  _vfs.mount_rootfs(make_unique<TmpFS>(), CPIOArchive(CPIO_ARCHIVE_ADDR));
+  //_vfs.get_rootfs().fs->show();
 
   printk("starting task scheduler...\n");
   _task_scheduler.run();

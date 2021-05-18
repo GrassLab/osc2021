@@ -6,6 +6,8 @@
 #include <Memory.h>
 #include <Types.h>
 #include <dev/Console.h>
+#include <fs/File.h>
+#include <fs/Vnode.h>
 #include <kernel/Compiler.h>
 #include <libs/CString.h>
 #include <mm/Page.h>
@@ -15,6 +17,7 @@
 
 #define TASK_TIME_SLICE    3
 #define TASK_NAME_MAX_LEN 16
+#define NR_TASK_FD_LIMITS 16
 
 namespace valkyrie::kernel {
 
@@ -25,9 +28,10 @@ class TrapFrame;
 extern "C" void switch_to(Task* prev, Task* next);
 
 class Task {
- public:
+  // Friend declaration
   friend class TaskScheduler;
 
+ public:
   enum class State {
     CREATED,
     RUNNABLE,
@@ -49,14 +53,10 @@ class Task {
   Task& operator= (const Task& r) = delete;
 
 
-  [[gnu::always_inline]] static Task& get_current() {
-    Task* current;
-    asm volatile("mrs %0, TPIDR_EL1" : "=r" (current));
-    return *current;
-  }
-
-  [[gnu::always_inline]] static void set_current(const Task* t) {
-    asm volatile("msr TPIDR_EL1, %0" :: "r" (t));
+  [[gnu::always_inline]] static Task* current() {
+    Task* ret;
+    asm volatile("mrs %0, TPIDR_EL1" : "=r" (ret));
+    return ret;
   }
 
   [[gnu::always_inline]] void save_context() {
@@ -73,6 +73,11 @@ class Task {
   int do_signal(int signal, void (*handler)());
 
   void handle_pending_signals();
+
+  int allocate_fd_for_file(SharedPtr<File> file);
+  SharedPtr<File> release_fd_and_get_file(const int fd);
+  SharedPtr<File> get_file_by_fd(const int fd) const;
+  bool is_fd_valid(const int fd) const;
 
 
   Task::State get_state() const { return _state; }
@@ -143,6 +148,12 @@ class Task {
   // POSIX signals
   List<Signal> _pending_signals;
   void (*_custom_signal_handlers[Signal::__NR_signals])();
+
+  // Per-process file descriptors
+  SharedPtr<File> _fd_table[NR_TASK_FD_LIMITS];
+
+  // Current working directory
+  Vnode* _cwd_vnode;
 };
 
 }  // namespace valkyrie::kernel

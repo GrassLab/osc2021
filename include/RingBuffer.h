@@ -14,8 +14,8 @@ template <typename T>
 class RingBuffer {
  public:
   using ValueType = T;
-  using ConstIterator = BasicIterator<const RingBuffer, const ValueType>;
-  using Iterator = BasicIterator<RingBuffer, ValueType>;
+  using ConstIterator = ContiguousIterator<const RingBuffer, const ValueType>;
+  using Iterator = ContiguousIterator<RingBuffer, ValueType>;
 
   // Constructor
   explicit
@@ -85,6 +85,12 @@ class RingBuffer {
 
   T& front() { return _data[_head]; }
   T& back() { return _data[(_tail - 1 < 0) ? _capacity - 1 : _tail - 1]; }
+
+  const T& front() const { return _data[_head]; }
+  const T& back() const {
+    return _data[(_tail - 1 < 0) ? _capacity - 1 : _tail - 1];
+  }
+
 
  protected:
   UniquePtr<T[]> _data;

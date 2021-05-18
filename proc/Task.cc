@@ -1,11 +1,9 @@
 // Copyright (c) 2021 Marco Wang <m.aesophor@gmail.com>. All rights reserved.
 #include <proc/Task.h>
 
-#include <Mutex.h>
-#include <UniqueLock.h>
 #include <String.h>
 #include <fs/ELF.h>
-#include <fs/Initramfs.h>
+#include <fs/VirtualFileSystem.h>
 #include <kernel/Compiler.h>
 #include <kernel/ExceptionManager.h>
 #include <kernel/Kernel.h>
@@ -38,7 +36,9 @@ Task::Task(Task* parent, void (*entry_point)(), const char* name)
       _ustack_page(get_free_page()),
       _name(),
       _pending_signals(),
-      _custom_signal_handlers() {
+      _custom_signal_handlers(),
+      _fd_table(),
+      _cwd_vnode(VFS::get_instance().get_rootfs().get_root_vnode().get()) {
 
   if (unlikely(_pid == 1)) {
     Task::_init = this;
@@ -51,22 +51,33 @@ Task::Task(Task* parent, void (*entry_point)(), const char* name)
   }
 
   _context.lr = reinterpret_cast<uint64_t>(entry_point);
-  _context.sp = _kstack_page.end();
+  _context.sp = _kstack_page.end() - 0x10;
   strcpy(_name, name);
 
-  printk("constructed thread 0x%x [%s] (pid = %d): entry: 0x%x\n",
+  // Reserve fd 0,1,2 for stdin, stdout, stderr
+  _fd_table[0] = File::opened;
+  _fd_table[1] = File::opened;
+  _fd_table[2] = File::opened;
+
+  /*
+  printk("constructed thread 0x%x [%s] (pid = %d): entry: 0x%x, _kstack_page = 0x%x, _ustack_page = 0x%x\n",
       this,
       _name,
       _pid,
-      _entry_point);
+      _entry_point,
+      _kstack_page.begin(),
+      _ustack_page.begin());
+  */
 }
 
 
 Task::~Task() {
+  /*
   printk("destructing thread 0x%x [%s] (pid = %d)\n",
         this,
         _name,
         _pid);
+  */
 
   // If the current task still has running children,
   // make the init task adopt these orphans.
@@ -74,9 +85,11 @@ Task::~Task() {
   while (!_active_children.empty()) {
     auto child = _active_children.front();
     Task::_init->_active_children.push_back(child);
+    child->_parent = Task::_init;
     _active_children.pop_front();
   }
 
+  kfree(_elf_dest);
   kfree(_kstack_page.get());
   kfree(_ustack_page.get());
 }
@@ -100,12 +113,12 @@ Task* Task::get_by_pid(const pid_t pid) {
       Task* task = q.front();
       q.pop_front();
 
-      auto result = task->_active_children.find_if([pid](auto t) {
+      auto it = task->_active_children.find_if([pid](auto t) {
         return t->_pid == pid;
       });
 
-      if (result) {
-        return *result;
+      if (it != task->_active_children.end()) {
+        return *it;
       }
 
       // Push all children onto the queue.
@@ -189,15 +202,25 @@ int Task::do_exec(const char* name, const char* const _argv[]) {
 
   // Construct the argv chain on the user stack.
   size_t user_sp = copy_arguments_to_user_stack(_argv);
-  size_t kernel_sp = _kstack_page.end();
+  size_t kernel_sp = _kstack_page.end() - 0x10;
 
   // Reset the stack pointer.
   _context.sp = user_sp;
 
   kfree(_elf_dest);
+  _elf_dest = nullptr;
 
   // Load the specified file from the filesystem.
-  ELF elf(Initramfs::get_instance().read(name));
+  SharedPtr<File> file = VFS::get_instance().open(name, 0);
+  
+  if (!file) {
+    printk("exec failed: pid = %d [%s]\n", _pid, _name);
+    return -1;
+  }
+
+  ELF elf({ file->vnode->get_content(), file->vnode->get_size() });
+  VFS::get_instance().close(move(file));
+
   _elf_dest = kmalloc(elf.get_size() + 0x1000);
   void* dest = reinterpret_cast<char*>(_elf_dest) + 0x1000 - 0x10;
 
@@ -209,12 +232,12 @@ int Task::do_exec(const char* name, const char* const _argv[]) {
     goto failed;
   }
 
-  printk("loading ELF at 0x%x\n", dest);
+  //printk("loading ELF at 0x%x\n", dest);
   elf.load_at(dest);
 
   // Jump to the entry point.
-  printk("executing new program: %s, _kstack_page = 0x%x, _ustack_page = 0x%x\n",
-         _name, _kstack_page, _ustack_page);
+  //printk("executing new program: %s, _kstack_page = 0x%x, _ustack_page = 0x%x\n",
+  //       _name, _kstack_page.begin(), _ustack_page.begin());
 
   ExceptionManager::get_instance()
     .downgrade_exception_level(0,
@@ -255,14 +278,19 @@ int Task::do_wait(int* wstatus) {
   _state = Task::State::TERMINATED;
   _error_code = error_code;
 
-  kfree(_elf_dest);
+  // Close unclosed fds
+  for (int i = 3; i < NR_TASK_FD_LIMITS; i++) {
+    if (_fd_table[i]) {
+      sys_close(i);
+    }
+  }
 
-  Mutex m;
-  m.lock();
+  kfree(_elf_dest);
+  _elf_dest = nullptr;
+
   auto& sched = TaskScheduler::get_instance();
   _parent->_active_children.remove(this);
   _parent->_terminated_children.push_back(sched.remove_task(*this));
-  m.unlock();
 
   sched.schedule();
   Kernel::panic("sys_exit: returned from sched.\n");
@@ -306,6 +334,7 @@ size_t Task::copy_arguments_to_user_stack(const char* const argv[]) {
 
   // Probe for argc from `_argv`.
   for (const char* s = argv[0]; s; s = argv[++argc]);
+
   strings = make_unique<String[]>(argc);
   copied_str_addrs = make_unique<char*[]>(argc);
 
@@ -369,6 +398,35 @@ void Task::handle_pending_signals() {
       invoke_default_signal_handler(signal);
     }
   }
+}
+
+
+int Task::allocate_fd_for_file(SharedPtr<File> file) {
+  for (int i = 0; i < NR_TASK_FD_LIMITS; i++) {
+    if (!_fd_table[i]) {
+      _fd_table[i] = move(file);
+
+      if (!_fd_table[i]) {
+        Kernel::panic("wtf\n");
+      }
+      return i;
+    }
+  }
+
+  printk("warning: task (pid = %d) has reached fd limits!\n", _pid);
+  return -1;
+}
+
+SharedPtr<File> Task::release_fd_and_get_file(const int fd) {
+  return (likely(is_fd_valid(fd))) ? move(_fd_table[fd]) : nullptr;
+}
+
+SharedPtr<File> Task::get_file_by_fd(const int fd) const {
+  return (likely(is_fd_valid(fd))) ? _fd_table[fd] : nullptr;
+}
+
+bool Task::is_fd_valid(const int fd) const {
+  return fd >= 0 && fd < NR_TASK_FD_LIMITS;
 }
 
 }  // namespace valkyrie::kernel

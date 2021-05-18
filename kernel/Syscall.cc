@@ -2,6 +2,7 @@
 #include <kernel/Syscall.h>
 
 #include <dev/Console.h>
+#include <fs/VirtualFileSystem.h>
 #include <kernel/TimerMultiplexer.h>
 #include <proc/Task.h>
 #include <proc/TaskScheduler.h>
@@ -12,6 +13,10 @@ namespace valkyrie::kernel {
   reinterpret_cast<const size_t>(func)
 
 const size_t __syscall_table[Syscall::__NR_syscall] = {
+  SYSCALL_DECL(sys_read),
+  SYSCALL_DECL(sys_write),
+  SYSCALL_DECL(sys_open),
+  SYSCALL_DECL(sys_close),
   SYSCALL_DECL(sys_uart_read),
   SYSCALL_DECL(sys_uart_write),
   SYSCALL_DECL(sys_uart_putchar),
@@ -23,13 +28,94 @@ const size_t __syscall_table[Syscall::__NR_syscall] = {
   SYSCALL_DECL(sys_sched_yield),
   SYSCALL_DECL(sys_kill),
   SYSCALL_DECL(sys_signal),
+  SYSCALL_DECL(sys_access),
 };
 
 
-size_t sys_uart_read(char buf[], size_t size) {
-  for (size_t i = 0; i < size; i++) {
-    buf[i] = MiniUART::get_instance().getchar();
+
+int sys_read(int fd, void* buf, size_t count) {
+  // TODO: define stdin...
+  if (fd == 0) {
+    char* s = reinterpret_cast<char*>(buf);
+    for (size_t i = 0; i < count; i++) {
+      s[i] = getchar();
+    }
+    return count;
   }
+
+  SharedPtr<File> file = Task::current()->get_file_by_fd(fd);
+
+  if (!file) {
+    printk("sys_read: fd %d doesn't exist. Is it opened?\n", fd);
+    return -1;
+  }
+
+  return VFS::get_instance().read(file, buf, count);
+}
+
+int sys_write(int fd, const void* buf, size_t count) {
+  // TODO: define stdout and stderr...
+  if (fd == 1 || fd == 2) {
+    const char* s = reinterpret_cast<const char*>(buf);
+    for (size_t i = 0; i < count; i++) {
+      putchar(s[i]);
+    }
+    return count;
+  }
+
+  SharedPtr<File> file = Task::current()->get_file_by_fd(fd);
+
+  if (!file) {
+    printk("sys_write: fd %d doesn't exist. Is it opened?\n", fd);
+    return -1;
+  }
+
+  return VFS::get_instance().write(file, buf, count);
+}
+
+int sys_open(const char* pathname, int options) {
+  SharedPtr<File> file = VFS::get_instance().open(pathname, options);
+
+  if (!file) {
+    if (options & O_CREAT) {
+      printk("sys_open: unable to create file %s\n", pathname);
+    } else {
+      printk("sys_open: file %s doesn't exist\n", pathname);
+    }
+    return -1;
+  }
+
+  return Task::current()->allocate_fd_for_file(file);
+}
+
+int sys_close(int fd) {
+  SharedPtr<File> file = Task::current()->release_fd_and_get_file(fd);
+
+  if (!file) {
+    printk("sys_close: fd %d doesn't exist. Is it opened?\n", fd);
+    return -1;
+  }
+
+  return VFS::get_instance().close(file);
+}
+
+size_t sys_uart_read(char buf[], size_t size) {
+  int i = 0;
+  while (i < (int) size) {
+    auto c = MiniUART::get_instance().getchar();
+
+    if (c == 0x7f) {
+      if (i > 0) {
+        buf[--i] = 0;
+        puts("\b \b", /*newline=*/false);
+      }
+    } else if (c == '\n') {
+      return i;
+    } else {
+      buf[i++] = c;
+    }
+  }
+
   return size;
 }
 
@@ -45,23 +131,23 @@ void sys_uart_putchar(const char c) {
 }
 
 int sys_fork() {
-  return Task::get_current().do_fork();
+  return Task::current()->do_fork();
 }
 
 int sys_exec(const char* name, const char* const argv[]) {
-  return Task::get_current().do_exec(name, argv);
+  return Task::current()->do_exec(name, argv);
 }
 
 int sys_wait(int* wstatus) {
-  return Task::get_current().do_wait(wstatus);
+  return Task::current()->do_wait(wstatus);
 }
 
 [[noreturn]] void sys_exit(int error_code) {
-  Task::get_current().do_exit(error_code);
+  Task::current()->do_exit(error_code);
 }
 
 int sys_getpid() {
-  return Task::get_current().get_pid();
+  return Task::current()->get_pid();
 }
 
 int sys_sched_yield() {
@@ -70,11 +156,15 @@ int sys_sched_yield() {
 }
 
 long sys_kill(pid_t pid, int signal) {
-  return Task::get_current().do_kill(pid, static_cast<Signal>(signal));
+  return Task::current()->do_kill(pid, static_cast<Signal>(signal));
 }
 
 int sys_signal(int signal, void (*handler)()) {
-  return Task::get_current().do_signal(signal, handler);
+  return Task::current()->do_signal(signal, handler);
+}
+
+int sys_access(const char* pathname, int options) {
+  return VFS::get_instance().access(pathname, options);
 }
 
 }  // namespace valkyrie::kernel

@@ -3,6 +3,7 @@
 #define VALKYRIE_STRING_H_
 
 #include <Iterator.h>
+#include <List.h>
 #include <Memory.h>
 #include <libs/CString.h>
 
@@ -11,8 +12,8 @@ namespace valkyrie::kernel {
 class String {
  public:
   using ValueType = char;
-  using ConstIterator = BasicIterator<const String, const ValueType>;
-  using Iterator = BasicIterator<String, ValueType>;
+  using ConstIterator = ContiguousIterator<const String, const ValueType>;
+  using Iterator = ContiguousIterator<String, ValueType>;
 
   // Default constructor
   String() : _s() {}
@@ -28,7 +29,7 @@ class String {
 
   // Copy constructor
   String(const String& r) {
-    *this = r;
+    *this = r;  // delegate to copy assignment operator
   }
 
   // Copy assignment operator
@@ -69,8 +70,56 @@ class String {
   ConstIterator end() const { return ConstIterator::end(*this); }
 
 
+  String substr(size_t begin, size_t len) const {
+    // Sanitize `len`.
+    if (begin + len > size()) {
+      len = size() - begin;
+    }
+
+    String ret;
+    ret._s = make_unique<char[]>(len + 1);
+    strncpy(ret._s.get(), _s.get() + begin, len);
+    return ret;
+  }
+
+  // Splits this string by `delimiter` into at most `limit` substrings,
+  // and places the substrings into a List.
+  List<String> split(const char delimiter = ' ', size_t limit = 0) const {
+    if (empty()) {
+      return {};
+    }
+
+    List<String> substrings;
+    size_t begin = 0;
+    for (size_t i = 0; i < size() && substrings.size() != limit - 1; i++) {
+      char c = _s[i];
+      if (c == delimiter) {
+        size_t len = i - begin;
+        if (len) {
+          substrings.push_back(substr(begin, len));
+        }
+        begin = i + 1;
+      }
+    }
+
+    size_t tail_len = size() - begin;
+    if (tail_len) {
+      substrings.push_back(substr(begin, tail_len));
+    }
+
+    return substrings;
+  }
+
+
+  bool empty() const { return size() == 0; }
   size_t size() const { return (_s) ? strlen(_s.get()) : 0; }
+  const char& at(size_t i) const { return _s[i]; }
   const char* c_str() const { return _s.get(); }
+
+  char& front() { return _s[0]; }
+  char& back() { return _s[size() - 1]; }
+  const char& front() const { return _s[0]; }
+  const char& back() const { return _s[size() - 1]; }
 
  private:
   UniquePtr<char[]> _s;

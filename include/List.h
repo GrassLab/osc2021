@@ -4,14 +4,27 @@
 
 #include <Functional.h>
 #include <Memory.h>
+#include <Types.h>
 #include <kernel/Compiler.h>
 
 namespace valkyrie::kernel {
 
+// Forward declaration
+template <typename ValueType>
+class ListIterator;
+
 // Linux kernel doubly linked list
 template <typename T>
 class List {
+  // Friend declaration
+  template <typename ValueType>
+  friend class ListIterator;
+
  public:
+  using ValueType = T;
+  using ConstIterator = ListIterator<const ValueType>;
+  using Iterator = ListIterator<ValueType>;
+
   // Constructor
   List()
       : _head(make_unique<Node>()),
@@ -27,7 +40,45 @@ class List {
     }
   }
 
+  // Copy constructor
+  List(const List& r) {
+    *this = r;  // delegate to copy assignment operator
+  }
+
+  // Copy assignment operator
+  List& operator =(const List& r) {
+    _head = make_unique<Node>();
+    _size = 0;
+
+    // Deep copy this list.
+    for (const auto& data : r) {
+      push_back(data);
+    }
+    return *this;
+  }
+
+  // Move constructor
+  List(List&& r) noexcept
+      : _head(make_unique<Node>()),
+        _size() {
+    *this = move(r);  // delegate to move assignment operator
+  }
+
+  // Move assignment operator
+  List& operator =(List&& r) noexcept {
+    _head.swap(r._head);
+    _size = r._size;
+    r._size = 0;
+    return *this;
+  }
+
+
   operator bool() const { return !empty(); }
+
+  Iterator begin() { return Iterator::begin(*this); }
+  Iterator end() { return Iterator::end(*this); }
+  ConstIterator begin() const { return ConstIterator::begin(*this); }
+  ConstIterator end() const { return ConstIterator::end(*this); }
 
 
   template <typename U>
@@ -78,18 +129,33 @@ class List {
     }
   }
 
-  T* find_if(Function<bool (T&)> predicate) {
-    for (Node* node = _head->next; node != _head.get(); node = node->next) {
-      if (predicate(node->data)) {
-        return &(node->data);
+  Iterator find_if(Function<bool (T&)> predicate) {
+    for (Iterator it = begin(); it != end(); it++) {
+      if (predicate(*it)) {
+        return it;
       }
     }
-    return nullptr;
+    return end();
+  }
+
+  ConstIterator find_if(Function<bool (const T&)> predicate) const {
+    for (ConstIterator it = begin(); it != end(); it++) {
+      if (predicate(*it)) {
+        return it;
+      }
+    }
+    return end();
   }
 
   void for_each(Function<void (T&)> callback) {
-    for (Node* node = _head->next; node != _head.get(); node = node->next) {
-      callback(node->data);
+    for (auto& data : *this) {
+      callback(data);
+    }
+  }
+
+  void for_each(Function<void (const T&)> callback) const {
+    for (const auto& data : *this) {
+      callback(data);
     }
   }
 
@@ -105,14 +171,24 @@ class List {
 
   T& front() { return _head->next->data; }
   T& back() { return _head->prev->data; }
+  const T& front() const { return _head->next->data; }
+  const T& back() const { return _head->prev->data; }
 
 
  protected:
   struct Node final {
-    Node() : prev(this), next(this), data() {}
+    // Default constructor
+    Node()
+        : prev(this),
+          next(this),
+          data() {}
 
+    // Universal reference constructor
     template <typename U>
-    Node(U&& val) : prev(), next(), data(forward<U>(val)) {}
+    Node(U&& val)
+        : prev(),
+          next(),
+          data(forward<U>(val)) {}
 
     Node* prev;
     Node* next;
@@ -167,6 +243,99 @@ class List {
 
   UniquePtr<Node> _head;
   size_t _size;
+};
+
+
+template <typename ValueType>
+class ListIterator {
+  // Friend declaration
+  template <typename T>
+  friend class List;
+
+ public:
+  // Destructor
+  ~ListIterator() = default;
+
+  // Copy constructor
+  ListIterator(const ListIterator& r)
+      : _list(r._list),
+        _current(r._current),
+        _index(r._index) {}
+
+  // Copy assignment operator
+  ListIterator& operator =(const ListIterator& r) {
+    _current = r._current;
+    _index = r._index;
+    return *this;
+  }
+
+  bool operator ==(const ListIterator& r) const { return _current == r._current; }
+  bool operator !=(const ListIterator& r) const { return _current != r._current; }
+
+  const ValueType& operator *() const { return _current->data; }
+  const ValueType* operator ->() const { return &(_current->data); }
+
+  ValueType& operator *() { return _current->data; }
+  ValueType* operator ->() { return &(_current->data); }
+
+  // Prefix increment
+  ListIterator& operator ++() {
+    _current = _current->next;
+    _index++;
+    return *this;
+  }
+
+  // Prefix decrement
+  ListIterator& operator --() {
+    _current = _current->prev;
+    _index--;
+    return *this;
+  }
+
+  // Postfix increment
+  ListIterator operator ++(int) {
+    _current = _current->next;
+    _index++;
+    return *this;
+  }
+
+  // Postfix decrement
+  ListIterator operator --(int) {
+    _current = _current->prev;
+    _index--;
+    return *this;
+  }
+
+  bool is_end() const {
+    return _current == _list._head.get();
+  }
+
+  size_t index() const {
+    return _index;
+  }
+
+
+ private:
+  // Constructor
+  ListIterator(List<ValueType>& list,
+               typename List<ValueType>::Node* current,
+               size_t index)
+      : _list(list),
+        _current(current),
+        _index() {}
+
+
+  static ListIterator begin(List<ValueType>& list) {
+    return {list, list._head->next, 0};
+  }
+
+  static ListIterator end(List<ValueType>& list) {
+    return {list, list._head.get(), list._size - 1};
+  }
+
+  List<ValueType>& _list;
+  typename List<ValueType>::Node* _current;
+  size_t _index;
 };
 
 }  // namespace valkyrie::kernel

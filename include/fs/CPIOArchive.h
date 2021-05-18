@@ -2,6 +2,7 @@
 #ifndef VALKYRIE_CPIO_ARCHIVE_H_
 #define VALKYRIE_CPIO_ARCHIVE_H_
 
+#include <Functional.h>
 #include <Types.h>
 #include <Utility.h>
 
@@ -9,13 +10,16 @@
 
 namespace valkyrie::kernel {
 
-class CPIOArchive {
+class CPIOArchive final {
+  // Forward declaration
+  class Entry;
+
  public:
   explicit CPIOArchive(const size_t base_addr);
   ~CPIOArchive() = default;
 
-  Pair<const char*, size_t>
-  get_entry_content_and_size(const char* name) const;
+  bool is_valid() const;
+  void for_each(Function<void (const CPIOArchive::Entry&)> callback) const;
 
  private:
   struct [[gnu::packed]] Header final {
@@ -35,11 +39,11 @@ class CPIOArchive {
     char c_check[8];
   };
 
-  struct DirectoryEntry final {
-    DirectoryEntry() = default;
-    DirectoryEntry(const char* ptr);
+  struct Entry final {
+    Entry() = default;
+    Entry(const char* ptr);
 
-    operator bool() const;
+    bool is_valid() const;
 
     const CPIOArchive::Header* header;
     const char* pathname;
@@ -48,7 +52,8 @@ class CPIOArchive {
     size_t content_len;
   };
 
-  const char* _base_addr;
+  const char* const _base_addr;
+  const char* _ptr;
 };
 
 }  // namespace valkyrie::kernel

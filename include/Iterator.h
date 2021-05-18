@@ -7,31 +7,30 @@
 namespace valkyrie::kernel {
 
 template <typename Container, typename ValueType>
-class BasicIterator {
- public:
+class ContiguousIterator {
   friend Container;
 
+ public:
   // Destructor
-  ~BasicIterator() = default;
+  ~ContiguousIterator() = default;
 
   // Copy constructor
-  BasicIterator(const BasicIterator& r)
+  ContiguousIterator(const ContiguousIterator& r)
       : _container(r._container),
         _index(r._index) {}
 
   // Copy assignment operator
-  BasicIterator& operator =(const BasicIterator& r) {
+  ContiguousIterator& operator =(const ContiguousIterator& r) {
     _index = r._index;
     return *this;
   }
 
-
-  bool operator ==(const BasicIterator& r) const { return _index == r._index; }
-  bool operator !=(const BasicIterator& r) const { return _index != r._index; }
-  bool operator <(const BasicIterator& r) const { return _index < r._index; }
-  bool operator >(const BasicIterator& r) const { return _index > r._index; }
-  bool operator <=(const BasicIterator& r) const { return _index <= r._index; }
-  bool operator >=(const BasicIterator& r) const { return _index >= r._index; }
+  bool operator ==(const ContiguousIterator& r) const { return _index == r._index; }
+  bool operator !=(const ContiguousIterator& r) const { return _index != r._index; }
+  bool operator <(const ContiguousIterator& r) const { return _index < r._index; }
+  bool operator >(const ContiguousIterator& r) const { return _index > r._index; }
+  bool operator <=(const ContiguousIterator& r) const { return _index <= r._index; }
+  bool operator >=(const ContiguousIterator& r) const { return _index >= r._index; }
 
   const ValueType& operator*() const { return _container[_index]; }
   const ValueType* operator->() const { return &_container[_index]; }
@@ -39,41 +38,52 @@ class BasicIterator {
   ValueType& operator*() { return _container[_index]; }
   ValueType* operator->() { return &_container[_index]; }
 
-  BasicIterator operator ++() {
+  // Prefix increment
+  ContiguousIterator& operator ++() {
     ++_index;
     return *this;
   }
 
-  BasicIterator operator --() {
+  // Prefix decrement
+  ContiguousIterator& operator --() {
+    --_index;
+    return *this;
+  }
+
+  // Postfix increment
+  ContiguousIterator operator ++(int) {
+    ++_index;
+    return *this;
+  }
+
+  // Postfix decrement
+  ContiguousIterator operator --(int) {
     --_index;
     return *this;
   }
 
 
   bool is_end() const {
-    return _index == BasicIterator::end(_container)._index;
+    return _index == ContiguousIterator::end(_container)._index;
   }
 
   size_t index() const {
     return _index;
   }
 
-
  private:
   // Constructor
-  BasicIterator(Container& container, size_t index)
+  ContiguousIterator(Container& container, size_t index)
       : _container(container),
         _index(index) {}
 
-
-  static BasicIterator begin(Container& container) {
+  static ContiguousIterator begin(Container& container) {
     return {container, 0};
   }
 
-  static BasicIterator end(Container& container) {
+  static ContiguousIterator end(Container& container) {
     return {container, container.size()};
   }
-
 
   Container& _container;
   size_t _index;
