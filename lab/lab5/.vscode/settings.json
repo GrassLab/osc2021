@@ -1,0 +1,13 @@
+{
+  "files.associations": {
+    "gpio.h": "c",
+    "bootloader.h": "c",
+    "random": "c",
+    "array": "cpp",
+    "string_view": "cpp",
+    "initializer_list": "cpp",
+    "utility": "cpp",
+    "memory": "cpp",
+    "sstream": "c"
+  }
+}
