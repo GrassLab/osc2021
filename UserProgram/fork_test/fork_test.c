@@ -1,4 +1,5 @@
-#include "../lib/uart.h"
+#include "../../lib/uart.h"
+#include "../../lib/sys_call.h"
 
 int main()
 {

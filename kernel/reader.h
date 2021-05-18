@@ -24,7 +24,7 @@ struct cpio_file {
     char contents[1024 * 1024]; // 1 MB limited
 };
 
-void exec(char * filename, char ** argv);
+void cpio_exec(char * filename, char * argv[]);
 
 void Cpiols();
 void Cpiocat(char arg[]);

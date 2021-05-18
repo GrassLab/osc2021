@@ -1,6 +1,7 @@
 #include "thread.h"
 #include "allocator.h"
 #include "reader.h"
+#include "process.h"
 #include "../lib/uart.h"
 
 #define THREAD_MAX 5
@@ -9,7 +10,7 @@ struct Thread * thread_table[THREAD_MAX];
 struct RunQueue run_queue;
 
 void thread_init()
-{
+{    
     run_queue.begin = NULL;
     run_queue.end = NULL;
 
@@ -17,9 +18,9 @@ void thread_init()
     {
         thread_table[i] = (struct Thread *)buddy_alloc(THREAD_SIZE);
 
-
         thread_table[i]->id = i;
         thread_table[i]->used = false;
+        uart_puts_h(&thread_table[i]->state);
         thread_table[i]->state = Thread_Wait;
         thread_table[i]->next = NULL;
     }
@@ -139,6 +140,7 @@ void kill_zombies()
         if (current->next->state == Thread_Exit)
         {
             current->next->used = false;
+            uart_puts(" ");
             current->next->state = Thread_Wait;
 
             if (current->next == run_queue.end)
@@ -167,7 +169,7 @@ void idle()
     }
 }
 
-void exit()
+void thread_exit()
 {
     struct Thread * current = current_thread();
 
@@ -206,18 +208,17 @@ void foo()
         uart_puts("\n");
         schedule();
     }
-    exit();
+    thread_exit();
 }
 
 void user_test()
 {
-    char * argv[] = {"argv_test", "-o", "arg2", 0};
-    exec("argv_test", argv);
-}
-
-void fork_test()
-{
-    exec("fork_test", NULL);
+    char * argv[4];
+    argv[0] = "argv_test";
+    argv[1] = "-o";
+    argv[2] = "arg2";
+    argv[3] = 0;
+    do_exec("argv_test.img", argv);
 }
 
 void thread_test(int test_id)
@@ -239,11 +240,6 @@ void thread_test(int test_id)
 
         case 2:
         thread_create(user_test);
-        idle();
-        break;
-
-        case 3:
-        thread_create(fork_test);
         idle();
         break;
 

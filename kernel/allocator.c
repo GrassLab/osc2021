@@ -135,6 +135,7 @@ void push_list_tail(int num, int index)
     struct freelist_node * node = (struct freelist_node *)(BUDDY_LIST_START + BUDDY_LIST_NODE_SIZE * list_node_addr_counter);
     struct freelist_node * current = &buddy_list[num];
     list_node_addr_counter++;
+
     char temp[10];
     uart_puts("\tOperation: Push index ");
     itoa(index, temp, 0);
@@ -143,7 +144,7 @@ void push_list_tail(int num, int index)
     itoa(num, temp, 0);
     uart_puts(temp);
     uart_puts("\n");
-
+    
     if (current->index == EMPTY)
     {
         current->index = index;
@@ -432,7 +433,7 @@ void * buddy_contiguous_alloc(const int size)
     int target_list_index = -1;
 
     void * ptr = 0x0000;
-
+    
     for (int i = 0; i < BUDDY_LIST_SIZE; ++i)
     {
         if (pow(2, i) < alloc_page_num)
@@ -445,25 +446,25 @@ void * buddy_contiguous_alloc(const int size)
             break;
         }
     }
-
+    
     if (target_list_index == -1)
     {
         buddy_mem_insufficient();
         return NULL;
     }
-
+    
     while(alloc_page_num * 2 <= pow(2, target_list_index))
     {
         target_list_index = buddy_divid_mem(target_list_index);
     }
-
+    
     int target_block_index = pop_list_head(target_list_index);
     for (int i = 0; i < pow(2, target_list_index); ++i)
     {
         frame_array[target_block_index + i].val = ALLOCATED;
     }
-    ptr = (char*)BUDDY_START_ADDR + target_block_index * PAGE_SIZE;
-
+    ptr = BUDDY_START_ADDR + target_block_index * PAGE_SIZE;
+    
     for (int i = 0; i < ALLOCATED_TABLE_MAX; ++i)
     {
         if (allocated_table[i].index == EMPTY)

@@ -32,7 +32,7 @@ struct Thread {
     struct Context context;
 
     int id;
-    int used;
+    bool used;
 
     enum Thread_State state;
 
