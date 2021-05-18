@@ -47,32 +47,32 @@ void shell() {
 void do_command(char* command) {
   if(strncmp(command, "help", 5) == 0) {
     printf("help: print all available commands.\n\
-            hello: print Hello World!.\n\
-            reboot: reboot rpi3.\n\
-            loadimg: load kernel image.\n\
-            lscpio: list cpio files.\n\
-            lsdtb: list dtb node name.\n\
-            sdtbprop [node name]: list [node name] property.\n\
-            cat [file]: cat cpio file.\n\
-            bmalloc [size]: buddy malloc.\n\
-            bfree [address]: buddy free.\n\
-            dmalloc [size]: dynamic malloc.\n\
-            dfree [address]: dynamic free.\n\
-            svc: trigger exception.\n\
-            run [address]: run user program in el0.\n\
-            el12el0: from el1 to el0.\n\
-            asyncw [input]: asynchronous write.\n\
-            asyncr: asynchronous read.\n\
-            settimeout [message] [timeout]: set time out and print message.\n\
-            dynamictest: dynamic malloc testing.\n\
-            buddytest: buddy malloc testing.\n\
-            variedtest: varied malloc test\n\
-            enabtimer: enable core timer interrupt.\n\
-            disatimer: disable core timer interrupt.\n\
-            lab5_test1: kernel thread test\n\
-            lab5_test2: argv, fork test\n\
-            lab6_test1: vfs/tmpfs open, read, write test.\n\
-            lab6_test2: ls [directory] test.\n");
+    hello: print Hello World!.\n\
+    reboot: reboot rpi3.\n\
+    loadimg: load kernel image.\n\
+    lscpio: list cpio files.\n\
+    lsdtb: list dtb node name.\n\
+    sdtbprop [node name]: list [node name] property.\n\
+    cat [file]: cat cpio file.\n\
+    bmalloc [size]: buddy malloc.\n\
+    bfree [address]: buddy free.\n\
+    dmalloc [size]: dynamic malloc.\n\
+    dfree [address]: dynamic free.\n\
+    svc: trigger exception.\n\
+    run [address]: run user program in el0.\n\
+    el12el0: from el1 to el0.\n\
+    asyncw [input]: asynchronous write.\n\
+    asyncr: asynchronous read.\n\
+    settimeout [message] [timeout]: set time out and print message.\n\
+    dynamictest: dynamic malloc testing.\n\
+    buddytest: buddy malloc testing.\n\
+    variedtest: varied malloc test\n\
+    enabtimer: enable core timer interrupt.\n\
+    disatimer: disable core timer interrupt.\n\
+    lab5_test1: kernel thread test\n\
+    lab5_test2: argv, fork test\n\
+    lab6_test1: vfs/tmpfs open, read, write test.\n\
+    lab6_test2: ls [directory] test.\n");
 
   } 
   else if(strncmp(command, "hello", 6) == 0) {

@@ -2,6 +2,7 @@
 #define _FAT32_H_
 
 #include <types.h>
+#include <vfs.h>
 
 #define FAT32_BLOCK_SIZE 512
 #define FAT32_D_ENTRY_SIZE 32
@@ -12,7 +13,9 @@
 #define FAT32_EOC_MIN 0x0ffffff8
 #define IS_EOC(lba) (lba >= FAT32_EOC_MIN && lba <= FAT32_EOC_MAX)
 
+#define FAT32_D_ENTRY_PER_D_TABLE 16
 
+#define FAT32_ENTRY_PER_FAT_TABLE 128
 struct partition_entry {
   char ignore1[4];
   char type_code; //0x0B or 0x0C
@@ -66,7 +69,7 @@ struct boot_sector {
 struct directory_entry {
   char name[8];			
   char extension[3];
-  char attribute;
+  char attribute; //0x10 sub-directory
   char ignore1[8];		
   uint16_t start_cluster_high;
   char ignore2[4];	
@@ -96,8 +99,12 @@ struct fat32_info {
   struct directory_table *d_table;
 };
 
-struct fat32_info fat32_info_list[4];
+struct file_operations fat32_fops;
 
+struct vnode_operations fat32_vops;
+
+struct fat32_info fat32_info_list[4];
+struct fat32_info *current_partition;
 struct mbr _mbr;
 //struct boot_sector* _boot_sectors[4];
 
@@ -108,4 +115,11 @@ void* fat32_parse_boot_sector(uint32_t lba);
 void fat32_parse_root_directory(struct fat32_info *fat32_info);
 void fat32_traverse_root_directory(struct fat32_info* _fat32_info);
 void test_read_file1(struct fat32_info * _fat32_info);
+
+void* fat32_vnode_create(struct mount* _mount);
+/*static int setup_mount(struct filesystem* fs, struct mount* _mount);
+static int write(struct file* file, const void* buf, size_t len);
+static int read(struct file* file, void* buf, size_t len);
+static int lookup(struct vnode* dir_node, struct vnode** target, const char* component_name);
+static int create(struct vnode* dir_node, struct vnode** target, const char* component_name);*/
 #endif

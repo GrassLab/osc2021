@@ -23,8 +23,8 @@ void main(void* dtb_address) {
   //core_timer_enable();
   //task_init();
   sd_init();
-  fat32_init();
-  //root_fs_init();
+  //fat32_init();
+  root_fs_init();
   shell();
 }
 
