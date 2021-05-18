@@ -65,6 +65,7 @@ void sync_handler(struct pt_regs *regs) {
     }
 
     schedule();
+    disable_interrupt();
 }
 
 void svc_handler(struct pt_regs *regs) {
