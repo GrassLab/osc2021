@@ -3,23 +3,51 @@
 #include <uart.h>
 #include <string.h>
 #include <varied.h>
+#include <vfs.h>
+#include <sdhost.h>
+
+
 
 void fat32_init() {
-  parse_mbr();
+  fat32_parse_mbr();
 
   for(int i = 0; i < 4; i++) {
     if(_mbr.partitions[i].lba != 0) {
       
-      _boot_sectors[i] = parse_boot_sector(_mbr.partitions[i].lba);
+      fat32_info_list[i].p_entry = &_mbr.partitions[i];
+      fat32_info_list[i].boot_sector = fat32_parse_boot_sector(_mbr.partitions[i].lba);
       
-      if(_boot_sectors[i] != null)
-        parse_root_directory(_mbr.partitions[i].lba, _boot_sectors[i]);
+      if(fat32_info_list[i].boot_sector != null) {
+        fat32_parse_root_directory(&fat32_info_list[i]);
+        fat32_traverse_root_directory(&fat32_info_list[i]);
+
+        test_read_file1(&fat32_info_list[i]);
+      }
     }
   }
+
+  //test_read_file1(fat32_info_list[0]); 
+  //regist
+ /* struct filesystem fat32_fs;
+  fat32_fs.name = "fat32";
+  fat32_fs.setup_mount = setup_mount;
+
+  register_filesystem(&fat32_fs);  */
 }
 
-void parse_mbr() {
-  char buf[BLOCK_SIZE];
+static int setup_mount(struct filesystem* fs, struct mount* _mount) {
+
+  _mount->fs = fs;
+  //_mount->root = fat32_vnode_create(_mount, dir_t);
+  if(_mount->root == null) {
+    return null;
+  }
+
+  return 0;
+}
+
+void fat32_parse_mbr() {
+  char buf[FAT32_BLOCK_SIZE];
   
   readblock(0, buf);
   //copy mbr
@@ -45,8 +73,8 @@ void parse_mbr() {
   buf[1]);
 }
 
-void* parse_boot_sector(uint32_t lba) {
-  char buf[BLOCK_SIZE];
+void* fat32_parse_boot_sector(uint32_t lba) {
+  char buf[FAT32_BLOCK_SIZE];
   
   struct boot_sector *boot_sector;
 
@@ -104,38 +132,112 @@ void* parse_boot_sector(uint32_t lba) {
   boot_sector->sector_num_of_fs_info_sector,
   boot_sector->sector_num_of_backup_sector,
   boot_sector->drvie_num);
-
+  
+  printf("addr: %x\n", buf);
+  readblock(lba + boot_sector->num_of_reserved_sectors, buf);
   return boot_sector;
 }
 
-void parse_root_directory(uint32_t lba, struct boot_sector* _boot_sector) {
-  char buf[BLOCK_SIZE];
+void fat32_parse_root_directory(struct fat32_info* fat32_info) {
+  char buf[FAT32_BLOCK_SIZE];
   struct directory_entry* d_entry;
-  char filename[D_ENTRY_NAME_SIZE + D_ENTRY_EXTENSION_SIZE + 1];
+  struct directory_table* d_table;
+  char filename[FAT32_D_ENTRY_NAME_SIZE + FAT32_D_ENTRY_EXTENSION_SIZE + 1];
   int i;
+  
   //root directory
-  readblock(lba + _boot_sector->num_of_reserved_sectors + _boot_sector->sectors_per_fat_large_fat32 * 2, buf);
+  readblock(fat32_info->p_entry->lba + fat32_info->boot_sector->num_of_reserved_sectors + fat32_info->boot_sector->sectors_per_fat_large_fat32 * 2, buf);
   
   i = 0;
   while(1) {
-    d_entry = buf + i;
     
-    if(*((char *)d_entry) == '\x00') {
+    if(*(buf + i) == '\x00') {
       //dir end
+      i += FAT32_D_ENTRY_SIZE;
       break;
     }
-    else if(*((char *)d_entry) == '\xe5') {
+    else if(*(buf + i) == '\xe5') {
       //unused
     }
     //Long filename text - Attrib has all four type bits set
     else {
-      memset(filename, '\x00', D_ENTRY_NAME_SIZE + D_ENTRY_EXTENSION_SIZE + 1);
-      strncpy(filename, d_entry->name, D_ENTRY_NAME_SIZE);
-      strncpy(filename + strlen(filename), d_entry->extension, D_ENTRY_EXTENSION_SIZE);
-      printf("d_entry:\nname: %s, size: %x, attribute: %x\n", buf + i, d_entry->size, d_entry->attribute);
     }
     
-    i += sizeof(struct directory_entry);
+    i += FAT32_D_ENTRY_SIZE;
   }
+  
+  d_entry = (struct directory_entry* )varied_malloc(i);
+
+  if(d_entry == null)
+    return;
+  
+  memcpy(d_entry, buf, i);
+  
+  d_table = (struct directory_table* )varied_malloc(sizeof(struct directory_table));
+
+  if(d_table == null)
+    return;
+
+  d_table->root_entry = d_entry;
+  d_table->size = i;
+
+  fat32_info->d_table = d_table;
+}
+
+void fat32_traverse_root_directory(struct fat32_info* fat32_info) {
+  char buf[FAT32_BLOCK_SIZE];
+  struct directory_entry* d_entry;
+  char filename[FAT32_D_ENTRY_NAME_SIZE + FAT32_D_ENTRY_EXTENSION_SIZE + 1];
+  
+  size_t cluster_num;
+  d_entry = fat32_info->d_table->root_entry;
+  while(1) {
+    
+    if(*((char*)d_entry) == '\x00') {
+      //dir end
+      break;
+    }
+    else if(*((char*)d_entry) == '\xe5') {
+      //unused
+    }
+    //Long filename text - Attrib has all four type bits set
+    else {
+      memset(filename, '\x00', FAT32_D_ENTRY_NAME_SIZE + FAT32_D_ENTRY_EXTENSION_SIZE + 1);
+      strncpy(filename, d_entry->name, FAT32_D_ENTRY_NAME_SIZE);
+      strncpy(filename + strlen(filename), d_entry->extension, FAT32_D_ENTRY_EXTENSION_SIZE);
+      cluster_num = (d_entry->start_cluster_high << 16) +  d_entry->start_cluster_low;
+      printf("d_entry:\nname: %s, size: %x, attribute: %x, first cluster: %x\n", d_entry->name, d_entry->size,  d_entry->attribute, cluster_num);
+    }
+    
+    d_entry += 1;
+  }
+ }
+
+void test_read_file1(struct fat32_info * _fat32_info) {
+  char buf[FAT32_BLOCK_SIZE];
+  char fat_table[FAT32_BLOCK_SIZE];
+
+  struct directory_entry* d_entry;
+  char filename[FAT32_D_ENTRY_NAME_SIZE + FAT32_D_ENTRY_EXTENSION_SIZE + 1];
+  size_t cluster_num;
+  //first cluster of file
+  cluster_num = (_fat32_info->d_table->root_entry[0].start_cluster_high << 16) + _fat32_info->d_table->root_entry[0].start_cluster_low;
+  while(1) {
+    //read cluster file content
+    readblock(_fat32_info->p_entry->lba + _fat32_info->boot_sector->num_of_reserved_sectors + _fat32_info->boot_sector->sectors_per_fat_large_fat32 * 2 + cluster_num - 2, buf);
+    //read next cluster num in fat table
+    
+    //reuse fat table if in same cluster
+    
+    readblock(_fat32_info->p_entry->lba + _fat32_info->boot_sector->num_of_reserved_sectors + cluster_num / 128, fat_table);
+    cluster_num = *(uint32_t *)(fat_table + (cluster_num % 128) * 4);
+    //printf("cluster_num: %x, addr: %x\n", cluster_num, buf);
+    if(IS_EOC(cluster_num))
+      break;
+
+
+  }
+  //root directory
+  //readblock(fat32_info->p_entry->lba + fat32_info->boot_sector->num_of_reserved_sectors + fat32_info->boot_sector->sectors_per_fat_large_fat32 * 2, buf);
 
 }

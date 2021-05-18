@@ -115,7 +115,6 @@ void root_fs_init() {
   int err;
   //init tmpfs
   extern void* tmpfs_init();
-  
   tmpfs_init();
 
   rootfs = (struct mount*)varied_malloc(sizeof(struct mount));
@@ -130,7 +129,6 @@ void root_fs_init() {
     return;
   }
   extern void tmpfs_load_initramfs(struct mount* mount);
-
   tmpfs_load_initramfs(rootfs); 
   
   //vfs_read_test();

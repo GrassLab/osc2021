@@ -3,10 +3,15 @@
 
 #include <types.h>
 
-#define BLOCK_SIZE 512
-#define D_ENTRY_SIZE 32
-#define D_ENTRY_NAME_SIZE 8
-#define D_ENTRY_EXTENSION_SIZE 3
+#define FAT32_BLOCK_SIZE 512
+#define FAT32_D_ENTRY_SIZE 32
+#define FAT32_D_ENTRY_NAME_SIZE 8
+#define FAT32_D_ENTRY_EXTENSION_SIZE 3
+
+#define FAT32_EOC_MAX 0x0fffffff
+#define FAT32_EOC_MIN 0x0ffffff8
+#define IS_EOC(lba) (lba >= FAT32_EOC_MIN && lba <= FAT32_EOC_MAX)
+
 
 struct partition_entry {
   char ignore1[4];
@@ -58,8 +63,7 @@ struct boot_sector {
 } __attribute__ ((packed));
   
 
-struct directory_entry
-{
+struct directory_entry {
   char name[8];			
   char extension[3];
   char attribute;
@@ -81,13 +85,27 @@ struct fs_information_sector {
 
 };
 
-struct mbr _mbr;
+struct directory_table {
+  struct directory_entry *root_entry;
+  size_t size;
+};
 
-struct boot_sector* _boot_sectors[4];
+struct fat32_info {
+  struct partition_entry* p_entry;
+  struct boot_sector *boot_sector;
+  struct directory_table *d_table;
+};
+
+struct fat32_info fat32_info_list[4];
+
+struct mbr _mbr;
+//struct boot_sector* _boot_sectors[4];
 
 void fat32_init();
 
-void parse_mbr();
-void* parse_boot_sector(uint32_t lba);
-void parse_root_directory(uint32_t lba, struct boot_sector* _boot_sector);
+void fat32_parse_mbr();
+void* fat32_parse_boot_sector(uint32_t lba);
+void fat32_parse_root_directory(struct fat32_info *fat32_info);
+void fat32_traverse_root_directory(struct fat32_info* _fat32_info);
+void test_read_file1(struct fat32_info * _fat32_info);
 #endif
