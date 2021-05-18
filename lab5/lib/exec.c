@@ -45,7 +45,7 @@ static void *init_stack_args(char *stack, const char *argv[]) {
 
 /* in-place substitute all task_struct data, return to new context */
 /* (is in-place substitute a bad idea ??) */
-/* TODO: check if disable preempt is enough */
+/* TODO: check if disable preemption is enough */
 static void replace_user_context(void *prog, void *entry, const char *argv[]) {
     disable_preempt();
 

@@ -24,58 +24,61 @@ pid_t get_next_pid() {
     return atomic_fetch_add(GLB_PID, 1);
 }
 
+/* FUCK YEAH we have to fix all these shit to disable_irq_save
+ * to prevent race with timer (sleep callback)
+ */
 inline void del_task(struct task_struct *ts) {
-    disable_preempt();
+    size_t flags = disable_irq_save();
     unlink(&ts->list);
-    enable_preempt();
+    irq_restore(flags);
 }
 
 inline void add_task(struct task_struct *ts) {
-    disable_preempt();
+    size_t flags = disable_irq_save();
     insert_tail(&run_queue, &ts->list);
-    enable_preempt();
+    irq_restore(flags);
 }
 
 void pause_task(struct task_struct *ts) {
-    disable_preempt();
+    size_t flags = disable_irq_save();
 
     if (ts->state != TASK_RUNNING) {
         panic("task state inconsistent");
     }
     ts->state = TASK_PAUSED;
     ts->need_resched = 1; /* TODO: fix this shit */
-    del_task(ts);
+    unlink(&ts->list);
 
     insert_head(&paused_queue, &ts->list);
 
-    enable_preempt();
+    irq_restore(flags);
 }
 
 void restart_task(struct task_struct *ts) {
-    disable_preempt();
+    size_t flags = disable_irq_save();
 
     if (ts->state != TASK_PAUSED) {
         panic("task state inconsistent");
     }
     ts->state = TASK_RUNNING;
-    del_task(ts);
+    unlink(&ts->list);
 
     insert_head(&run_queue, &ts->list);
 
-    enable_preempt();
+    irq_restore(flags);
 }
 
 void kill_task(struct task_struct *ts, int status) {
-    disable_preempt();
+    size_t flags = disable_irq_save();
 
     ts->state = TASK_STOPPED;
     ts->need_resched = 1;
-    del_task(ts);
+    unlink(&ts->list);
 
     ts->exitcode = status;
     insert_head(&stopped_queue, &ts->list);
 
-    enable_preempt();
+    irq_restore(flags);
 }
 
 void free_task(struct task_struct *ts) {
@@ -107,7 +110,7 @@ static struct task_struct *pick_next_task() {
         panic("scheduler: run queue is empty");
     }
     struct task_struct *ts = list_first_entry(&run_queue, struct task_struct, list);
-    del_task(ts);
+    unlink(&ts->list);
     insert_tail(&run_queue, &ts->list);
 
     return ts;

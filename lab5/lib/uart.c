@@ -17,7 +17,7 @@ static struct ring_buffer *read_ring_buf;
 
 void uart_handler() {
     /* received bytes */
-    if (*AUX_MU_IIR_REG & 4) {
+    while (*AUX_MU_IIR_REG & 4) {
         char c = *AUX_MU_IO_REG & 0xff;
         write_buffer(read_ring_buf, 1, &c);
         wakeup(read_wait_queue);
