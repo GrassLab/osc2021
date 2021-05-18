@@ -1,0 +1,6 @@
+*.o
+*.img
+*.elf
+ch
+tmp
+*build*

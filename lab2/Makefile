@@ -1,33 +1,50 @@
-SRCS = $(wildcard *.c)
-OBJS = $(SRCS:.c=.o)
+LD = aarch64-linux-gnu-ld
+LDFLAGS = -T linker.ld
+
+BUILD_DIR = build
+SRC = $(wildcard src/*.S) $(wildcard src/*.c) $(wildcard lib/*.c)
+OBJ = start.o $(filter-out start.o, $(wildcard *.o))
+INC = $(wildcard lib/)
+
+KERNEL = kernel8
+ELF = $(KERNEL).elf
+IMG = $(KERNEL).img
+
 CXX = aarch64-linux-gnu-gcc
 CXXFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
+OBJCOPY = aarch64-linux-gnu-objcopy
+OBJCOPYFLAGS = -O binary
+OD = aarch64-linux-gnu-objdump
 
-all: start.o main.o uart.o reboot.o kernel8.img
+GDB = aarch64-linux-gnu-gdb
+GDBFLAGS = -x ./debug.gdb
 
-start.o: start.S
-	aarch64-linux-gnu-gcc $(CXXFLAGS) -c start.S -o start.o
+all:
+	mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -I$(INC) -c -g $(SRC)
+	make kernel
+	#$(MAKE) -C bootloader
 
-main.o: main.c
-	aarch64-linux-gnu-gcc $(CXXFLAGS) -c main.c -o main.o
-
-uart.o: uart.c
-	aarch64-linux-gnu-gcc $(CXXFLAGS) -c uart.c -o uart.o
-
-reboot.o: reboot.c
-	aarch64-linux-gnu-gcc $(CXXFLAGS) -c reboot.c -o reboot.o
-
-kernel8.img: start.o $(OBJS)
-	aarch64-linux-gnu-ld -nostdlib -nostartfiles start.o $(OBJS) -T linker.ld -o kernel8.elf
-	aarch64-linux-gnu-objcopy -O binary kernel8.elf kernel8.img
+kernel:
+	$(LD) $(LDFLAGS) -o $(BUILD_DIR)/$(ELF) $(OBJ)
+	$(OBJCOPY) $(OBJCOPYFLAGS) $(BUILD_DIR)/$(ELF) $(BUILD_DIR)/$(IMG)
+	$(OD) -D $(BUILD_DIR)/$(ELF) > $(BUILD_DIR)/$(KERNEL).objdump
+	$(OD) -x $(BUILD_DIR)/$(ELF) > $(BUILD_DIR)/$(KERNEL).xobjdump
+	$(OD) -s $(BUILD_DIR)/$(ELF) > $(BUILD_DIR)/$(KERNEL).content
+	rm $(OBJ)
 
 
 clean:
-	rm -rf kernel8.elf *.o
+	rm -rf $(BUILD_DIR)
 
 debug:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -S -s
+	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/$(KERNEL).img -display none -S -s -initrd initramfs.cpio
+
+gdb:
+	$(GDB) $(GDBFLAGS)
 
 run:
-	qemu-system-aarch64 -serial null -serial pty -M raspi3 -kernel kernel8.img
-	#qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio
+	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/$(KERNEL).img -display none -serial null -serial stdio -initrd initramfs.cpio
+
+test: 
+	qemu-system-aarch64 -M raspi3 -kernel $(BUILD_DIR)/bootloader.img -serial null -serial pty -initrd initramfs.cpio
