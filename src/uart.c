@@ -4,6 +4,7 @@
 #include "aux.h"
 #include "utils.h"
 #include "config.h"
+#include "sched.h"
 
 #define BUFF_SIZE 128
 
@@ -14,8 +15,6 @@ queue_t write_queue;
 
 io_t *uart_in = &read_buff;
 io_t *uart_out = &write_buff;
-
-bool_t end_of_input;
 
 void uart_init() {
     register unsigned int r = *GPFSEL1;
@@ -30,7 +29,6 @@ void uart_init() {
     /* Set interrupts */
     *AUX_MU_IER = 0;
     #ifdef UART_INTERRUPT_ENABLE
-        *AUX_MU_IER |= 0x1;
         *IRQ_S1 |= (1 << 29);
     #endif
 
@@ -65,36 +63,40 @@ void uart_putc(char c) {
     *AUX_MU_IO = c;
 }
 
-void async_write(const char *s) {
-    while (*s != (char)0) {
-        if (*s == '\n')
-            buffer_push('\r', uart_out);
-        if (buffer_push(*s, uart_out) < 0)
+size_t async_write(const char *s, size_t size) {
+    if (!size)
+        return 0;
+    size_t count = 0;
+    for(count; count < size; count++) {
+        if (buffer_push(*(s + count), uart_out) < 0)
             break;
-        s++;
+        if (*(s + count) == '\n')
+            buffer_push('\r', uart_out);
     }
     /* Enable tx interrupt */
     *AUX_MU_IER |= 0x2;
+    return count;
 }
 
-void async_read(char *s) {
-    if (buffer_empty(uart_in) == true)
-        end_of_input = false;
-
+size_t async_read(char *s, size_t size) {
+    if (!size)
+        return 0;
     /* Enable rx interrupt */
     *AUX_MU_IER |= 0x1;
-    while (end_of_input == false) {}
-    /* Disable rx interrupt */
-    *AUX_MU_IER &= 0x2;
+    thread_t *current = get_current();
+    current->state = wait;
+    current->read_size = size;
+    schedule();
 
     char c;
     unsigned int count = 0;
-    while ((c = buffer_pop(uart_in)) == (char)32) {}
-    while (c != (char)0) { //&& c != (char)32) {
-        *(s + count++) = c;
+    for (count; count < size; count++) {
+        if (buffer_empty(uart_in) == true)
+            break;
         c = buffer_pop(uart_in);
+        *(s + count) = c;
     }
-    *(s + count) = '\0';
+    return count;
 }
 
 int buffer_push(char c, io_t *io) {
@@ -121,6 +123,14 @@ bool_t buffer_empty(io_t *io) {
 
 bool_t buffer_full(io_t *io) {
     return queue_full(io);
+}
+
+void buffer_lock(io_t *io) {
+    queue_lock(io);
+}
+
+void buffer_unlock(io_t *io) {
+    queue_unlock(io);
 }
 
 //=======================================

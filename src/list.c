@@ -31,5 +31,5 @@ void list_del(list_head_t *entry) {
 }
 
 bool_t list_empty(list_head_t *head) {
-    return head->next == head;
+    return head->next == head ? true : false;
 }

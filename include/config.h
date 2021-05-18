@@ -4,7 +4,7 @@
 /*
  *  Interrupt setting
  */
-//#define TIMER_INTERRUPT_ENABLE
+#define TIMER_INTERRUPT_ENABLE
 #define UART_INTERRUPT_ENABLE
 
 #endif

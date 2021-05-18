@@ -1,7 +1,9 @@
 #ifndef _UTILS_H_
 #define  _UTILS_H_
 
-void delay(int);
+#include "type.h"
+
+void delay(uint64_t);
 int strcmp(const char*, const char*);
 int char_2_int(char);
 unsigned int str_2_int(const char*);
