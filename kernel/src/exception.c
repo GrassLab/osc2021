@@ -18,10 +18,9 @@ void sync_handler_currentEL_ELx() {
   asm volatile("mrs %0, spsr_el1" : "=r"(spsr_el1));
   asm volatile("mrs %0, elr_el1" : "=r"(elr_el1));
   asm volatile("mrs %0, esr_el1" : "=r"(esr_el1));
-  // printf("SPSR_EL1: 0x%08x\n", spsr_el1);
-  // printf("ELR_EL1: 0x%08x\n", elr_el1);
-  // printf("ESR_EL1: 0x%08x\n", esr_el1);
-  // printf("hi\n");
+  printf("SPSR_EL1: 0x%08x\n", spsr_el1);
+  printf("ELR_EL1: 0x%08x\n", elr_el1);
+  printf("ESR_EL1: 0x%08x\n", esr_el1);
 }
 
 void sync_handler_lowerEL_64(uint64_t sp) {
@@ -29,7 +28,6 @@ void sync_handler_lowerEL_64(uint64_t sp) {
   asm volatile("mrs %0, spsr_el1" : "=r"(spsr_el1));
   asm volatile("mrs %0, elr_el1" : "=r"(elr_el1));
   asm volatile("mrs %0, esr_el1" : "=r"(esr_el1));
-
   // printf("sync, SPSR_EL1: 0x%08x\n", spsr_el1);
   // printf("ELR_EL1: 0x%08x\n", elr_el1);
   // printf("ESR_EL1: 0x%08x\n", esr_el1);
@@ -51,10 +49,10 @@ void sync_handler_lowerEL_64(uint64_t sp) {
       uart_puts(str);
       trap_frame->x[0] = trap_frame->x[1];
     } else if (iss == 39) {  // getpid
-      uint32_t pid = get_current()->tid;
+      uint32_t pid = get_current()->pid;
       trap_frame->x[0] = pid;
     } else if (iss == 57) {  // fork
-
+      fork(sp);
     } else if (iss == 59) {  // exec
       char *program_name = (char *)trap_frame->x[0];
       const char **argv = (const char **)trap_frame->x[1];
@@ -62,7 +60,6 @@ void sync_handler_lowerEL_64(uint64_t sp) {
     } else if (iss == 60) {  // exit
       exit();
     }
-    schedule();
   }
 }
 

@@ -127,9 +127,9 @@ void run_shell() {
       uart_async_puts("async puts\n");
     } else if (strncmp(buffer, "setTimeout", 10) == 0) {
       cmd_set_timeout(&buffer[11]);
-    } else if (strcmp(buffer, "t1") == 0) {
+    } else if (strcmp(buffer, "thread test 1") == 0) {
       cmd_thread_test1();
-    } else if (strcmp(buffer, "t2") == 0) {
+    } else if (strcmp(buffer, "thread test 2") == 0) {
       cmd_thread_test2();
     }
   }

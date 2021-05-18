@@ -1,10 +1,12 @@
 #include "start.h"
-void foo() {}
+
 int main(int argc, char **argv) {
+  // printf("Argv Test, pid %d\n", getpid());
   print_s("Argv Test, pid ");
   print_i(getpid());
   print_s("\n");
   for (int i = 0; i < argc; ++i) {
+    // puts(argv[i]);
     print_s(argv[i]);
     print_s("\n");
   }
