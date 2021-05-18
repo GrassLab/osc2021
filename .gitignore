@@ -1,4 +1,5 @@
-/build
-/objs
-/rootfs/app
 /.vscode
+/build
+/assets/rootfs/app
+/assets/rootfs/argv_test
+/assets/rootfs/fork_test
