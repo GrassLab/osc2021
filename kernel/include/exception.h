@@ -1,7 +1,8 @@
 #pragma once
 
+#include <stdint.h>
+
 #include "gpio.h"
-#include "utils.h"
 
 #define CORE0_IRQ_SOURCE ((volatile unsigned int *)(0x40000060))
 

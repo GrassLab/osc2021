@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils.h"
+#include <stdint.h>
 
 #define RAMFS_ADDR 0x8000000
 #define CPIO_MAGIC "070701"

@@ -2,7 +2,6 @@
 
 #include "alloc.h"
 #include "printf.h"
-#include "utils.h"
 
 void timeout_event_init() {
   timeout_queue_head = 0;

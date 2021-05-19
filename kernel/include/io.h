@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils.h"
+#include <stdint.h>
 
 char read_b();
 char read_c();

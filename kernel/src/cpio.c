@@ -2,6 +2,7 @@
 
 #include "printf.h"
 #include "string.h"
+#include "utils.h"
 
 void cpio_ls() {
   unsigned long long ptr = RAMFS_ADDR;

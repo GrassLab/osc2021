@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils.h"
+#include <stdint.h>
 
 #define STACK_SIZE 4096
 #define USER_PROGRAM_BASE 0x30000000

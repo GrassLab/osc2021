@@ -5,7 +5,6 @@
 #include "string.h"
 #include "thread.h"
 #include "timer.h"
-#include "utils.h"
 
 int count = 0;
 

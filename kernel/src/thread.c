@@ -4,7 +4,6 @@
 #include "cpio.h"
 #include "exception.h"
 #include "printf.h"
-#include "utils.h"
 
 void foo() {
   for (int i = 0; i < 4; ++i) {
