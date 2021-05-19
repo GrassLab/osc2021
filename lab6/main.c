@@ -5,6 +5,8 @@
 #include "include/utils.h"
 #include "include/task.h"
 #include "include/switch.h"
+#include "include/tmpfs.h"
+#include "include/vfs.h"
 
 void main()
 {
@@ -13,6 +15,9 @@ void main()
     //memory allocator init
     mem_init();
     //mem_status_dump();
+    file_operations f_ops;
+    tmpfsfopsGet(&f_ops);
+    vfs_init(tmpfsSetup,f_ops.write,f_ops.read);
     uart_puts("Hello World!\n");
     // echo everything back
     int el = get_el();

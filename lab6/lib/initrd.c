@@ -5,23 +5,6 @@
 #include "../include/initrd.h"
 #include "../include/interrupt.h"
 
-/* cpio hpodc format */
-typedef struct {
-    char magic[6]; //070701
-    char ino[8];  //inodes number from disk
-    char mode[8]; //specifies both the regular permissions and file type
-    char uid[8]; //userid
-    char gid[8]; //groupid
-    char nlink[8];  //number of links to this file
-    char mtime[8];  //modification time
-    char filesize[8];
-    char devmajor[8];
-    char devminor[8];
-    char rdevmajor[8];
-    char rdevminor[8];
-    char namesize[8];
-    char check[8]; //always set to 0 by writers and ignored by reader
-} __attribute__((packed)) cpio_t; // tell compiler don't do the alignment in order to save memory space
 /*
     convert hexadecimal string into decimal
  */
@@ -192,38 +175,51 @@ unsigned long loadprogWithArgv(char *path, unsigned long a_addr, char **argv){
     }
 
     unsigned long sp_addr = argvPut(argv, a_addr);
-    //task_struct *cur = get_current();
-    //cur->context.lr = a_addr;
- //   uart_printf("addr: %x, sp_addr: %x\n", a_addr, sp_addr);
-    //asm volatile("mov x0, 0x340   \n"::);
     asm volatile("mov x0, 0x3c0   \n"::);
     asm volatile("msr spsr_el1, x0   \n"::);
     asm volatile("msr elr_el1, %0   \n"::"r"(a_addr));
     asm volatile("msr sp_el0, %0   \n"::"r"(sp_addr));
-  //  uart_printf("sp_el0:%x\n",sp_addr);
-  //  core_timer_enable();
     asm volatile("mrs x3, sp_el0   \n"::);
     asm volatile("ldr x0, [x3, 0]   \n"::);
     asm volatile("ldr x1, [x3, 8]   \n"::);
     unsigned long elr;
-   // asm volatile("mrs x3, elr_el1   \n"::);
-   // asm volatile("str x3, [sp, -8]  \n"::);
-   // asm volatile("ldr %0, [sp, -8]   \n":"=r"(elr):);
-   // char* x = (char*)elr;
-   // for(int i =0 ; i< 10 ;++i){
-   //    uart_printf("%x",x[i]);
-
-   // }
-   // uart_puts("\n");
-   // uart_printf("elr:%x\n",elr);
-    //asm volatile("svc 0   \n"::);
-    //while(1);
     asm volatile("eret    \n"::);
-    //asm volatile("mrs x3, elr_el1  \n"::);
-    //asm volatile("br x3   \n"::);
-    //return sp_addr;
 }
 
+char* fnameGet(cpio_t* cpio_addr){
+    return (char*)(cpio_addr+1);
+}
+
+char* fdataGet(cpio_t* cpio_addr, unsigned long *fsize){
+    unsigned long psize = hexToDex(cpio_addr->namesize), dsize = hexToDex(cpio_addr->filesize);
+    unsigned long HPP = sizeof(cpio_t) + psize;
+    Align_4(&HPP);
+    Align_4(&dsize);
+
+    char *data = (char*)((char*)cpio_addr+HPP);
+    return data;
+}
+
+int fmodeGet(cpio_t* cpio_addr){
+    unsigned long mode = hexToDex(cpio_addr->mode)>>12;
+    if(mode == 4){
+        return 0;//type DIR
+    }else if(mode == 8){
+        return 1;//tpre FILE
+    }
+    return -1;
+}
+
+cpio_t* nextfile(cpio_t* cpio_addr){
+    unsigned long psize = hexToDex(cpio_addr->namesize), dsize = hexToDex(cpio_addr->filesize);
+    unsigned long HPP = sizeof(cpio_t) + psize;
+    Align_4(&HPP);
+    Align_4(&dsize);
+
+    char *data = (char*)((char*)cpio_addr+HPP);
+    return data+dsize;
+
+}
 /**
  * List the contents of an archive
  */

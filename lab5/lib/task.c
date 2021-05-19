@@ -242,7 +242,7 @@ int getpid(trap_frame* tf){
 }
 void foo1(){
     task_struct *cur = get_current();
-    for(int i = 0; i<2 ; ++i){
+    for(int i = 0; i<3 ; ++i){
         uart_printf("Thread id:%d, loop:%d\n",cur->id,i);
 //        for(int j =0 ; j < (1<<27);++j){}
         threadSchedule();

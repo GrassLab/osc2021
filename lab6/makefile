@@ -5,8 +5,8 @@ LIB = ./lib
 CPIO:=initramfs.cpio
 all: $(KERNEL).img
 
-$(KERNEL).img:start.o main.o rd.o  lib/uart.o  lib/shell.o lib/stringUtils.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o lib/exception/except.o lib/exception/exception.o lib/interrupt.o lib/irq.o lib/task.o lib/switch.o
-	aarch64-linux-gnu-ld  -T $(LINKER) -o $(KERNEL).elf start.o rd.o main.o  lib/uart.o lib/stringUtils.o  lib/shell.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o lib/exception/except.o lib/exception/exception.o lib/interrupt.o lib/irq.o lib/task.o lib/switch.o
+$(KERNEL).img:start.o main.o rd.o  lib/uart.o  lib/shell.o lib/stringUtils.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o lib/exception/except.o lib/exception/exception.o lib/interrupt.o lib/irq.o lib/task.o lib/switch.o lib/tmpfs.o lib/vfs.o
+	aarch64-linux-gnu-ld  -T $(LINKER) -o $(KERNEL).elf start.o rd.o main.o  lib/uart.o lib/stringUtils.o  lib/shell.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o lib/exception/except.o lib/exception/exception.o lib/interrupt.o lib/irq.o lib/task.o lib/switch.o lib/tmpfs.o lib/vfs.o
 	aarch64-linux-gnu-objcopy -O binary $(KERNEL).elf $@
 
 cpio:
