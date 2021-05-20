@@ -17,3 +17,5 @@ extern "C" int open(const char *pathname, int flags);
 extern "C" int close(int fd);
 extern "C" int write(int fd, const void *buf, int count);
 extern "C" int read(int fd, void *buf, int count);
+extern "C" int mkdir(char *pathname);
+extern "C" int chdir(char *pathname);

@@ -63,3 +63,13 @@ write:
 read:
   svc #15
   ret
+
+.global mkdir
+mkdir:
+  svc #16
+  ret
+
+.global chdir
+chdir:
+  svc #17
+  ret

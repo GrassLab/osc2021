@@ -8,13 +8,19 @@
 # include "schedule.h"
 # include "exception.h"
 # include "flags.h"
+# include "cpiofs.h"
 
 struct mount rootmount;
+struct mount cpiomount;
 
 void vfs_init(){
   log_puts((char *) "VFS INIT\n", FINE);
   struct filesystem *tmpfs= tmpfs_get_fs();
   register_filesystem(&rootmount, tmpfs, 0, (char *) "/");
+  log_puts((char *) "TMPMFS INIT DONE\n", FINE);
+  struct filesystem *cpiofs= cpiofs_get_fs();
+  register_filesystem(&cpiomount, cpiofs, rootmount.root->dentry, (char *) "cpio");
+  log_puts((char *) "CPIOMFS INIT DONE\n", FINE);
   log_puts((char *) "VFS INIT DONE\n", FINE);
 }
 
@@ -48,6 +54,11 @@ void vfs_list_dentry(struct dentry *d, int iter, int rev){
     if (dt->vnode->mode & F_EX) uart_puts((char *)"x");
     else uart_puts((char *)"-");
     uart_puts((char *)"\t");
+    int size = dt->vnode->v_ops->size(dt->vnode);
+    char ct[20];
+    int_to_str(size, ct);
+    uart_puts(ct);
+    uart_puts((char *)"\t");
     vfs_uart_puts(dt->name, iter);
     uart_puts((char *) "\n");
     if (rev == 1 && dt->type == DIR){
@@ -61,7 +72,7 @@ void vfs_list_tree(){
   vfs_list_dentry(root_dentry, 0, 1);
 }
 
-int vfs_do_mkdir(char *name, struct vnode *dir_node){
+int do_mkdir(char *name, struct vnode *dir_node){
   struct vnode *new_v = MALLOC(struct vnode, 1);
   struct vnode *new_vt = new_v;
   int r = dir_node->v_ops->lookup(dir_node, &new_vt, name);
@@ -273,7 +284,8 @@ struct file* vfs_open(const char* pathname, int flags, int *errno) {
     *errno = -1;
     return 0;
   }
-  char *dirname = MALLOC(char, pathname_len+1);
+  char dirname[pathname_len+1];
+  //char *dirname = MALLOC(char, pathname_len+1);
   str_copy(pathname, dirname);
   // Split Dir name and File name
   char *filename = 0;
@@ -290,7 +302,7 @@ struct file* vfs_open(const char* pathname, int flags, int *errno) {
   if (filename == 0){
     filename = dirname;
   }
-  else if(dirname == 0){
+  else if(dirname[0] == '\0'){
     dvnode = get_root_vnode();
   }
   else{
@@ -427,4 +439,17 @@ void sys_read(struct trapframe *arg){
   int count = (int) arg->x[2];
   int r = do_read(fd, buf, count);
   arg->x[0] = (uint64_t)r;
+}
+
+void sys_mkdir(struct trapframe *arg){
+  char *name = (char *)arg->x[0];
+  struct task *cur = get_current();
+  int r = do_mkdir(name, cur->pwd_vnode);
+  arg->x[0] = (unsigned long long)r;
+}
+
+void sys_chdir(struct trapframe *arg){
+  char *name = (char *)arg->x[0];
+  int r = do_cd(name);
+  arg->x[0] = (unsigned long long)r;
 }

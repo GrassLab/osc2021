@@ -197,7 +197,7 @@ void invoke_cmd(char *cmd){
     }
     else{
       struct task *cur = get_current();
-      int mkdir_r = vfs_do_mkdir(argv[1], cur->pwd_vnode);
+      int mkdir_r = do_mkdir(argv[1], cur->pwd_vnode);
       if(mkdir_r){
         uart_puts((char *) "mkdir fail\n");
       }

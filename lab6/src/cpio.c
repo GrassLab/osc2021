@@ -115,3 +115,66 @@ void exec_app(char *file_name){
   uart_puts(file_name);
   uart_puts((char *) "\" not found.\n");
 }
+
+int cpio_get_argc(){
+  int i = 0;
+  cpio_newc_header *blk = INITRAMFS_ADDR;
+  char *name = ((char *)blk + sizeof(cpio_newc_header));
+  while(str_cmp(name, (char *) "TRAILER!!!") != 1){
+    unsigned long mode = hex_to_uint(blk->c_mode, 8);
+    unsigned long filesize = hex_to_uint(blk->c_filesize, 8);
+    unsigned long namesize = hex_to_uint(blk->c_namesize, 8);
+    //if (mode & (1 << 14)) uart_puts((char *) " <DIR> ");
+    //else uart_puts((char *) "<FILE> ");
+    i++;
+    //uart_puts(name);
+    //uart_puts((char *) "\n");
+    char *context = (char *) align4((unsigned long)name+namesize);
+    blk = (cpio_newc_header *) align4((unsigned long)context+filesize);
+    name = ((char *)blk + sizeof(cpio_newc_header));
+  }
+  return i;
+}
+
+void cpio_get_argv(char **argv){
+  int i = 0;
+  cpio_newc_header *blk = INITRAMFS_ADDR;
+  char *name = ((char *)blk + sizeof(cpio_newc_header));
+  while(str_cmp(name, (char *) "TRAILER!!!") != 1){
+    unsigned long mode = hex_to_uint(blk->c_mode, 8);
+    unsigned long filesize = hex_to_uint(blk->c_filesize, 8);
+    unsigned long namesize = hex_to_uint(blk->c_namesize, 8);
+    //if (mode & (1 << 14)) uart_puts((char *) " <DIR> ");
+    //else uart_puts((char *) "<FILE> ");
+    argv[i] = name;
+    i++;
+    //uart_puts(name);
+    //uart_puts((char *) "\n");
+    char *context = (char *) align4((unsigned long)name+namesize);
+    blk = (cpio_newc_header *) align4((unsigned long)context+filesize);
+    name = ((char *)blk + sizeof(cpio_newc_header));
+  }
+}
+
+int cpio_get_content(char *file_name, char **content){
+  cpio_newc_header *blk = INITRAMFS_ADDR;
+  char *name = ((char *)blk + sizeof(cpio_newc_header));
+  while(str_cmp(name, (char *) "TRAILER!!!") != 1){
+    unsigned long mode = hex_to_uint(blk->c_mode, 8);
+    unsigned long filesize = hex_to_uint(blk->c_filesize, 8);
+    unsigned long namesize = hex_to_uint(blk->c_namesize, 8);
+    char *context = (char *) align4((unsigned long)name+namesize);
+    if (str_cmp(name, file_name) == 1){
+      if (mode & (1 << 14)){
+        return 0;
+      }
+      else{
+        *content = context;
+        return filesize;
+      }
+    }
+    blk = (cpio_newc_header *) align4((unsigned long)context+filesize);
+    name = ((char *)blk + sizeof(cpio_newc_header)); 
+  }
+  return -1;
+}

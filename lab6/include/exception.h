@@ -16,6 +16,8 @@
 # define SVC_ISS_CLOSE  13
 # define SVC_ISS_WRITE  14
 # define SVC_ISS_READ  15
+# define SVC_ISS_MKDIR  16
+# define SVC_ISS_CHDIR  17
 
 # define IRQ_ENABLE()    asm volatile("msr DAIFClr, 0x2");
 # define IRQ_DISABLE()   asm volatile("msr DAIFSet, 0x2");

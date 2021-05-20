@@ -139,6 +139,12 @@ void svc_handler(struct trapframe *arg, unsigned long type, int iss){
     case SVC_ISS_READ:
       sys_read(arg);
       break;
+    case SVC_ISS_MKDIR:
+      sys_mkdir(arg);
+      break;
+    case SVC_ISS_CHDIR:
+      sys_chdir(arg);
+      break;
     default:
       uart_puts((char *) "[SVC] unknown SVC number : ");
       int_to_hex(iss, ct);

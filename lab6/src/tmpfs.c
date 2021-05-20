@@ -14,6 +14,7 @@ struct vnode_operations tmpfs_file_v_ops{
   .create = tmpfs_create,
   .mkdir = tmpfs_mkdir,
   .cat = tmpfs_file_cat,
+  .size = tmpfs_get_size,
 };
 
 struct vnode_operations tmpfs_dir_v_ops{
@@ -21,6 +22,7 @@ struct vnode_operations tmpfs_dir_v_ops{
   .create = tmpfs_create,
   .mkdir = tmpfs_mkdir,
   .cat = tmpfs_dir_cat,
+  .size = tmpfs_get_size,
 };
 
 struct file_operations tmpfs_f_ops{
@@ -156,4 +158,12 @@ int tmpfs_file_cat(struct vnode *vnode){
 
 int tmpfs_dir_cat(struct vnode *vnode){
   return -1;
+}
+
+int tmpfs_get_size(struct vnode *vnode){
+  if (vnode->dentry->type == FILE){
+    struct tmpfs_internal *internal = (struct tmpfs_internal*)vnode->internal;
+    return internal->size;
+  }
+  return 0;
 }

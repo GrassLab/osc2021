@@ -1,6 +1,6 @@
 # include "uart.h"
-//#define INITRAMFS_ADDR (cpio_newc_header *)0x8000000
-#define INITRAMFS_ADDR (cpio_newc_header *)0x20000000
+#define INITRAMFS_ADDR (cpio_newc_header *)0x8000000
+//#define INITRAMFS_ADDR (cpio_newc_header *)0x20000000
 
 typedef struct {
   char c_magic[6];        // magic cookie
@@ -23,3 +23,7 @@ inline unsigned long align4(unsigned long n);
 void cpio_list();
 void cpio_show_file(char *file_name);
 void exec_app(char *file_name);
+
+int cpio_get_argc();
+void cpio_get_argv(char **argv);
+int cpio_get_content(char *file_name, char **context);

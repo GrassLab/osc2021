@@ -62,6 +62,7 @@ struct vnode_operations {
   int (*create)(struct vnode* dir_node, struct vnode** target, const char* component_name);
   int (*mkdir)(struct vnode* dir_node, struct vnode** target, const char* component_name);
   int (*cat)(struct vnode* dir_node);
+  int (*size)(struct vnode* vnode);
 };
 
 void vfs_init();
@@ -69,7 +70,7 @@ void vfs_init();
 int register_filesystem(struct mount *mount, struct filesystem* fs, struct dentry *parent, char *name);
 
 void vfs_list_tree();
-int vfs_do_mkdir(char *name, struct vnode *dir_node);
+int do_mkdir(char *name, struct vnode *dir_node);
 
 
 struct dentry* vfs_create_dentry(struct dentry* parent, const char* name, enum dentry_type type);
@@ -90,4 +91,6 @@ void sys_open(struct trapframe *arg);
 void sys_close(struct trapframe *arg);
 void sys_write(struct trapframe *arg);
 void sys_read(struct trapframe *arg);
+void sys_mkdir(struct trapframe *arg);
+void sys_chdir(struct trapframe *arg);
 # endif
