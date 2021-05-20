@@ -6,13 +6,18 @@ template <class T> T template_test(T a, T b){
 
 //itoa
 void int_to_str(int n, char *s){
+  int nt = (n < 0) ? -n : n;
   char tmp[100];
   int idx = 0;
   do{
-    tmp[idx] = (char)((n%10) + 48);
+    tmp[idx] = (char)((nt%10) + 48);
     idx++;
-    n /= 10;
-  } while(n > 0);
+    nt /= 10;
+  } while(nt > 0);
+  if (n < 0){
+    tmp[idx] = '-';
+    idx++;
+  }
   for (int i=0; i<idx; i++){
     s[i] = tmp[idx-i-1];
   }

@@ -1,7 +1,7 @@
 # include "my_string.h"
 # include "uart.h"
 
-int str_cmp(char *s1, char *s2){
+int str_cmp(const char *s1, const char *s2){
   int i = 0;
   if (s1[0] == '\0' && s2[0] == '\0'){
     return 1;
@@ -15,7 +15,7 @@ int str_cmp(char *s1, char *s2){
   return 0;
 }
 
-int str_len(char *s){
+int str_len(const char *s){
   int r = 0;
   while(*s++){
     r++;
@@ -23,7 +23,7 @@ int str_len(char *s){
   return r;
 }
 
-void str_copy(char *src, char *target){
+void str_copy(const char *src, char *target){
   while(1){
     *target = *src;
     if (*src){

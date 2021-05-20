@@ -13,6 +13,7 @@
 # include "user_demo.h"
 # include "user_lib.h"
 # include "log.h"
+# include "vfs.h"
 
 char *argv[SHELL_MAX_ARGC];
 
@@ -57,19 +58,19 @@ void invoke_cmd(char *cmd){
   }
   else if (str_cmp(argv[0], (char *) "help") == 1){
     if (argc == 1){
-      show_file((char *) "help/default");
+      cpio_show_file((char *) "help/default");
     }
     else if (str_cmp(argv[1], (char *) "buddy") == 1){
-      show_file((char *) "help/buddy");
+      cpio_show_file((char *) "help/buddy");
     }
     else if (str_cmp(argv[1], (char *) "dma") == 1){
-      show_file((char *) "help/dma");
+      cpio_show_file((char *) "help/dma");
     }
     else if (str_cmp(argv[1], (char *) "timer") == 1){
-      show_file((char *) "help/timer");
+      cpio_show_file((char *) "help/timer");
     }
     else{
-      show_file((char *) "help/default");
+      cpio_show_file((char *) "help/default");
     }
   }
   else if (str_cmp(argv[0], (char *) "reboot") == 1){
@@ -77,8 +78,13 @@ void invoke_cmd(char *cmd){
     reset();
     while(1);
   }
-  else if (str_cmp(argv[0], (char *) "ls") == 1){
-    list();
+  else if (str_cmp(argv[0], (char *) "cpio") == 1){
+    if (str_cmp(argv[1], (char *) "ls")){
+      cpio_list();
+    }
+    else if (str_cmp(argv[1], (char *) "cat")){
+      cpio_show_file(argv[2]);
+    }
   }
   else if (str_cmp(argv[0], (char *) "buddy") == 1){
     if (str_cmp(argv[1], (char *) "table")) buddy_table_show();
@@ -116,9 +122,6 @@ void invoke_cmd(char *cmd){
   else if (str_cmp(cmd, (char *) "dma") == 1){
     if (str_cmp(argv[1], (char *) "status")) buddy_dma_ll_show();
     else uart_puts((char *) "Use \"dma status\"");
-  }
-  else if (str_cmp(argv[0], (char *) "cat") == 1){
-    show_file(argv[1]);
   }
   else if (str_cmp(argv[0], (char *) "exec") == 1){
     exec_app(argv[1]);
@@ -165,6 +168,14 @@ void invoke_cmd(char *cmd){
       user_task_create(user_demo_test, 3);
       yield();
     }
+    else if (str_cmp(argv[1], (char *) "file1")){
+      user_task_create(file_demo_1, 3);
+      yield();
+    }
+    else if (str_cmp(argv[1], (char *) "file2")){
+      user_task_create(file_demo_2, 3);
+      yield();
+    }
   }
   else if (str_cmp(argv[0], (char *) "logger") == 1){
     if (str_cmp(argv[1], (char *) "status")){
@@ -180,6 +191,46 @@ void invoke_cmd(char *cmd){
     else if (str_cmp(argv[1], (char *) "info")) set_log_level(INFO);
     else if (str_cmp(argv[1], (char *) "fine")) set_log_level(FINE);
   }
+  else if (str_cmp(argv[0], (char *) "mkdir") == 1){
+    if (argc < 2){
+      uart_puts("Use \"mkdir <name>\"\n");
+    }
+    else{
+      struct task *cur = get_current();
+      int mkdir_r = vfs_do_mkdir(argv[1], cur->pwd_vnode);
+      if(mkdir_r){
+        uart_puts((char *) "mkdir fail\n");
+      }
+    }
+  }
+  else if (str_cmp(argv[0], (char *) "cd") == 1){
+    if (argc < 2){
+      uart_puts("Use \"cd <path>\"\n");
+    }
+    else{
+      int cd_r = do_cd(argv[1]);
+      if (cd_r != 0){
+        uart_puts((char *) "Path ");
+        uart_puts(argv[1]);
+        uart_puts((char *) " not found\n");
+      }
+    }
+  }
+  else if (str_cmp(argv[0], (char *) "tree") == 1){
+    vfs_list_tree();
+  }
+  else if (str_cmp(argv[0], (char *) "ls") == 1){
+    if (argc == 1) do_ls(0);
+    else{
+      do_ls(argv[1]);
+    }
+  }
+  else if (str_cmp(argv[0], (char *) "cat") == 1){
+    for (int i=1; i<argc;i++){
+      do_cat(argv[i]);
+      uart_puts((char*) "\n");
+    }
+  }
   else{
     uart_puts((char *) "Command [");
     uart_puts(cmd);
@@ -189,13 +240,18 @@ void invoke_cmd(char *cmd){
 
 void shell(){
   char cmd[1000];
+  char pwd[128];
   cmd[0] = '\0';
   int cmd_end = 0;
 
   //char get_c[10];
 
   while(1){
-    uart_puts((char *) "\r> ");
+    struct task *curr = get_current();
+    get_pwd_string(curr->pwd_vnode, pwd);
+    uart_puts((char *) "\r ");
+    uart_puts(pwd);
+    uart_puts((char *) " >");
     uart_puts(cmd);
     char c = uart_read();
 

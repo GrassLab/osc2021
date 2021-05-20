@@ -1,7 +1,7 @@
 # include "user_demo.h"
 # include "user_lib.h"
 
-# include "uart.h"
+//# include "uart.h"
 
 const char *argv_test_argv[] = {"argv_test", "-o", "argv2", "argv3", "Hello~~~", 0};
 const char *fork_test_argv[] = {"fork_test", 0};
@@ -83,5 +83,47 @@ void argv_test(int argc, char **argv){
 
 void user_demo_test(){
   exec(argv_test, (char **)argv_test_argv);
+  exit();
+}
+
+void file_demo_1(){
+  char buf[110];
+  //uart_write((char *) "File Test", 16);
+  //uart_write((char *) "\n", 1);
+  int a = open("tt/hello", O_CREAT | O_WR);
+  int b = open("tt/world", O_CREAT | O_WR);
+  write(a, "Hello ", 6);
+  write(b, "World!", 6);
+  close(a);
+  close(b);
+  //uart_write((char *) "write done\n", 16);
+  b = open("tt/hello", O_RD);
+  a = open("tt/world", O_RD);
+  int sz;
+  sz = read(b, buf, 100);
+  sz += read(a, buf + sz, 100);
+  buf[sz] = '\0';
+  uart_write(buf, sz+1);
+  uart_write((char *) "\n", 1);
+  //printf("%s\n", buf);
+  //uart_write((char *) "File exit", 16);
+  //uart_write((char *) "\n", 1);
+  exit();
+}
+
+void file_demo_2(){
+  char buf[110];
+  //uart_write((char *) "File Test", 16);
+  //uart_write((char *) "\n", 1);
+  int b = open("hello", O_RD);
+  int a = open("world", O_RD);
+  int sz;
+  sz = read(b, buf, 100);
+  sz += read(a, buf + sz, 100);
+  buf[sz] = '\0';
+  uart_write(buf, sz+1);
+  //printf("%s\n", buf);
+  //uart_write((char *) "File exit", 16);
+  //uart_write((char *) "\n", 1);
   exit();
 }

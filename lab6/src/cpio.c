@@ -10,8 +10,8 @@ inline unsigned long align4(unsigned long n){
   //else return n;
 }
 
-void list(){
-uart_puts((char *) "List of files:\n");
+void cpio_list(){
+  uart_puts((char *) "List of files:\n");
 
   cpio_newc_header *blk = INITRAMFS_ADDR;
 
@@ -54,7 +54,7 @@ uart_puts((char *) "List of files:\n");
   }
 }
 
-void show_file(char *file_name){
+void cpio_show_file(char *file_name){
 
   cpio_newc_header *blk = INITRAMFS_ADDR;
 

@@ -1,3 +1,3 @@
-int str_cmp(char *s1, char *s2);
-int str_len(char *s);
-void str_copy(char *src, char *target);
+int str_cmp(const char *s1, const char *s2);
+int str_len(const char *s);
+void str_copy(const char *src, char *target);

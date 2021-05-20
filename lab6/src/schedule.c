@@ -5,6 +5,9 @@
 # include "my_math.h"
 # include "my_string.h"
 # include "start.h"
+# include "vfs.h"
+# include "mem.h"
+# include "log.h"
 # include "linklist.c"
 
 struct task task_pool[TASK_MAX_NUM];
@@ -58,6 +61,10 @@ int task_create(void (*func)(), int priority, enum task_el mode){
   new_node->resched_flag = 0;
   new_node->invoke_func = func;
   new_node->mode = mode;
+  new_node->pwd_vnode = get_root_vnode();
+  for (int i=0; i<FD_MAX_NUM; i++){
+    new_node->fd[i] = 0;
+  }
   if (mode == KERNEL){
     new_node->lr = (unsigned long long)func;
   }
@@ -92,6 +99,11 @@ void zombie_reaper(){
           uart_puts((char * ) "\n");
           struct task *rm_task = n;
           n->state = EXIT;
+          for (int i=0; i<FD_MAX_NUM; i++){
+            if (n->fd[i]){
+              do_close(i);
+            }
+          }
           n = n->next;
           ll_rm_elm<struct task>(&task_queue_head[i], rm_task);
           ll_push_front<struct task>(&task_unuse, rm_task);
@@ -139,6 +151,28 @@ int get_pid(){
   return c->pid;
 }
 
+int get_new_fd(struct file *new_file){
+  struct task *current = get_current();
+  for (int i = 0; i<FD_MAX_NUM; i++){
+    if (current->fd[i] == 0){
+      current->fd[i] = new_file;
+      return i;
+    }
+  }
+  return -1;
+}
+
+struct file* get_file_by_fd(int fd){
+  struct task *current = get_current();
+  if (fd < 0 || fd > FD_MAX_NUM) return 0;
+  return current->fd[fd];
+}
+
+void remove_fd(int fd){
+  struct task *current = get_current();
+  current->fd[fd] = 0;
+}
+
 void sys_fork(struct trapframe* trapframe){
   //char ct[20];
   IRQ_DISABLE();
@@ -165,6 +199,8 @@ void sys_fork(struct trapframe* trapframe){
 
   // place child's kernel stack to right place
   child_task->sp = (unsigned long long)child_kstack - kstack_offset;
+
+  child_task->pwd_vnode = parent_task->pwd_vnode;
 
   /*
   int_to_hex((unsigned long long) parent_ustack, ct);
@@ -199,7 +235,6 @@ void sys_fork(struct trapframe* trapframe){
 }
 
 void sys_exec(struct trapframe *arg){
-  //uart_puts("exec enter\n");
   void (*exec_func)() = (void(*)()) arg->x[0];
   char **input_argv = (char **) arg->x[1];
   int pid = get_pid();
@@ -236,11 +271,5 @@ void sys_exec(struct trapframe *arg){
   arg->spsr_el1 = SPSR_EL1_VALUE;
   arg->x[1] = (unsigned long long) argv;
   arg->x[0] = argc;
-  /*
-  char ct[20];
-  int_to_hex(arg->sp_el0, ct);
-  uart_puts(ct);
-  uart_puts("\nexec done\n");
-  */
 
 }

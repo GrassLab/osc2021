@@ -4,6 +4,7 @@
 # include "mem_addr.h"
 # include "timer.h"
 # include "schedule.h"
+# include "vfs.h"
 
 
 char vector_table_desc[16][30] = {
@@ -125,6 +126,18 @@ void svc_handler(struct trapframe *arg, unsigned long type, int iss){
       break;
     case SVC_ISS_FORK:
       sys_fork(arg);
+      break;
+    case SVC_ISS_OPEN:
+      sys_open(arg);
+      break;
+    case SVC_ISS_CLOSE:
+      sys_close(arg);
+      break;
+    case SVC_ISS_WRITE:
+      sys_write(arg);
+      break;
+    case SVC_ISS_READ:
+      sys_read(arg);
       break;
     default:
       uart_puts((char *) "[SVC] unknown SVC number : ");

@@ -1,6 +1,7 @@
 # include "my_math.h"
 # include "my_string.h"
 # include "utli.h"
+# include "flags.h"
 
 extern "C" unsigned long long svc_get_core_timer_value();
 extern "C" unsigned long long svc_get_core_timer_ms();
@@ -12,3 +13,7 @@ extern "C" int uart_write(char *buf, int size);
 extern "C" int exec(void (*func)(int, char**), char **argv);
 extern "C" int fork();
 extern "C" void exit();
+extern "C" int open(const char *pathname, int flags);
+extern "C" int close(int fd);
+extern "C" int write(int fd, const void *buf, int count);
+extern "C" int read(int fd, void *buf, int count);

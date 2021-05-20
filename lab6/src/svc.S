@@ -44,3 +44,22 @@ fork:
   svc #11
   ret
 
+.global open
+open:
+  svc #12
+  ret
+
+.global close
+close:
+  svc #13
+  ret
+
+.global write
+write:
+  svc #14
+  ret
+
+.global read
+read:
+  svc #15
+  ret

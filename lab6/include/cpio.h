@@ -20,7 +20,6 @@ typedef struct {
 } cpio_newc_header;
 
 inline unsigned long align4(unsigned long n);
-void list();
-void show_file(char *file_name);
-void show_file(char *file_name);
+void cpio_list();
+void cpio_show_file(char *file_name);
 void exec_app(char *file_name);

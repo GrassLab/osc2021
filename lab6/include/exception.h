@@ -12,6 +12,10 @@
 # define SVC_ISS_EXEC  9
 # define SVC_ISS_EXIT  10
 # define SVC_ISS_FORK  11
+# define SVC_ISS_OPEN  12
+# define SVC_ISS_CLOSE  13
+# define SVC_ISS_WRITE  14
+# define SVC_ISS_READ  15
 
 # define IRQ_ENABLE()    asm volatile("msr DAIFClr, 0x2");
 # define IRQ_DISABLE()   asm volatile("msr DAIFSet, 0x2");
