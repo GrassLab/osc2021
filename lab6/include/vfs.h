@@ -42,6 +42,8 @@ struct file{
 struct mount{
   struct vnode* root;
   struct filesystem* fs;
+  struct dentry *parent;
+  char name[100];
 };
 
 struct filesystem{
@@ -64,7 +66,7 @@ struct vnode_operations {
 
 void vfs_init();
 
-int register_filesystem(struct filesystem* fs);
+int register_filesystem(struct mount *mount, struct filesystem* fs, struct dentry *parent, char *name);
 
 void vfs_list_tree();
 int vfs_do_mkdir(char *name, struct vnode *dir_node);

@@ -28,12 +28,16 @@ struct file_operations tmpfs_f_ops{
   .read = tmpfs_read,
 };
 
-void tmpfs_get_mount_fs(struct mount* mount_point){
-  mount_point->fs = &tmpfs;
+struct filesystem* tmpfs_get_fs(){
+  return &tmpfs;
+  //mount_point->fs = &tmpfs;
+  //mount_point->parent = parent;
+  //str_copy(name, mount_point->name);
 }
 
 int tmpfs_setup_mount(struct filesystem* fs, struct mount* mount){
-  struct dentry *new_d = vfs_create_dentry(0, (char *)"/", DIR);
+  //struct dentry *new_d = vfs_create_dentry(0, (char *)"/", DIR);
+  struct dentry *new_d = vfs_create_dentry(mount->parent, mount->name, DIR);
   if (new_d == 0){
     return -1;
   }

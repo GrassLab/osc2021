@@ -13,15 +13,17 @@ struct mount rootmount;
 
 void vfs_init(){
   log_puts((char *) "VFS INIT\n", FINE);
-  tmpfs_get_mount_fs(&rootmount);
-  log_puts((char *) "VFS INIT aa\n", FINE);
-  rootmount.fs->setup_mount(rootmount.fs, &rootmount);
+  struct filesystem *tmpfs= tmpfs_get_fs();
+  register_filesystem(&rootmount, tmpfs, 0, (char *) "/");
   log_puts((char *) "VFS INIT DONE\n", FINE);
 }
 
 
-int register_filesystem(struct filesystem* fs) {
-  return fs->setup_mount(fs, &rootmount);
+int register_filesystem(struct mount *mount, struct filesystem* fs, struct dentry *parent, char *name) {
+  mount->fs = fs;
+  mount->parent = parent;
+  str_copy(name, mount->name);
+  return fs->setup_mount(fs, mount);
   // register the file system to the kernel.
 }
 
