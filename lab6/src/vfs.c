@@ -138,11 +138,17 @@ struct vnode* get_root_vnode(){
 int get_pwd_string(struct vnode *v, char *s){
   if (v->dentry->parent){
     int r = get_pwd_string(v->dentry->parent->vnode, s);
-    str_copy(v->dentry->name, (s+r));
-    int name_len = str_len(v->dentry->name);
-    s[r+name_len] = '/';
-    s[r+name_len+1] = '\0';
-    return r+name_len+1;
+    if (r > 0 && s[r-1] == '/'){
+      str_copy(v->dentry->name, (s+r));
+      int name_len = str_len(v->dentry->name);
+      return r+name_len;
+    }
+    else{
+      s[r] = '/';
+      str_copy(v->dentry->name, (s+r+1));
+      int name_len = str_len(v->dentry->name);
+      return r+name_len+1;
+    }
   }
   else{
     s[0] = '/';
@@ -162,6 +168,9 @@ int vfs_split_path(char *path, char ***list){
     while(*t && (*t != '/')){
       t++;
     }
+    if (*t == '\0'){
+      break;
+    }
     *t = '\0';
     path = t+1;
   }
@@ -174,17 +183,19 @@ int get_vnode_by_path(struct vnode *dir_node, struct vnode **target, char *path)
   str_copy(path, new_path);
   int vnode_argc = vfs_split_path(new_path, &vnode_argv);
   struct vnode *target_t = 0;
-  int istart = 0;
-  if (str_cmp(vnode_argv[0], "/") == 1){
+  if (path[0] == '/'){
     dir_node = get_root_vnode();
-    istart = 1;
+    target_t = dir_node;
   }
-  for (int i = istart; i<vnode_argc; i++){
+  for (int i = 0; i<vnode_argc; i++){
+    log_puts((char *)"CD step, PATH name = ", FINE);
+    log_puts(vnode_argv[i], FINE);
+    log_puts((char *)"\n", FINE);
     int rt = dir_node->v_ops->lookup(dir_node, &target_t, vnode_argv[i]);
     log_puts((char *)"CD step, TARGET name = ", FINE);
     log_puts(target_t->dentry->name, FINE);
     log_puts((char *)"\n", FINE);
-    if (target_t->dentry->type != DIR || rt != 0){
+    if (rt != 0){
       free(new_path);
       free(vnode_argv);
       return -1;

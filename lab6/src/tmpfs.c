@@ -80,7 +80,7 @@ int tmpfs_create(struct vnode* dir_node, struct vnode** target, const char* comp
   struct vnode *vnode = new_d->vnode;
   vnode->mount = dir_node->mount;
   vnode->mode = TMPFS_DEFAULT_MODE;
-  vnode->v_ops = &tmpfs_dir_v_ops;
+  vnode->v_ops = &tmpfs_file_v_ops;
   vnode->f_ops = &tmpfs_f_ops;
   struct tmpfs_internal *internal = MALLOC(struct tmpfs_internal, 1);
   internal->size = 0;
