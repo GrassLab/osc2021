@@ -72,7 +72,8 @@ void do_command(char* command) {
     lab5_test1: kernel thread test\n\
     lab5_test2: argv, fork test\n\
     lab6_test1: vfs/tmpfs open, read, write test.\n\
-    lab6_test2: ls [directory] test.\n");
+    lab6_test2: ls [directory] test.\n\
+    ls [dir]: ls [driectory].\n");
 
   } 
   else if(strncmp(command, "hello", 6) == 0) {

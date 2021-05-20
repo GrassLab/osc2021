@@ -99,7 +99,7 @@ static int lookup(struct vnode* dir_node, struct vnode** target, const char* com
         if(fat32_filename_cmp(component_name, filename, max_len) == 0) {
           //create vnode, fat32_inode every time ?
           v_node = fat32_vnode_create(rootfs, d_entry);
-          printf("name: %s, size: %x, attribute: %x, first cluster: %x\n", filename, d_entry->size,  d_entry->attribute, cluster_num);
+          //printf("name: %s, size: %x, attribute: %x, first cluster: %x\n", filename, d_entry->size,  d_entry->attribute, cluster_num);
           *target = v_node;
           return 0;
         }
@@ -202,9 +202,9 @@ static int write(struct file* file, const void* buf, size_t len) {
 
 static int read(struct file* file, void* buf, size_t len) {
   struct fat32_inode* inode;
-  struct directory_entry *d_entry;
+  struct directory_entry *d_entry, *trav_d_entry;
   size_t read_bytes, cluster_num, pre_cluster_num, pos, size, read_len, cluster_size;
-  char fat_buf[FAT32_BLOCK_SIZE], fat_table[FAT32_BLOCK_SIZE];
+  char fat_buf[FAT32_BLOCK_SIZE], fat_table[FAT32_BLOCK_SIZE], filename[FAT32_D_ENTRY_NAME_SIZE + FAT32_D_ENTRY_EXTENSION_SIZE + 1];
   inode = file->vnode->internal;
   
   read_bytes = 0;
@@ -214,8 +214,61 @@ static int read(struct file* file, void* buf, size_t len) {
   
   d_entry = &(inode->d_entry);
   
+  if(d_entry->attribute == 0x10) {
+    //deal with ls [dir]
+
+    if(file->f_pos == 0) {
+      //initial 
+      //file->f_pos, high 32 bytes store traverse cluster number
+      //low 32 bytes store directory table offset
+      cluster_num = (d_entry->start_cluster_high << 16) + d_entry->start_cluster_low;
+      file->f_pos = cluster_num << 32;
+      pos = 0;
+    }
+    else {
+      cluster_num = file->f_pos >> 32;
+      pos = (file->f_pos << 32) >> 32;
+    }
+
+    if(pos >= FAT32_D_ENTRY_PER_D_TABLE) {
+      //read next cluster number
+      readblock(inode->lba + inode->num_of_reserved_sectors + cluster_num / FAT32_ENTRY_PER_FAT_TABLE, fat_table);
+      cluster_num = *(uint32_t *)(fat_table + (cluster_num % 128) * 4);
+      
+      if(IS_EOC(cluster_num)) {
+        return read_bytes;
+      }
+      //update traverse cluster number
+      file->f_pos = cluster_num << 32 + pos;
+    }
+
+    //read directory table in this cluster
+    readblock(inode->lba + inode->num_of_reserved_sectors + inode->sectors_per_fat_large_fat32 * 2 + cluster_num - 2, fat_buf);
+    
+    trav_d_entry = (struct directory_entry *)fat_buf + pos;
+    if(*((char*)trav_d_entry) == '\x00') {
+      //dir end
+      return read_bytes;
+    }
+    else if(*((char*)trav_d_entry) == '\xe5') {
+      //unused
+    }
+    //Long filename text - Attrib has all four type bits set
+    else {
+      fat32_filename_convert(trav_d_entry->name, trav_d_entry->extension, filename);
+      strncpy(buf, filename, strlen(filename));
+      read_bytes += strlen(filename);
+    }
+    
+    file->f_pos += 1;
+    
+    /*cluster_num = file->f_pos >> 32;
+    pos = (file->f_pos << 32) >> 32;
+    printf("cluster num: %d, pos: %d\n", cluster_num, pos);*/
+    return read_bytes;
+  }
+  
   if(d_entry->attribute != 0x20) {
-    //check is file
     return read_bytes;
   }
 
@@ -288,7 +341,7 @@ static int read(struct file* file, void* buf, size_t len) {
 
 static int create(struct vnode* dir_node, struct vnode** target, const char* component_name) {
 
-  
+
   return 0;
 }
 
@@ -476,6 +529,8 @@ void fat32_traverse_root_directory(struct fat32_info* fat32_info) {
     }
     else if(*((char*)d_entry) == '\xe5') {
       //unused
+      printf("unused\n");
+      
     }
     //Long filename text - Attrib has all four type bits set
     else {

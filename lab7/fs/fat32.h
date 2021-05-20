@@ -115,6 +115,9 @@ struct vnode_operations fat32_vops;
 struct fat32_info fat32_info_list[4];
 struct fat32_info *current_partition;
 struct mbr _mbr;
+
+//char fat_table[FAT32_BLOCK_SIZE];
+//size_t fat_table_cluster_num, fat_table_pre_cluster_num; 
 //struct boot_sector* _boot_sectors[4];
 
 void fat32_init();
