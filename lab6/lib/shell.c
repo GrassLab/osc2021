@@ -6,6 +6,8 @@
 #include "../include/memAlloc.h"
 #include "../include/task.h"
 #include "../include/switch.h"
+#include "../include/tmpfs.h"
+#include "../include/vfs.h"
 
 #define MAX_BUF_SIZE 128
 #define PM_PASSWORD 0x5a000000
@@ -14,7 +16,7 @@
 
 
 
-static char* commanlist[] = {"help" , "hello", "reboot", "loadimg", "find", "my_alloc", "my_free","mem_status_dump", "dy_mem_status_dump", "loadprog" ,"req1", "req2"};
+static char* commanlist[] = {"help" , "hello", "reboot", "loadimg", "find", "my_alloc", "my_free","mem_status_dump", "dy_mem_status_dump", "loadprog" ,"req1", "req2", "lab6-2"};
 
 void read_input(char *buffer){
     int size = 0;
@@ -120,6 +122,10 @@ static void parse_input(char *buffer){
         test1();
     }else if(compString("req2",buffer) == 0){
         test2();
+    }else if(compString("lab6-1",buffer) == 0){
+        tmpfsDump(my_mount.root,0);
+    }else if(compString("lab6-2",buffer) == 0){
+        test3();
     }else{
         uart_puts("No Such Command\n");
     }

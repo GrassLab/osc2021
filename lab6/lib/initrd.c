@@ -146,13 +146,6 @@ unsigned long argvPut(char** argv,unsigned long ret){
     uart_printf("after argvput:%x\n",ret);
 	return ret;
 }
-void junk(){
-    uart_printf("junk\n");
-    char buf[8];
-    read_input(buf);
-    return ;
-}
-
 unsigned long loadprogWithArgv(char *path, unsigned long a_addr, char **argv){
     cpio_t *file_addr = findFile((cpio_t*)0x8000000, path);
     if(!file_addr){
@@ -175,16 +168,18 @@ unsigned long loadprogWithArgv(char *path, unsigned long a_addr, char **argv){
     }
 
     unsigned long sp_addr = argvPut(argv, a_addr);
-    asm volatile("mov x0, 0x3c0   \n"::);
+
+    asm volatile("mov x0, 0x340   \n"::);
     asm volatile("msr spsr_el1, x0   \n"::);
     asm volatile("msr elr_el1, %0   \n"::"r"(a_addr));
     asm volatile("msr sp_el0, %0   \n"::"r"(sp_addr));
+   core_timer_enable();
     asm volatile("mrs x3, sp_el0   \n"::);
     asm volatile("ldr x0, [x3, 0]   \n"::);
     asm volatile("ldr x1, [x3, 8]   \n"::);
-    unsigned long elr;
     asm volatile("eret    \n"::);
 }
+
 
 char* fnameGet(cpio_t* cpio_addr){
     return (char*)(cpio_addr+1);

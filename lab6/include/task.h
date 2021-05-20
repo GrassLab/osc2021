@@ -1,7 +1,7 @@
 #ifndef _TASK_H
 #define _TASK_H
 
-void ALLMIGHTYLOG(void);
+#include "vfs.h"
 
 typedef struct _trap_frame{
   unsigned long regs[32];
@@ -30,6 +30,8 @@ typedef struct _task_struct{
   cpu_context context;
   int id;
   int state;
+  unsigned long stack_addr;
+  file* fd_table[5];
 }task_struct;
 
 

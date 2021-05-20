@@ -29,16 +29,8 @@ void _except_handler(trap_frame *tf){
     asm volatile("mrs %0, esr_el1  \n":"=r"(esr):);
 
     unsigned long x0,x1,x2;
-    //asm volatile("str x0,[sp, -8]  \n"::);
-    //asm volatile("str x1,[sp, -16]  \n"::);
-    //asm volatile("str x2,[sp, -24]  \n"::);
-
-    //asm volatile("ldr %0,[sp, 0] \n":"=r"(x0):);
-    //asm volatile("ldr %0,[sp, 8]  \n":"=r"(x1):);
-    //asm volatile("ldr %0,[sp, 16]  \n":"=r"(x2):);
 
 
-    //uart_puts(x0);
     if(((esr>>26)&0x3f) == 0x15){
         svc = esr & 0x1ffffff;
         switch(svc){
@@ -50,19 +42,19 @@ void _except_handler(trap_frame *tf){
                 }
             case 1:
                 {
-                uart_printf("svc = %d \n",svc);
+               // uart_printf("svc = %d \n",svc);
                 cur_exit();
                 break;
                 }
             case 2:
                 {
-                uart_printf("svc = %d \n",svc);
+                //uart_printf("svc = %d \n",svc);
                 exec(tf->regs[0], tf->regs[1]);
                 break;
                 }
             case 3:
                 {
-                uart_printf("svc = %d \n",svc);
+                //uart_printf("svc = %d \n",svc);
                 uart_puts(tf->regs[0]);
                 tf->regs[0] = tf->regs[1];
                 return;
@@ -86,6 +78,30 @@ void _except_handler(trap_frame *tf){
                 //uart_printf("parent elr:%x\n",tf->elr_el1);
                 sys_fork(tf);
                 return;
+                }
+            case 7://open
+                {
+                int file_index = sys_open(tf->regs[0],tf->regs[1]);
+                tf->regs[0] = file_index;
+                return;
+                }
+            case 8://write
+                {
+                int length = sys_write(tf->regs[0],tf->regs[1],tf->regs[2]);
+                tf->regs[0] = length;
+                return;
+                }
+            case 9://read
+                {
+                int length = sys_read(tf->regs[0],tf->regs[1],tf->regs[2]);
+                tf->regs[0] = length;
+                return;
+                }
+            case 10://close
+                {
+                int ret = sys_close(tf->regs[0]);
+                tf->regs[0] = ret;
+                return ;
                 }
         }
 

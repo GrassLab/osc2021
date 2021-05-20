@@ -6,17 +6,10 @@
 #include "../include/uart.h"
 
 #define default_component_size 10
+#define default_file_size 256
 #define DIR 0
 #define FILE 1
 
-typedef struct _Node{
-    char *component_name;
-    int type;
-    vnode **components; //the child vnodes
-    int compo_size;
-    int compo_capacity;
-    char* content; //only useful when type is FILE
-}Node;
 
 char* slashIgnore(char* src, char* dst){
     for(int i = 0; i<50; ++i){
@@ -36,9 +29,54 @@ char* slashIgnore(char* src, char* dst){
 
 }
 
+int tmpfsWrite(file* f, void* buf, unsigned long length){
+    vnode* v_node = f->v_node;
+    Node* node = (Node*)(v_node->internal);
+    int cur_pos = f->f_pos;
+    char* buffer = (char*)buf;
+    if(cur_pos+length > default_file_size){
+        uart_printf("file size too large, cannot write anymore \n");
+        return 0;
+    }else{
+        for(int i=0; i< length; ++i){
+            node->content[cur_pos+i] = buffer[i];
+        }
+        f->f_pos +=length;
+        node->fsize +=length;
+        return length;
+    }
+
+
+
+}
+
+int tmpfsRead(file* f, void* buf, unsigned long length){
+    vnode* v_node = f->v_node;
+    Node* node = (Node*)(v_node->internal);
+    int cur_pos = f->f_pos;
+    int ret = 0;
+    char* buffer = (char*)buf;
+    if(node->type == FILE){
+        int size = node->fsize;
+        for(int i=f->f_pos;i<size;++i){
+            if(ret<length){
+                buffer[ret++]=node->content[i];
+            }else{
+                break;
+            }
+        }
+
+        f->f_pos+=ret;
+        return ret;
+    }else{
+        uart_printf("You are not allowed to read a dir\n");
+        return 0;
+    }
+}
+
 void tmpfsfopsGet(file_operations* f_ops){
-    f_ops->read = 0;
-    f_ops->write = 0;
+    f_ops->read = tmpfsRead;
+    f_ops->write = tmpfsWrite;
 }
 
 int tmpfsLookup(vnode* root, vnode** target, char* component_name){
@@ -53,6 +91,9 @@ int tmpfsLookup(vnode* root, vnode** target, char* component_name){
         vnode* child = child_nodes[i];
         Node* child_content = child->internal;
         if(compString(child_content->component_name, component_name) == 0){
+            if(target){
+                *target = child;
+            }
             return i;
         }
     }
@@ -61,6 +102,7 @@ int tmpfsLookup(vnode* root, vnode** target, char* component_name){
 }
 
 int tmpfsCreate(vnode* parent, vnode** target,char* component_name){
+
     Node* node = (Node*)(parent->internal);
     if(node->type!=DIR){
         uart_printf("create error \n");
@@ -82,9 +124,13 @@ int tmpfsCreate(vnode* parent, vnode** target,char* component_name){
     new_internal->type = FILE;
     new_internal->compo_size = 0;
     new_internal->compo_capacity = 0;
-    new_internal->content = 0;
+    new_internal->content = (char*)(my_alloc(sizeof(char) * default_file_size));
     new_internal->components = 0;
+    new_internal->fsize = 0;
 
+    if(target){
+        *target = new_vnode;
+    }
     return idx;
 
 }
@@ -95,8 +141,8 @@ int tmpNodeInit(mount* mnt, vnode* root){
     root->f_ops = (file_operations*)my_alloc(sizeof(file_operations));
     root->v_ops->lookup = tmpfsLookup;
     root->v_ops->create = tmpfsCreate;
-//    root->f_ops->write = tmpfsWrite;
- //   root->f_ops->read = tmpfsRead;
+    root->f_ops->write = tmpfsWrite;
+    root->f_ops->read = tmpfsRead;
 
     root->internal = (void*)my_alloc(sizeof(Node));
     Node *node = (Node*)(root->internal);
@@ -139,13 +185,24 @@ int tmpNodeInit(mount* mnt, vnode* root){
                     node->type = DIR;
                     node->compo_capacity = default_component_size;
                     node->compo_size = 0;
-                    node->components = (vnode**)(my_alloc(sizeof(vnode*) * default_component_size));
+                   // node->components = (vnode**)(my_alloc(sizeof(vnode*) * default_component_size));
+                    node->fsize = 0;
                 }else if(mode == FILE){
                     node->type = FILE;
                     node->compo_capacity = 0;
                     node->compo_size = 0;
                     node->components = 0;
-                    node->content = fdata;
+                    node->content = (char*)my_alloc(sizeof(char)* default_file_size);
+                    node->fsize = hexToDex(cpio_addr->filesize);
+                    //uart_printf("fsize: %d\n",node->fsize);
+                    //copy data from cpio
+                    char* tar = node->content;
+                    fsize = node->fsize;
+                    while(fsize--){
+                        *tar = *fdata;
+                        tar++;
+                        fdata++;
+                    }
                 }else{
                     uart_printf("unknown type\n");
                     while(1){};
@@ -160,6 +217,7 @@ int tmpNodeInit(mount* mnt, vnode* root){
    return 0;
 }
 
+
 void tmpfsDump(vnode* root,int level){
     Node* node = (Node*)(root->internal);
     for(int i = 0 ;i< level ;++i){
@@ -172,7 +230,7 @@ void tmpfsDump(vnode* root,int level){
             tmpfsDump(childs[i],level+1);
         }
     }else if(node->type == FILE){
-        uart_printf("%s\n",node->component_name);
+        uart_printf("%s  (size:%d)\n",node->component_name,node->fsize);
     }
 
 }

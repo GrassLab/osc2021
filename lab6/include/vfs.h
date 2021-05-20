@@ -1,6 +1,13 @@
 #ifndef _VFS_H
 #define _VFS_H
 
+#define O_CREAT 2
+ 
+struct _filesystem my_filesystem;
+struct _mount my_mount;
+void* my_write_f;
+void* my_read_f;
+
 typedef struct _vnode {
   struct _mount* mount;
   struct _vnode_operations* v_ops;
@@ -9,9 +16,9 @@ typedef struct _vnode {
 }vnode;
 
 typedef struct _file {
-  vnode* vnode;
+  vnode* v_node;
   int f_pos; // The next read/write position of this opened file
-  struct file_operations* f_ops;
+  struct _file_operations* f_ops;
   int flags;
 }file;
 
@@ -38,11 +45,11 @@ typedef struct _vnode_operations {
 mount* rootfs;
 
 
-file* vfs_open(const char* pathname, int flags);
+file* vfsOpen(const char* pathname, int flags);
 
-int vfs_close(file* file);
-int vfs_write(file* file, const void* buf, int len);
-int vfs_read(file* file, void* buf, int len);
-int vfs_init(void* setup_mount_f,void* write_f, void* read_f );
+int vfsClose(file* file);
+int vfsWrite(file* file, const void* buf, int len);
+int vfsRead(file* file, void* buf, int len);
+int vfsInit(void* setup_mount_f,void* write_f, void* read_f );
 
 #endif

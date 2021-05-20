@@ -164,9 +164,9 @@ unsigned long find_space(int exp) {
     uart_printf("Currently no desired size frame, need to split\n");
     return NULL;
   } else {
-    uart_printf("found contiguous space of 2^%d at address:0x%x\n", exp,
-                address);
-    uart_printf("[0x%x] has been allocated\n",address);
+    //uart_printf("found contiguous space of 2^%d at address:0x%x\n", exp,
+                //address);
+    //uart_printf("[0x%x] has been allocated\n",address);
     return address;
   }
 }
@@ -180,7 +180,7 @@ void *my_alloc(int size) {
     }
     unsigned long dy_addr = (unsigned long)dy_alloc(1 << exp);
     if (dy_addr != 0) {
-      uart_printf("%x\n", dy_addr);
+     // uart_printf("%x\n", dy_addr);
       dy_allocated = 1;
       return (void *)dy_addr;
     }
