@@ -1,8 +1,8 @@
 #ifndef _DTP_H_
 #define _DTP_H_
 
-// #define INITRAMFS_BASE 0x20000000 // rpi3
-#define INITRAMFS_BASE 0x8000000 // QEMU
+#define INITRAMFS_BASE 0x20000000 // rpi3
+// #define INITRAMFS_BASE 0x8000000 // QEMU
 
 struct cpio_newc_header {
     char c_magic[6];

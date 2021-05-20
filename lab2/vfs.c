@@ -147,7 +147,7 @@ int vfs_umount(const char* mountpoint)
 void init_root_filesystem() {
     // init vnode
     // mount the vnode 
-    struct filesystem *root_fs = get_filesystem("tmpfs");
+    struct filesystem *root_fs = get_filesystem("fat32");
     rootfs_mount = new_mount();
     struct vnode *root = new_vnode();
     root_fs->setup_mount(root_fs, rootfs_mount, root);
@@ -263,8 +263,9 @@ struct file* vfs_open(const char* pathname, int flags)
         start_vnode->v_ops->create(start_vnode, &target,
             get_file_component(pathname), REG_FILE);
     } else {
-        if (!(target = get_vnode(pathname, 1)))
+        if (!(target = get_vnode(pathname, 1))) {
             return 0;
+        }
     }
     file = new_file();
     file->vnode = target;
