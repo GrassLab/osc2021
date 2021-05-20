@@ -6,19 +6,63 @@
 #include <vfs.h>
 #include <sdhost.h>
 
+int fat32_filename_cmp(const char *component_name, const char *d_entry_name, uint32_t n) {
+  
+  for(int i = 0; i < n; i++) {
+    if(component_name[i] >= 0x61 && component_name[i] <= 0x7a) {
+      //lower case
+      if(component_name[i] - 0x20 != d_entry_name[i]) {
+        return 1;
+      }  
+    }
+    else if(component_name[i] != d_entry_name[i]) {
+      if(d_entry_name[i] != 0x20) {
+        return 1;
+      }
+    }
+    
+  }
+  return 0;
+}
+
+void fat32_filename_convert(char* name, char* extension, char* filename) {
+  int i;
+ 
+  memset(filename, FAT32_D_ENTRY_NAME_SIZE + FAT32_D_ENTRY_EXTENSION_SIZE + 1, '\0');
+  i = 0; 
+  for(int j = 0; j < FAT32_D_ENTRY_NAME_SIZE; j++) {
+    if(name[j] != 0x20) 
+      filename[i++] = name[j];
+  }
+  if(extension[0] != 0x20) {
+    filename[i++] = '.';
+    for(int j = 0; j < FAT32_D_ENTRY_EXTENSION_SIZE; j++) {
+      filename[i++] = extension[j];
+    }
+  } 
+}
+
 static int lookup(struct vnode* dir_node, struct vnode** target, const char* component_name) {
   struct directory_entry* d_entry, *find_entry;
+  struct fat32_inode *inode;
+  struct vnode *v_node;
   char buf[FAT32_BLOCK_SIZE], fat_table[FAT32_BLOCK_SIZE], filename[FAT32_D_ENTRY_NAME_SIZE + FAT32_D_ENTRY_EXTENSION_SIZE + 1];
   size_t cluster_num, pre_cluster_num;
   int max_len;
   
+  *target = null;
+
   if(component_name == null)
     return 1;
   if(dir_node == null)
     return 1;
 
-  d_entry = dir_node->internal;
-
+  inode = dir_node->internal;
+  
+  if(inode == null)
+    return 1;
+  
+  d_entry = &(inode->d_entry);
   //is directory
   if((d_entry->attribute) & 0x10 == 0) 
     return 1;
@@ -27,14 +71,14 @@ static int lookup(struct vnode* dir_node, struct vnode** target, const char* com
   cluster_num = (d_entry->start_cluster_high << 16) + d_entry->start_cluster_low;
   pre_cluster_num = cluster_num;
   //read first fat table
-  readblock(current_partition->p_entry->lba + current_partition->boot_sector->num_of_reserved_sectors + cluster_num / FAT32_ENTRY_PER_FAT_TABLE, fat_table);
+  readblock(inode->lba + inode->num_of_reserved_sectors + cluster_num / FAT32_ENTRY_PER_FAT_TABLE, fat_table);
    
   while(1) {
     //read directory table in this cluster
-    readblock(current_partition->p_entry->lba + current_partition->boot_sector->num_of_reserved_sectors + current_partition->boot_sector->sectors_per_fat_large_fat32 * 2 + cluster_num - 2, buf);
+    readblock(inode->lba + inode->num_of_reserved_sectors + inode->sectors_per_fat_large_fat32 * 2 + cluster_num - 2, buf);
     
     d_entry = (struct directory_entry *)buf;
-    printf("cluster_num: %d\n", cluster_num);
+    //printf("cluster_num: %d\n", cluster_num);
     //traverse directory table
     while(d_entry <= buf + FAT32_BLOCK_SIZE) {
       if(*((char*)d_entry) == '\x00') {
@@ -47,32 +91,34 @@ static int lookup(struct vnode* dir_node, struct vnode** target, const char* com
       //Long filename text - Attrib has all four type bits set
       else {
         //sfn directory entry
-        memset(filename, '\x00', FAT32_D_ENTRY_NAME_SIZE + FAT32_D_ENTRY_EXTENSION_SIZE + 1);
-        strncpy(filename, d_entry->name, FAT32_D_ENTRY_NAME_SIZE);
-        strncpy(filename + strlen(filename), d_entry->extension, FAT32_D_ENTRY_EXTENSION_SIZE);
-        printf("name: %s, size: %x, attribute: %x, first cluster: %x\n", filename, d_entry->size,  d_entry->attribute, cluster_num);
-        
+        fat32_filename_convert(d_entry->name, d_entry->extension, filename);
         //compare component name
         max_len = strlen(filename);
         if(max_len < strlen(component_name)) 
           max_len = strlen(component_name);
-        if(strncmp(d_entry->name, component_name, max_len) == 0) {
-          //*target = ;
+        if(fat32_filename_cmp(component_name, filename, max_len) == 0) {
+          //create vnode, fat32_inode every time ?
+          v_node = fat32_vnode_create(rootfs, d_entry);
+          printf("name: %s, size: %x, attribute: %x, first cluster: %x\n", filename, d_entry->size,  d_entry->attribute, cluster_num);
+          *target = v_node;
           return 0;
         }
       }
       d_entry += 1;
     }
+
+   
+
     //check if need to read next fat table
     if(pre_cluster_num / FAT32_D_ENTRY_PER_D_TABLE != cluster_num / FAT32_D_ENTRY_PER_D_TABLE) {
       //need to read fat table
-      readblock(current_partition->p_entry->lba + current_partition->boot_sector->num_of_reserved_sectors + cluster_num / FAT32_ENTRY_PER_FAT_TABLE, fat_table);
+      readblock(inode->lba + inode->num_of_reserved_sectors + cluster_num / FAT32_ENTRY_PER_FAT_TABLE, fat_table);
     }
     
     //read next cluster
     pre_cluster_num = cluster_num;
     cluster_num = *(uint32_t *)(fat_table + (cluster_num % 128) * 4);
-    
+
     //check if is last cluster
     if(IS_EOC(cluster_num)) {
       break;
@@ -84,10 +130,10 @@ static int lookup(struct vnode* dir_node, struct vnode** target, const char* com
 
 static int setup_mount(struct filesystem* fs, struct mount* _mount) {
   struct directory_entry *d_entry;
+  struct fat32_inode *inode;
   _mount->fs = fs;
-  _mount->root = fat32_vnode_create(_mount);
-
-  d_entry = (struct directory_entry* )varied_malloc(sizeof(struct directory_entry));
+  
+   d_entry = (struct directory_entry* )varied_malloc(sizeof(struct directory_entry));
 
   if(d_entry == null) 
     return -1;
@@ -98,20 +144,21 @@ static int setup_mount(struct filesystem* fs, struct mount* _mount) {
   d_entry-> start_cluster_low = 2;
   d_entry->attribute = 0x10;
   
-  _mount->root->internal = d_entry;
+  _mount->root = fat32_vnode_create(_mount, d_entry);
+
   if(_mount->root == null) {
     return null;
   }
   
-  struct vnode* v_node = (struct vnode *)varied_malloc(sizeof(struct vnode));
-  lookup(_mount->root, &v_node, "rootfs");
+ /* struct vnode* v_node = (struct vnode *)varied_malloc(sizeof(struct vnode));
+  lookup(_mount->root, &v_node, "rootfs");*/
         
   return 0;
 }
 
-void* fat32_vnode_create(struct mount* _mount) {
+void* fat32_vnode_create(struct mount* _mount, struct directory_entry* d_entry) {
   struct vnode* v_node;
-  
+  struct fat32_inode * inode;
   v_node = (struct vnode* )varied_malloc(sizeof(struct vnode));
 
   if(v_node == null)
@@ -120,11 +167,33 @@ void* fat32_vnode_create(struct mount* _mount) {
   v_node->mount = _mount;
   v_node->f_ops = &fat32_fops;
   v_node->v_ops = &fat32_vops;
-
-  //set internal to root directory entry
-  v_node->internal = current_partition->d_table->root_entry;
   
-  return v_node;
+  inode = fat32_inode_create(current_partition, d_entry);
+
+  if(inode == null)
+    return null;
+  //set internal to fat32_inode
+  v_node->internal = inode;
+  
+  return v_node;  
+}
+
+void* fat32_inode_create(struct fat32_info *fat32_info, struct directory_entry* d_entry) {
+   struct fat32_inode * inode;
+  
+  inode = (struct fat32_inode *)varied_malloc(sizeof(struct fat32_inode));
+
+  if(inode == null)
+    return null;
+  
+  memcpy(&inode->d_entry, d_entry, sizeof(struct directory_entry));
+  inode->lba = fat32_info->p_entry->lba;
+  inode->num_of_fats = fat32_info->boot_sector->num_of_fats;
+  inode->num_of_reserved_sectors = fat32_info->boot_sector->num_of_reserved_sectors;
+  inode->sectors_per_fat_large_fat32 = fat32_info->boot_sector->sectors_per_fat_large_fat32;
+  inode->cluster_num_of_root_dir = fat32_info->boot_sector->cluster_num_of_root_dir;
+  
+  return inode;
 }
 
 static int write(struct file* file, const void* buf, size_t len) {
@@ -132,11 +201,94 @@ static int write(struct file* file, const void* buf, size_t len) {
 }
 
 static int read(struct file* file, void* buf, size_t len) {
-  return 0;
+  struct fat32_inode* inode;
+  struct directory_entry *d_entry;
+  size_t read_bytes, cluster_num, pre_cluster_num, pos, size, read_len, cluster_size;
+  char fat_buf[FAT32_BLOCK_SIZE], fat_table[FAT32_BLOCK_SIZE];
+  inode = file->vnode->internal;
+  
+  read_bytes = 0;
+
+  if(inode == null)
+    return read_bytes;
+  
+  d_entry = &(inode->d_entry);
+  
+  if(d_entry->attribute != 0x20) {
+    //check is file
+    return read_bytes;
+  }
+
+  //check pos
+  if(file->f_pos >= d_entry->size)
+    return read_bytes;
+
+   
+  //get first cluster number
+  cluster_num = (d_entry->start_cluster_high << 16) + d_entry->start_cluster_low;
+  pre_cluster_num = cluster_num;
+  //read first fat table
+  readblock(inode->lba + inode->num_of_reserved_sectors + cluster_num / FAT32_ENTRY_PER_FAT_TABLE, fat_table);
+  
+  pos = file->f_pos;//check if is last cluster
+  size = d_entry->size;
+  cluster_size = FAT32_BLOCK_SIZE;
+
+  while(1) {
+    //read directory table in this cluster
+    readblock(inode->lba + inode->num_of_reserved_sectors + inode->sectors_per_fat_large_fat32 * 2 + cluster_num - 2, fat_buf);
+    
+    //check if is last cluster
+    if(IS_EOC(cluster_num) && pos < size) {
+      cluster_size = size;
+    }
+    
+    if(pos < cluster_size) {
+      //
+      if(len <= cluster_size - pos) {
+        
+        memcpy((char *)buf + read_bytes, fat_buf + pos, len);
+        read_bytes += len;
+        file->f_pos += read_bytes;
+        break; 
+
+      }
+      else {
+        read_len = cluster_size- pos; 
+        memcpy((char *)buf + read_bytes, fat_buf + pos, read_len);  
+
+        len -= read_len;
+        read_bytes += read_len; 
+      }
+    }
+    else {
+      //find next cluster
+      pos -= cluster_size;
+      size -= cluster_size;
+    }
+    
+    //check if need to read next fat table
+    if(pre_cluster_num / FAT32_D_ENTRY_PER_D_TABLE != cluster_num / FAT32_D_ENTRY_PER_D_TABLE) {
+      //need to read fat table
+      readblock(inode->lba + inode->num_of_reserved_sectors + cluster_num / FAT32_ENTRY_PER_FAT_TABLE, fat_table);
+    }
+
+    //read next cluster
+    pre_cluster_num = cluster_num;
+    cluster_num = *(uint32_t *)(fat_table + (cluster_num % 128) * 4);
+
+    //check if is last cluster
+    if(IS_EOC(cluster_num)) {
+      break;
+    }
+  }
+
+  return read_bytes;
 }
 
-
 static int create(struct vnode* dir_node, struct vnode** target, const char* component_name) {
+
+  
   return 0;
 }
 

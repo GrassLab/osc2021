@@ -24,17 +24,19 @@ void vfs_read_test() {
   size_t len, size;
   len = 1025;
   
-  _file = vfs_open("/user/lib/string.c", 0);
+  _file = vfs_open("/rootfs/user/lib/string.c", 0);
   
   if(_file == null) {
     printf("null\n");
     return;
   }
   
-  _file->f_pos = 512;
+  _file->f_pos = 0;
 
-  size = vfs_read(_file, buf, len);
+  size = vfs_read(_file, buf, 100);
+  printf("read bytes: %d %s\n", size, buf);
 
+  size = vfs_read(_file, buf, 200);
   printf("read bytes: %d %s\n", size, buf);
 
   vfs_close(_file);

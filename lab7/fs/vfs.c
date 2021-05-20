@@ -146,5 +146,7 @@ void root_fs_init() {
     printf("mount root fs error\n");
     return;
   }
+
+  vfs_read_test();
 }
 

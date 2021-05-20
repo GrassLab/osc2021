@@ -11,11 +11,11 @@
 
 #define FAT32_EOC_MAX 0x0fffffff
 #define FAT32_EOC_MIN 0x0ffffff8
+#define FAT32_D_ENTRY_PER_D_TABLE 16
+#define FAT32_ENTRY_PER_FAT_TABLE 128
+
 #define IS_EOC(lba) (lba >= FAT32_EOC_MIN && lba <= FAT32_EOC_MAX)
 
-#define FAT32_D_ENTRY_PER_D_TABLE 16
-
-#define FAT32_ENTRY_PER_FAT_TABLE 128
 struct partition_entry {
   char ignore1[4];
   char type_code; //0x0B or 0x0C
@@ -65,7 +65,6 @@ struct boot_sector {
 
 } __attribute__ ((packed));
   
-
 struct directory_entry {
   char name[8];			
   char extension[3];
@@ -77,7 +76,7 @@ struct directory_entry {
   uint32_t size;	
 } __attribute__ ((packed));
 
-struct fs_information_sector {
+/*struct fs_information_sector {
   uint32_t signature1; // 0x52 0x52 0x61 0x41 = "RRaA"
   char reserved1[480];
   uint32_t signature2; // 0x72 0x72 0x41 0x61 = "rrAa"
@@ -86,7 +85,7 @@ struct fs_information_sector {
   char reserved2[12];
   uint32_t signature3; // 0x00 0x00 0x55 0xAA
 
-};
+};*/
 
 struct directory_table {
   struct directory_entry *root_entry;
@@ -99,8 +98,18 @@ struct fat32_info {
   struct directory_table *d_table;
 };
 
-struct file_operations fat32_fops;
+//fat32 inode 
+struct fat32_inode {
+  struct directory_entry d_entry;
+  uint32_t lba;
+  uint8_t num_of_fats; // Almost always 2
+  uint16_t num_of_reserved_sectors;
+  uint32_t sectors_per_fat_large_fat32;
+  uint32_t cluster_num_of_root_dir; // typically 2 
+  struct vnode *v_node;
+};
 
+struct file_operations fat32_fops;
 struct vnode_operations fat32_vops;
 
 struct fat32_info fat32_info_list[4];
@@ -109,14 +118,15 @@ struct mbr _mbr;
 //struct boot_sector* _boot_sectors[4];
 
 void fat32_init();
-
 void fat32_parse_mbr();
 void* fat32_parse_boot_sector(uint32_t lba);
 void fat32_parse_root_directory(struct fat32_info *fat32_info);
 void fat32_traverse_root_directory(struct fat32_info* _fat32_info);
 void test_read_file1(struct fat32_info * _fat32_info);
 
-void* fat32_vnode_create(struct mount* _mount);
+void* fat32_vnode_create(struct mount* _mount, struct directory_entry* d_entry);
+void* fat32_inode_create(struct fat32_info *fat32_info, struct directory_entry* d_entry);
+int fat32_filename_cmp(const char *component_name, const char *d_entry_name, uint32_t n);
 /*static int setup_mount(struct filesystem* fs, struct mount* _mount);
 static int write(struct file* file, const void* buf, size_t len);
 static int read(struct file* file, void* buf, size_t len);
