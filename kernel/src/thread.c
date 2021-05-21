@@ -2,7 +2,6 @@
 
 #include "alloc.h"
 #include "cpio.h"
-#include "exception.h"
 #include "printf.h"
 
 void foo() {
@@ -66,7 +65,6 @@ void schedule() {
     free(run_queue.head);
     run_queue.head = run_queue.tail = 0;
     thread_cnt = 0;
-    enable_interrupt();  // need uart interrupt when go back to shell
     return;
   }
 

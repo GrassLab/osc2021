@@ -74,3 +74,17 @@ char *strstr(const char *s, const char *find) {
   }
   return ((char *)s);
 }
+
+char *strcpy(char *dst, const char *src) {
+  // return if no memory is allocated to the destination
+  if (dst == 0) return 0;
+
+  char *ptr = dst;
+  while (*src != '\0') {
+    *dst = *src;
+    dst++;
+    src++;
+  }
+  *dst = '\0';
+  return ptr;
+}
