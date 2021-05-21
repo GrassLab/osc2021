@@ -1,6 +1,7 @@
 #include "tmpfs.h"
 
 #include "alloc.h"
+#include "printf.h"
 #include "string.h"
 #include "vfs.h"
 
@@ -11,6 +12,7 @@ void tmpfs_init() {
   tmpfs_f_ops = malloc(sizeof(struct file_operations));
   tmpfs_f_ops->write = tmpfs_write;
   tmpfs_f_ops->read = tmpfs_read;
+  tmpfs_f_ops->list = tmpfs_list;
 }
 
 void tmpfs_set_fentry(struct tmpfs_fentry* fentry, const char* component_name,
@@ -98,4 +100,14 @@ int tmpfs_read(struct file* file, void* buf, size_t len) {
     }
   }
   return read_len;
+}
+
+int tmpfs_list(struct file* file, void* buf, int index) {
+  struct tmpfs_fentry* fentry = (struct tmpfs_fentry*)file->vnode->internal;
+  if (fentry->type != FILE_DIRECTORY) return -1;
+  if (index >= MAX_FILES_IN_DIR) return -1;
+
+  if (fentry->child[index]->type == FILE_NONE) return 0;
+  strcpy((char*)buf, fentry->child[index]->name);
+  return fentry->child[index]->buf->size;
 }

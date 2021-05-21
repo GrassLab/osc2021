@@ -55,6 +55,11 @@ void vfs_test() {
   exec("vfs_test", vfs_argv);
 }
 
+void vfs_ls_test() {
+  const char* ls_argv[] = {"ls", "/", 0};
+  exec("ls", ls_argv);
+}
+
 void vfs_init() {
   tmpfs_init();
   rootfs = (struct mount*)malloc(sizeof(struct mount));
@@ -134,4 +139,8 @@ int vfs_read(struct file* file, void* buf, size_t len) {
   // 1. read min(len, readable file data size) byte to buf from the opened file.
   // 2. return read size or error code if an error occurs.
   return file->f_ops->read(file, buf, len);
+}
+
+int vfs_list(struct file* file, void* buf, int index) {
+  return file->f_ops->list(file, buf, index);
 }

@@ -19,6 +19,7 @@
 #define SYS_CLOSE 7
 #define SYS_WRITE 8
 #define SYS_READ 9
+#define SYS_LIST 10
 
 void sync_handler_currentEL_ELx();
 void sync_handler_lowerEL_64(uint64_t sp_addr);

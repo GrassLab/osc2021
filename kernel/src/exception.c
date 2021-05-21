@@ -75,6 +75,11 @@ void sync_handler_lowerEL_64(uint64_t sp) {
       size_t size =
           vfs_read(file, (void *)trap_frame->x[1], (size_t)trap_frame->x[2]);
       trap_frame->x[0] = size;
+    } else if (iss == SYS_LIST) {
+      struct file *file = thread_get_file((int)trap_frame->x[0]);
+      int size =
+          vfs_list(file, (void *)trap_frame->x[1], (int)trap_frame->x[2]);
+      trap_frame->x[0] = size;
     }
   }
 }

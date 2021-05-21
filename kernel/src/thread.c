@@ -42,6 +42,13 @@ void thread_vfs_test() {
   idle();
 }
 
+void thread_vfs_ls_test() {
+  thread_info *idle_t = thread_create(0);
+  asm volatile("msr tpidr_el1, %0\n" ::"r"((uint64_t)idle_t));
+  thread_create(vfs_ls_test);
+  idle();
+}
+
 void thread_init() {
   run_queue.head = 0;
   run_queue.tail = 0;

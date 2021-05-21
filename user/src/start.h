@@ -16,6 +16,7 @@ int open(const char *pathname, int flags);
 int close(int fd);
 int write(int fd, const void *buf, int count);
 int read(int fd, void *buf, int count);
+int list(int fd, void *buf, int index);
 
 void delay(int n) {
   while (n--)

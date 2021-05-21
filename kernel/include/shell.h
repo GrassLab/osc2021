@@ -18,6 +18,11 @@ void cmd_buddy_test();
 void cmd_dma_test();
 void cmd_load_user_program(const char *program_name);
 void cmd_set_timeout(char *args);
+void cmd_thread_test1();
+void cmd_thread_test2();
+void cmd_thread_vfs_test();
+void cmd_thread_vfs_ls_test();
+
 void clear_buffer();
 void receive_cmd();
 void run_shell();

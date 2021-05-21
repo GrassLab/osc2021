@@ -18,6 +18,7 @@ _start:
 .global close
 .global write
 .global read
+.global list
 
 uart_read:
     svc 0
@@ -56,4 +57,8 @@ write:
 
 read:
     svc 9
+    ret
+
+list:
+    svc 10
     ret

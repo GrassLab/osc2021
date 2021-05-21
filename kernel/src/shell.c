@@ -76,6 +76,8 @@ void cmd_thread_test2() { thread_test2(); }
 
 void cmd_thread_vfs_test() { thread_vfs_test(); }
 
+void cmd_thread_vfs_ls_test() { thread_vfs_ls_test(); }
+
 void clear_buffer() {
   buffer_pos = 0;
   for (int i = 0; i < MAX_BUFFER_SIZE; i++) {
@@ -137,6 +139,8 @@ void run_shell() {
       cmd_thread_test2();
     } else if (strcmp(buffer, "vfs") == 0) {
       cmd_thread_vfs_test();
+    } else if (strcmp(buffer, "list") == 0) {
+      cmd_thread_vfs_ls_test();
     }
   }
 }

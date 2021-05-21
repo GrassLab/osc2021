@@ -104,8 +104,8 @@ void cpio_populate_rootfs() {
     printf("%s %d\n", pathname, filesize);
 
     ptr = align_up(ptr + namesize, 4);
-    struct file* file = vfs_open(pathname, O_CREAT);
-    if (file) {
+    struct file *file = vfs_open(pathname, O_CREAT);
+    if (file && filesize > 0) {
       vfs_write(file, (const char *)ptr, filesize);
       vfs_close(file);
     }
