@@ -11,24 +11,34 @@
 # include "cpiofs.h"
 
 struct mount rootmount;
-struct mount cpiomount;
+//struct mount cpiomount;
 
 void vfs_init(){
-  log_puts((char *) "VFS INIT\n", FINE);
+  log_puts((char *) "VFS INIT\n", INFO);
+  struct dentry *new_d = vfs_create_dentry(0, (char *)"/", DIR);
+  log_puts((char *) "Mount tmpfs on / \n", INFO);
   struct filesystem *tmpfs= tmpfs_get_fs();
-  register_filesystem(&rootmount, tmpfs, 0, (char *) "/");
-  log_puts((char *) "TMPMFS INIT DONE\n", FINE);
-  struct filesystem *cpiofs= cpiofs_get_fs();
-  register_filesystem(&cpiomount, cpiofs, rootmount.root->dentry, (char *) "cpio");
-  log_puts((char *) "CPIOMFS INIT DONE\n", FINE);
-  log_puts((char *) "VFS INIT DONE\n", FINE);
+  //register_filesystem(&rootmount, tmpfs, 0, (char *) "/");
+  register_filesystem(&rootmount, tmpfs, new_d->vnode);
+  log_puts((char *) "tmpfs mount DONE\n", INFO);
+  //struct filesystem *cpiofs= cpiofs_get_fs();
+  //register_filesystem(&cpiomount, cpiofs, rootmount.root->dentry, (char *) "cpio");
+  log_puts((char *) "VFS INIT DONE\n", INFO);
 }
 
 
-int register_filesystem(struct mount *mount, struct filesystem* fs, struct dentry *parent, char *name) {
+int register_filesystem(struct mount *mount, struct filesystem* fs, struct vnode *vnode) {
   mount->fs = fs;
-  mount->parent = parent;
-  str_copy(name, mount->name);
+  mount->root = vnode;
+  if (vnode->dentry->type != DIR){
+    log_puts((char *) "[Error] Mount point should be dir.\n", WARNING);
+    return -1;
+  }
+  if (vnode->v_ops && vnode->v_ops->size(vnode) != 2){
+    log_puts((char *) "[Error] Mount point is not empty.\n", WARNING);
+    return -1;
+  }
+  //str_copy(name, mount->name);
   return fs->setup_mount(fs, mount);
   // register the file system to the kernel.
 }
@@ -58,6 +68,9 @@ void vfs_list_dentry(struct dentry *d, int iter, int rev){
     char ct[20];
     int_to_str(size, ct);
     uart_puts(ct);
+    if (dt->type == DIR) uart_puts((char *) "  items");
+    else if (dt->type == SDIR) uart_puts((char *) "  items");
+    else if (dt->type == FILE) uart_puts((char *) "  bytes");
     uart_puts((char *)"\t");
     vfs_uart_puts(dt->name, iter);
     uart_puts((char *) "\n");
@@ -98,6 +111,7 @@ struct dentry* vfs_create_dentry(struct dentry* parent, const char* name, enum d
   list_head_init(&new_d->list);
   list_head_init(&new_d->childs);
   new_d->vnode = vfs_create_vnode();
+  new_d->vnode->dentry = new_d;
   new_d->parent = parent;
   str_copy((char *) name, new_d->name);
   new_d->type = type;
@@ -190,7 +204,7 @@ int vfs_split_path(char *path, char ***list){
   return rv+1;
 }
 
-int get_vnode_by_path(struct vnode *dir_node, struct vnode **target, char *path){
+int get_vnode_by_path(struct vnode *dir_node, struct vnode **target, const char *path){
   char *new_path = MALLOC(char, str_len(path)+1);
   char **vnode_argv = MALLOC(char*, 20);
   str_copy(path, new_path);
@@ -372,6 +386,17 @@ int vfs_close(struct file* file) {
   return 0;
 }
 
+int vfs_get_dir_size(struct vnode *vnode){
+  struct dentry *dentry = vnode->dentry;
+  struct list_head *head = &(dentry->childs);
+  struct list_head *pos;
+  int r = 0;
+  list_for_each(pos, head){
+    r++;
+  }
+  return r;
+}
+
 int do_open(const char *pathname, int flags){
   int errno = 0;
   struct file *new_file = vfs_open(pathname, flags, &errno);
@@ -412,6 +437,93 @@ int do_read(int fd, void* buf, size_t len) {
   // 2. return read size or error code if an error occurs.
 }
 
+void do_rm(char *path){
+  struct task *cur = get_current();
+  struct vnode *rm_vnode = cur->pwd_vnode;
+  struct vnode *target = 0;
+  if (path){
+    int r = get_vnode_by_path(rm_vnode, &target, path);
+    if (r != 0){
+      uart_puts((char *) "Path < ");
+      uart_puts(path);
+      uart_puts((char *) " > not found.\n");
+      return ;
+    }
+    rm_vnode = target;
+  }
+  int cr = rm_vnode->v_ops->rm(rm_vnode);
+  if (cr == -1){
+    uart_puts((char *) "Can't rm file < ");
+    uart_puts(path);
+    uart_puts((char *) " > .\n");
+  }
+}
+
+int do_mount(const char *mountpoint, const char *fsname){
+  struct filesystem *fs = 0;
+  if (str_cmp(fsname, (char *)"tmpfs") == 1){
+    fs = tmpfs_get_fs();
+  }
+  else if (str_cmp(fsname, (char *)"cpiofs") == 1){
+    fs = cpiofs_get_fs();
+  }
+  if (fs){
+    struct task *cur = get_current();
+    struct vnode *target = 0;
+    int r = get_vnode_by_path(cur->pwd_vnode, &target, mountpoint);
+    if (r){
+      log_puts((char*) "[Error] Mount point not found\n", WARNING);
+      return -1;
+    }
+    struct mount *mount = MALLOC(struct mount, 1);
+    return register_filesystem(mount, fs, target);
+  }
+  return -1;
+}
+
+int do_unmount(char *path){
+  struct task *cur = get_current();
+  struct vnode *rm_vnode = cur->pwd_vnode;
+  struct vnode *target = 0;
+  if (path){
+    int r = get_vnode_by_path(rm_vnode, &target, path);
+    if (r != 0){
+      uart_puts((char *) "Path < ");
+      uart_puts(path);
+      uart_puts((char *) " > not found.\n");
+      return -1;
+    }
+    rm_vnode = target;
+  }
+  if (rm_vnode != rm_vnode->mount->root){
+    uart_puts((char *) "Path < ");
+    uart_puts(path);
+    uart_puts((char *) " > is not the mountpoint.\n");
+    return -1;
+  }
+  if (rm_vnode != rm_vnode->mount->root){
+  }
+  int cr = rm_vnode->mount->fs->unmount(rm_vnode->mount);
+  if (cr == -1){
+    uart_puts((char *) "Unmout fs ERROR \n");
+  }
+  return 0;
+}
+/*  //////////////////
+void sys_open(struct trapframe *arg){
+  const char *pathname = (const char *) arg->x[0];
+  int flags = (int) arg->x[1];
+  int r = do_open(pathname, flags);
+  arg->x[0] = (uint64_t)r;
+}
+
+  }
+  int cr = rm_vnode->mount->fs->unmount(rm_vnode->mount);
+  if (cr == -1){
+    uart_puts((char *) "Unmout fs ERROR \n");
+  }
+}
+*/
 void sys_open(struct trapframe *arg){
   const char *pathname = (const char *) arg->x[0];
   int flags = (int) arg->x[1];
@@ -451,5 +563,18 @@ void sys_mkdir(struct trapframe *arg){
 void sys_chdir(struct trapframe *arg){
   char *name = (char *)arg->x[0];
   int r = do_cd(name);
+  arg->x[0] = (unsigned long long)r;
+}
+
+void sys_mount(struct trapframe *arg){
+  char *mountpoint = (char *) arg->x[1];
+  char *fsname = (char *) arg->x[2];
+  int r = do_mount(mountpoint, fsname);
+  arg->x[0] = (unsigned long long)r;
+}
+
+void sys_unmount(struct trapframe *arg){
+  char *path = (char *) arg->x[0];
+  int r = do_unmount(path);
   arg->x[0] = (unsigned long long)r;
 }

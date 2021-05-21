@@ -9,6 +9,7 @@
 struct filesystem cpiofs = {
   .name = "cpiofs",
   .setup_mount = cpiofs_setup_mount,
+  .unmount = cpiofs_unmount,
 };
 
 struct vnode_operations cpiofs_file_v_ops{
@@ -17,6 +18,7 @@ struct vnode_operations cpiofs_file_v_ops{
   .mkdir = cpiofs_mkdir,
   .cat = cpiofs_file_cat,
   .size = cpiofs_get_size,
+  .rm = cpiofs_rm,
 };
 
 struct vnode_operations cpiofs_dir_v_ops{
@@ -24,7 +26,8 @@ struct vnode_operations cpiofs_dir_v_ops{
   .create = cpiofs_create,
   .mkdir = cpiofs_mkdir,
   .cat = cpiofs_dir_cat,
-  .size = cpiofs_get_size,
+  .size = vfs_get_dir_size,
+  .rm = cpiofs_rm,
 };
 
 struct file_operations cpiofs_f_ops{
@@ -42,7 +45,7 @@ void set_file_vnode(struct mount *mount, struct dentry *new_d, int size, char *c
   vnode->mode = CPIOFS_DEFAULT_MODE;
   vnode->v_ops = &cpiofs_file_v_ops;
   vnode->f_ops = &cpiofs_f_ops;
-  vnode->dentry = new_d;
+  //vnode->dentry = new_d;
   vnode->file = 0;
   vnode->internal = MALLOC(cpiofs_internal, 1);
   struct cpiofs_internal *internal = (struct cpiofs_internal *) vnode->internal;
@@ -57,18 +60,21 @@ void set_dir_vnode(struct mount *mount, struct dentry *new_d){
   vnode->v_ops = &cpiofs_dir_v_ops;
   vnode->f_ops = &cpiofs_f_ops;
   vnode->internal = 0;
-  vnode->dentry = new_d;
+  //vnode->dentry = new_d;
   vnode->file = 0;
 }
 
 int cpiofs_setup_mount(struct filesystem* fs, struct mount* mount){
   //struct dentry *new_d = vfs_create_dentry(0, (char *)"/", DIR);
+  /*
   struct dentry *new_d = vfs_create_dentry(mount->parent, mount->name, DIR);
   if (new_d == 0){
     return -1;
   }
+  */
+  struct dentry *new_d = mount->root->dentry;
   set_dir_vnode(mount, new_d);
-  mount->root = new_d->vnode;
+  //mount->root = new_d->vnode;
   int argc = cpio_get_argc();
   char *argv[argc+1];
   cpio_get_argv(argv);
@@ -121,6 +127,34 @@ int cpiofs_setup_mount(struct filesystem* fs, struct mount* mount){
     }
   }
   return 0;
+}
+
+static int rm_vnode_recv(struct vnode *vnode){
+  if (VISFILE(vnode)){
+    if( cpiofs_file_release(vnode) ) return -1;
+  }
+  else if(VISDIR(vnode)){
+    if (vnode->v_ops->size(vnode) <= 2){
+      if( cpiofs_dir_release(vnode) ) return -1;
+    }
+    else{
+      struct dentry *d = vnode->dentry;
+      while(1){
+        struct list_head *head_t = d->childs.prev;
+        struct dentry *dt = container_of(head_t, struct dentry, list);
+        if (dt->type == SDIR){
+          break;
+        }
+        if( rm_vnode_recv(dt->vnode) ) return -1;
+      }
+    }
+  }
+  return 0;
+}
+
+int cpiofs_unmount(struct mount *mount){
+  struct vnode *root = mount->root;
+  return rm_vnode_recv(root);
 }
 
 int cpiofs_mkdir(struct vnode* dir_node, struct vnode** target, const char* component_name){
@@ -178,5 +212,49 @@ int cpiofs_get_size(struct vnode *vnode){
     struct cpiofs_internal *internal = (struct cpiofs_internal*)vnode->internal;
     return internal->size;
   }
+  return 0;
+}
+
+int cpiofs_rm(struct vnode *vnode){
+  log_puts("[Error] Items in CPIOFS can't br removed.\n", WARNING);
+  return -1;
+}
+
+int cpiofs_dir_release(struct vnode *vnode){
+  int size = vnode->v_ops->size(vnode);
+  if (size > 2){
+    log_puts((char *) "[Error] Dir is not empty.\n", WARNING);
+    return -1;
+  }
+  struct dentry *d = vnode->dentry;
+  list_del(&(d->list));
+  while( !list_is_empty(&(d->list)) ){
+    struct dentry *dt = container_of(d->childs.next, struct dentry, list);
+    list_del(&(dt->list));
+    log_puts((char *) "[INFO] Remove sdentry < ", INFO);
+    log_puts(dt->name, INFO);
+    log_puts((char *) " > .\n", INFO);
+    free(dt);
+  }
+  log_puts((char *) "[INFO] Remove dentry < ", INFO);
+  log_puts(d->name, INFO);
+  log_puts((char *) " > .\n", INFO);
+  free(d);
+  free(vnode);
+  return 0;
+}
+
+int cpiofs_file_release(struct vnode *vnode){
+  if (vnode->file){
+    vnode->file->vnode = 0;
+  }
+  struct dentry *d = vnode->dentry;
+  list_del(&(d->list));
+  log_puts((char *) "[INFO] Release file < ", INFO);
+  log_puts(d->name, INFO);
+  log_puts((char *) " > .\n", INFO);
+  free(d);
+  free(vnode->internal);
+  free(vnode);
   return 0;
 }

@@ -176,6 +176,10 @@ void invoke_cmd(char *cmd){
       user_task_create(file_demo_2, 3);
       yield();
     }
+    else if (str_cmp(argv[1], (char *) "file3")){
+      user_task_create(file_demo_3, 3);
+      yield();
+    }
   }
   else if (str_cmp(argv[0], (char *) "logger") == 1){
     if (str_cmp(argv[1], (char *) "status")){
@@ -229,6 +233,30 @@ void invoke_cmd(char *cmd){
     for (int i=1; i<argc;i++){
       do_cat(argv[i]);
       uart_puts((char*) "\n");
+    }
+  }
+  else if (str_cmp(argv[0], (char *) "rm") == 1){
+    if (argc < 2){
+      uart_puts("Use \"rm <path>\"\n");
+    }
+    else{
+      do_rm(argv[1]);
+    }
+  }
+  else if (str_cmp(argv[0], (char *) "unmount") == 1){
+    if (argc < 2){
+      uart_puts("Use \"unmount <path>\"\n");
+    }
+    else{
+      do_unmount(argv[1]);
+    }
+  }
+  else if (str_cmp(argv[0], (char *) "mount") == 1){
+    if (argc != 3){
+      uart_puts("Use \"mount <path> <fs name>\"\n");
+    }
+    else{
+      do_mount(argv[1], argv[2]);
     }
   }
   else{

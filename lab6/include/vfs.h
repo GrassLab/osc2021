@@ -42,13 +42,15 @@ struct file{
 struct mount{
   struct vnode* root;
   struct filesystem* fs;
-  struct dentry *parent;
-  char name[100];
+  //struct vnode *vnode;
+  //struct dentry *parent;
+  //char name[100];
 };
 
 struct filesystem{
   const char* name;
   int (*setup_mount)(struct filesystem* fs, struct mount* mount);
+  int (*unmount)(struct mount *mount);
 };
 
 struct file_operations {
@@ -63,11 +65,12 @@ struct vnode_operations {
   int (*mkdir)(struct vnode* dir_node, struct vnode** target, const char* component_name);
   int (*cat)(struct vnode* dir_node);
   int (*size)(struct vnode* vnode);
+  int (*rm)(struct vnode *vnode);
 };
 
 void vfs_init();
 
-int register_filesystem(struct mount *mount, struct filesystem* fs, struct dentry *parent, char *name);
+int register_filesystem(struct mount *mount, struct filesystem* fs, struct vnode *root);
 
 void vfs_list_tree();
 int do_mkdir(char *name, struct vnode *dir_node);
@@ -78,7 +81,10 @@ int vfs_lookup(struct vnode* dir_node, struct vnode** target, const char* compon
 struct vnode* get_root_vnode();
 int get_pwd_string(struct vnode *v, char *s);
 int vfs_split_path(char *path, char ***list);
-int get_vnode_by_path(struct vnode *dir_node, struct vnode **target, char *path);
+int get_vnode_by_path(struct vnode *dir_node, struct vnode **target, const char *path);
+
+int vfs_get_dir_size(struct vnode *vnode);
+
 int do_cd(char *path);
 void do_ls(char *path);
 void do_cat(char *path);
@@ -86,6 +92,9 @@ int do_open(const char *pathname, int flags);
 int do_close(int fd);
 int do_write(int fd, const void* buf, size_t len);
 int do_read(int fd, void* buf, size_t len);
+void do_rm(char *path);
+int do_mount(const char *mountpoint, const char *fsname);
+int do_unmount(char *path);
 
 void sys_open(struct trapframe *arg);
 void sys_close(struct trapframe *arg);
@@ -93,4 +102,6 @@ void sys_write(struct trapframe *arg);
 void sys_read(struct trapframe *arg);
 void sys_mkdir(struct trapframe *arg);
 void sys_chdir(struct trapframe *arg);
+void sys_mount(struct trapframe *arg);
+void sys_unmount(struct trapframe *arg);
 # endif

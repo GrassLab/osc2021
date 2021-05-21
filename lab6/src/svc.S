@@ -73,3 +73,13 @@ mkdir:
 chdir:
   svc #17
   ret
+
+.global mount
+mount:
+  svc #18
+  ret
+
+.global umount
+umount:
+  svc #19
+  ret

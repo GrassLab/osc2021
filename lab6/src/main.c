@@ -21,7 +21,7 @@ int main(){
   mem_init();
   uart_puts((char *) "Hi!\n");
   uart_puts((char *) "Welcome to Eric's system ~\n");
-  uart_puts((char *) "(Lab4)\n");
+  uart_puts((char *) "(Lab6)\n");
   uart_flush();
   vfs_init();
   //vfs_do_mkdir("ttt");
