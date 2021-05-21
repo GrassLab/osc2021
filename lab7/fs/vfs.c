@@ -147,6 +147,6 @@ void root_fs_init() {
     return;
   }
 
-  vfs_read_test();
+  vfs_write_test();
 }
 

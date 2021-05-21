@@ -106,7 +106,8 @@ struct fat32_inode {
   uint16_t num_of_reserved_sectors;
   uint32_t sectors_per_fat_large_fat32;
   uint32_t cluster_num_of_root_dir; // typically 2 
-  struct vnode *v_node;
+  size_t cluster_num_of_d_entry; //cluster num of d_entry stored
+  size_t d_entry_offset;
 };
 
 struct file_operations fat32_fops;
@@ -127,8 +128,8 @@ void fat32_parse_root_directory(struct fat32_info *fat32_info);
 void fat32_traverse_root_directory(struct fat32_info* _fat32_info);
 void test_read_file1(struct fat32_info * _fat32_info);
 
-void* fat32_vnode_create(struct mount* _mount, struct directory_entry* d_entry);
-void* fat32_inode_create(struct fat32_info *fat32_info, struct directory_entry* d_entry);
+void* fat32_vnode_create(struct mount* _mount, struct directory_entry* d_entry, size_t cluster_num, size_t offset);
+void* fat32_inode_create(struct fat32_info *fat32_info, struct directory_entry* d_entry, size_t cluster_num, size_t offset);
 int fat32_filename_cmp(const char *component_name, const char *d_entry_name, uint32_t n);
 /*static int setup_mount(struct filesystem* fs, struct mount* _mount);
 static int write(struct file* file, const void* buf, size_t len);

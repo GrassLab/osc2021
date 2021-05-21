@@ -73,7 +73,10 @@ void do_command(char* command) {
     lab5_test2: argv, fork test\n\
     lab6_test1: vfs/tmpfs open, read, write test.\n\
     lab6_test2: ls [directory] test.\n\
-    ls [dir]: ls [driectory].\n");
+    ls [dir]: ls [driectory].\n\
+    read [file]: vfs_read [filename].\n\
+    write [file]: vfs_write [filename].\n");
+    
 
   } 
   else if(strncmp(command, "hello", 6) == 0) {
@@ -194,6 +197,39 @@ void do_command(char* command) {
     char name[FILE_NAME_LEN];
     strncpy(name, command + 3, strlen(command) - 2);
     ls(name);
+  }
+  else if(strncmp(command, "read", 4) == 0) {
+    char name[FILE_NAME_LEN];
+    strncpy(name, command + 5, strlen(command) - 4);
+    vfs_read_test(name);
+  }
+  else if(strncmp(command, "write", 5) == 0) {
+    char name[FILE_NAME_LEN];
+    strncpy(name, command + 6, strlen(command) - 5);
+    
+    printf("input write content: ");
+    memset(command, strlen(command), '\0');
+    int i = 0;
+    while(1) {
+      char c = uart_getc();
+      c = c=='\r'?'\n':c;
+      if(c != '\n' && c != '\x7f') {
+        command[i++] = c;
+        uart_send(c);
+      }
+      else if(c == '\x7f') {
+        uart_send('\x08');
+        uart_send(' ');
+        uart_send('\x08');
+        command[--i] = '\0';
+      }
+      else {
+        command[i] = '\0';
+        uart_puts("\n");
+        break;
+      }
+    }
+    vfs_write_test(name, command, strlen(command));
   }
   else {
     printf("unknown command\n");

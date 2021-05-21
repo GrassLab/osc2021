@@ -18,13 +18,15 @@ void vfs_open_test() {
   vfs_close(_file);
 }
 
-void vfs_read_test() {
+void vfs_read_test(char* filename) {
   struct file* _file;
-  char buf[1025];
   size_t len, size;
-  len = 1025;
+  len = 4096;
+  char buf[len];
+ 
   
-  _file = vfs_open("/rootfs/user/lib/string.c", 0);
+  
+  _file = vfs_open(filename, 0);
   
   if(_file == null) {
     printf("null\n");
@@ -33,47 +35,28 @@ void vfs_read_test() {
   
   _file->f_pos = 0;
 
-  size = vfs_read(_file, buf, 100);
-  printf("read bytes: %d %s\n", size, buf);
-
-  size = vfs_read(_file, buf, 200);
-  printf("read bytes: %d %s\n", size, buf);
-
+  size = vfs_read(_file, buf, len);
+  buf[size] = '\0';
+  printf("%s\nread bytes: %d\n", buf, size);
+  
   vfs_close(_file);
 }
 
-void vfs_write_test() {
+void vfs_write_test(char* filename, char* buf, size_t len) {
   struct file* _file;
-  char buf[1025];
-  size_t len, size;
-  len = 12;
-
-  _file = vfs_open("/test", O_CREAT);
+  size_t size;
+  _file = vfs_open(filename, 0);
   
   if(_file == null) {
     printf("null\n");
     return;
   }
   
-  strncpy(buf, "test_test_1", len);
+  _file->f_pos = 5;
 
   size = vfs_write(_file, buf, len);
 
   printf("write bytes: %d\n", size);
-
-  vfs_close(_file);
-
-  _file = vfs_open("/test", 0);
-  
-  if(_file == null) {
-    printf("null\n");
-    return;
-  }
-  
-  buf[0] = '\0';
-  size = vfs_read(_file, buf, len);
-
-  printf("read bytes: %d %s\n", size, buf);
 
   vfs_close(_file);
 
