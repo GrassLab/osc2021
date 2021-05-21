@@ -1,6 +1,7 @@
 #include "vfs.h"
 
 #include "alloc.h"
+#include "cpio.h"
 #include "printf.h"
 #include "string.h"
 #include "tmpfs.h"
@@ -24,6 +25,30 @@ void vfs_test() {
     buf[sz] = '\0';
     printf("%s\n", buf);  // should be Hello World!
   }
+  vfs_close(a);
+  vfs_close(b);
+
+  printf("\nfile1.txt\n");
+  a = vfs_open("file1.txt", 0);
+  if (a != 0) {
+    int sz;
+    char buf[200];
+    sz = vfs_read(a, buf, 100);
+    buf[sz] = '\0';
+    printf("%s\n", buf);
+  }
+  vfs_close(a);
+
+  printf("\nfile2.txt\n");
+  a = vfs_open("file2.txt", 0);
+  if (a != 0) {
+    int sz;
+    char buf[200];
+    sz = vfs_read(a, buf, 100);
+    buf[sz] = '\0';
+    printf("%s\n", buf);
+  }
+  vfs_close(a);
 }
 
 void vfs_init() {
@@ -34,6 +59,7 @@ void vfs_init() {
   register_filesystem(&fs);
   fs.setup_mount(&fs, rootfs);
   current_dir = rootfs->root;
+  cpio_populate_rootfs();
 }
 
 int register_filesystem(struct filesystem* fs) {

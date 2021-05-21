@@ -3,6 +3,7 @@
 #include "printf.h"
 #include "string.h"
 #include "utils.h"
+#include "vfs.h"
 
 void cpio_ls() {
   unsigned long long ptr = RAMFS_ADDR;
@@ -84,4 +85,30 @@ uint32_t cpio_load_user_program(const char *target_program,
   }
   printf("No such file\n");
   return 0;
+}
+
+void cpio_populate_rootfs() {
+  unsigned long long ptr = RAMFS_ADDR;
+  cpio_newc_header *header;
+  char *pathname;
+
+  while (1) {
+    header = (cpio_newc_header *)ptr;
+    unsigned long long namesize = hex2int(header->c_namesize, 8);
+    unsigned long long filesize = hex2int(header->c_filesize, 8);
+
+    ptr += sizeof(cpio_newc_header);
+    pathname = (char *)ptr;
+    // the end is indicated by a special record with pathname "TRAILER!!!"
+    if (strcmp(pathname, CPIO_END) == 0) break;
+    printf("%s %d\n", pathname, filesize);
+
+    ptr = align_up(ptr + namesize, 4);
+    struct file* file = vfs_open(pathname, O_CREAT);
+    if (file) {
+      vfs_write(file, (const char *)ptr, filesize);
+      vfs_close(file);
+    }
+    ptr = align_up(ptr + filesize, 4);
+  }
 }

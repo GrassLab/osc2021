@@ -5,7 +5,7 @@
 #include "vfs.h"
 
 #define MAX_FILES_IN_DIR 16
-#define TMPFS_BUF_SIZE 512
+#define TMPFS_BUF_SIZE 4096
 
 struct tmpfs_buf {
   int flag;
