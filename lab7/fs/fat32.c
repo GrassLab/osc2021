@@ -462,7 +462,6 @@ static int read(struct file* file, void* buf, size_t len) {
 
 static int create(struct vnode* dir_node, struct vnode** target, const char* component_name) {
 
-
   return 0;
 }
 
@@ -666,55 +665,3 @@ void fat32_traverse_root_directory(struct fat32_info* fat32_info) {
   }
  }
 
-void test_read_file1(struct fat32_info * _fat32_info) {
-  char buf[FAT32_BLOCK_SIZE];
-  char fat_table[FAT32_BLOCK_SIZE];
-
-  struct directory_entry* d_entry;
-  char filename[FAT32_D_ENTRY_NAME_SIZE + FAT32_D_ENTRY_EXTENSION_SIZE + 1];
-  size_t cluster_num;
-
-  //first cluster of file
-  cluster_num = (_fat32_info->d_table->root_entry[4].start_cluster_high << 16) + _fat32_info->d_table->root_entry[4].start_cluster_low;
-  //while(1) {
-    //read next cluster num in fat table
-    
-    //reuse fat table if in same cluster
-    
-    readblock(_fat32_info->p_entry->lba + _fat32_info->boot_sector->num_of_reserved_sectors + cluster_num / 128, fat_table);
-    cluster_num = *(uint32_t *)(fat_table + (cluster_num % 128) * 4);
-    //printf("cluster_num: %x, addr: %x\n", cluster_num, buf);
-    //printf("%s\n", buf);
-    d_entry = buf;
-    while(1) {
-      
-      if(*((char*)d_entry) == '\x00') {
-        //dir end
-        break;
-      }
-      else if(*((char*)d_entry) == '\xe5') {
-        //unused
-      }
-      //Long filename text - Attrib has all four type bits set
-      else {
-        memset(filename, '\x00', FAT32_D_ENTRY_NAME_SIZE + FAT32_D_ENTRY_EXTENSION_SIZE + 1);
-        strncpy(filename, d_entry->name, FAT32_D_ENTRY_NAME_SIZE);
-        strncpy(filename + strlen(filename), d_entry->extension, FAT32_D_ENTRY_EXTENSION_SIZE);
-        cluster_num = (d_entry->start_cluster_high << 16) +  d_entry->start_cluster_low;
-        printf("name: %s, size: %x, attribute: %x, first cluster: %x\n", filename, d_entry->size,  d_entry->attribute, cluster_num);
-      }
-      
-      d_entry += 1;
-    }
-
-    readblock(_fat32_info->p_entry->lba + _fat32_info->boot_sector->num_of_reserved_sectors +  _fat32_info->boot_sector->sectors_per_fat_large_fat32 * 2  + 0x000025C8 - 2, buf);
-    printf("%s\n", buf);
-    //if(IS_EOC(cluster_num))
-      //break;
-    
-
- // }
-  //root directory
-  //readblock(fat32_info->p_entry->lba + fat32_info->boot_sector->num_of_reserved_sectors + fat32_info->boot_sector->sectors_per_fat_large_fat32 * 2, buf);
-
-}
