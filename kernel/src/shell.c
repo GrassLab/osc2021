@@ -74,7 +74,7 @@ void cmd_thread_test1() { thread_test1(); }
 
 void cmd_thread_test2() { thread_test2(); }
 
-void cmd_vfs_test() { vfs_test(); }
+void cmd_thread_vfs_test() { thread_vfs_test(); }
 
 void clear_buffer() {
   buffer_pos = 0;
@@ -136,7 +136,7 @@ void run_shell() {
     } else if (strcmp(buffer, "thread test 2") == 0) {
       cmd_thread_test2();
     } else if (strcmp(buffer, "vfs") == 0) {
-      vfs_test();
+      cmd_thread_vfs_test();
     }
   }
 }

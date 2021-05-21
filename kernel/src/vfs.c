@@ -4,51 +4,55 @@
 #include "cpio.h"
 #include "printf.h"
 #include "string.h"
+#include "thread.h"
 #include "tmpfs.h"
 
 void vfs_test() {
-  struct file* a = vfs_open("hello", O_CREAT);
-  struct file* b = vfs_open("world", O_CREAT);
-  if (a != 0 && b != 0) {
-    vfs_write(a, "Hello ", 6);
-    vfs_write(b, "World!", 6);
-    vfs_close(a);
-    vfs_close(b);
-  }
-  b = vfs_open("hello", 0);
-  a = vfs_open("world", 0);
-  if (a != 0 && b != 0) {
-    int sz;
-    char buf[200];
-    sz = vfs_read(b, buf, 100);
-    sz += vfs_read(a, buf + sz, 100);
-    buf[sz] = '\0';
-    printf("%s\n", buf);  // should be Hello World!
-  }
-  vfs_close(a);
-  vfs_close(b);
+  // struct file* a = vfs_open("hello", O_CREAT);
+  // struct file* b = vfs_open("world", O_CREAT);
+  // if (a != 0 && b != 0) {
+  //   vfs_write(a, "Hello ", 6);
+  //   vfs_write(b, "World!", 6);
+  //   vfs_close(a);
+  //   vfs_close(b);
+  // }
+  // b = vfs_open("hello", 0);
+  // a = vfs_open("world", 0);
+  // if (a != 0 && b != 0) {
+  //   int sz;
+  //   char buf[200];
+  //   sz = vfs_read(b, buf, 100);
+  //   sz += vfs_read(a, buf + sz, 100);
+  //   buf[sz] = '\0';
+  //   printf("%s\n", buf);  // should be Hello World!
+  // }
+  // vfs_close(a);
+  // vfs_close(b);
 
-  printf("\nfile1.txt\n");
-  a = vfs_open("file1.txt", 0);
-  if (a != 0) {
-    int sz;
-    char buf[200];
-    sz = vfs_read(a, buf, 100);
-    buf[sz] = '\0';
-    printf("%s\n", buf);
-  }
-  vfs_close(a);
+  // printf("\nfile1.txt\n");
+  // a = vfs_open("file1.txt", 0);
+  // if (a != 0) {
+  //   int sz;
+  //   char buf[200];
+  //   sz = vfs_read(a, buf, 100);
+  //   buf[sz] = '\0';
+  //   printf("%s\n", buf);
+  // }
+  // vfs_close(a);
 
-  printf("\nfile2.txt\n");
-  a = vfs_open("file2.txt", 0);
-  if (a != 0) {
-    int sz;
-    char buf[200];
-    sz = vfs_read(a, buf, 100);
-    buf[sz] = '\0';
-    printf("%s\n", buf);
-  }
-  vfs_close(a);
+  // printf("\nfile2.txt\n");
+  // a = vfs_open("file2.txt", 0);
+  // if (a != 0) {
+  //   int sz;
+  //   char buf[200];
+  //   sz = vfs_read(a, buf, 100);
+  //   buf[sz] = '\0';
+  //   printf("%s\n", buf);
+  // }
+  // vfs_close(a);
+
+  const char* vfs_argv[] = {"vfs_test", 0};
+  exec("vfs_test", vfs_argv);
 }
 
 void vfs_init() {
@@ -98,12 +102,12 @@ struct file* vfs_open(const char* pathname, int flags) {
       fd->f_ops = target->f_ops;
       fd->f_pos = 0;
     } else {
-      printf("File already exists!!\n");
+      printf("File \"%s\" already exists!!\n", pathname);
     }
   } else {
     int found = current_dir->v_ops->lookup(current_dir, &target, pathname);
     if (!found) {
-      printf("File not found!!\n");
+      printf("File \"%s\" not found!!\n", pathname);
     } else {
       fd = (struct file*)malloc(sizeof(struct file));
       fd->vnode = target;

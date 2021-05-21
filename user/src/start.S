@@ -14,6 +14,10 @@ _start:
 .global fork
 .global exec
 .global exit
+.global open
+.global close
+.global write
+.global read
 
 uart_read:
     svc 0
@@ -24,16 +28,32 @@ uart_write:
     ret
 
 getpid:
-    svc 39
+    svc 2
     ret
 
 fork:
-    svc 57
+    svc 3
     ret
 
 exec:
-    svc 59
+    svc 4
 
 exit:
-    svc 60
+    svc 5
+    ret
+
+open:
+    svc 6
+    ret
+
+close:
+    svc 7
+    ret
+
+write:
+    svc 8
+    ret
+
+read:
+    svc 9
     ret

@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "vfs.h"
+
 #define STACK_SIZE 4096
 #define USER_PROGRAM_BASE 0x30000000
 #define USER_PROGRAM_SIZE (1 * mb)
@@ -9,6 +11,11 @@
 #define THREAD_DEAD 1
 #define THREAD_FORK 2
 #define THREAD_READY 4
+
+#define STDIN_FILENO 0
+#define STDOUT_FILENO 1
+#define STDERR_FILENO 2
+#define FD_MAX 256
 
 typedef struct {
   uint64_t x19;
@@ -26,6 +33,10 @@ typedef struct {
   uint64_t sp;
 } cpu_context;
 
+typedef struct {
+  struct file *files[FD_MAX];
+} fd_table_t;
+
 typedef struct thread_info {
   cpu_context context;
   uint32_t pid;
@@ -36,6 +47,7 @@ typedef struct thread_info {
   uint64_t user_stack_base;
   uint64_t user_program_base;
   uint32_t user_program_size;
+  fd_table_t fd_table;
   struct thread_info *next;
 } thread_info;
 
@@ -57,6 +69,7 @@ void foo();
 void thread_test1();
 void user_test();
 void thread_test2();
+void thread_vfs_test();
 
 void thread_init();
 thread_info *thread_create(void (*func)());
@@ -69,3 +82,6 @@ void exec(const char *program_name, const char **argv);
 void fork(uint64_t sp);
 void handle_fork();
 void create_child(thread_info *parent, thread_info *child);
+
+struct file *thread_get_file(int fd);
+int thread_get_fd(struct file *file);

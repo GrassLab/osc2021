@@ -35,6 +35,13 @@ void thread_test2() {
   idle();
 }
 
+void thread_vfs_test() {
+  thread_info *idle_t = thread_create(0);
+  asm volatile("msr tpidr_el1, %0\n" ::"r"((uint64_t)idle_t));
+  thread_create(vfs_test);
+  idle();
+}
+
 void thread_init() {
   run_queue.head = 0;
   run_queue.tail = 0;
@@ -53,6 +60,7 @@ thread_info *thread_create(void (*func)()) {
   thread->context.fp = thread->kernel_stack_base + STACK_SIZE;
   thread->context.lr = (uint64_t)func;
   thread->context.sp = thread->kernel_stack_base + STACK_SIZE;
+  for (int i = 0; i < FD_MAX; ++i) thread->fd_table.files[i] = 0;
   run_queue_push(thread);
   return thread;
 }
@@ -238,4 +246,22 @@ void create_child(thread_info *parent, thread_info *child) {
   trap_frame->x[30] += user_program_base_dist;  // lr (x30)
   trap_frame->x[32] += user_program_base_dist;  // elr_el1
   trap_frame->x[33] += user_stack_base_dist;    // sp_el0
+}
+
+struct file *thread_get_file(int fd) {
+  thread_info *cur = get_current();
+  return cur->fd_table.files[fd];
+}
+
+int thread_get_fd(struct file *file) {
+  if (file == 0) return -1;
+  thread_info *cur = get_current();
+  // find next available fd
+  for (int fd = 3; fd < FD_MAX; ++fd) {
+    if (cur->fd_table.files[fd] == 0) {
+      cur->fd_table.files[fd] = file;
+      return fd;
+    }
+  }
+  return -1;
 }
