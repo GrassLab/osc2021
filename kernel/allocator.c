@@ -222,6 +222,7 @@ void* kmalloc(unsigned int size) {
     }
 	// print_free_list();
     uart_puts("(error) kmalloc fail!\n");
+	while(1);
     return 0;
 }
 

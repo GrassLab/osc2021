@@ -57,14 +57,18 @@ int create_thread(unsigned long clone_flags, unsigned long func, unsigned long a
         for(int i = 0; i < FD_MAX_SIZE; i++) {
             p->fd_table[i] = 0;
         }
+        p->child = 0;
 	} 
     else {
         // clone
+        /*
         unsigned char *dest = (unsigned char *)p;
         unsigned char *src = (unsigned char *)current;
         for(int i = 0; i < 4096; i++) {
             dest[i] = src[i];    
         }
+        */
+        memcpy(p, current, 4096);
         for(int i = 0; i < FD_MAX_SIZE; i++) {
             p->fd_table[i] = current->fd_table[i];
         }
@@ -73,22 +77,27 @@ int create_thread(unsigned long clone_flags, unsigned long func, unsigned long a
         p->cpu_context.ux0 = 0;
         p->cpu_context.fp += k_delta;
         p->cpu_context.sp += k_delta;
-        p->cpu_context.elr += 0x100000;
-        p->cpu_context.usp += 0x100000;
-        p->cpu_context.ufp += 0x100000;
-        p->cpu_context.ulr += 0x100000;
+        p->cpu_context.elr += (unsigned long)0x100000;
+        p->cpu_context.usp += (unsigned long)0x100000;
+        p->cpu_context.ufp += (unsigned long)0x100000;
+        p->cpu_context.ulr += (unsigned long)0x100000;
+        //p->cpu_context.lr = p->cpu_context.ulr;
 
+        /*
         char *src_stack = (char *)current->cpu_context.usp;
         char *dest_stack = (char *)p->cpu_context.usp;
         for(int i = 0; i < 4096; i++) {
             dest_stack[i] = src_stack[i];
         }
-	}
+        */
+        memcpy(0x300000, 0x200000, 0x100000);
+    }
 
     p->id = thread_count++;
     p->state = READY;
     p->priority = 2;
     p->counter = p->priority;
+    current->child = 1;
     
     run_queue[p->id] = p;
     preempt_enable();
@@ -197,6 +206,9 @@ void idle() {
         uart_puts_int(thread_count);
         uart_puts(" threads\n");
         delay(1000000);
+        if(current->child != 0) {
+            create_thread(0, 0, 0, 0);
+        }
         scheduler();
     }
 }

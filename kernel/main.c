@@ -100,6 +100,9 @@ void main() {
         else if(!strcmp(input, "lab6-2")) {
             lab6_required_2();
         }
+        else if(!strcmp(input, "lab7")) {
+            lab7();
+        }
         else {
             uart_puts("Error: ");
             uart_puts(input);

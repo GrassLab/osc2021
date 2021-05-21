@@ -5,7 +5,7 @@
 #include "xcpt_func.h"
 #include "cpio.h"
 
-//volatile unsigned char *cpio_address_base = (unsigned char *) 0x20000000;
+// volatile unsigned char *cpio_address_base = (unsigned char *) 0x20000000;
 // on qemu
 volatile unsigned char *cpio_address_base = (unsigned char *) 0x08000000;
 

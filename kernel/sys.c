@@ -53,7 +53,6 @@ int sys_open(const char *pathname, int flags) {
 int sys_close(int fd) {
     thread* task;
 	asm volatile("mrs %0, tpidr_el1	\n":"=r"(task):);
-    int ret = -1;
     if(task->fd_table[fd]) {
         vfs_close(task->fd_table[fd]);
         task->fd_table[fd] = 0;
@@ -76,7 +75,6 @@ void sys_read(int fd, void *buf, int count) {
     if(task->fd_table[fd]) {
         x0Set(vfs_read(task->fd_table[fd], buf, count));
     }
-    return 0;
 }
 
 void * const sys_call_table[] = {sys_getpid, sys_getpid, sys_uart_read, sys_uart_write, sys_exec, sys_exit, sys_fork, 

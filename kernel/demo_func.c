@@ -44,12 +44,14 @@ void lab5_required_1(int N) {
 void foo2() {
     char *argv[] = {"argv_test", "-o", "arg2", 0};
     _exec("argv_test.img", argv);
-    scheduler();
+    //scheduler();
 }
 
 void lab5_required_2() {
-    int flag = create_thread(PF_KTHREAD, (unsigned long)&foo2, 0, 0);
-    while(1) scheduler();
+    create_thread(PF_KTHREAD, (unsigned long)&foo2, 0, 0);
+    idle();
+    //create_thread(PF_KTHREAD, (unsigned long)&idle, 0, 0);
+    //while(1) scheduler();
 }
 
 void lab6_required_1() {
@@ -88,4 +90,19 @@ void foo3() {
 void lab6_required_2() {
     create_thread(PF_KTHREAD, (unsigned long)&foo3, 0, 0);
     while(1) scheduler();
+}
+
+void lab7() {
+    file *a = vfs_open("HELLO   .TXT", 0);
+    if(vfs_write(a, "add hello", 10) == 0) {
+        uart_puts("write Hello error!\n");
+    }
+    //vfs_close(a);
+    //a = vfs_open("HELLO   .TXT", 0);
+    int sz = 0;
+    char buf[100];
+    sz = vfs_read(a, buf, 20);
+    buf[sz] = '\0';
+    uart_puts(buf);
+    uart_puts("\n");
 }

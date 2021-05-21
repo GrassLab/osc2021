@@ -2,6 +2,7 @@
 #include "tmpfs.h"
 #include "allocator.h"
 #include "uart.h"
+#include "fat32.h"
 
 static void* write_f;
 static void* read_f;
@@ -10,16 +11,20 @@ static mount mnt;
 int register_filesystem(filesystem* fs) {
   // register the file system to the kernel.
     char* name=(char*)kmalloc(6);
-    name[0]='t';
-	name[1]='m';
-	name[2]='p';
-	name[3]='f';
-	name[4]='s';
+    name[0]='f';
+	name[1]='a';
+	name[2]='t';
+	name[3]='3';
+	name[4]='2';
 	name[5]='\0';
     fs->name = name;
-    fs->setup_mount = tmpfs_setup(fs, &mnt);
-    write_f = tmpfs_write;
-    read_f = tmpfs_read;
+    //fs->setup_mount = tmpfs_setup(fs, &mnt);
+    //write_f = tmpfs_write;
+    //read_f = tmpfs_read;
+    fs->setup_mount = fat32_setup;
+    fs->setup_mount(fs, &mnt);
+    write_f = fat32_write;
+    read_f = fat32_read;
     return 0;
 }
 
@@ -30,7 +35,7 @@ struct file* vfs_open(const char* pathname, int flags) {
     vnode *dir = mnt.root;
     vnode *child = (vnode*)kmalloc(sizeof(vnode));
     while(1) {
-        int index = tmpfs_lookup(dir, &child, pathname);
+        int index = fat32_lookup(dir, &child, pathname);
         /* if index >= 0, file already exist, else create a new file if O_CREATE*/
         if(index >= 0) {
             break;
