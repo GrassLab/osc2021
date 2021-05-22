@@ -1,10 +1,8 @@
 #include "exception.h"
 
-#include <stddef.h>
-
 #include "mini_uart.h"
 #include "printf.h"
-#include "string.h"
+#include "syscall.h"
 #include "thread.h"
 #include "timer.h"
 
@@ -39,48 +37,7 @@ void sync_handler_lowerEL_64(uint64_t sp) {
     uint32_t iss = esr_el1 & ((1 << 25) - 1);
     // printf("syscall number: %d\n", iss);
     trap_frame_t *trap_frame = (trap_frame_t *)sp;
-
-    if (iss == SYS_UART_READ) {
-      uint32_t size =
-          uart_gets((char *)trap_frame->x[0], (uint32_t)trap_frame->x[1]);
-      trap_frame->x[0] = size;
-    } else if (iss == SYS_UART_WRITE) {
-      uart_puts((char *)trap_frame->x[0]);
-      trap_frame->x[0] = trap_frame->x[1];
-    } else if (iss == SYS_GETPID) {
-      uint32_t pid = get_current()->pid;
-      trap_frame->x[0] = pid;
-    } else if (iss == SYS_FORK) {
-      fork(sp);
-    } else if (iss == SYS_EXEC) {
-      exec((char *)trap_frame->x[0], (const char **)trap_frame->x[1]);
-    } else if (iss == SYS_EXIT) {
-      exit();
-    } else if (iss == SYS_OPEN) {
-      struct file *file =
-          vfs_open((char *)trap_frame->x[0], (int)trap_frame->x[1]);
-      int fd = thread_get_fd(file);
-      trap_frame->x[0] = fd;
-    } else if (iss == SYS_CLOSE) {
-      struct file *file = thread_get_file((int)trap_frame->x[0]);
-      int result = vfs_close(file);
-      trap_frame->x[0] = result;
-    } else if (iss == SYS_WRITE) {
-      struct file *file = thread_get_file((int)trap_frame->x[0]);
-      size_t size = vfs_write(file, (const void *)trap_frame->x[1],
-                              (size_t)trap_frame->x[2]);
-      trap_frame->x[0] = size;
-    } else if (iss == SYS_READ) {
-      struct file *file = thread_get_file((int)trap_frame->x[0]);
-      size_t size =
-          vfs_read(file, (void *)trap_frame->x[1], (size_t)trap_frame->x[2]);
-      trap_frame->x[0] = size;
-    } else if (iss == SYS_LIST) {
-      struct file *file = thread_get_file((int)trap_frame->x[0]);
-      int size =
-          vfs_list(file, (void *)trap_frame->x[1], (int)trap_frame->x[2]);
-      trap_frame->x[0] = size;
-    }
+    syscall_handler(iss, trap_frame);
   }
 }
 
