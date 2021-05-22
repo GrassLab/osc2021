@@ -10,6 +10,7 @@
 #include <file.h>
 #include <interrupt.h>
 #include <fs/open.h>
+#include <preempt.h>
 
 struct filesystem *filesystem_list;
 
@@ -151,10 +152,14 @@ ssize_t vfs_write(struct file *file, const void *buf, size_t len) {
 }
 
 int vfs_close(struct file *file) {
-  if (!file->refcnt) {
+  disable_preempt();
+
+  file->refcnt -= 1;
+  if (file->refcnt == 0) {
     kfree(file);
   }
 
+  enable_preempt();
   return 0;
 }
 

@@ -11,6 +11,7 @@
 #include <timer.h>
 #include <preempt.h>
 #include <atomic.h>
+#include <file.h>
 
 #define DEFAULT_TIMEOUT 5
 
@@ -71,6 +72,8 @@ void restart_task(struct task_struct *ts) {
 void kill_task(struct task_struct *ts, int status) {
     size_t flags = disable_irq_save();
 
+    /* TODO: should stop all the timers */
+
     ts->state = TASK_STOPPED;
     ts->need_resched = 1;
     unlink(&ts->list);
@@ -85,7 +88,17 @@ void free_task(struct task_struct *ts) {
     kfree(ts->stack);
     kfree(ts->kstack);
     kfree(ts->user_prog);
-    /* TODO: free all fds */
+
+    /* close all fds */
+    if (ts->files) {
+        unsigned bits = ts->files->unused_bits;
+        for (int i = 0; i < NR_OPEN_DEFAULT; i++) {
+            if (bits & (1 << i) == 0) {
+                vfs_close(ts->files->fd_array[i]);
+            }
+        }
+    }
+
     kfree(ts);
 }
 

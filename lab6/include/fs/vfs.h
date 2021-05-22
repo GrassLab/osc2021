@@ -34,7 +34,6 @@ struct filesystem {
     struct filesystem *next;
 };
 
-/* TODO: add flags arg for each ops */
 struct vnode_operations {
     /* only lookup a child node of the provided vnode */
     int (*lookup)(struct vnode* dir_node, struct vnode** target, const char* component_name);

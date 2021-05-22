@@ -10,5 +10,11 @@
 #define SYS_GETPID 3
 #define SYS_EXIT 4
 #define SYS_FORK 5
+#define SYS_READ 6
+#define SYS_WRITE 7
+#define SYS_OPEN 8
+#define SYS_CLOSE 9
+#define SYS_GETCWD 10
+#define SYS_CHDIR 11
 
 #endif

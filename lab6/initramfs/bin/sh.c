@@ -1,26 +1,21 @@
 #include <stdlib.h>
 #include <printf.h>
 
-void delay(int n) {
-    while(n--);
-}
-
 int main(void) {
-    printf("Fork Test, pid %d\n", getpid());
-    int cnt = 1;
-    int ret = 0;
-    if ((ret = fork()) == 0) { // child
-        printf("pid: %d, cnt: %d, ptr: %p\n", getpid(), cnt, &cnt);
-        ++cnt;
-        fork();
-        while (cnt < 5) {
-            printf("pid: %d, cnt: %d, ptr: %p\n", getpid(), cnt, &cnt);
-            delay(1000000);
-            ++cnt;
-        }
-    } else {
-        printf("parent here, pid %d, child %d\n", getpid(), ret);
-    }
+    char buf[100];
+    int a = open("hello", O_CREAT);
+    int b = open("world", O_CREAT);
+    write(a, "Hello ", 6);
+    write(b, "World!", 6);
+    close(a);
+    close(b);
+    b = open("hello", 0);
+    a = open("world", 0);
+    int sz;
+    sz = read(b, buf, 100);
+    sz += read(a, buf + sz, 100);
+    buf[sz] = '\0';
+    printf("size: %d, s: %s\n", sz, buf);
 
     return 0;
 }

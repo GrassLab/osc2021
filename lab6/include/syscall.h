@@ -15,6 +15,12 @@ enum {
     SYS_GETPID,
     SYS_EXIT,
     SYS_FORK,
+    SYS_READ,
+    SYS_WRITE,
+    SYS_OPEN,
+    SYS_CLOSE,
+    SYS_GETCWD,
+    SYS_CHDIR,
     NR_syscalls
 };
 

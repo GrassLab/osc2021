@@ -6,8 +6,8 @@ int main(int argc, char **argv) {
     for (int i = 0; i < argc; ++i) {
         printf("#%d: %s\n", i, argv[i]);
     }
-    char *args[] = {"bin/sh", NULL};
-    exec("bin/sh", args);
+    char *args[] = {"/bin/sh", NULL};
+    exec("/bin/sh", args);
 
     return 0;
 }

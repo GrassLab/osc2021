@@ -35,11 +35,11 @@ void run_init() {
     const char *argv[] = {"init", "-n", "0", NULL};
     kernel_exec_file("init", argv);
 
-    panic("[Kernel] spawn init thread failed");
+    panic("spawn init thread failed");
 }
 
-int split(const char *buf, char *outbuf[], int n) {
-    const char *ps, *pe;
+int split(char *buf, char *outbuf[], int n) {
+    char *ps, *pe;
     int idx = 0;
     ps = pe = buf;
 
@@ -48,10 +48,8 @@ int split(const char *buf, char *outbuf[], int n) {
 
         int size = pe - ps;
         if (size) {
-            outbuf[idx] = kmalloc(size + 1);
-            memcpy(outbuf[idx], ps, size);
-            outbuf[idx][size] = '\0';
-            idx++;
+            ps[size] = '\0';
+            outbuf[idx++] = ps;
         }
 
         if (*pe) {
@@ -76,7 +74,6 @@ int atoi(const char *s) {
     return n;
 }
 
-#include <peripheral.h>
 void shell() {
     enable_interrupt();
 
