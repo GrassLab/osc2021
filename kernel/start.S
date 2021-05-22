@@ -14,6 +14,14 @@ _start:
 
 2:
     bl from_el2_to_el1
+    
+    /*
+    mrs	x0, sctlr_el1
+    ldr x1, =0xffffffe5
+    and x0, x0, x1
+    msr sctlr_el1, x0
+    */
+    
     bl set_exception_vector_table
     ldr x0, = bss_begin
     ldr x1, = bss_end

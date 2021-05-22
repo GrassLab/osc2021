@@ -1,11 +1,20 @@
 #include "uart.h"
 #include "scheduler.h"
 
+void dumpReg() {
+    uart_puts("dump sctlr...\n");
+    unsigned long sctlr_el1;
+    asm volatile("mrs %0, sctlr_el2 \n":"=r"(sctlr_el1):);
+    uart_puts_int(sctlr_el1);
+    uart_puts("\n");
+}
+
 void dumpState() {
-    unsigned long spsr_el1, elr_el1, esr_el1;
+    unsigned long spsr_el1, elr_el1, esr_el1, sctlr_el1;
     asm volatile("mrs %0, spsr_el1 \n":"=r"(spsr_el1):);
     asm volatile("mrs %0, elr_el1 \n":"=r"(elr_el1):);
     asm volatile("mrs %0, esr_el1 \n":"=r"(esr_el1):);
+    asm volatile("mrs %0, sctlr_el1 \n":"=r"(sctlr_el1):);
 
     uart_puts("-----dump state-----\n");
     uart_puts("SPSR_EL1: 0x");
@@ -16,6 +25,9 @@ void dumpState() {
     uart_puts("\n");
     uart_puts("ESR_EL1: 0x");
     uart_puts_hex(esr_el1);
+    uart_puts("\n");
+    uart_puts("SCTLR_EL1:0x");
+    uart_puts_hex(sctlr_el1);
     uart_puts("\n");
     uart_puts("---------------------\n");
     while(1);

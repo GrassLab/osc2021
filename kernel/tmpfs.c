@@ -97,7 +97,7 @@ int tmpfs_create(vnode* dir_node, vnode** target, const char* component_name) {
     child->f_ops = dir_node->f_ops;
     child->internal = (iContent*)kmalloc(sizeof(iContent));
     content = child->internal;
-    content->name = component_name;
+    content->name = (char*)component_name;
     content->type = FILE_TYPE;
     content->capacity = 0;
     content->size = 0;

@@ -33,11 +33,10 @@ static void foo(){
 }
 
 void lab5_required_1(int N) {
-    int flag = 0;
     for(int i = 0; i < N; ++i) { // N should > 2
-        flag = create_thread(PF_KTHREAD, (unsigned long)&foo, 0, 0);
+        create_thread(PF_KTHREAD, (unsigned long)&foo, 0, 0);
     }
-    flag = create_thread(PF_KTHREAD, (unsigned long)&idle, 0, 0);
+    create_thread(PF_KTHREAD, (unsigned long)&idle, 0, 0);
     while(1) scheduler();
 }
 
@@ -93,12 +92,10 @@ void lab6_required_2() {
 }
 
 void lab7() {
-    file *a = vfs_open("HELLO   .TXT", 0);
+    file *a = vfs_open("A       .TXT", 0);
     if(vfs_write(a, "add hello", 10) == 0) {
         uart_puts("write Hello error!\n");
     }
-    //vfs_close(a);
-    //a = vfs_open("HELLO   .TXT", 0);
     int sz = 0;
     char buf[100];
     sz = vfs_read(a, buf, 20);
