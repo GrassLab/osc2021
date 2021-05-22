@@ -18,7 +18,7 @@ void exec_command(char *input)
     if (strcmp(input, "help") == 0) {
         char *support_cmds[] = {"help", "hello", "reboot", "open", "demo1", "demo2", "load"};
         for (int i = 1; i <= 7; i++) {
-            printf("%d. %s\r\n", i, support_cmds[i]);
+            printf("%d. %s\r\n", i, support_cmds[i - 1]);
         }
     } else if (strcmp(input, "hello") == 0) {
         printf("Hello World!\r\n");
@@ -57,12 +57,12 @@ void exec_command(char *input)
         char buf[100] = { 0 };
         int readbytes;
 
-        int fd = open("/test", O_CREAT);
+        int fd = open("test", O_CREAT);
         readbytes = read(fd, buf, 20);
         printf("fd: %d, read: %s, %d bytes\n", fd, buf, readbytes);
         close(fd);
 
-        int fd2 = open("/test2", O_CREAT);
+        int fd2 = open("test2", O_CREAT);
         memset(buf, 0, 100);
         readbytes = read(fd2, buf, 20);
         printf("fd: %d, read: %s, %d bytes\n", fd2, buf, readbytes);

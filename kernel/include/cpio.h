@@ -5,7 +5,7 @@
 #ifdef EMU
 #define RAMFS_ADDR (0x8000000)
 #else
-#define RAMFS_ADDR (0x1000000)
+#define RAMFS_ADDR (0x8000000)
 #endif
 
 #include "vfs.h"
