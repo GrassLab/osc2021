@@ -7,25 +7,30 @@
 #include <sched.h>
 
 /* for userland */
-static struct task_struct *fork_context(struct pt_regs *regs) {
+static struct task_struct *fork_context() {
     struct task_struct *ts = kmalloc(sizeof(struct task_struct));
 
     size_t flags = disable_irq_save();
+
     *ts = *current;
-    irq_restore(flags);
 
     ts->need_resched = 0;
     ts->preempt_count = 0;
+
+    struct pt_regs *old_trapframe = (struct pt_regs *)((size_t)ts->kstack + KSTACK_SIZE - sizeof(struct pt_regs));
 
     ts->kstack = kmalloc(KSTACK_SIZE);
     ts->stack = kmalloc(USTACK_SIZE);
     memcpy(ts->stack, current->stack, USTACK_SIZE);
 
     struct pt_regs *trapframe = (struct pt_regs *)((size_t)ts->kstack + KSTACK_SIZE - sizeof(struct pt_regs));
-    memcpy(trapframe, regs, sizeof(struct pt_regs));
+    memcpy(trapframe, old_trapframe, sizeof(struct pt_regs));
 
-    trapframe->sp = (size_t)ts->stack + (regs->sp - (size_t)current->stack);
+    /* TODO: enable mmu to get rid of this shit */
+    trapframe->sp = (size_t)ts->stack + (old_trapframe->sp - (size_t)current->stack);
     trapframe->regs[0] = 0;
+
+    irq_restore(flags);
 
     ts->pid = get_next_pid();
 
@@ -42,13 +47,13 @@ static struct task_struct *fork_context(struct pt_regs *regs) {
 
 /* we use fork() to get all context, so trapframe will be construct first
  * so be careful to use this function only for fork syscall */
-static pid_t fork_user_thread(struct pt_regs *regs) {
-    struct task_struct *ts = fork_context(regs);
+static pid_t fork_user_thread() {
+    struct task_struct *ts = fork_context();
     add_task(ts);
 
     return ts->pid;
 }
 
-size_t do_fork(struct pt_regs *regs) {
-    return fork_user_thread(regs);
+pid_t do_fork() {
+    return fork_user_thread();
 }

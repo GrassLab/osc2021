@@ -5,50 +5,47 @@
 #include <fork.h>
 #include <interrupt.h>
 #include <preempt.h>
+#include <syscall_wrapper.h>
 
-void sys_uart_read(struct pt_regs *regs) {
-    char *buf = (char *)regs->regs[0];
-    int count = regs->regs[1];
+SYSCALL_DEFINE2(uart_read, char *, buf, int, count) {
     for (int i = 0; i < count; i++) {
         buf[i] = _getchar();
     }
-    regs->regs[0] = count;
+
+    return count;
 }
 
-void sys_uart_write(struct pt_regs *regs) {
-    char *buf = (char *)regs->regs[0];
-    int count = regs->regs[1];
+SYSCALL_DEFINE2(uart_write, char *, buf, int, count) {
     for (int i = 0; i < count; i++) {
         _putchar(buf[i]);
     }
-    regs->regs[0] = count;
+
+    return count;
 }
 
-void sys_exec(struct pt_regs *regs) {
-    /* TODO: should guarantee memory is in userland */
-    const char *path = (char *)regs->regs[0];
-    const char **args = (const char **)regs->regs[1];
-
-    regs->regs[0] = do_exec(path, args);
+SYSCALL_DEFINE2(exec, const char *, path, const char **, argv) {
+    return do_exec(path, argv);
 }
 
-void sys_getpid(struct pt_regs *regs) {
-    regs->regs[0] = (size_t)current->pid;
+SYSCALL_DEFINE0(getpid) {
+    return current->pid;
 }
 
-void sys_exit(struct pt_regs *regs) {
-    kill_task(current, regs->regs[0]);
+SYSCALL_DEFINE1(exit, int, status) {
+    kill_task(current, status);
+
+    return -1;
 }
 
-void sys_fork(struct pt_regs *regs) {
-    regs->regs[0] = do_fork(regs);
+SYSCALL_DEFINE0(fork) {
+    return do_fork();
 }
 
 syscall syscall_table[NR_syscalls] = {
-    [SYS_UART_READ] = &sys_uart_read,
-    [SYS_UART_WRITE] = &sys_uart_write,
-    [SYS_EXEC] = &sys_exec,
-    [SYS_GETPID] = &sys_getpid,
-    [SYS_EXIT] = &sys_exit,
-    [SYS_FORK] = &sys_fork
+    SYSCALL(SYS_UART_READ, uart_read),
+    SYSCALL(SYS_UART_WRITE, uart_write),
+    SYSCALL(SYS_EXEC, exec),
+    SYSCALL(SYS_GETPID, getpid),
+    SYSCALL(SYS_EXIT, exit),
+    SYSCALL(SYS_FORK, fork),
 };

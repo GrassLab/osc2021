@@ -6,7 +6,7 @@
 #define _STR(x) #x
 #define STR(s) _STR(s)
 
-typedef void (*syscall)(struct pt_regs *);
+typedef long (*syscall)(const struct pt_regs *);
 
 enum {
     SYS_UART_READ,

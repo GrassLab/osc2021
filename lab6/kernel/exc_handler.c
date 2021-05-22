@@ -75,7 +75,8 @@ void svc_handler(struct pt_regs *regs) {
     }
 
     /* exit syscall wont return */
-    syscall_table[nr](regs);
+    size_t ret = syscall_table[nr](regs);
+    regs->regs[0] = ret;
 }
 
 /* TODO: signal */
