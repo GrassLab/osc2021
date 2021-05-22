@@ -55,6 +55,7 @@ int dma_get_chunk_size(int slot_no){
 }
 
 void buddy_dma_init(){
+  log_puts((char *) "[INFO] DMA Init.\n", INFO);
   uart_puts((char *) "");
   dma_ll[0].idx = 0;
   uart_puts((char *) "");
@@ -102,6 +103,7 @@ void buddy_dma_init(){
     dma_head[i] = 0;
   }
   dma_unuse = &dma_ll[0];
+  log_puts((char *) "[INFO] DMA Init DONE.\n", INFO);
 }
 
 void dma_register_node(int slot_no, int itrn){
@@ -260,6 +262,7 @@ void buddy_dma_ll_show(){
 }
 
 void buddy_init(){
+  log_puts((char *) "[INFO] Buddy system Init.\n", INFO);
   buddy_ll[0].idx = 0;
   buddy_ll[0].order = -1;
   buddy_ll[0].addr = 0;
@@ -283,6 +286,7 @@ void buddy_init(){
   buddy_unuse_head = &buddy_ll[0];
 
   buddy_free(BUDDY_BASE_ADDR, BUDDY_SIZE, 0);
+  log_puts((char *) "[INFO] Buddy system Init DONE.\n", INFO);
 }
 
 void buddy_push_free_page(struct buddy_node **head, struct buddy_node *node, int itrn){

@@ -1,5 +1,6 @@
 # include "uart.h"
-#include "gpio.h"
+# include "gpio.h"
+# include "log.h"
 
 /* Auxilary mini UART registers */
 #define AUX_ENABLE      ((volatile unsigned int*)(MMIO_BASE+0x00215004))
@@ -46,6 +47,7 @@ void uart_init()
 
     *GPPUDCLK0 = 0;        // flush GPIO setup
     *AUX_MU_CNTL = 3;      // enable Tx, Rx
+    log_puts((char *) "[INFO] Uart Init DONE.\n", INFO);
 }
 
 /**

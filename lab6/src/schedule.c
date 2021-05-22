@@ -24,6 +24,7 @@ void idle(){
 }
 
 void task_init(){
+  log_puts((char *) "[INFO] Task Init.\n", INFO);
   for (int i=0; i<TASK_MAX_NUM; i++){
     task_pool[i].pid = i;
     task_pool[i].state = EXIT;
@@ -36,6 +37,7 @@ void task_init(){
   register unsigned long long r = (unsigned long long)(&task_pool[pid]);
   asm volatile("msr tpidr_el1, %0" : : "r"(r));
   privilege_task_create(shell, PRIORITY_MAX-1);
+  log_puts((char *) "[INFO] Task Init DONE.\n", INFO);
 }
 
 void task_exit(){
@@ -94,9 +96,9 @@ void zombie_reaper(){
         if (n->state == ZOMBIE){
           char ct[20];
           int_to_str(n->pid, ct);
-          uart_puts((char * ) "Reaper PID : ");
-          uart_puts(ct);
-          uart_puts((char * ) "\n");
+          log_puts((char * ) "[INFO] Reaper PID : ", INFO);
+          log_puts(ct, INFO);
+          log_puts((char * ) "\n", INFO);
           struct task *rm_task = n;
           n->state = EXIT;
           for (int i=0; i<FD_MAX_NUM; i++){

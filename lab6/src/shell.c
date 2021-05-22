@@ -11,7 +11,7 @@
 # include "schedule.h"
 # include "demo.h"
 # include "user_demo.h"
-# include "user_lib.h"
+// # include "user_lib.h"
 # include "log.h"
 # include "vfs.h"
 
@@ -180,6 +180,10 @@ void invoke_cmd(char *cmd){
       user_task_create(file_demo_3, 3);
       yield();
     }
+    else if (str_cmp(argv[1], (char *) "file4")){
+      user_task_create(file_demo_4, 3);
+      yield();
+    }
   }
   else if (str_cmp(argv[0], (char *) "logger") == 1){
     if (str_cmp(argv[1], (char *) "status")){
@@ -197,19 +201,19 @@ void invoke_cmd(char *cmd){
   }
   else if (str_cmp(argv[0], (char *) "mkdir") == 1){
     if (argc < 2){
-      uart_puts("Use \"mkdir <name>\"\n");
+      uart_puts((char *) "Use \"mkdir <name>\"\n");
     }
     else{
       struct task *cur = get_current();
       int mkdir_r = do_mkdir(argv[1], cur->pwd_vnode);
       if(mkdir_r){
-        uart_puts((char *) "mkdir fail\n");
+        log_puts((char *) "[Error] mkdir fail\n", WARNING);
       }
     }
   }
   else if (str_cmp(argv[0], (char *) "cd") == 1){
     if (argc < 2){
-      uart_puts("Use \"cd <path>\"\n");
+      uart_puts((char *) "Use \"cd <path>\"\n");
     }
     else{
       int cd_r = do_cd(argv[1]);
@@ -237,7 +241,7 @@ void invoke_cmd(char *cmd){
   }
   else if (str_cmp(argv[0], (char *) "rm") == 1){
     if (argc < 2){
-      uart_puts("Use \"rm <path>\"\n");
+      uart_puts((char *) "Use \"rm <path>\"\n");
     }
     else{
       do_rm(argv[1]);
@@ -245,7 +249,7 @@ void invoke_cmd(char *cmd){
   }
   else if (str_cmp(argv[0], (char *) "unmount") == 1){
     if (argc < 2){
-      uart_puts("Use \"unmount <path>\"\n");
+      uart_puts((char *) "Use \"unmount <path>\"\n");
     }
     else{
       do_unmount(argv[1]);
@@ -253,7 +257,7 @@ void invoke_cmd(char *cmd){
   }
   else if (str_cmp(argv[0], (char *) "mount") == 1){
     if (argc != 3){
-      uart_puts("Use \"mount <path> <fs name>\"\n");
+      uart_puts((char *) "Use \"mount <path> <fs name>\"\n");
     }
     else{
       do_mount(argv[1], argv[2]);
@@ -279,7 +283,7 @@ void shell(){
     get_pwd_string(curr->pwd_vnode, pwd);
     uart_puts((char *) "\r ");
     uart_puts(pwd);
-    uart_puts((char *) " >");
+    uart_puts((char *) " > ");
     uart_puts(cmd);
     char c = uart_read();
 

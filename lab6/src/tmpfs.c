@@ -132,17 +132,17 @@ int tmpfs_create(struct vnode* dir_node, struct vnode** target, const char* comp
 }
 
 int tmpfs_read(struct file* file, void* buf, size_t len){
-  if (file->vnode->mode & F_RD == 0){
-    log_puts("[WARNING] Read permission denied\n", WARNING);
+  if ((file->vnode->mode & F_RD) == 0){
+    log_puts((char *) "[Error] Read permission denied\n", WARNING);
     return -2;
   }
   int r = 0;
   struct tmpfs_internal *internal = (struct tmpfs_internal *) file->vnode->internal;
   if (file->f_pos >= internal->size){
-    log_puts("[Error] TMPFS read file over size!\n", SEVERE);
+    log_puts((char *) "[Error] TMPFS read file over size!\n", SEVERE);
     return -1;
   }
-  for (int i = 0; i< len; i++){
+  for (size_t i = 0; i<len; i++){
     if (file->f_pos < internal->size && internal->content[file->f_pos] != '\0'){
       ((char*)buf)[i] = internal->content[file->f_pos];
       file->f_pos++;
@@ -157,17 +157,17 @@ int tmpfs_read(struct file* file, void* buf, size_t len){
 
 int tmpfs_write(struct file* file, const void* buf, size_t len){
   //log_puts("Enter Write\n", INFO);
-  if (file->vnode->mode & F_WR == 0){
-    log_puts("[WARNING] Write permission denied\n", WARNING);
+  if ((file->vnode->mode & F_WR) == 0){
+    log_puts((char *) "[Error] Write permission denied\n", WARNING);
     return -2;
   }
   int r = 0;
   struct tmpfs_internal *internal = (struct tmpfs_internal *) file->vnode->internal;
   if (internal->size >= TMPFS_MAX_SIZE){
-    log_puts("[Error] TMPFS file over size!\n", SEVERE);
+    log_puts((char *) "[SEVERE] TMPFS file over size!\n", SEVERE);
     return -1;
   }
-  for (int i = 0; i< len; i++){
+  for (size_t i = 0; i< len; i++){
     if (internal->size < TMPFS_MAX_SIZE){
       internal->content[file->f_pos] = ((char *)buf)[i];
       file->f_pos++;
@@ -209,17 +209,17 @@ int tmpfs_dir_rm(struct vnode *vnode){
   }
   struct dentry *d = vnode->dentry;
   list_del(&(d->list));
-  while( !list_is_empty(&(d->list)) ){
+  while( !list_is_empty(&(d->childs)) ){
     struct dentry *dt = container_of(d->childs.next, struct dentry, list);
     list_del(&(dt->list));
     log_puts((char *) "[INFO] Remove sdentry < ", INFO);
     log_puts(dt->name, INFO);
-    log_puts((char *) " > .\n", INFO);
+    log_puts((char *) " >\n", INFO);
     free(dt);
   }
   log_puts((char *) "[INFO] Remove dentry < ", INFO);
   log_puts(d->name, INFO);
-  log_puts((char *) " > .\n", INFO);
+  log_puts((char *) " >\n", INFO);
   free(d);
   free(vnode);
   return 0;
@@ -233,7 +233,7 @@ int tmpfs_file_rm(struct vnode *vnode){
   list_del(&(d->list));
   log_puts((char *) "[INFO] Remove file < ", INFO);
   log_puts(d->name, INFO);
-  log_puts((char *) " > .\n", INFO);
+  log_puts((char *) " >\n", INFO);
   free(d);
   free(vnode->internal);
   free(vnode);

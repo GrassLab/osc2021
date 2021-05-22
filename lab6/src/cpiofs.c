@@ -158,27 +158,27 @@ int cpiofs_unmount(struct mount *mount){
 }
 
 int cpiofs_mkdir(struct vnode* dir_node, struct vnode** target, const char* component_name){
-  log_puts("[WARNING] mkdir permission denied\n", WARNING);
+  log_puts((char *) "[Error] mkdir permission denied\n", WARNING);
   return -2;
 }
 
 int cpiofs_create(struct vnode* dir_node, struct vnode** target, const char* component_name){
-  log_puts("[WARNING] Create permission denied\n", WARNING);
+  log_puts((char *) "[Error] Create permission denied\n", WARNING);
   return -2;
 }
 
 int cpiofs_read(struct file* file, void* buf, size_t len){
-  if (file->vnode->mode & F_RD == 0){
-    log_puts("[WARNING] Read permission denied\n", WARNING);
+  if ((file->vnode->mode & F_RD) == 0){
+    log_puts((char *) "[Error] Read permission denied\n", WARNING);
     return -2;
   }
   int r = 0;
   struct cpiofs_internal *internal = (struct cpiofs_internal *) file->vnode->internal;
   if (file->f_pos >= internal->size){
-    log_puts("[Error] CPIOFS read file over size!\n", SEVERE);
+    log_puts((char *) "[SEVERE] CPIOFS read file over size!\n", SEVERE);
     return -1;
   }
-  for (int i = 0; i< len; i++){
+  for (size_t i = 0; i<len; i++){
     if (file->f_pos < internal->size && internal->content[file->f_pos] != '\0'){
       ((char*)buf)[i] = internal->content[file->f_pos];
       file->f_pos++;
@@ -193,7 +193,7 @@ int cpiofs_read(struct file* file, void* buf, size_t len){
 
 int cpiofs_write(struct file* file, const void* buf, size_t len){
   //log_puts("Enter Write\n", INFO);
-  log_puts("[WARNING] Write permission denied\n", WARNING);
+  log_puts((char *) "[Error] Write permission denied\n", WARNING);
   return -2;
 }
 
@@ -216,7 +216,7 @@ int cpiofs_get_size(struct vnode *vnode){
 }
 
 int cpiofs_rm(struct vnode *vnode){
-  log_puts("[Error] Items in CPIOFS can't br removed.\n", WARNING);
+  log_puts((char *) "[Error] Items in CPIOFS can't br removed.\n", WARNING);
   return -1;
 }
 

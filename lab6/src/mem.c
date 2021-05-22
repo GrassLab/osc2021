@@ -19,6 +19,7 @@ inline void mem_uart_puts(char *c){
 }
 
 void mem_init(){
+  log_puts((char *) "[INFO] Mem system Init.\n", INFO);
   mem_ll[0].idx = 0;
   mem_ll[0].addr = 0;
   mem_ll[0].bytes = 0;
@@ -41,6 +42,7 @@ void mem_init(){
   mem_ll[MEM_TABLE_MAX_SIZE-1].next = 0;
   mem_inuse = 0;
   mem_unuse = &mem_ll[0];
+  log_puts((char *) "[INFO] Mem system Init DONE.\n", INFO);
 }
 
 void mem_ll_show(){

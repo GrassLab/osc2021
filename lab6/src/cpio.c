@@ -121,7 +121,7 @@ int cpio_get_argc(){
   cpio_newc_header *blk = INITRAMFS_ADDR;
   char *name = ((char *)blk + sizeof(cpio_newc_header));
   while(str_cmp(name, (char *) "TRAILER!!!") != 1){
-    unsigned long mode = hex_to_uint(blk->c_mode, 8);
+    //unsigned long mode = hex_to_uint(blk->c_mode, 8);
     unsigned long filesize = hex_to_uint(blk->c_filesize, 8);
     unsigned long namesize = hex_to_uint(blk->c_namesize, 8);
     //if (mode & (1 << 14)) uart_puts((char *) " <DIR> ");
@@ -141,7 +141,7 @@ void cpio_get_argv(char **argv){
   cpio_newc_header *blk = INITRAMFS_ADDR;
   char *name = ((char *)blk + sizeof(cpio_newc_header));
   while(str_cmp(name, (char *) "TRAILER!!!") != 1){
-    unsigned long mode = hex_to_uint(blk->c_mode, 8);
+    //unsigned long mode = hex_to_uint(blk->c_mode, 8);
     unsigned long filesize = hex_to_uint(blk->c_filesize, 8);
     unsigned long namesize = hex_to_uint(blk->c_namesize, 8);
     //if (mode & (1 << 14)) uart_puts((char *) " <DIR> ");

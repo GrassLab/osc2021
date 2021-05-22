@@ -55,7 +55,6 @@ void sync_handler(struct trapframe *arg, unsigned long type, unsigned long esr, 
     svc_handler(arg, type, iss);
     return ;
   }
-  /*
   char ct[20];
   uart_puts((char *) "Enter SYNC handler\n");
   uart_puts((char *) "[EXCEPTION] TYPE = ");
@@ -80,7 +79,10 @@ void sync_handler(struct trapframe *arg, unsigned long type, unsigned long esr, 
   int_to_hex(iss, ct);
   uart_puts(ct);
   uart_puts((char *) "\n");
-  */
+  while(1){
+    continue;
+  }
+  
 }
 
 
