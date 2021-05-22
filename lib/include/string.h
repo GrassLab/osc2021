@@ -10,6 +10,7 @@ int strlen(const char *str);
 void * memset ( void * ptr, int value, int num );
 int hextoi(char *hexStr);
 char *itoa(unsigned int value, char *str, int base);
+char *litoa(unsigned long int value, char *str, int base);
 
 
 #endif

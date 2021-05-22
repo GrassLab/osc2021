@@ -19,13 +19,31 @@ int printf(const char *format, ...) {
                     puts(va_arg(arg, char*));
                     break;
                 case 'd':
-                    itoa(va_arg(arg, int), buffer, 10);
+                    if (long_flag) {
+                        litoa(va_arg(arg, long int), buffer, 10);
+                    } else {
+                        itoa(va_arg(arg, int), buffer, 10);
+                    }
                     puts(buffer);
                     memset(buffer, 0, sizeof(char) * BUFFERSIZE);
                     long_flag = 0;
                     break;
                 case 'b':
-                    itoa(va_arg(arg, int), buffer, 2);
+                    if (long_flag) {
+                        litoa(va_arg(arg, long int), buffer, 2);
+                    } else {
+                        itoa(va_arg(arg, int), buffer, 2);
+                    }
+                    puts(buffer);
+                    memset(buffer, 0, sizeof(char) * BUFFERSIZE);
+                    long_flag = 0;
+                    break;
+                case 'p':
+                    if (long_flag) {
+                        litoa(va_arg(arg, long int), buffer, 16);
+                    } else {
+                        itoa(va_arg(arg, int), buffer, 16);
+                    }
                     puts(buffer);
                     memset(buffer, 0, sizeof(char) * BUFFERSIZE);
                     long_flag = 0;
