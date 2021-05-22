@@ -34,6 +34,7 @@ struct vnode_operations {
     int (*stat)(struct vnode *vnode, struct dentry* dent);
     int (*get_rsib)(struct vnode *vnode, struct vnode **target);
     int (*get_child)(struct vnode *vnode, struct vnode **target);
+    int (*sync)();
 };
 
 struct mount {
@@ -47,13 +48,20 @@ struct filesystem {
     int (*setup_mount)(struct filesystem* fs, struct mount* mount, struct vnode *root);
 };
 
+struct device {
+    struct vnode_operations *v_ops;
+    struct file_operations *f_ops;
+};
+
 #define MAX_FS_NR 10
 #define MAX_MNT_NR 16
 #define MAX_VNODE_NR 256
 #define MAX_FD_NR 16
+#define MAX_DEV_NR 8
 
 #define REG_DIR  1
 #define REG_FILE 2
+#define DEVICE   3
 #define O_CREAT (1 << 0)
 
 int tmpfs_setup_mount(struct filesystem* fs,
@@ -82,4 +90,8 @@ int vfs_write(struct file* file, const void* buf, int len);
 int vfs_read(struct file* file, void* buf, int len);
 int vfs_mkdir(const char *path, int mode);
 int vfs_chdir(const char *path);
-
+int vfs_sync();
+int dev_init(int devnum, struct file_operations *fops);
+int alloc_devnum(int *device_number);
+int dev_init(int devnum, struct file_operations *fops);
+int vfs_mknod(const char* pathname, int devnum);

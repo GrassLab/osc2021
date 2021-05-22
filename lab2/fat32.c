@@ -1,9 +1,19 @@
 #include "include/vfs.h"
+#include "include/mm.h"
 #include "include/fat32.h"
 #include "include/sdhost.h"
 #include "include/cutils.h"
 #include "include/mini_uart.h"
 
+#define MAX_CACHE_SIZE 8
+
+struct page_cache {
+    char *cache; // page pointer
+    int tag[MAX_CACHE_SIZE];  // -1 for free
+    int lru;     // index of tag
+};
+
+struct page_cache Cache;
 
 
 struct fat32_meta meta;
@@ -74,14 +84,61 @@ int fat32_insert_dirent(struct fat32_ent *dir, struct fat32_ent *child)
     return 0;
 }
 
+void page_cache_init()
+{
+    Cache.cache = kmalloc(0x1000);
+    for (int i = 0; i < MAX_CACHE_SIZE; ++i)
+        Cache.tag[i] = -1;
+    Cache.lru = 0;
+}
+
+char *read_page_cache(int lba)
+{
+    struct page_cache *cp = &Cache;
+    int replace = -1;
+    char *sector;
+
+    for (int i = 0; i < MAX_CACHE_SIZE; ++i) {
+        if (cp->tag[i] == lba)
+            return cp->cache + i * 512;
+        if ((replace == -1) && (cp->tag[i] == -1))
+            replace = i; // Find first empty index.
+    }
+    // Come to here means cache miss,
+    // so we have to find a hole to
+    // fill in. If we didn't find any
+    // empty index, then we use lru as index.
+    if (replace == -1) { // replace policy
+        replace = cp->lru;
+        cp->lru = (cp->lru + 1) % MAX_CACHE_SIZE;
+        writeblock(cp->tag[replace], cp->cache + replace * 512);
+    }
+    cp->tag[replace] = lba;
+    sector = cp->cache + replace * 512;
+    readblock(lba, sector);
+
+    return sector;
+}
+
+int fat32_sync()
+{
+    struct page_cache *cp = &Cache;
+
+    for (int i = 0; i < MAX_CACHE_SIZE; ++i)
+        writeblock(cp->tag[i], cp->cache + i * 512);
+    
+    return 0;
+}
+
 int fat32_get_next_cluster(int clstr)
 {
     int fat_lba;
-    char *fat_ent;
+    char *fat_ent, *sector;
 
     fat_lba = meta.fat_begin_lba + (clstr >> 7);
-    readblock(fat_lba, FAT);
-    fat_ent = FAT + (clstr & 0x7F) * 4;
+    sector = read_page_cache(fat_lba);
+    // readblock(fat_lba, FAT);
+    fat_ent = sector + (clstr & 0x7F) * 4;
 
     return fat_get_num(fat_ent, 4);
 }
@@ -102,6 +159,22 @@ int fat32_read_pos_clstr_to_buf(char *buf, int f_pos, struct fat32_ent *ent)
     return clstr_tmp;
 }
 
+char *fat32_pos_to_sector(int f_pos, struct fat32_ent *ent)
+{
+    int clstr_num, clstr_tmp, clstr_lba;
+    char *res;
+
+    clstr_num = f_pos / 512;
+    clstr_tmp = ent->first_cluster;
+    while (clstr_num) {
+        clstr_tmp = fat32_get_next_cluster(clstr_tmp);
+        clstr_num--;
+    }
+    clstr_lba = cluster_to_lba(clstr_tmp);
+    res = read_page_cache(clstr_lba);
+
+    return res;
+}
 
 int fat32_parse_name(char *buf, char *fat32_dirent)
 {
@@ -133,8 +206,8 @@ int fat32_parse_name(char *buf, char *fat32_dirent)
 int fat32_write(struct file* file, const void* buf, int len)
 { // Assume file size wouldn't grow over 4096 bytes.
     struct fat32_ent *tar;
-    int inc, clstr;
-    char sector[512], buf_name[13];    
+    int inc;
+    char *sector, buf_name[13];    
     char *fat32_dirent;
 
     tar = (struct fat32_ent*)(file->vnode->internal);
@@ -146,8 +219,9 @@ int fat32_write(struct file* file, const void* buf, int len)
     if (inc) {
         tar->size += inc;
         // Update dir's meta of this file.
-        readblock(cluster_to_lba(tar->parent->first_cluster), sector);
-        fat32_dirent = (char*)sector;
+        sector = read_page_cache(cluster_to_lba(tar->parent->first_cluster));
+        // readblock(cluster_to_lba(tar->parent->first_cluster), sector);
+        fat32_dirent = sector;
         while (*fat32_dirent) { // while not end of dir
             // TODO: For simplicity, we assume all 
             // dirent can be found in first cluster.
@@ -158,17 +232,17 @@ int fat32_write(struct file* file, const void* buf, int len)
             fat32_parse_name(buf_name, fat32_dirent);
             if (!strcmp(buf_name, tar->name)) {
                 *((int*)&fat32_dirent[28]) = tar->size;
-                writeblock(cluster_to_lba(tar->parent->first_cluster), sector);
+                // writeblock(cluster_to_lba(tar->parent->first_cluster), sector);
                 break;
             }
             fat32_dirent += 32;
         }
     }
 
-    clstr = fat32_read_pos_clstr_to_buf(sector, file->f_pos, tar);
-
+    // clstr = fat32_read_pos_clstr_to_buf(sector, file->f_pos, tar);
+    sector = fat32_pos_to_sector(file->f_pos, tar);
     memcpy(sector + (file->f_pos % 512), (char*)buf, len);
-    writeblock(cluster_to_lba(clstr), sector);
+    // writeblock(cluster_to_lba(clstr), sector);
     file->f_pos += len;
 
     return len;
@@ -178,7 +252,7 @@ int fat32_read(struct file* file, void* buf, int len)
 {
     struct fat32_ent *tar;
     int remain, len_r;
-    char sector[512];
+    char *sector;
 
     tar = (struct fat32_ent*)(file->vnode->internal);
     
@@ -186,7 +260,8 @@ int fat32_read(struct file* file, void* buf, int len)
     // so now we assume user won't do that.
     remain = tar->size - file->f_pos;
     len_r = remain >= len ? len : remain;
-    fat32_read_pos_clstr_to_buf(sector, file->f_pos, tar);
+    // fat32_read_pos_clstr_to_buf(sector, file->f_pos, tar);
+    sector = fat32_pos_to_sector(file->f_pos, tar);
 
     memcpy((char*)buf, sector + (file->f_pos % 512), len_r);
     file->f_pos += len_r;
@@ -220,7 +295,7 @@ int fat32_create(struct vnode* dir_node, struct vnode** target,
 {
     struct fat32_ent *dir, *new;
     char *fat32_dirent;
-    char sector[512];
+    char *sector;
     int first_cluster;
 
     dir = (struct fat32_ent*)(dir_node->internal);
@@ -229,19 +304,21 @@ int fat32_create(struct vnode* dir_node, struct vnode** target,
         // TODO: We assume empty entry can be found in
         // first cluster of FAT.
     int *fat_ent;
-    readblock(meta.fat_begin_lba, FAT);
-    fat_ent = (int*)FAT;
+    sector = read_page_cache(meta.fat_begin_lba);
+    // readblock(meta.fat_begin_lba, FAT);
+    fat_ent = (int*)sector;
     while (*fat_ent)
         fat_ent++;
     *fat_ent = 0xFFFFFFFF;
-    writeblock(meta.fat_begin_lba, FAT);
-    first_cluster = ((unsigned long)fat_ent - (unsigned long)FAT) >> 2;
+    // writeblock(meta.fat_begin_lba, sector);
+    first_cluster = ((unsigned long)fat_ent - (unsigned long)sector) >> 2;
 
     /* Find dir's unused direntry */
         // TODO: For simplicity, we assume all 
         // dirent can be found in first cluster.
-    readblock(cluster_to_lba(dir->first_cluster), sector);
-    fat32_dirent = (char*)sector;
+    sector = read_page_cache(cluster_to_lba(dir->first_cluster));
+    // readblock(cluster_to_lba(dir->first_cluster), sector);
+    fat32_dirent = sector;
     while (1) {
         if (fat32_dirent[0] == 0xE5) { // unused entry
             break;
@@ -260,7 +337,7 @@ int fat32_create(struct vnode* dir_node, struct vnode** target,
     fat32_dirent[21] = (char)(first_cluster >> (8 * 3));
     fat32_dirent[26] = (char)(first_cluster >> (8 * 0)); // ClusterLow
     fat32_dirent[27] = (char)(first_cluster >> (8 * 1));
-    writeblock(cluster_to_lba(dir->first_cluster), sector);
+    // writeblock(cluster_to_lba(dir->first_cluster), sector);
 
 
     new = new_fat32ent();
@@ -290,7 +367,7 @@ int fat32_lookup(struct vnode* dir_node, struct vnode** target,
 {
     struct fat32_ent *ent, *walk, *new;
     char *fat32_dirent;
-    char sector[512];
+    char *sector;
 
     if (dir_node->by) // dir_node is mounted by someone
         return dir_node->by->v_ops->lookup(dir_node->by, target, component_name);
@@ -301,8 +378,9 @@ int fat32_lookup(struct vnode* dir_node, struct vnode** target,
 
     if (ent->flag & ENT_FIRST_VISIT) { // direntry hasn't been created.
         ent->flag &= ~ENT_FIRST_VISIT;
-        readblock(cluster_to_lba(ent->first_cluster), sector);
-        fat32_dirent = (char*)sector;
+        // readblock(cluster_to_lba(ent->first_cluster), sector);
+        sector = read_page_cache(cluster_to_lba(ent->first_cluster));
+        fat32_dirent = sector;
         while (fat32_dirent[0]) { // while not end of dir
         // TODO: For simplicity, we assume all 
         // dirent can be found in first cluster.
@@ -417,7 +495,7 @@ int fat32_setup_mount(struct filesystem* fs,
     mount->root->v_ops->stat = fat32_stat;
     mount->root->v_ops->get_rsib = fat32_get_rsib;
     mount->root->v_ops->get_child = fat32_get_child;
-
+    mount->root->v_ops->sync = fat32_sync;
     // TODO: This is just a temporary solution
     // to populate root. By using fat32_lookup,
     // we can populate root cause it is a 
@@ -468,6 +546,7 @@ int init_fat32()
     strcpy(fat32_root.name, "/");
     // readblock(cluster_to_lba(meta.root_dir_first_cluster), sector);
 
+    page_cache_init();
     // fat32_root.page_cache = kmalloc(0x1000);
     return 0;
 }

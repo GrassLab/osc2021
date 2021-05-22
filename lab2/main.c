@@ -612,18 +612,35 @@ void user_logic_5(int argc, char **argv)
 void user_logic_6(int argc, char **argv)
 {
     int fd;
-    char buf[31];// = "A brand new file!!!";
+    char buf[20];// = "This is SUPER COOL!";
 
     ls(".");
-    // fd = open("/JINBAO.TXT", O_CREAT);
-    if ((fd = open("/HELLO.", 0)) < 0) {
+    // fd = open("/PAYWAY.C", O_CREAT);
+    if ((fd = open("/PAYWAY.C", 0)) < 0) {
         uart_send_string("Error: fd open fail\r\n");
         exit();
     }
     read(fd, buf, 32);
-    buf[30] = '\0';
+    buf[20] = '\0';
     uart_send_string(buf);
-    // write(fd, buf, 30);
+    // write(fd, buf, 19);
+    // sync();
+    exit();
+}
+
+void user_logic_7(int argc, char **argv)
+{
+    int fd;
+    char buf[8] = "HELLO!";
+
+    mknod("/uartdev", 0);
+    if ((fd = open("/uartdev", 0)) < 0)
+        uart_send_string("Error: open fail\r\n");
+    buf[7] = '\0';
+    // read(fd, buf, 4);
+    write(fd, buf, 8);
+    // uart_send_string(buf);
+
     exit();
 }
 
@@ -658,7 +675,7 @@ void user_thread_2()
     // current->sig.sigpend = 1; // DEMO: raise signal itself
     // current->sig.user_handler[0] = (unsigned long)udh_1;
     // exec((unsigned long)user_logic_2, argv); // DEMO:
-    exec((unsigned long)user_logic_6, argv);
+    exec((unsigned long)user_logic_7, argv);
 
 }
 
@@ -845,7 +862,6 @@ int shell()
 int kernel_main(char *sp)
 {
     // do_dtp(uart_probe);
-    uart_init();
     rd_init();
     dynamic_mem_init();
     timerPool_init();
@@ -863,6 +879,9 @@ int kernel_main(char *sp)
     init_oftab();
     init_vnode_pool();
     init_fstab();
+    init_dev_pool();
+
+    uart_init();
     // register_filesystem("tmpfs", (unsigned long)tmpfs_setup_mount);
     // register_filesystem("procfs", (unsigned long)procfs_setup_mount);
     register_filesystem("fat32", (unsigned long)fat32_setup_mount);

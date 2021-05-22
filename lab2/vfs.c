@@ -12,7 +12,9 @@ struct vnode vnode_pool[MAX_VNODE_NR];
 struct file openfile_tab[MAX_FD_NR];
 struct file_operations fops_pool[MAX_VNODE_NR];
 struct vnode_operations vops_pool[MAX_VNODE_NR];
+struct device dev_pool[MAX_DEV_NR];
 extern struct task *current;
+
 
 void init_fops_pool()
 {
@@ -98,7 +100,7 @@ int register_filesystem(char *name, unsigned long setup_mount)
         if (!(fs->name)) {
             fs->name = name;
             fs->cnt = 0;
-            fs->setup_mount = (int (*)(struct filesystem*, struct mount*))setup_mount;
+            fs->setup_mount = (int (*)(struct filesystem*, struct mount*, struct vnode*))setup_mount;
             return 0;
         }
     }
@@ -316,5 +318,47 @@ int vfs_mkdir(const char *pathname, int mode)
 int vfs_chdir(const char *pathname)
 {
     current->wd = get_vnode(pathname, 1);
+    return 0;
+}
+
+int vfs_sync()
+{
+    return rootfs_mount->root->v_ops->sync();
+}
+
+void init_dev_pool()
+{
+    for (int i = 0; i < MAX_DEV_NR; ++i) {
+        dev_pool[i].f_ops = 0;
+    }
+}
+
+int alloc_devnum(int *devnum)
+{
+    for (int i = 0; i < MAX_DEV_NR; ++i) {
+        if (!(dev_pool[i].v_ops)) {
+            dev_pool[i].v_ops = 1;
+            *devnum = i;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+int dev_init(int devnum, struct file_operations *fops)
+{
+    dev_pool[devnum].f_ops = fops;
+    return 0;
+}
+
+int vfs_mknod(const char* pathname, int devnum)
+{
+    struct vnode *start_vnode, *target;
+    // Get parent dir of device node
+    start_vnode = get_vnode(pathname, 2);
+    start_vnode->v_ops->create(start_vnode, &target,
+        get_file_component(pathname), DEVICE);
+    target->f_ops = dev_pool[devnum].f_ops;
+
     return 0;
 }

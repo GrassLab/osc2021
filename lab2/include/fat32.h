@@ -53,3 +53,4 @@ int fat32_get_child(struct vnode *vnode, struct vnode **target);
 int fat32_setup_mount(struct filesystem* fs,
     struct mount* mount, struct vnode *root);
 int init_fat32();
+int fat32_sync();

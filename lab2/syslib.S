@@ -113,3 +113,15 @@ umount:
   mov x8, SYS_UMOUNT
   svc 0
   ret
+
+.global sync
+sync:
+  mov x8, SYS_SYNC
+  svc 0
+  ret
+
+.global mknod
+mknod:
+  mov x8, SYS_MKNOD
+  svc 0
+  ret
