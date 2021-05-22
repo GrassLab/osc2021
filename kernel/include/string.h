@@ -5,3 +5,5 @@ int strncmp(const char *s1, const char *s2, unsigned n);
 int strlen(const char *s);
 char *strstr(const char *s, const char *find);
 char *strcpy(char *dst, const char *src);
+char *strtok(char *s, const char delim);
+char *split_last(char *str, char delim);

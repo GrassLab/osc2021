@@ -17,6 +17,8 @@ int close(int fd);
 int write(int fd, const void *buf, int count);
 int read(int fd, void *buf, int count);
 int list(int fd, void *buf, int index);
+int mkdir(const char *pathname);
+int chdir(const char *pathname);
 
 void delay(int n) {
   while (n--)
@@ -56,6 +58,36 @@ void print_h(unsigned long x) {
     n += n > 9 ? 'A' - 10 : '0';
     print_c(n);
   }
+}
+
+int strncmp(const char *s1, const char *s2, unsigned n) {
+  unsigned char c1 = '\0';
+  unsigned char c2 = '\0';
+  if (n >= 4) {
+    unsigned n4 = n >> 2;
+    do {
+      c1 = (unsigned char)*s1++;
+      c2 = (unsigned char)*s2++;
+      if (c1 == '\0' || c1 != c2) return c1 - c2;
+      c1 = (unsigned char)*s1++;
+      c2 = (unsigned char)*s2++;
+      if (c1 == '\0' || c1 != c2) return c1 - c2;
+      c1 = (unsigned char)*s1++;
+      c2 = (unsigned char)*s2++;
+      if (c1 == '\0' || c1 != c2) return c1 - c2;
+      c1 = (unsigned char)*s1++;
+      c2 = (unsigned char)*s2++;
+      if (c1 == '\0' || c1 != c2) return c1 - c2;
+    } while (--n4 > 0);
+    n &= 3;
+  }
+  while (n > 0) {
+    c1 = (unsigned char)*s1++;
+    c2 = (unsigned char)*s2++;
+    if (c1 == '\0' || c1 != c2) return c1 - c2;
+    n--;
+  }
+  return c1 - c2;
 }
 
 #endif

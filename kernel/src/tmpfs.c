@@ -9,6 +9,7 @@ void tmpfs_init() {
   tmpfs_v_ops = malloc(sizeof(struct vnode_operations));
   tmpfs_v_ops->lookup = tmpfs_lookup;
   tmpfs_v_ops->create = tmpfs_create;
+  tmpfs_v_ops->chdir = tmpfs_chdir;
   tmpfs_f_ops = malloc(sizeof(struct file_operations));
   tmpfs_f_ops->write = tmpfs_write;
   tmpfs_f_ops->read = tmpfs_read;
@@ -28,6 +29,7 @@ void tmpfs_set_fentry(struct tmpfs_fentry* fentry, const char* component_name,
       fentry->child[i]->type = FILE_NONE;
       fentry->child[i]->parent = fentry;
     }
+    fentry->buf->size = 4096;
   } else if (fentry->type == FILE_REGULAR) {
     fentry->buf = malloc(sizeof(struct tmpfs_buf));
     fentry->buf->size = 0;
@@ -41,6 +43,7 @@ int tmpfs_setup_mount(struct filesystem* fs, struct mount* mount) {
   vnode->v_ops = tmpfs_v_ops;
   vnode->f_ops = tmpfs_f_ops;
   vnode->internal = (void*)root_fentry;
+  root_fentry->parent = 0;
   tmpfs_set_fentry(root_fentry, "/", FILE_DIRECTORY, vnode);
   mount->fs = fs;
   mount->root = vnode;
@@ -49,9 +52,21 @@ int tmpfs_setup_mount(struct filesystem* fs, struct mount* mount) {
 
 int tmpfs_lookup(struct vnode* dir_node, struct vnode** target,
                  const char* component_name) {
+  struct tmpfs_fentry* fentry = (struct tmpfs_fentry*)dir_node->internal;
+  if (fentry->type != FILE_DIRECTORY) return 0;
+
+  if (!strcmp(component_name, ".")) {
+    *target = fentry->vnode;
+    return 1;
+  }
+  if (!strcmp(component_name, "..")) {
+    if (!fentry->parent) return 0;
+    *target = fentry->parent->vnode;
+    return 1;
+  }
+
   for (int i = 0; i < MAX_FILES_IN_DIR; i++) {
-    struct tmpfs_fentry* fentry =
-        ((struct tmpfs_fentry*)dir_node->internal)->child[i];
+    fentry = ((struct tmpfs_fentry*)dir_node->internal)->child[i];
     if (!strcmp(fentry->name, component_name)) {
       *target = fentry->vnode;
       return 1;
@@ -61,7 +76,7 @@ int tmpfs_lookup(struct vnode* dir_node, struct vnode** target,
 }
 
 int tmpfs_create(struct vnode* dir_node, struct vnode** target,
-                 const char* component_name) {
+                 const char* component_name, FILE_TYPE type) {
   for (int i = 0; i < MAX_FILES_IN_DIR; i++) {
     struct tmpfs_fentry* fentry =
         ((struct tmpfs_fentry*)dir_node->internal)->child[i];
@@ -70,12 +85,24 @@ int tmpfs_create(struct vnode* dir_node, struct vnode** target,
       vnode->v_ops = dir_node->v_ops;
       vnode->f_ops = dir_node->f_ops;
       vnode->internal = fentry;
-      tmpfs_set_fentry(fentry, component_name, FILE_REGULAR, vnode);
+      tmpfs_set_fentry(fentry, component_name, type, vnode);
       *target = fentry->vnode;
       return 1;
     }
   }
   return -1;
+}
+
+int tmpfs_chdir(struct vnode* dir_node, struct vnode** target,
+                const char* component_name) {
+  int found = current_dir->v_ops->lookup(current_dir, target, component_name);
+  if (!found) return 0;
+  struct tmpfs_fentry* fentry = (struct tmpfs_fentry*)((*target)->internal);
+  if (fentry->type != FILE_DIRECTORY) {
+    printf("\"%s\" is not a directory!!\n", component_name);
+    return 0;
+  }
+  return 1;
 }
 
 int tmpfs_write(struct file* file, const void* buf, size_t len) {

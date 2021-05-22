@@ -42,6 +42,12 @@ void syscall_handler(uint32_t syscall_number, trap_frame_t *trap_frame) {
     case SYS_LIST:
       sys_list(trap_frame);
       break;
+    case SYS_MKDIR:
+      sys_mkdir(trap_frame);
+      break;
+    case SYS_CHDIR:
+      sys_chdir(trap_frame);
+      break;
   }
 }
 
@@ -116,4 +122,16 @@ void sys_list(trap_frame_t *trap_frame) {
   int index = (int)trap_frame->x[2];
   int size = vfs_list(file, buf, index);
   trap_frame->x[0] = size;
+}
+
+void sys_mkdir(trap_frame_t *trap_frame) {
+  const char *pathname = (const char *)trap_frame->x[0];
+  int result = vfs_mkdir(pathname);
+  trap_frame->x[0] = result;
+}
+
+void sys_chdir(trap_frame_t *trap_frame) {
+  const char *pathname = (const char *)trap_frame->x[0];
+  int result = vfs_chdir(pathname);
+  trap_frame->x[0] = result;
 }

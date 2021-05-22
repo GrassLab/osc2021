@@ -19,6 +19,8 @@ _start:
 .global write
 .global read
 .global list
+.global mkdir
+.global chdir
 
 uart_read:
     svc 0
@@ -61,4 +63,12 @@ read:
 
 list:
     svc 10
+    ret
+
+mkdir:
+    svc 11
+    ret
+
+chdir:
+    svc 12
     ret

@@ -88,3 +88,40 @@ char *strcpy(char *dst, const char *src) {
   *dst = '\0';
   return ptr;
 }
+
+char *strtok(char *s, const char delim) {
+  static char *pos;
+  char *ret;
+  if (s) pos = s;
+
+  if (*pos == '\0') return 0;
+  // skip leading
+  while (*pos == delim) {
+    pos++;
+  }
+
+  ret = pos;
+  while (*pos != delim && *pos != '\0') {
+    pos++;
+  }
+  if (*pos != '\0') {
+    *pos = '\0';
+    pos++;
+  }
+  return ret;
+}
+
+char *split_last(char *str, char delim) {
+  char *mid = 0;
+  while (*str) {
+    if (*str == delim) {
+      mid = str;
+    }
+    str++;
+  }
+  if (mid) {
+    *mid = '\0';
+    mid++;
+  }
+  return mid;
+}
