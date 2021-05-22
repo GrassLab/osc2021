@@ -28,6 +28,11 @@ struct mount {
 struct filesystem {
   const char* name;
   int (*setup_mount)(struct filesystem* fs, struct mount* mount);
+  struct filesystem* next;
+};
+
+struct filesystem_list {
+  struct filesystem *head, *tail;
 };
 
 struct file_operations {
@@ -43,6 +48,7 @@ struct vnode_operations {
                 const char* component_name);
 };
 
+struct filesystem_list fs_list;
 struct mount* rootfs;
 struct vnode* current_dir;
 
@@ -50,6 +56,7 @@ void vfs_test();
 void vfs_ls_test();
 void vfs_init();
 int register_filesystem(struct filesystem* fs);
+struct filesystem* get_fs_by_name(const char* name);
 struct file* vfs_open(const char* pathname, int flags);
 int vfs_close(struct file* file);
 int vfs_write(struct file* file, const void* buf, size_t len);

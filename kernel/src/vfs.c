@@ -8,49 +8,6 @@
 #include "tmpfs.h"
 
 void vfs_test() {
-  // struct file* a = vfs_open("hello", O_CREAT);
-  // struct file* b = vfs_open("world", O_CREAT);
-  // if (a != 0 && b != 0) {
-  //   vfs_write(a, "Hello ", 6);
-  //   vfs_write(b, "World!", 6);
-  //   vfs_close(a);
-  //   vfs_close(b);
-  // }
-  // b = vfs_open("hello", 0);
-  // a = vfs_open("world", 0);
-  // if (a != 0 && b != 0) {
-  //   int sz;
-  //   char buf[200];
-  //   sz = vfs_read(b, buf, 100);
-  //   sz += vfs_read(a, buf + sz, 100);
-  //   buf[sz] = '\0';
-  //   printf("%s\n", buf);  // should be Hello World!
-  // }
-  // vfs_close(a);
-  // vfs_close(b);
-
-  // printf("\nfile1.txt\n");
-  // a = vfs_open("file1.txt", 0);
-  // if (a != 0) {
-  //   int sz;
-  //   char buf[200];
-  //   sz = vfs_read(a, buf, 100);
-  //   buf[sz] = '\0';
-  //   printf("%s\n", buf);
-  // }
-  // vfs_close(a);
-
-  // printf("\nfile2.txt\n");
-  // a = vfs_open("file2.txt", 0);
-  // if (a != 0) {
-  //   int sz;
-  //   char buf[200];
-  //   sz = vfs_read(a, buf, 100);
-  //   buf[sz] = '\0';
-  //   printf("%s\n", buf);
-  // }
-  // vfs_close(a);
-
   const char* vfs_argv[] = {"vfs_test", 0};
   exec("vfs_test", vfs_argv);
 }
@@ -61,23 +18,48 @@ void vfs_ls_test() {
 }
 
 void vfs_init() {
+  fs_list.head = 0;
+  fs_list.tail = 0;
+  // init and register tmpfs
   tmpfs_init();
+  struct filesystem* tmpfs =
+      (struct filesystem*)malloc(sizeof(struct filesystem));
+  tmpfs->name = "tmpfs";
+  tmpfs->setup_mount = tmpfs_setup_mount;
+  register_filesystem(tmpfs);
+  // use tmpfs to mount root filesystem
   rootfs = (struct mount*)malloc(sizeof(struct mount));
-  struct filesystem fs;
-  fs.name = "tmpfs";
-  register_filesystem(&fs);
-  fs.setup_mount(&fs, rootfs);
+  struct filesystem* fs = get_fs_by_name("tmpfs");
+  if (fs == 0) {
+    printf("Mount root filesystem failed!!\n");
+    return;
+  }
+  fs->setup_mount(fs, rootfs);
   current_dir = rootfs->root;
   cpio_populate_rootfs();
 }
 
 int register_filesystem(struct filesystem* fs) {
   // register the file system to the kernel.
-  if (strcmp(fs->name, "tmpfs") == 0) {
-    fs->setup_mount = tmpfs_setup_mount;
-    return 1;
+  if (fs_list.head == 0) {
+    fs_list.head = fs;
+    fs_list.head->next = 0;
+    fs_list.tail = fs_list.head;
+  } else {
+    fs_list.tail->next = fs;
+    fs_list.tail = fs_list.tail->next;
   }
-  return -1;
+  return 1;
+}
+
+struct filesystem* get_fs_by_name(const char* name) {
+  for (struct filesystem* fs = fs_list.head; fs != 0; fs = fs->next) {
+    if (!strcmp(fs->name, name)) {
+      return fs;
+    }
+  }
+  printf("Filesystem \"%s\" not found!!\n", name);
+  return 0;
 }
 
 struct file* vfs_open(const char* pathname, int flags) {
