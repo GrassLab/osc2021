@@ -94,6 +94,13 @@ void receive_cmd() {
       buffer[buffer_pos] = '\0';
       break;
     }
+    if (c == 127) {
+      if (buffer_pos > 0) {
+        printf("\b \b");
+        buffer[--buffer_pos] = '\0';
+      }
+      continue;
+    }
     printf("%c", c);
     buffer[buffer_pos++] = c;
   }
