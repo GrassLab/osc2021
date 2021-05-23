@@ -26,9 +26,9 @@ void memcpy(char *dst, const char *src, size_t n) {
 char *strcpy(char *dst, const char *src) {
   char *out = dst;
   while (1) {
-    *(dst++) = *(src++);
+    *(out++) = *(src++);
     if (!*src) {
-      *dst = '\0';
+      *out = '\0';
       break;
     }
   }

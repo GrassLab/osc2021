@@ -26,24 +26,32 @@ static const int _DO_LOG = 0;
 
 static void foo();
 
+extern void fork_child_eret();
+
 uint32_t new_tid = 0;
 
 struct task_struct *task_create(void *func) {
   struct task_struct *t;
-  t = (struct task_struct *)kalloc(FRAME_SIZE);
+  t = (struct task_struct *)kalloc(sizeof(struct task_struct));
   if (t == NULL) {
     log_println("[task] oops cannot allocate thread");
     return NULL;
   }
 
+  t->kernel_stack = (uintptr_t)kalloc(FRAME_SIZE);
+
   // Normal task is a kernel function, which has already been loaded to memory
   t->code = NULL;
   t->code_size = 0;
-  t->cpu_context.fp = (uint64_t)t + FRAME_SIZE;
+  t->cpu_context.fp = t->kernel_stack + FRAME_SIZE;
   t->cpu_context.lr = (uint64_t)func;
-  t->cpu_context.sp = (uint64_t)t + FRAME_SIZE;
+  t->cpu_context.sp = t->kernel_stack + FRAME_SIZE;
   t->status = TASK_STATUS_ALIVE;
   t->id = new_tid++;
+
+  // A task would only bind to a user thread if called with exec_user
+  t->user_stack = (uintptr_t)(NULL);
+  t->user_sp = (uintptr_t)(NULL);
 
   struct task_entry *entry =
       (struct task_entry *)kalloc(sizeof(struct task_entry));
@@ -61,36 +69,62 @@ int sys_getpid() {
   return task->id;
 };
 
-// Overwrite current task
-int sys_exec(const char *name, char *const args[]) { return exec(name, args); }
-
-void task_copy(struct task_struct *dst, struct task_struct *src) {
-  dst->status = src->status;
-  dst->cpu_context = src->cpu_context;
-  // copy the entire code: (could be optimized)
-  if (src->code != NULL) {
-    dst->code = (char *)kalloc(FRAME_SIZE);
-    dst->code_size = src->code_size;
-    memcpy(dst->code, src->code, src->code_size);
-  }
+// Overwrite current user task and kernel task
+int sys_exec(const char *name, char *const args[]) {
+  exec_user(name, args);
+  // a scucess exec_user might never return
+  return -1;
 }
 
-int sys_fork() {
-  struct task_struct *task = get_current();
-  // store current context into user code
+int sys_fork(const struct trap_frame *tf) {
 
-  // child task has been enqueued in to run_q
+  struct task_struct *parent = get_current();
+
+  {
+    // just logging
+    uintptr_t el1_sp;
+    asm volatile("mov %0, sp" : "=r"(el1_sp));
+    log_println("current sp(sp_el1): %x", el1_sp);
+  }
+
   struct task_struct *child = task_create(NULL);
-  task_copy(child, task);
 
-  // point to child Stack/Code
-  intptr_t to_child_stack = (intptr_t)child - (intptr_t)task;
-  intptr_t to_child_code = (intptr_t)child->code - (intptr_t)task->code;
-  child->cpu_context.fp += to_child_stack;
-  child->cpu_context.sp += to_child_stack;
-  child->cpu_context.lr += to_child_code;
+  // USER STACK
+  child->user_stack = (uintptr_t)kalloc(FRAME_SIZE);
+  memcpy((char *)child->user_stack, (const char *)parent->user_stack,
+         FRAME_SIZE);
 
-  // return child id
+  // KERNEL STACK
+  memcpy((char *)child->kernel_stack, (const char *)parent->kernel_stack,
+         FRAME_SIZE);
+
+  // CODE
+  // TODO: fix this (memory leak)
+  // parent should free memory
+  // parent should be collected after child
+  child->code = NULL;
+
+  // Child return
+  // direct to the exception return point
+  uintptr_t kstack_tf_offset = ((uintptr_t)tf) - parent->kernel_stack;
+  struct trap_frame *child_tf =
+      (struct trap_frame *)(child->kernel_stack + kstack_tf_offset);
+  child->cpu_context.sp = (uintptr_t)child_tf;
+  child->cpu_context.lr = (uint64_t)fork_child_eret;
+  child_tf->regs[0] = 0;
+
+  log_println("parent kstack:%x ustack:%x", parent->kernel_stack,
+              parent->user_stack);
+  log_println("   tf:%x ctx.fp:%x ctx.sp:%x ctx.lr: %x", tf,
+              parent->cpu_context.fp, parent->cpu_context.sp,
+              parent->cpu_context.lr);
+
+  log_println("child kstack:%x ustack:%x ", child->kernel_stack,
+              child->user_stack);
+  log_println("   tf:%x ctx.fp:%x ctx.sp:%x ctx.lr: %x", child_tf,
+              child->cpu_context.fp, child->cpu_context.sp,
+              child->cpu_context.lr);
+
   return child->id;
 }
 
@@ -115,37 +149,18 @@ void foo() {
   cur_task_exit();
 }
 
-// This funciton is purely user code
-void user_startup() {
+// This function should be runned as a kernel task
+void task_start_user() {
   uart_println("enter user startup");
-  const char *name = "./init_user.out";
-  struct task_struct *task = get_current();
-  // address of the program code in memory
-  void *entry_point = load_program(name, &task->code_size);
-  uart_println("program loaded: %x", entry_point);
+  char *name = "./argv_test.out";
+  char *args[4] = {"./argv_test.out", "-o", "arg2", NULL};
 
-  task->code = entry_point;
-
-  task->cpu_context.fp = (uint64_t)task + FRAME_SIZE;
-  task->cpu_context.lr = (uint64_t)entry_point;
-  task->cpu_context.sp = (uint64_t)task + FRAME_SIZE;
-
-  uart_println("finished, start switching");
-  asm volatile("mov x0, 0x340  \n"); // enable core timer interrupt
-  asm volatile("msr spsr_el1, x0  \n");
-  asm volatile("msr elr_el1, %0   \n" ::"r"(task->cpu_context.lr));
-  asm volatile("msr sp_el0, %0    \n" ::"r"(task->cpu_context.sp));
-
-  // enable the core timer’s interrupt in el0
-  timer_el0_enable();
-  timer_el0_set_timeout();
-
-  // unmask timer interrupt
-  asm volatile("mov x0, 2             \n");
-  asm volatile("ldr x1, =0x40000040   \n");
-  asm volatile("str w0, [x1]          \n");
-
-  asm volatile("eret              \n");
+  // Launch a user program thread (in el0) with this kernel thread
+  //
+  // Eversince this point, exceptions under el0 would be trap
+  // to the context of this kernel thread
+  // (Since we would call `eret` under this kernel thread)
+  exec_user(name, args);
 }
 
 void test_tasks() {
@@ -155,8 +170,10 @@ void test_tasks() {
   root_task = task_create(idle);
   asm volatile("msr tpidr_el1, %0\n" ::"r"((uint64_t)root_task));
 
-  task_create(user_startup);
-  // task_create(foo);
+  // create a task to bootup the very first user program
+  task_create(task_start_user);
+
+  task_create(foo);
   // task_create(foo);
   // task_create(foo);
 #ifdef CFG_LOG_PROC_SCHED

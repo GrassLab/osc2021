@@ -47,7 +47,7 @@ void task_schedule() {
         list_push(&entry_next->list, &exited);
       }
     }
-    log_println("schedule next %d->%d", cur->id, next->id);
+    log_println("[schedule] switch thread %d->%d", cur->id, next->id);
     switch_to(cur, next);
   }
 }
@@ -69,23 +69,29 @@ void kill_zombies() {
     task = ((struct task_entry *)entry)->task;
     log_println("recycle space for task:%d", task->id);
     list_del(entry);
-    kfree(task);
+
     kfree(entry);
-    if (task->code != NULL) {
-      kfree(task->code);
+    // TODO: manage parent code free and child code free
+    // if (task->code) {
+    //   kfree(task->code);
+    // }
+    if (task->user_stack) {
+      kfree((void *)task->user_stack);
     }
+    kfree((void *)task->kernel_stack);
+    kfree(task);
   }
 }
 
 void _dump_runq() {
   struct list_head *list_head = &run_queue;
   struct list_head *entry;
-  uart_printf("Runqueue");
+  uart_printf("%s%s", LOG_DIM_START, "[schedule] Runqueue");
   int i = 0;
   for (entry = list_head->next; entry != list_head; entry = entry->next) {
     struct task_struct *task = ((struct task_entry *)entry)->task;
     uart_printf("->[%d, %x]", task->id, task);
     i++;
   }
-  uart_println("");
+  uart_println("%s", LOG_DIM_END);
 }

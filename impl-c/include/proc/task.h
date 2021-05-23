@@ -1,6 +1,6 @@
 #pragma once
-#include "stdint.h"
 #include <stddef.h>
+#include <stdint.h>
 
 #define TASK_STATUS_DEAD 0
 #define TASK_STATUS_ALIVE 1
@@ -18,30 +18,21 @@ struct cpu_context {
   uint64_t x28;
   uint64_t fp; // x29
   uint64_t lr; // x30
-  uint64_t sp; // stack pointer
+  uint64_t sp; // kernel stack pointer
 };
 
-/**
- * task_struct
- * Each task actually occupy a entire memory frame
- * | task_struct|
- * |     --     |
- * |     ...    |
- * |    stack   |
- * |     ...    |
- */
 struct task_struct {
   struct cpu_context cpu_context;
   unsigned long id;
   int status;
 
+  uintptr_t kernel_stack;
+  uintptr_t user_stack;
+  uintptr_t user_sp; // value of sp in el0
+
   // address of the program code allocaed in memory
   void *code;
   size_t code_size;
-
-  //
-  // stack
-  //
 };
 
 struct task_struct *task_create(void *func);

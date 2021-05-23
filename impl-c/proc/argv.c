@@ -51,11 +51,11 @@ void place_args(/*IN*/ uintptr_t src_sp,
   // Save Arguments into kernel memory.
   // We need to backup argv since they are stored in the user stack,
   //  which would be overwritten by following operations.
-  char **saved_args = kalloc(sizeof(char *) * nm_args);
+  char **saved_args = (char **)kalloc(sizeof(char *) * nm_args);
   char *arg_str = NULL;
 
   for (int i = 0; i < nm_args; i++) {
-    arg_str = kalloc(sizeof(char) * (strlen(src_argv[i]) + 1));
+    arg_str = (char *)kalloc(sizeof(char) * (strlen(src_argv[i]) + 1));
     strcpy(arg_str, src_argv[i]);
     saved_args[i] = arg_str;
   }
@@ -81,6 +81,7 @@ void place_args(/*IN*/ uintptr_t src_sp,
 
   // Size for **argv array
   _size = sizeof(char **) * nm_args;
+  _size = align_up(_size, SP_ALIGN);
   size_byte += _size;
   args_offset[0] = size_byte;
   log_println("[place_arg] size for argv array: %d(byte)", _size);
@@ -88,6 +89,7 @@ void place_args(/*IN*/ uintptr_t src_sp,
   // Size for each argv string
   for (int i = 0; i < nm_args; i++) {
     _size = strlen(saved_args[i]) + 1;
+    _size = align_up(_size, SP_ALIGN);
     size_byte += _size;
     args_offset[i + 1] = size_byte;
     log_println("[place_arg] size for src_argv[%d]: %d(byte)", i, _size);
