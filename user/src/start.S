@@ -21,6 +21,8 @@ _start:
 .global list
 .global mkdir
 .global chdir
+.global mount
+.global umount
 
 uart_read:
     svc 0
@@ -71,4 +73,12 @@ mkdir:
 
 chdir:
     svc 12
+    ret
+
+mount:
+    svc 13
+    ret
+
+umount:
+    svc 14
     ret

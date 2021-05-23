@@ -268,7 +268,7 @@ struct file *thread_get_file(int fd) {
   return cur->fd_table.files[fd];
 }
 
-int thread_get_fd(struct file *file) {
+int thread_register_fd(struct file *file) {
   if (file == 0) return -1;
   thread_info *cur = get_current();
   // find next available fd
@@ -279,4 +279,11 @@ int thread_get_fd(struct file *file) {
     }
   }
   return -1;
+}
+
+int thread_clear_fd(int fd) {
+  if (fd < 0 || fd >= FD_MAX) return -1;
+  thread_info *cur = get_current();
+  cur->fd_table.files[fd] = 0;
+  return 1;
 }

@@ -1,7 +1,9 @@
 #include "start.h"
 
 int main(int argc, char **argv) {
-  print_s("VFS Test, pid ");
+  print_s("Program: ");
+  print_s(argv[0]);
+  print_s(", pid: ");
   print_i(getpid());
   print_s("\n");
 
@@ -35,8 +37,8 @@ int main(int argc, char **argv) {
     buf[sz] = '\0';
     print_s(buf);
     print_s("\n");
+    close(a);
   }
-  close(a);
 
   print_s("\nfile2.txt\n");
   a = open("file2.txt", 0);
@@ -47,8 +49,8 @@ int main(int argc, char **argv) {
     buf[sz] = '\0';
     print_s(buf);
     print_s("\n");
+    close(a);
   }
-  close(a);
 
   return 0;
 }

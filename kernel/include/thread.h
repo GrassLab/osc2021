@@ -86,4 +86,5 @@ void handle_fork();
 void create_child(thread_info *parent, thread_info *child);
 
 struct file *thread_get_file(int fd);
-int thread_get_fd(struct file *file);
+int thread_register_fd(struct file *file);
+int thread_clear_fd(int fd);

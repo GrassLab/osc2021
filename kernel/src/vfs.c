@@ -36,7 +36,7 @@ void vfs_init() {
   rootfs = (struct mount*)malloc(sizeof(struct mount));
   struct filesystem* fs = get_fs_by_name("tmpfs");
   if (fs == 0) {
-    printf("Mount root filesystem failed!!\n");
+    // printf("[Error] Mount root filesystem failed!!\n");
     return;
   }
   fs->setup_mount(fs, rootfs);
@@ -63,7 +63,7 @@ struct filesystem* get_fs_by_name(const char* name) {
       return fs;
     }
   }
-  printf("Filesystem \'%s\' not found!!\n", name);
+  // printf("[Error] Filesystem \'%s\' not found!!\n", name);
   return 0;
 }
 
@@ -77,17 +77,18 @@ int vfs_find_vnode(struct vnode** target, const char* pathname) {
   strcpy(pathname_, pathname);
   struct vnode* dir = current_dir;
   if (pathname_[0] == '/') dir = rootfs->root;
-  printf("find node: %s\n", pathname_);
+  // printf("find node: %s\n", pathname_);
 
   char* component_name = strtok(pathname_, '/');
   while (component_name && *component_name != '\0') {
     int found = dir->v_ops->lookup(dir, target, component_name);
-    printf("component name: %s, found %d\n", component_name, found);
+    // printf("component name: %s, found %d\n", component_name, found);
     if (!found) {
-      printf("No such file or directory: %s\n", pathname);
+      // printf("[Error] No such file or directory: %s\n", pathname);
       free(pathname_);
       return 0;
     }
+    if ((*target)->mount) *target = (*target)->mount->root;
     dir = *target;
     component_name = strtok(0, '/');
   }
@@ -105,22 +106,25 @@ struct file* vfs_open(const char* pathname, int flags) {
 
   char* pathname_ = (char*)malloc(strlen(pathname) + 1);
   strcpy(pathname_, pathname);
+  // pathname: /mnt       -> pathname_: "\0",  filename: mnt
   // pathname: /mnt/file1 -> pathname_: /mnt,  filename: file1
   // pathname: file1      -> pathname_: file1, filename: NULL
   char* filename = split_last(pathname_, '/');
-
-  if (filename == 0) {
-    filename = pathname_;
-  } else {
+  // printf("[vfs_open] %s %s\n", pathname_, filename);
+  if (*pathname_ == '\0' && pathname[0] == '/') {
+    dir = rootfs->root;
+  }
+  if (filename != 0) {
     int prefix_found = vfs_find_vnode(&dir, pathname_);
-    if (!prefix_found) {  // e.g., given pathname /abc/zxc/file1, but /abc/zxc
-                          // not found
-      printf("Path does not exist: %s\n", pathname);
+    // e.g., given pathname /abc/zxc/file1, but /abc/zxc not found
+    if (!prefix_found) {
+      // printf("[Error] Path does not exist: %s\n", pathname);
       free(pathname_);
       return 0;
     }
+  } else {
+    filename = pathname_;
   }
-  free(pathname_);
 
   int file_found = dir->v_ops->lookup(dir, &target, filename);
   if (flags == O_CREAT) {
@@ -131,11 +135,11 @@ struct file* vfs_open(const char* pathname, int flags) {
       fd->f_ops = target->f_ops;
       fd->f_pos = 0;
     } else {
-      printf("File already exists: %s\n", pathname);
+      // printf("[Error] File already exists: %s\n", pathname);
     }
   } else {
     if (!file_found) {
-      printf("File does not exist: %s\n", pathname);
+      // printf("[Error] File does not exist: %s\n", pathname);
     } else {
       fd = (struct file*)malloc(sizeof(struct file));
       fd->vnode = target;
@@ -143,6 +147,7 @@ struct file* vfs_open(const char* pathname, int flags) {
       fd->f_pos = 0;
     }
   }
+  free(pathname_);
   return fd;
 }
 
@@ -169,44 +174,124 @@ int vfs_list(struct file* file, void* buf, int index) {
 }
 
 int vfs_mkdir(const char* pathname) {
-  printf("%s\n", pathname);
+  // printf("%s\n", pathname);
   struct vnode* dir = current_dir;
   struct vnode* target = 0;
 
   char* pathname_ = (char*)malloc(strlen(pathname) + 1);
   strcpy(pathname_, pathname);
-  // pathname: /mnt/file1 -> pathname_: /mnt,  filename: file1
-  // pathname: file1      -> pathname_: file1, filename: NULL
+  // pathname: /mnt      -> pathname_: "\0",  dirname: mnt
+  // pathname: /mnt/dir1 -> pathname_: /mnt,  dirname: dir1
+  // pathname: dir1      -> pathname_: dir1,  dirname: NULL
   char* dirname = split_last(pathname_, '/');
+  if (*pathname_ == '\0' && pathname[0] == '/') {
+    dir = rootfs->root;
+  }
 
-  if (dirname == 0) {
-    dirname = pathname_;
-  } else {
+  if (dirname != 0) {
     int prefix_found = vfs_find_vnode(&dir, pathname_);
-    if (!prefix_found) {  // e.g., given pathname /abc/zxc/file1, but /abc/zxc
-                          // not found
-      printf("Path does not exist: %s\n", pathname);
+    // e.g., given pathname /abc/zxc/file1, but /abc/zxc not found
+    if (!prefix_found) {
+      // printf("[Error] Path does not exist: %s\n", pathname);
       free(pathname_);
       return 0;
     }
+  } else {
+    dirname = pathname_;
   }
-  free(pathname_);
 
   int file_found = dir->v_ops->lookup(dir, &target, dirname);
   if (file_found) {
-    printf("File already exists: %s\n", pathname);
+    // printf("[Error] File already exists: %s\n", pathname);
     return 0;
   }
-  return dir->v_ops->create(dir, &target, dirname, FILE_DIRECTORY);
+  int status = dir->v_ops->create(dir, &target, dirname, FILE_DIRECTORY);
+  free(pathname_);
+  return status;
 }
 
 int vfs_chdir(const char* pathname) {
   struct vnode* target = 0;
   int dir_found = vfs_find_vnode(&target, pathname);
   if (!dir_found) {
-    printf("Directory does not exist: %s\n", pathname);
+    // printf("[Error] Directory does not exist: %s\n", pathname);
     return 0;
   }
   current_dir = target;
+  // struct tmpfs_fentry* fentry = (struct tmpfs_fentry*)current_dir->internal;
+  // printf("[chdir] %s\n", fentry->name);
+  return 1;
+}
+
+int vfs_mount(const char* device, const char* mountpoint,
+              const char* filesystem) {
+  // printf("[mount] %s\n", mountpoint);
+  struct vnode* target = 0;
+  int dir_found = vfs_find_vnode(&target, mountpoint);
+  if (!dir_found) {
+    // printf("[Error] Directory does not exist: %s\n", mountpoint);
+    return 0;
+  }
+  if (target->mount) {
+    // printf("[Error] This directory has been mounted: %s\n", mountpoint);
+    return 0;
+  }
+
+  char* pathname_ = (char*)malloc(strlen(mountpoint) + 5);
+  strcpy(pathname_, mountpoint);
+  struct vnode* parent_vnode = 0;
+  int parent_found = vfs_find_vnode(&parent_vnode, pathname_);
+  strcat(pathname_, "/..");
+  free(pathname_);
+
+  struct mount* mountfs = (struct mount*)malloc(sizeof(struct mount));
+  struct filesystem* fs = get_fs_by_name(filesystem);
+  fs->setup_mount(fs, mountfs);
+  // struct tmpfs_fentry* fentry = (struct tmpfs_fentry*)target->internal;
+  // printf("[mount] %s\n", fentry->name);
+  target->mount = mountfs;
+  mountfs->root->v_ops->set_parent(mountfs->root, parent_vnode);
+  return 1;
+}
+
+int vfs_umount(const char* mountpoint) {
+  // printf("[umount] %s\n", mountpoint);
+  struct vnode* dir = current_dir;
+  struct vnode* target = 0;
+
+  char* pathname_ = (char*)malloc(strlen(mountpoint) + 1);
+  strcpy(pathname_, mountpoint);
+  // pathname: /mnt      -> pathname_: "\0",  dirname: mnt
+  // pathname: /mnt/dir1 -> pathname_: /mnt,  dirname: dir1
+  // pathname: dir1      -> pathname_: dir1,  dirname: NULL
+  char* dirname = split_last(pathname_, '/');
+  if (*pathname_ == '\0' && mountpoint[0] == '/') {
+    dir = rootfs->root;
+  }
+  // printf("%s %s\n", pathname_, dirname);
+
+  if (dirname != 0) {
+    int prefix_found = vfs_find_vnode(&dir, pathname_);
+    // e.g., given pathname /abc/zxc/file1, but /abc/zxc not found
+    if (!prefix_found) {
+      // printf("[Error] Path does not exist: %s\n", mountpoint);
+      free(pathname_);
+      return 0;
+    }
+  } else {
+    dirname = pathname_;
+  }
+
+  int file_found = dir->v_ops->lookup(dir, &target, dirname);
+  if (!file_found) {
+    // printf("[Error] Directory does not exist: %s\n", mountpoint);
+    return 0;
+  }
+
+  if (!target->mount) {
+    // printf("[Error] This directory is not mounted: %s\n", mountpoint);
+    return 0;
+  }
+  target->mount = 0;
   return 1;
 }

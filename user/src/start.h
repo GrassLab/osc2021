@@ -19,6 +19,8 @@ int read(int fd, void *buf, int count);
 int list(int fd, void *buf, int index);
 int mkdir(const char *pathname);
 int chdir(const char *pathname);
+int mount(const char* device, const char* mountpoint, const char* filesystem);
+int umount(const char* mountpoint);
 
 void delay(int n) {
   while (n--)

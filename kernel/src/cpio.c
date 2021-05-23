@@ -88,6 +88,7 @@ uint32_t cpio_load_user_program(const char *target_program,
 }
 
 void cpio_populate_rootfs() {
+  printf("===== cpio_populate_rootfs =====\n");
   unsigned long long ptr = RAMFS_ADDR;
   cpio_newc_header *header;
   char *pathname;
@@ -101,13 +102,15 @@ void cpio_populate_rootfs() {
     pathname = (char *)ptr;
     // the end is indicated by a special record with pathname "TRAILER!!!"
     if (strcmp(pathname, CPIO_END) == 0) break;
-    printf("%s %d\n", pathname, filesize);
+    printf("pathname: %s, size: %d\n", pathname, filesize);
 
     ptr = align_up(ptr + namesize, 4);
-    struct file *file = vfs_open(pathname, O_CREAT);
-    if (file && filesize > 0) {
-      vfs_write(file, (const char *)ptr, filesize);
-      vfs_close(file);
+    if (filesize > 0) {
+      struct file *file = vfs_open(pathname, O_CREAT);
+      if (file) {
+        vfs_write(file, (const char *)ptr, filesize);
+        vfs_close(file);
+      }
     }
     ptr = align_up(ptr + filesize, 4);
   }

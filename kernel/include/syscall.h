@@ -17,6 +17,8 @@
 #define SYS_LIST 10
 #define SYS_MKDIR 11
 #define SYS_CHDIR 12
+#define SYS_MOUNT 13
+#define SYS_UMOUNT 14
 
 void syscall_handler(uint32_t syscall_number, trap_frame_t *trap_frame);
 void sys_uart_read(trap_frame_t *trap_frame);
@@ -32,3 +34,5 @@ void sys_read(trap_frame_t *trap_frame);
 void sys_list(trap_frame_t *trap_frame);
 void sys_mkdir(trap_frame_t *trap_frame);
 void sys_chdir(trap_frame_t *trap_frame);
+void sys_mount(trap_frame_t *trap_frame);
+void sys_umount(trap_frame_t *trap_frame);

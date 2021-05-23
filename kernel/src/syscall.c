@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "mini_uart.h"
+#include "printf.h"
 #include "thread.h"
 #include "vfs.h"
 
@@ -48,6 +49,12 @@ void syscall_handler(uint32_t syscall_number, trap_frame_t *trap_frame) {
     case SYS_CHDIR:
       sys_chdir(trap_frame);
       break;
+    case SYS_MOUNT:
+      sys_mount(trap_frame);
+      break;
+    case SYS_UMOUNT:
+      sys_umount(trap_frame);
+      break;
   }
 }
 
@@ -86,13 +93,14 @@ void sys_open(trap_frame_t *trap_frame) {
   const char *pathname = (const char *)trap_frame->x[0];
   int flags = (int)trap_frame->x[1];
   struct file *file = vfs_open(pathname, flags);
-  int fd = thread_get_fd(file);
+  int fd = thread_register_fd(file);
   trap_frame->x[0] = fd;
 }
 
 void sys_close(trap_frame_t *trap_frame) {
   int fd = (int)trap_frame->x[0];
   struct file *file = thread_get_file(fd);
+  thread_clear_fd(fd);
   int result = vfs_close(file);
   trap_frame->x[0] = result;
 }
@@ -133,5 +141,19 @@ void sys_mkdir(trap_frame_t *trap_frame) {
 void sys_chdir(trap_frame_t *trap_frame) {
   const char *pathname = (const char *)trap_frame->x[0];
   int result = vfs_chdir(pathname);
+  trap_frame->x[0] = result;
+}
+
+void sys_mount(trap_frame_t *trap_frame) {
+  const char *device = (const char *)trap_frame->x[0];
+  const char *mountpoint = (const char *)trap_frame->x[1];
+  const char *filesystem = (const char *)trap_frame->x[2];
+  int result = vfs_mount(device, mountpoint, filesystem);
+  trap_frame->x[0] = result;
+}
+
+void sys_umount(trap_frame_t *trap_frame) {
+  const char *mountpoint = (const char *)trap_frame->x[0];
+  int result = vfs_umount(mountpoint);
   trap_frame->x[0] = result;
 }

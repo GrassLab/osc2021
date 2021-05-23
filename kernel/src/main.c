@@ -1,9 +1,9 @@
 #include "alloc.h"
 #include "mini_uart.h"
+#include "printf.h"
 #include "shell.h"
 #include "thread.h"
 #include "timer.h"
-#include "printf.h"
 #include "vfs.h"
 
 void main() {

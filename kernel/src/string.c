@@ -89,6 +89,18 @@ char *strcpy(char *dst, const char *src) {
   return ptr;
 }
 
+void strcat(char *to, const char *from) {
+  while (*to) {
+    to++;
+  }
+  while (*from) {
+    *to = *from;
+    to++;
+    from++;
+  }
+  *to = '\0';
+}
+
 char *strtok(char *s, const char delim) {
   static char *pos;
   char *ret;

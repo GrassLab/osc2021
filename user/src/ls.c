@@ -1,6 +1,12 @@
 #include "start.h"
 
 int main(int argc, char** argv) {
+  print_s("Program: ");
+  print_s(argv[0]);
+  print_s(", pid: ");
+  print_i(getpid());
+  print_s("\n");
+
   print_s("Directory: ");
   print_s(argv[1]);
   print_s("\n");

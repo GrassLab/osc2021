@@ -14,11 +14,11 @@ struct tmpfs_buf {
 };
 
 struct tmpfs_fentry {
-  char name[10];
+  char name[20];
   FILE_TYPE type;
   struct vnode* vnode;
+  struct vnode* parent_vnode;
   struct tmpfs_fentry* child[MAX_FILES_IN_DIR];
-  struct tmpfs_fentry* parent;
   struct tmpfs_buf* buf;
 };
 
@@ -33,8 +33,7 @@ int tmpfs_lookup(struct vnode* dir_node, struct vnode** target,
                  const char* component_name);
 int tmpfs_create(struct vnode* dir_node, struct vnode** target,
                  const char* component_name, FILE_TYPE type);
-int tmpfs_chdir(struct vnode* dir_node, struct vnode** target,
-                const char* component_name);
+int tmpfs_set_parent(struct vnode* child_node, struct vnode* parent_vnode);
 int tmpfs_write(struct file* file, const void* buf, size_t len);
 int tmpfs_read(struct file* file, void* buf, size_t len);
 int tmpfs_list(struct file* file, void* buf, int index);
