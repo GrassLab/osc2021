@@ -1,0 +1,15 @@
+Command    | Description
+-----------|--------------------------------------------
+hello      | print Hello World
+help       | print all avaiable commands
+reboot     | reboot pi
+buddy      | use "help buddy" for detail
+dma        | use "help dma" for detail
+mem        | use "mem status" to list memory alloc list
+alloc      | "alloc <bytes>"
+free       | "free <0x addr>"
+ls         | list all cpio files
+cat        | "cat <file name>"
+exec       | "exec <image file>"
+timer      | use "help timer" for detail
+setTimeout | setTimeout <MESSAGE> <SECONDS>

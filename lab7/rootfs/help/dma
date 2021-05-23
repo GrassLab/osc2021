@@ -1,0 +1,3 @@
+Command     | Description
+------------|---------------------------
+dma status  | print dynamic alloc addr
