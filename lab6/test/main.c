@@ -116,6 +116,9 @@ void terminal(){
         else if(strcmp(input,"lab6-2")==0){
 			threadTest();
 		}
+        else if(strcmp(input,"archive")==0){
+			dumpArchive();
+		}
         else {
             //if(!ls(input,1))
             uart_puts("Error: ");

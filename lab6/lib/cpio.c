@@ -18,8 +18,8 @@ typedef struct{//cpio_newc_header
 	char c_check[8];
 }cpio_header;
 
-#define CPIO_BASE ((cpio_header*)0x8000000) //qemu
-//#define CPIO_BASE ((cpio_header*)0x20000000) //raspi3
+//#define CPIO_BASE ((cpio_header*)0x8000000) //qemu
+#define CPIO_BASE ((cpio_header*)0x20000000) //raspi3
 
 unsigned long strToU(char* str){
 	unsigned long ret=0;

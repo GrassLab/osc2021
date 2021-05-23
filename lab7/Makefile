@@ -52,6 +52,7 @@ debug:
 		-display none\
 		-serial null\
 		-serial stdio\
+		-drive if=sd,file=./archive/sdcard/sfn_nctuos.img,format=raw\
 		-initrd initramfs.cpio\
 		-S -s
 
@@ -61,6 +62,7 @@ run:
 		-display none\
 		-serial null\
 		-serial stdio\
+		-drive if=sd,file=./archive/sdcard/sfn_nctuos.img,format=raw\
 		-initrd initramfs.cpio
 
 gdb:
