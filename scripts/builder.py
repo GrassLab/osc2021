@@ -49,7 +49,6 @@ def init_global():
                 "hello_world.out",
                 "get_pid.out",
                 "argv_test.out",
-                "init_user.out",
                 "fork_test.out",
             ],
             run_cross=True,

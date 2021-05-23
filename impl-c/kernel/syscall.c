@@ -1,4 +1,5 @@
 #include "syscall.h"
+#include "proc/sched.h"
 #include "uart.h"
 
 #include "cfg.h"
@@ -41,6 +42,11 @@ void syscall_routing(int num, struct trap_frame *tf) {
   }
 
   case SYS_EXEC: {
+    // we could call schedule at the beginning of syscall_routing (every
+    // syscall) but we only call it here for better logging and also serve a
+    // proof of concept that task schedule works
+    task_schedule();
+
     log(SYS_EXEC);
     const char *name = (const char *)tf->regs[0];
     char *const *argv = (char *const *)(tf->regs[1]);
@@ -57,7 +63,7 @@ void syscall_routing(int num, struct trap_frame *tf) {
 
   case SYS_FORK: {
     log(SYS_FORK);
-    int child_id = sys_fork();
+    int child_id = sys_fork(tf);
     tf->regs[0] = child_id;
     break;
   }

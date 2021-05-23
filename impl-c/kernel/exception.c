@@ -8,6 +8,7 @@
 
 #define EC_SVC_AARCH64 0b010101
 #define EC_SVC_DATA_ABORT 0b100101
+#define EC_SP_ALIGNMENT_FAULT 0b100100
 
 // Get field inside an int
 // example: EC is at bit 29-24 in variable "ELR"
@@ -51,6 +52,17 @@ void syn_handler(struct trap_frame *tf) {
   case EC_SVC_DATA_ABORT:
     dumpState();
     uart_println("Data abort taken, ec:%x iss:%x", exception.ec, exception.iss);
+    while (1) {
+      ;
+    }
+  case EC_SP_ALIGNMENT_FAULT:
+    dumpState();
+    uint64_t sp_el0;
+    asm volatile("mrs %0, sp_el0    \n" : "=r"(sp_el0));
+
+    uart_println("SP is not aligned, ec:%x iss:%x", exception.ec,
+                 exception.iss);
+    uart_println("sp_el0: %x", sp_el0);
     while (1) {
       ;
     }

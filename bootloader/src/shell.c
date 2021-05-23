@@ -116,7 +116,7 @@ void shellInputLine(Shell *sh) {
       flagExit = true;
       sh->bfr[sh->curInputSize] = 0;
       uart_puts("\r\n");
-      log_println("get: '%s'", sh->bfr);
+      uart_println("get: '%s'", sh->bfr);
       break;
     default:
       uart_puts("<?>");

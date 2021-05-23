@@ -13,7 +13,7 @@ static const int _DO_LOG = 0;
 #endif
 
 struct AllocationManager KAllocManager;
-struct Frame Frames[BUDDY_MAX_EXPONENT << 1];
+struct Frame Frames[1 << BUDDY_MAX_EXPONENT];
 
 void KAllocManager_run_example() {
   void *a[30];

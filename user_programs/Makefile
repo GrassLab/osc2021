@@ -9,10 +9,9 @@ CFLAGS = -Wall -nostartfiles -ffreestanding
 HELLO = hello_world.out
 GETPID = get_pid.out
 ARGV = argv_test.out
-INIT = init_user.out
 FORK = fork_test.out
 
-all: $(HELLO) $(GETPID) $(ARGV) $(INIT) $(FORK)
+all: $(HELLO) $(GETPID) $(ARGV) $(FORK)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -36,12 +35,6 @@ ARGV_ELF = argv_test.elf
 $(ARGV): $(ARGV_DEPS)
 	$(LD) $(ARGV_DEPS) -T linker.ld -o $(ARGV_ELF)
 	$(OBJCOPY) -O binary $(ARGV_ELF) $(ARGV)
-
-INIT_DEPS = $(libs) init_user.o
-INIT_ELF = init_user.elf
-$(INIT): $(INIT_DEPS)
-	$(LD) $(INIT_DEPS) -T linker.ld -o $(INIT_ELF)
-	$(OBJCOPY) -O binary $(INIT_ELF) $(INIT)
 
 FORK_DEPS = $(libs) fork_test.o
 FORK_ELF = fork_test.elf

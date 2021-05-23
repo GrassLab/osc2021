@@ -17,4 +17,4 @@ size_t sys_uart_read(char buf[], size_t size);
 
 int sys_exec(const char *name, char *const args[]);
 void sys_exit();
-int sys_fork();
+int sys_fork(const struct trap_frame *tf);
