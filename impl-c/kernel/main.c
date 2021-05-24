@@ -1,4 +1,6 @@
 #include "cfg.h"
+#include "fs/tmpfs.h"
+#include "fs/vfs.h"
 #include "mm.h"
 #include "mm/startup.h"
 #include "proc.h"
@@ -36,7 +38,14 @@ void main() {
   run_tests();
 #endif
 
-  test_tasks();
+  vfs_init();
+  register_filesystem(&tmpfs);
+
+  uart_println("finished, start busy waiting...");
+  while (1) {
+    ;
+  }
+  // test_tasks();
   // run_shell();
 }
 // =====

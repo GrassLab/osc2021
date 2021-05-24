@@ -22,7 +22,12 @@ struct mount {
 
 struct filesystem {
   const char *name;
+
+  // Method to call while mounting a node in vfs within this filesystem
   int (*setup_mount)(struct filesystem *fs, struct mount *mnt);
+
+  // Available file systems will be linked inside os after initialized
+  struct filesystem *next;
 };
 
 struct file_operations {

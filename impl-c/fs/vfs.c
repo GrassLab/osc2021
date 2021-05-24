@@ -1,12 +1,29 @@
 #include "fs/vfs.h"
 
+#include "string.h"
 #include "uart.h"
+
+#include "cfg.h"
+#include "log.h"
+
+#ifdef CFG_LOG_FS_VFS
+static const int _DO_LOG = 1;
+#else
+static const int _DO_LOG = 0;
+#endif
 
 struct mount *rootfs;
 
+// filesystems registered
+struct filesystem registered = {
+    .name = "reserved-not-used",
+    .setup_mount = NULL,
+    .next = NULL,
+};
+
 void mount_root_fs();
 
-void vfs_init() { mount_root_fs(); }
+void vfs_init() {}
 
 void mount_root_fs() {
   uart_println("do mount root fs");
@@ -14,7 +31,25 @@ void mount_root_fs() {
 }
 
 int register_filesystem(struct filesystem *fs) {
-  // register the file system to the kernel.
+  struct filesystem *cur;
+  for (cur = registered.next; cur != NULL; cur = cur->next) {
+    if (strcmp(cur->name, fs->name) == 0) {
+      return 1;
+    }
+  }
+
+  // Register the file system into kernel.
+  struct filesystem *_first = registered.next;
+  registered.next = fs;
+  fs->next = _first;
+
+#ifdef CFG_LOG_FS_VFS
+  log_println("Filesystems registered:");
+  int i = 0;
+  for (cur = registered.next, i = 0; cur != NULL; cur = cur->next, i++) {
+    log_println("[%d]: %s", i, cur->name);
+  }
+#endif
   return 0;
 }
 

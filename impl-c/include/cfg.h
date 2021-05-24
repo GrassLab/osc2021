@@ -14,10 +14,11 @@
 // #define CFG_LOG_MEM_KALLOC
 // #define CFG_LOG_MEM_BUDDY
 // #define CFG_LOG_MEM_SLAB
-#define CFG_LOG_PROC_TASK
-#define CFG_LOG_PROC_SCHED
-#define CFG_LOG_PROC_ARGV
-#define CFG_LOG_PROC_EXEC
+// #define CFG_LOG_PROC_TASK
+// #define CFG_LOG_PROC_SCHED
+// #define CFG_LOG_PROC_ARGV
+// #define CFG_LOG_PROC_EXEC
+#define CFG_LOG_FS_VFS
 
 /**
  *  TEST
