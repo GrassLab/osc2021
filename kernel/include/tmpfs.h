@@ -2,7 +2,7 @@
 #define _TMPFS_H
 
 #include "def.h"
-
+#include "vfs.h"
 struct tmpfs_internal {
     char name[128];
     struct vnode *l_child; // left most child

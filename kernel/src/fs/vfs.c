@@ -3,7 +3,6 @@
 #include "tmpfs.h"
 #include "string.h"
 #include "io.h"
-#include "cpio.h"
 #include "thread.h"
 #include "system_call.h"
 
@@ -27,8 +26,9 @@ void init_root(const char *name)
         rootfs->fs = fs;
         struct vnode *root_vnode = malloc(sizeof(struct vnode));
         rootfs->root = root_vnode;
+
         rootfs->fs->setup_mount(fs, rootfs);
-        cpio_init_fs(root_vnode);
+        
     } else {
         printf("no such filesystem: %s\n", name);
     }

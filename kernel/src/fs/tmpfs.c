@@ -2,7 +2,7 @@
 #include "tmpfs.h"
 #include "dynamic_alloc.h"
 #include "string.h"
-
+#include "cpio.h"
 #include "io.h"
 
 struct filesystem tmpfs = {
@@ -30,7 +30,8 @@ int tmpfs_setup(struct filesystem *fs, struct mount* mount)
 
     // create root internal
     mount->root->internal = create_tmpfs_vnode_internal("/");
-    
+    cpio_init_fs(mount->root);
+
     return 0;
 }
 

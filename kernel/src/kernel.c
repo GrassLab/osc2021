@@ -5,11 +5,14 @@
 #include "kernel.h"
 #include "base_ops.h"
 #include "vfs.h"
-#include "tmpfs.h"
+// #include "tmpfs.h"
+#include "fat32.h"
+#include "sdhost.h"
 
 #include "io.h"
 
-extern struct filesystem tmpfs;
+// extern struct filesystem tmpfs;
+extern struct filesystem fat32;
 
 void idle()
 {
@@ -25,10 +28,14 @@ void kernel_main()
     // initialization
     init_page_frame();
     init_thread_pool();
+    sd_init();
 
     // mount root file system
-    register_filesystem(&tmpfs);
-    init_root("tmpfs");
+    // register_filesystem(&tmpfs);
+    // init_root("tmpfs");
+
+    register_filesystem(&fat32);
+    init_root("fat32");
 
     // default pseudo thread to set first tpidr
     struct Thread t;
