@@ -1,5 +1,5 @@
 #include "test.h"
-#include "cfg.h"
+#include "config.h"
 #include "mm/startup.h"
 #include "proc/argv.h"
 #include "shell/buffer.h"

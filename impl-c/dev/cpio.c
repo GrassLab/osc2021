@@ -1,5 +1,5 @@
 #include "cpio.h"
-#include "cfg.h"
+#include "config.h"
 #include "log.h"
 #include "string.h"
 #include "uart.h"

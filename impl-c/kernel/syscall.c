@@ -2,7 +2,7 @@
 #include "proc/sched.h"
 #include "uart.h"
 
-#include "cfg.h"
+#include "config.h"
 #include "log.h"
 
 #ifdef CFG_LOG_SYSCALL

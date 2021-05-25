@@ -2,7 +2,7 @@
 #include "shell/cmd.h"
 
 #include "bool.h"
-#include "cfg.h"
+#include "config.h"
 #include "cpio.h"
 #include "log.h"
 #include "string.h"

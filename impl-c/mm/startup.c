@@ -1,5 +1,5 @@
 
-#include "cfg.h"
+#include "config.h"
 #include "log.h"
 #include "test.h"
 #include "uart.h"

@@ -1,4 +1,4 @@
-#include "cfg.h"
+#include "config.h"
 #include "fs/tmpfs.h"
 #include "fs/vfs.h"
 #include "mm.h"
@@ -40,6 +40,7 @@ void main() {
 
   vfs_init();
   register_filesystem(&tmpfs);
+  mount_root_fs("tmpfs");
 
   uart_println("finished, start busy waiting...");
   while (1) {
