@@ -1,10 +1,14 @@
 #include "fs/vfs.h"
 
+#include "mm.h"
 #include "string.h"
 #include "uart.h"
 
-#include "cfg.h"
+#include "config.h"
 #include "log.h"
+#include "test.h"
+
+#define PATH_DELIM '/'
 
 #ifdef CFG_LOG_FS_VFS
 static const int _DO_LOG = 1;
@@ -12,7 +16,30 @@ static const int _DO_LOG = 1;
 static const int _DO_LOG = 0;
 #endif
 
+#define ENSURE_COND(cond, fail)                                                \
+  if (!(cond)) {                                                               \
+    goto fail;                                                                 \
+  }
+
 struct mount *rootfs;
+
+/**
+ * @brief Get the first component name by returning it's start/end index pair in
+ * `path`
+ * @warning: `path[start_idx,end_idx]` does not contain '\0'
+ * @param start_idx return the start index
+ * @param end_idx return the end index(inclusive)
+ * @retval 0 for succeed, -1 for failed
+ */
+static int get_component(const char *path, /* Return*/ int *start_idx,
+                         /* Return*/ int *end_idx);
+
+#define __BUSY_WAIT                                                            \
+  {                                                                            \
+    while (1) {                                                                \
+      ;                                                                        \
+    }                                                                          \
+  }
 
 // filesystems registered
 struct filesystem registered = {
@@ -21,13 +48,31 @@ struct filesystem registered = {
     .next = NULL,
 };
 
-void mount_root_fs();
+void vfs_init() {
+  rootfs = kalloc(sizeof(struct mount));
+  if (rootfs == NULL) {
+    uart_println("Cannot allocate space for rootfs ");
+    __BUSY_WAIT
+  }
+  rootfs->root = NULL;
+  rootfs->fs = NULL;
+}
 
-void vfs_init() {}
-
-void mount_root_fs() {
-  uart_println("do mount root fs");
-  ;
+int mount_root_fs(const char *fs_impl) {
+  struct filesystem *cur;
+  struct filesystem *rootfs_target;
+  for (cur = registered.next; cur != NULL; cur = cur->next) {
+    if (strcmp(cur->name, fs_impl) == 0) {
+      rootfs_target = cur;
+    }
+  }
+  if (rootfs_target == NULL) {
+    uart_println("Rootfs mount - Cannot found fs: %s", fs_impl);
+    __BUSY_WAIT
+  }
+  log_println("rootfs impl found: %s", rootfs_target->name);
+  rootfs_target->setup_mount(rootfs_target, rootfs);
+  return 0;
 }
 
 int register_filesystem(struct filesystem *fs) {
@@ -47,16 +92,48 @@ int register_filesystem(struct filesystem *fs) {
   log_println("Filesystems registered:");
   int i = 0;
   for (cur = registered.next, i = 0; cur != NULL; cur = cur->next, i++) {
-    log_println("[%d]: %s", i, cur->name);
+    log_println(" [%d]: %s", i, cur->name);
   }
 #endif
   return 0;
 }
 
 struct file *vfs_open(const char *pathname, int flags) {
-  // 1. Lookup pathname from the root vnode.
+
   // 2. Create a new file descriptor for this vnode if found.
   // 3. Create a new file if O_CREAT is specified in flags.
+
+  // 1. Lookup pathname from the root vnode.
+  struct vnode *cwd = rootfs->root;
+
+  char *path, *query_name;
+  int ret, start_idx, end_idx, name_size;
+  struct vnode *target_child;
+
+  path = pathname;
+  do {
+    query_name = NULL;
+    ret = start_idx = end_idx = -1;
+
+    // Retrieve the literal name of the child
+    ret = get_component(path, &start_idx, &end_idx);
+    if (ret == 0) {
+      name_size = end_idx - start_idx + 1;
+      query_name = kalloc(name_size + 1);
+      memcpy(query_name, &path[start_idx], name_size);
+      query_name[name_size] = '\0';
+      uart_println("vfs query: %s", query_name);
+
+      // Query file by it's name
+      cwd->v_ops->lookup(cwd, &target_child, query_name);
+      if (target_child != NULL) {
+        path = &path[end_idx + 1];
+        cwd = target_child;
+      }
+      kfree(query_name);
+    }
+  } while (ret == 0);
+
   return NULL;
 }
 
@@ -75,4 +152,90 @@ int vfs_read(struct file *file, void *buf, size_t len) {
   // 1. read min(len, readable file data size) byte to buf from the opened file.
   // 2. return read size or error code if an error occurs.
   return 0;
+}
+
+static int get_component(const char *path, /* Return*/ int *start_idx,
+                         /* Return*/ int *end_idx) {
+  if (start_idx == NULL || end_idx == NULL) {
+    return -1;
+  }
+  if (path == NULL) {
+    goto get_cmpt_failed;
+  }
+  const char *p;
+  *start_idx = -1;
+  *end_idx = -1;
+
+  const char *start;
+  start = ignore_leading(path, PATH_DELIM);
+  if (start == NULL) {
+    goto get_cmpt_failed;
+  }
+  *start_idx = start - path;
+
+  const char *next_delim;
+  next_delim = strchr(start, PATH_DELIM);
+  if (next_delim != NULL) {
+    *end_idx = next_delim - path - 1;
+  } else {
+    // hit the end of string
+    *end_idx = strlen(start) + *start_idx - 1;
+  }
+  // Status check
+  if (*start_idx != -1 && *end_idx != -1) {
+    return 0;
+  }
+
+get_cmpt_failed:
+  *start_idx = -1;
+  *end_idx = -1;
+  return -1;
+}
+
+#ifdef CFG_RUN_FS_VFS_TEST
+
+// input_data, expect answer
+#define RUN_COMP_TEST(path, ret, start, end)                                   \
+  {                                                                            \
+    char *_path = path;                                                        \
+    int _ret = -2, _start = -2, _end = -2;                                     \
+    _ret = get_component(_path, &_start, &_end);                               \
+    if ((ret != _ret) || (_start != start) || (_end != end)) {                 \
+      uart_println("<got>(<excepted>)");                                       \
+      uart_println("path:%s, ret:%d(%d), start:%d(%d), end:%d(%d)", _path,     \
+                   _ret, ret, _start, start, _end, end);                       \
+      assert((ret == _ret) && (start == _start) && (end == _end));             \
+    }                                                                          \
+  }
+
+bool test_get_component_good_input() {
+  RUN_COMP_TEST("dev/a/b", 0, 0, 2);
+  RUN_COMP_TEST("dev", 0, 0, 2);
+  RUN_COMP_TEST("//dev/", 0, 2, 4);
+  RUN_COMP_TEST("//dev", 0, 2, 4);
+  RUN_COMP_TEST("//dev////", 0, 2, 4);
+  RUN_COMP_TEST("////dev/", 0, 4, 6);
+  RUN_COMP_TEST("/dev/", 0, 1, 3);
+  RUN_COMP_TEST("/dev", 0, 1, 3);
+  RUN_COMP_TEST("/dev////", 0, 1, 3);
+  return true;
+}
+
+bool test_get_component_bad_input() {
+  RUN_COMP_TEST("///", -1, -1, -1);
+  RUN_COMP_TEST("/", -1, -1, -1);
+  RUN_COMP_TEST("", -1, -1, -1);
+  RUN_COMP_TEST(NULL, -1, -1, -1);
+  return true;
+}
+
+#endif
+
+void test_vfs() {
+#ifdef CFG_RUN_FS_VFS_TEST
+  unittest(test_get_component_good_input, "FS",
+           "VFS - get component (good input)");
+  unittest(test_get_component_bad_input, "FS",
+           "VFS - get component (bad input)");
+#endif
 }

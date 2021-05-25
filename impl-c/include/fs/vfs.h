@@ -1,6 +1,10 @@
 #pragma once
+#include "list.h"
 #include <stddef.h>
-
+/**
+ * A vnode could be mounted by another vnode with whole diffrent file system
+ * tree, if mnt!=NULL, this vnode is mounted
+ * */
 struct vnode {
   struct mount *mnt;
   struct vnode_operations *v_ops;
@@ -42,7 +46,13 @@ struct vnode_operations {
                 const char *component_name);
 };
 
+/**
+ * Rootfs is designed to be a mount point
+ * */
 extern struct mount *rootfs;
+
+// Select a specific fs impl as rootfs
+int mount_root_fs(const char *fs_impl);
 
 // register the file system to the kernel.
 int register_filesystem(struct filesystem *fs);
@@ -64,3 +74,6 @@ int vfs_write(struct file *file, const void *buf, size_t len);
 int vfs_read(struct file *file, void *buf, size_t len);
 
 void vfs_init();
+
+// Only used for running tests
+void test_vfs();

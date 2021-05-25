@@ -25,12 +25,18 @@
  * */
 #define CFG_RUN_TEST
 
+// Libs
+#define CFG_RUN_LIB_STRING_TEST
+
 // Shell
-#define CFG_RUN_SHELL_BUFFER_TEST
-#define CFG_RUN_SHELL_CMD_TEST
+// #define CFG_RUN_SHELL_BUFFER_TEST
+// #define CFG_RUN_SHELL_CMD_TEST
 
 // Memory management
 // #define CFG_RUN_STATUP_ALLOC_TEST
 
 // PROC
-#define CFG_RUN_PROC_ARGV_TEST
+// #define CFG_RUN_PROC_ARGV_TEST
+
+// FS
+#define CFG_RUN_FS_VFS_TEST
