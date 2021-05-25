@@ -1,15 +1,11 @@
-#include "start.h"
+#include "printf.h"
+#include "syscall.h"
+#include "utils.h"
 
 int main(int argc, char** argv) {
-  print_s("Program: ");
-  print_s(argv[0]);
-  print_s(", pid: ");
-  print_i(getpid());
-  print_s("\n");
+  printf("Program: %s, pid: %d\n", argv[0], getpid());
 
-  print_s("Directory: ");
-  print_s(argv[1]);
-  print_s("\n");
+  printf("Directory: %s\n", argv[1]);
 
   int fd = open(argv[1], 0);
   char name[100];
@@ -18,11 +14,7 @@ int main(int argc, char** argv) {
     size = list(fd, name, i);
     if (size < 0) break;
     if (size > 0) {
-      print_s("Name: ");
-      print_s(name);
-      print_s(", size: ");
-      print_i(size);
-      print_s("\n");
+      printf("Name: %s, size: %d\n", name, size);
     }
   }
 

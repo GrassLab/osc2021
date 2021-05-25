@@ -1,13 +1,11 @@
-#include <assert.h>
+// #include <assert.h>
 
-#include "start.h"
+#include "printf.h"
+#include "syscall.h"
+#include "utils.h"
 
 int main(int argc, char **argv) {
-  print_s("Program: ");
-  print_s(argv[0]);
-  print_s(", pid: ");
-  print_i(getpid());
-  print_s("\n");
+  printf("Program: %s, pid: %d\n", argv[0], getpid());
 
   char buf[8];
   mkdir("mnt");
@@ -18,13 +16,13 @@ int main(int argc, char **argv) {
   fd = open("./a.txt", 0);
   // assert(fd >= 0);
   if (!(fd >= 0)) {
-    print_s("assert 1 failed\n");
+    printf("assert 1 failed\n");
     return 0;
   }
   read(fd, buf, 2);
   // assert(strncmp(buf, "Hi", 2) == 0);
   if (!(strncmp(buf, "Hi", 2) == 0)) {
-    print_s("assert 2 failed\n");
+    printf("assert 2 failed\n");
     return 0;
   }
 
@@ -33,7 +31,7 @@ int main(int argc, char **argv) {
   fd = open("mnt/a.txt", 0);
   // assert(fd < 0);
   if (!(fd < 0)) {
-    print_s("assert 3 failed\n");
+    printf("assert 3 failed\n");
     return 0;
   }
 
@@ -41,13 +39,13 @@ int main(int argc, char **argv) {
   fd = open("/mnt/a.txt", 0);
   // assert(fd >= 0);
   if (!(fd >= 0)) {
-    print_s("assert 4 failed\n");
+    printf("assert 4 failed\n");
     return 0;
   }
   read(fd, buf, 2);
   // assert(strncmp(buf, "Hi", 2) == 0);
   if (!(strncmp(buf, "Hi", 2) == 0)) {
-    print_s("assert 5 failed\n");
+    printf("assert 5 failed\n");
     return 0;
   }
 

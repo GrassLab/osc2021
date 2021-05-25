@@ -1,11 +1,9 @@
-#include "start.h"
+#include "printf.h"
+#include "syscall.h"
+#include "utils.h"
 
 int main(int argc, char **argv) {
-  print_s("Program: ");
-  print_s(argv[0]);
-  print_s(", pid: ");
-  print_i(getpid());
-  print_s("\n");
+  printf("Program: %s, pid: %d\n", argv[0], getpid());
 
   int a = open("hello", O_CREAT);
   int b = open("world", O_CREAT);
@@ -23,20 +21,17 @@ int main(int argc, char **argv) {
     sz = read(b, buf, 100);
     sz += read(a, buf + sz, 100);
     buf[sz] = '\0';
-    // printf("%s\n", buf); // should be Hello World!
-    print_s(buf);
-    print_s("\n");
+    printf("%s\n", buf); // should be Hello World!
   }
 
-  print_s("\nfile1.txt\n");
+  printf("\nfile1.txt\n");
   a = open("file1.txt", 0);
   if (a >= 0) {
     int sz;
     char buf[200];
     sz = read(a, buf, 100);
     buf[sz] = '\0';
-    print_s(buf);
-    print_s("\n");
+    printf("%s\n", buf);
     close(a);
   }
 
@@ -47,8 +42,7 @@ int main(int argc, char **argv) {
     char buf[200];
     sz = read(a, buf, 100);
     buf[sz] = '\0';
-    print_s(buf);
-    print_s("\n");
+    printf("%s\n", buf);
     close(a);
   }
 
