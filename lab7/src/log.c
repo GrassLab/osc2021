@@ -4,7 +4,7 @@
 //enum log_type global_log_state = WARNING;
 enum log_type global_log_state = INFO;
 
-void log_puts(char *s, enum log_type level){
+void log_puts(const char *s, enum log_type level){
   if (level <= global_log_state){
     uart_puts(s);
   }

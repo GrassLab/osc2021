@@ -1,3 +1,5 @@
+# include "typedef.h"
+
 # define ESR_EC_SVC 0b010101
 
 # define SVC_ISS_NOPE 0
@@ -23,7 +25,7 @@
 
 # define IRQ_ENABLE()    asm volatile("msr DAIFClr, 0x2");
 # define IRQ_DISABLE()   asm volatile("msr DAIFSet, 0x2");
-# define uint64_t unsigned long long 
+//# define uint64_t unsigned long long 
 
 struct trapframe {
     uint64_t x[31]; // general register from x0 ~ x30

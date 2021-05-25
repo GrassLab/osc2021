@@ -5,6 +5,6 @@ enum log_type{
   FINE = 3,
 };
 
-void log_puts(char *s, enum log_type level);
+void log_puts(const char *s, enum log_type level);
 void set_log_level(enum log_type level);
 enum log_type get_log_level();

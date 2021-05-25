@@ -268,7 +268,7 @@ void invoke_cmd(char *cmd){
       uart_puts((char *) "Use \"sdblock <num>\"\n");
     }
     else{
-      listblock(str_to_int(argv[1]));
+      sdlistblock(str_to_int(argv[1]));
     }
     
   }

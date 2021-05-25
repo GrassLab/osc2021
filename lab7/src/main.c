@@ -8,6 +8,7 @@
 # include "schedule.h"
 # include "vfs.h"
 # include "my_math.h"
+# include "my_string.h"
 # include "sdhost.h"
 # include "sd.h"
 
@@ -30,7 +31,21 @@ int main(){
 # else
   uart_puts((char *) "[Rpi mode]\n");
 # endif
-
+  sdload();
+  /*
+  char name_test[10] = "新";
+  //name_test[1] = 0x65;
+  //name_test[2] = 0xb0;
+  for (int i=0; i<str_len(name_test); i++){
+    char ct[10];
+    int_to_hex(name_test[i], ct);
+    uart_puts(ct);
+    uart_puts("\n");
+  }
+  uart_puts((char *) "\u65b0\n");
+  uart_puts(name_test);
+  uart_puts("\n");
+  */
   uart_puts((char *) ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
   uart_puts((char *) "Hi!\n");
   uart_puts((char *) "Welcome to Eric's system ~\n");
