@@ -59,3 +59,29 @@ int kfree(char* ptr);
 void dynamic_mem_init();
 int rd_init();
 
+
+#define MAIR_IDX_DEVICE_nGnRnE 0
+#define MAIR_IDX_NORMAL_NOCACHE 1
+#define PD_TABLE 0x3 // 0b11
+#define PD_BLOCK 0x1 // 0b01
+#define PD_ACCESS (1 << 10)
+#define BOOT_PGD_ATTR PD_TABLE
+#define BOOT_PUD_ATTR PD_TABLE
+#define BOOT_PMD_NOR_ATTR (PD_ACCESS | (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_BLOCK)
+#define BOOT_PMD_DEV_ATTR (PD_ACCESS | (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_BLOCK)
+
+#define PD_IDX_MASK 0x1FF
+#define PD_ENT_ADDR_MASK 0xFFFFFFFFF000
+#define PGD_SHIFT 39
+#define PUD_SHIFT 30
+#define PMD_SHIFT 21
+#define PTE_SHIFT 12
+
+#define KVA_TO_PA(va) ((va) - 0xffff000000000000)
+
+
+int is_present(unsigned long *pt_ent);
+unsigned long *alloc_page_table();
+int kernel_page_fault(unsigned long va);
+int kernel_page_fault_(unsigned long va);
+unsigned long *create_kernel_pgd(unsigned long start, unsigned long length);

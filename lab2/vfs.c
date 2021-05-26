@@ -269,6 +269,7 @@ struct file* vfs_open(const char* pathname, int flags)
             return 0;
         }
     }
+
     file = new_file();
     file->vnode = target;
     file->f_ops = target->f_ops;

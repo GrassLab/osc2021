@@ -3,9 +3,9 @@
 #include "include/mm.h"
 #include "utils.h"
 #define MAX_NR_REGIONS_POOL 20
-#define MAX_ORDER 7
-#define MAX_ORDER_NR_PAGES (1 << (MAX_ORDER - 1))
-#define BUDDY_BASE 0x2000
+#define MAX_ORDER 14 // original: 7 15
+#define MAX_ORDER_NR_PAGES (1 << (MAX_ORDER - 1)) // 16384 pages
+#define BUDDY_BASE 0x100000 //0x2000
 #define PAGE_SIZE 0x1000 // 4KB
 #define PAGE_OFFSET(ADDR) ((PAGE_SIZE - 1) & (ADDR)) 
 #define MAX_PD_TYPE 8
@@ -229,10 +229,10 @@ int remove_from_list(struct page *frame)
 
 int block_set_free(struct page *frame, int set_val)
 { // for frame in block: frame.free = set_val;
-    // int num = 1 << frame->blk_odr;
+    int num = 1 << frame->blk_odr;
 
-    // for (int i = 0; i < num; ++i)
-    //     frame[i].free = set_val;
+    for (int i = 0; i < num; ++i)
+        frame[i].free = set_val;
     frame->free = set_val;
 
     return 0;
@@ -349,7 +349,7 @@ void buddy_system_init(unsigned long mem_base)
     int i;
     // Initialize page_frames
     for (i = 0; i < MAX_ORDER_NR_PAGES; ++i) {
-        page_frames[i].addr = mem_base + i * PAGE_SIZE;
+        page_frames[i].addr = mem_base + i * PAGE_SIZE + 0xffff000000000000;
         page_frames[i].next = 0;
         page_frames[i].prev = 0;
         page_frames[i].index = i;
@@ -606,3 +606,103 @@ int show_mm()
     }
     return 0;
 }
+
+unsigned long *kpgd;
+
+int is_present(unsigned long *pt_ent)
+{
+    return *pt_ent & 0x1;
+}
+
+unsigned long *alloc_page_table()
+{
+    struct page *page;
+    unsigned long *tar;
+
+    if (!(page = get_free_frames(1))) {
+        uart_send_string("From alloc_page_table: fail\r\n");
+        return 0;
+    }
+    tar = (unsigned long*)page->addr;
+    for (int i = 0; i < 512; ++i)
+        tar[i] = 0;
+
+    return tar;
+}
+
+int kernel_page_fault(unsigned long va)
+{
+    unsigned long *pt_ent, *pd_walk, pg;
+
+    pd_walk = kpgd;
+    pt_ent = &pd_walk[(va >> PGD_SHIFT) & PD_IDX_MASK];
+    if (!is_present(pt_ent)) {
+        pg = (unsigned long)alloc_page_table();
+        *pt_ent = KVA_TO_PA(pg) | BOOT_PGD_ATTR;
+    }
+
+    // pd_walk = *pt_ent & PD_ENT_ADDR_MASK;
+    pd_walk = (unsigned long*)pg;
+    pt_ent = &pd_walk[(va >> PUD_SHIFT) & PD_IDX_MASK];
+    if (!is_present(pt_ent)) {
+        pg = (unsigned long)alloc_page_table();
+        *pt_ent = KVA_TO_PA(pg) | BOOT_PUD_ATTR;
+    }
+
+    // pd_walk = *pt_ent & PD_ENT_ADDR_MASK;
+    pd_walk = (unsigned long*)pg;
+    pt_ent = &pd_walk[(va >> PMD_SHIFT) & PD_IDX_MASK];
+    if (!is_present(pt_ent)) {
+        if (va >= 0x30000000)
+            *pt_ent = (va & 0xFFFFFFE00000) | BOOT_PMD_DEV_ATTR;
+        else
+            *pt_ent = (va & 0xFFFFFFE00000) | BOOT_PMD_NOR_ATTR;
+            // *pt_ent = (va & 0xFFF) | BOOT_PMD_NOR_ATTR;
+    }
+
+    return 0;
+}
+
+int kernel_page_fault_(unsigned long va)
+{
+    unsigned long *pt_ent, *pd_walk, pg;
+
+    pd_walk = kpgd;
+    pt_ent = &pd_walk[(va >> PGD_SHIFT) & PD_IDX_MASK];
+    if (!is_present(pt_ent)) {
+        pg = (unsigned long)alloc_page_table();
+        *pt_ent = KVA_TO_PA(pg) | BOOT_PGD_ATTR;
+        uart_send_string("From kernel_page_fault_:A \r\n");
+    }
+
+    // pd_walk = *pt_ent & PD_ENT_ADDR_MASK;
+    pd_walk = (unsigned long*)pg;
+    pt_ent = &pd_walk[(va >> PUD_SHIFT) & PD_IDX_MASK];
+    //     uart_send_ulong(va);
+    // uart_send_string("\r\n");
+    // uart_send_ulong((unsigned long)pt_ent);
+    // uart_send_string("\r\n");
+    if (!is_present(pt_ent)) {
+        *pt_ent = (va & 0xFFFFC0000000) | BOOT_PMD_DEV_ATTR;
+        uart_send_string("From kernel_page_fault_:A-1 \r\n");
+    }
+
+    return 0;
+}
+
+unsigned long *create_kernel_pgd(unsigned long start, unsigned long length)
+{ // length unit is byte
+    unsigned long addr_walk, addr_end, step_len;
+
+    kpgd = alloc_page_table();
+    addr_walk = start & 0xFFFFFFE00000;
+    addr_end = (start + length) & 0xFFFFFFE00000;
+    step_len = 1 << 21;
+    while (addr_walk < addr_end) {
+        kernel_page_fault(addr_walk);
+        addr_walk += step_len;
+    }
+
+    return kpgd;
+}
+

@@ -278,6 +278,7 @@ unsigned long syscall_handler(unsigned long x0, unsigned long x1,
             break;
         case SYS_EXEC:
             ret = sys_exec(x0, (char**)x1);
+    uart_send_string("From syscall_handler: A\r\n");
             break;
         case SYS_FORK:
             ret = sys_fork();

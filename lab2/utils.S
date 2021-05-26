@@ -133,3 +133,8 @@ wait_for_interrupt:
 //get_syscall_type:
 //    mov x0, x8
 //    ret
+
+.globl set_ttbr1
+set_ttbr1:
+    msr    ttbr1_el1, x0
+    ret

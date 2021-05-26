@@ -19,3 +19,4 @@ extern void disable_irq(void);
 extern void core_timer_enable(void);
 extern void core_timer_disable(void);
 extern void wait_for_interrupt(void);
+extern void set_ttbr1(unsigned long* kpgd);

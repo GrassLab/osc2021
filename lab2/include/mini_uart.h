@@ -1,6 +1,6 @@
 #include "dtp.h"
 
-#define PBASE 0x3F000000
+#define PBASE (0x3F000000 + 0xffff000000000000)
 
 #define GPFSEL1         (PBASE+0x00200004)
 #define GPSET0          (PBASE+0x0020001C)

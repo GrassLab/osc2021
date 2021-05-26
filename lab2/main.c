@@ -65,9 +65,9 @@ int do_reboot(void)
     return 0;
 }
 
-void set_dt_base(char *dt_base)
+void set_dt_base(unsigned long dt_base)
 {
-    dt_base_g = dt_base;
+    // dt_base_g = (char*)(dt_base + 0xffff000000000000);
     return;
 }
 
@@ -381,6 +381,7 @@ int cmd_handler(char *cmd)
     return 0;
 }
 
+
 int ls(char *path) {
     int fd = open(path, 0);
     char name[100];
@@ -613,6 +614,7 @@ void user_logic_6(int argc, char **argv)
 {
     int fd;
     char buf[20];// = "This is SUPER COOL!";
+    uart_send_string("From user_logic_6: A\r\n");
 
     ls(".");
     // fd = open("/PAYWAY.C", O_CREAT);
@@ -675,7 +677,7 @@ void user_thread_2()
     // current->sig.sigpend = 1; // DEMO: raise signal itself
     // current->sig.user_handler[0] = (unsigned long)udh_1;
     // exec((unsigned long)user_logic_2, argv); // DEMO:
-    exec((unsigned long)user_logic_7, argv);
+    exec((unsigned long)user_logic_6, argv);
 
 }
 
@@ -836,7 +838,7 @@ delay(10000000);
     cur_trap_frame->regs[1] = (unsigned long)argv_fake_start;
     cur_trap_frame->sp_el0 = (unsigned long)current->usp;
     cur_trap_frame->elr_el1 = func_addr;
-    cur_trap_frame->spsr_el1 = 0x0; // enable_irq
+    cur_trap_frame->spsr_el1 = 0x3C5; // enable_irq
 
     // set_user_program((char*)func_addr, current->usp, argc,
     //     argv_fake_start, current->kernel_stack_page + 0x1000);
@@ -859,10 +861,14 @@ int shell()
     }
 }
 
+extern unsigned long *kpgd;
+
 int kernel_main(char *sp)
 {
     // do_dtp(uart_probe);
     rd_init();
+    create_kernel_pgd(0, 0x40000000);
+    set_ttbr1((unsigned long)kpgd - 0xffff000000000000);
     dynamic_mem_init();
     timerPool_init();
     core_timer_enable();
@@ -898,7 +904,7 @@ int kernel_main(char *sp)
     current = new_ts();
     current->ctx.sp = (unsigned long)kmalloc(4096);
     thread_create((unsigned long)idle, 0);
-    // thread_create((unsigned long)shell, 0);
+    thread_create((unsigned long)shell, 0);
     // thread_create((unsigned long)test_thread_1, "CCC\r\n");
     // thread_create((unsigned long)test_thread_2, "DDD\r\n");
     // thread_create((unsigned long)user_thread, 0);

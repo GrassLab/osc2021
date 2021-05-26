@@ -420,6 +420,7 @@ int fat32_lookup(struct vnode* dir_node, struct vnode** target,
         }
         walk = walk->rsib;
     }
+    *target = 0;
     return 1;
 }
 
