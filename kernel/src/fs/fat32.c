@@ -147,7 +147,22 @@ int fat32_create(struct vnode *dir_node, struct vnode **target, const char *comp
 
 int fat32_write (struct file *file, const void *buf, size_t len)
 {
-    return 0;
+    struct fat32_internal *internal = file->vnode->internal;
+    int start_cluster = internal->start_cluster;
+    int target_block = DATA_BASE_BLOCK_INDEX + start_cluster + (file->f_pos / 512),
+        offset = file->f_pos % 512;
+
+    char _buffer[512];
+    readblock(target_block, _buffer);
+    for (int i = 0; i < len; i++) {
+        _buffer[offset + i] = ((char *)buf)[i];
+    }
+    // strncpy(&_buffer[offset], buf, len);
+    writeblock(target_block, _buffer);
+
+    file->f_pos += len;
+
+    return len;
 }
 
 int fat32_read (struct file *file, void *buf, size_t len)
@@ -166,9 +181,9 @@ int fat32_read (struct file *file, void *buf, size_t len)
     
     file->f_pos += len;
 
-    for (int i = 0; i < len; i++) {
-        printf("%p", ((char *)buf)[i]);
-    }
+    // for (int i = 0; i < len; i++) {
+    //     printf("%p", ((char *)buf)[i]);
+    // }
 
     return len;
 }
@@ -182,7 +197,7 @@ void sd_init_fs(struct vnode *root)
 
     // loop all root directory entries
     int i = 0;
-    while (buffer[i] != 0) {
+    while (buffer[i] != 0 && buffer[i] != 0xE5) {
         // first 8 bytes are filename
         int filesize = 0;
         char filename[10] = { 0 }, ext[4] = { 0 };
@@ -193,7 +208,10 @@ void sd_init_fs(struct vnode *root)
 
         filesize = *((int *)&buffer[i + 0x1C]);
 
-        int cluster_index = (buffer[i + 0x14] << 16) + buffer[i + 0x1A] - ROOT_CLUSTER_NUMBER;
+        int cluster_index;
+        cluster_index = *(short *)&buffer[i + 0x14];
+        cluster_index = (cluster_index << 16) + *(short *)&buffer[i + 0x1A];
+        cluster_index -= ROOT_CLUSTER_NUMBER;
 
         printf("filename is %s.%s\n", filename, ext);
         printf("file size: %d\n", filesize);

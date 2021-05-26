@@ -84,6 +84,20 @@ void exec_command(char *input)
         buf[sz] = '\0';
         printf("%s\n", buf); // should be Hello World!
 
+    }  else if (strcmp(input, "fat32") == 0) { 
+        char buf[100] = { 0 };
+        int fd = open("HELLO   ", O_CREAT);
+        write(fd, "VVVVVV", 6);
+        close(fd);
+
+        fd = open("HELLO   ", O_CREAT);
+        int readbytes = read(fd, buf, 20);
+
+        for (int i = 0; i < readbytes; i++) {
+            putchar(buf[i]);
+        }
+        printf("\n");
+        // printf("fd: %d, read: %s, %d bytes\n", fd, buf, readbytes);
     } else {
         printf("Try another command\r\n");
     }
