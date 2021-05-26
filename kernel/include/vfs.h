@@ -60,5 +60,6 @@ int open(const char* pathname, int flags);
 int read(int fd, void* buf, size_t len);
 int close(int fd);
 int write(int fd, void* buf, size_t len);
+int get_first_frag(char *buffer, const char *component_name);
 
 #endif

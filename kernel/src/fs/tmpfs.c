@@ -35,6 +35,25 @@ int tmpfs_setup(struct filesystem *fs, struct mount* mount)
     return 0;
 }
 
+static void append_child(struct vnode *parent, struct vnode *node)
+{
+    // printf("1\n");
+    struct tmpfs_internal *parent_internal = parent->internal;
+    if (!parent_internal->l_child) {
+        parent_internal->l_child = node;
+    } else {
+        struct vnode *tmp_node = parent_internal->l_child;
+        struct tmpfs_internal *tmp_internal = tmp_node->internal; // this line has broken on rpi
+        while (tmp_internal->r_sibling) {
+            tmp_node = tmp_internal->r_sibling;
+            tmp_internal = tmp_node->internal;
+        }
+
+        // tmp_internal = tmp_node->internal;
+        tmp_internal->r_sibling = node;
+    }
+}
+
 int tmpfs_lookup(struct vnode* dir_node, struct vnode **target, const char* component_name)
 {
     struct tmpfs_internal *internal = dir_node->internal;
@@ -192,48 +211,3 @@ struct vnode *create_tmpfs_vnode(struct vnode *parent, const char *name)
 }
 
 // return offset
-int get_first_frag(char *buffer, const char *component_name)
-{
-    int i = 0;
-
-    while (component_name[i] != '/' && i < strlen(component_name)) {
-        i++;
-    }
-
-    // '/' is at index i, or end of string '/0' is at index i
-    strncpy(buffer, component_name, i);
-
-    return (i + 1);
-}
-
-void append_child(struct vnode *parent, struct vnode *node)
-{
-    // printf("1\n");
-    struct tmpfs_internal *parent_internal = parent->internal;
-    if (!parent_internal->l_child) {
-        parent_internal->l_child = node;
-    } else {
-        struct vnode *tmp_node = parent_internal->l_child;
-        struct tmpfs_internal *tmp_internal = tmp_node->internal; // this line has broken on rpi
-        while (tmp_internal->r_sibling) {
-            tmp_node = tmp_internal->r_sibling;
-            tmp_internal = tmp_node->internal;
-        }
-
-        // tmp_internal = tmp_node->internal;
-        tmp_internal->r_sibling = node;
-
-
-        // print child
-        // tmp_node = parent_internal->l_child;
-        // tmp_internal = tmp_node->internal;
-
-        // while (tmp_node) {
-        //     printf("%s -> ", tmp_internal->name);
-
-        //     tmp_node = tmp_internal->r_sibling;
-        //     tmp_internal = tmp_node->internal;
-        // }
-        // printf("\n");
-    }
-}

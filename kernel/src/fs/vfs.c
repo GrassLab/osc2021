@@ -192,3 +192,19 @@ int write(int fd, void* buf, size_t len)
 {
     return sys_write(fd, buf, len);
 }
+
+
+int get_first_frag(char *buffer, const char *component_name)
+{
+    int i = 0;
+
+    while (component_name[i] != '/' && i < strlen(component_name)) {
+        i++;
+    }
+
+    // '/' is at index i, or end of string '/0' is at index i
+    strncpy(buffer, component_name, i);
+
+    return (i + 1);
+}
+
