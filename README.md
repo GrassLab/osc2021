@@ -8,7 +8,7 @@
 
 
 <div align="center">
-<img src="/.meta/cover.png">
+<img src="/Documentation/cover.png">
 </div>
 
 <br>
@@ -21,7 +21,7 @@
 - [x] Lab4: Exception and Interrupt Handling
 - [x] Lab5: Multitasking
 - [x] Lab6: Virtual Filesystem
-- [ ] Lab7: Filesystem Meets Hardware
+- [x] Lab7: Filesystem Meets Hardware
 - [ ] Lab8: Virtual Memory (vmm)
 
 ## Kernel Features
@@ -38,11 +38,17 @@
 - [ ] POSIX signals and custom signal handlers - sys_kill(), sys_signal(), sys_rt_sigreturn()
 - [ ] Wait Queues
 - [x] tmpfs
-- [x] Virtual filesystem - vfs_open(), sys_close(), sys_write(), sys_read()
+- [x] Virtual filesystem - vfs_open(), vfs_close(), vfs_write(), vfs_read()
 - [x] System-wide opened file table, Per-process file descriptor tables
 - [x] POSIX file I/O - sys_read(), sys_write(), sys_open(), sys_close()
 - [ ] Multi-level VFS
 - [ ] Procfs
+- [x] Parse MBR (Master Boot Record)
+- [x] FAT32 with LFN (Long File Name) support - open, read, write, close
+- [ ] Device file, mknod, UART device files
+- [ ] Component name cache mechanism for faster pathname lookup
+- [ ] Page cache mechanism for faster file r/w
+- [ ] sync() - write back cache data
 - [ ] ...
 
 ## Kernel C++20 STL Progress

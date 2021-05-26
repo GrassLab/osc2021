@@ -15,10 +15,12 @@ class FileSystem;
 class Vnode {
  public:
   Vnode(const uint32_t index,
+        off_t size,
         mode_t mode,
         uid_t uid,
         gid_t gid)
       : _index(index),
+        _size(size),
         _mode(mode),
         _uid(uid),
         _gid(gid) {}
@@ -28,7 +30,7 @@ class Vnode {
   
   virtual SharedPtr<Vnode> create_child(const String& name,
                                         const char* content,
-                                        size_t size,
+                                        off_t size,
                                         mode_t mode,
                                         uid_t uid,
                                         gid_t gid) = 0;
@@ -42,8 +44,8 @@ class Vnode {
   virtual int chown(const uid_t uid, const gid_t gid) = 0;
 
   virtual const String& get_name() const = 0;
-  virtual char* get_content() const = 0;
-  virtual void set_content(UniquePtr<char[]> content) = 0;
+  virtual char* get_content() = 0;
+  virtual void set_content(UniquePtr<char[]> content, off_t new_size) = 0;
 
 
   bool is_directory() const { return (_mode & S_IFMT) == S_IFDIR; }

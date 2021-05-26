@@ -3,9 +3,8 @@
 #define VALKYRIE_KERNEL_H_
 
 #include <dev/Console.h>
-#include <dev/Mailbox.h>
-#include <dev/MiniUART.h>
-#include <fs/TmpFS.h>
+#include <driver/Mailbox.h>
+#include <driver/MiniUART.h>
 #include <fs/VirtualFileSystem.h>
 #include <kernel/ExceptionManager.h>
 #include <kernel/TimerMultiplexer.h>
@@ -20,7 +19,12 @@ namespace valkyrie::kernel {
 class Kernel {
  public:
   static Kernel& get_instance();
+
   ~Kernel() = default;
+  Kernel(const Kernel&) = delete;
+  Kernel(Kernel&&) = delete;
+  Kernel& operator =(const Kernel&) = delete;
+  Kernel& operator =(Kernel&&) = delete;
 
   [[noreturn]] void run();
 
