@@ -17,7 +17,7 @@ struct vnode_operations fat32fs_file_v_ops{
   .lookup = vfs_lookup,
   .create = fat32fs_create,
   .mkdir = fat32fs_mkdir,
-  .cat = fat32fs_file_cat,
+  .cat = fat32fs_cat,
   .size = fat32fs_get_size,
   .rm = fat32fs_rm,
 };
@@ -26,7 +26,7 @@ struct vnode_operations fat32fs_dir_v_ops{
   .lookup = vfs_lookup,
   .create = fat32fs_create,
   .mkdir = fat32fs_mkdir,
-  .cat = fat32fs_dir_cat,
+  .cat = fat32fs_cat,
   .size = vfs_get_dir_size,
   .rm = fat32fs_rm,
 };
@@ -50,6 +50,9 @@ static void set_file_vnode(struct mount *mount, struct dentry *new_d, uint32_t f
   vnode->internal = MALLOC(fat32fs_internal, 1);
   struct fat32fs_internal *internal = (struct fat32fs_internal *) vnode->internal;
   internal->first_cluster = first_cluster;
+  internal->cur_cluster = first_cluster;
+  internal->cur_cluster_no = 0;
+  internal->buf = 0;
   internal->size = size;
 }
 
@@ -63,6 +66,9 @@ static void set_dir_vnode(struct mount *mount, struct dentry *new_d, uint32_t fi
   vnode->internal = MALLOC(struct fat32fs_internal, 1);
   struct fat32fs_internal *internal = (struct fat32fs_internal *) vnode->internal;
   internal->first_cluster = first_cluster;
+  internal->cur_cluster = first_cluster;
+  internal->cur_cluster_no = 0;
+  internal->buf = 0;
   internal->size = 0;
 }
 
@@ -102,6 +108,13 @@ static void load_dir_files(struct vnode *vnode, struct mount* mount){
       struct dentry *new_dt = vfs_create_dentry(vnode->dentry, filename, FILE);
       set_file_vnode(mount, new_dt, t->first_cluster, t->size);
     }
+  }
+  while( !list_is_empty(&list) ){
+    list_head *ht = list.next;
+    struct fat32_file_info *info = container_of(ht, struct fat32_file_info, list);
+    list_del(ht);
+    free(info->name);
+    free(info);
   }
 }
 
@@ -150,12 +163,34 @@ int fat32fs_mkdir(struct vnode* dir_node, struct vnode** target, const char* com
 int fat32fs_create(struct vnode* dir_node, struct vnode** target, const char* component_name){
   log_puts("[Oops] Not implemented create file yet.\n", WARNING);
   return -1;
-  log_puts((char *) "[Error] Create permission denied\n", WARNING);
-  return -2;
+}
+
+static char fat32_get_char(struct fat32fs_internal *internal, size_t pos){
+  uint32_t pos_h = pos/SECTOR_SIZE;
+  uint32_t pos_l = pos%SECTOR_SIZE;
+  if (internal->cur_cluster_no == pos_h){
+    if (internal->buf == 0){
+      internal->buf = MALLOC(char, SECTOR_SIZE);
+      get_cluster(internal->cur_cluster, internal->buf);
+    }
+    return internal->buf[pos_l];
+  }
+  uint32_t cluster_no = (internal->cur_cluster_no > pos_h) ? 0 : internal->cur_cluster_no;
+  uint32_t cluster_tmp = (internal->cur_cluster_no > pos_h) ? internal->first_cluster : internal->cur_cluster;
+  while(cluster_no < pos_h){
+    cluster_tmp = get_fat(cluster_tmp);
+    cluster_no++;
+  }
+  internal->cur_cluster_no = cluster_no;
+  internal->cur_cluster = cluster_tmp;
+  if (internal->buf == 0){
+    internal->buf = MALLOC(char, SECTOR_SIZE);
+  }
+  get_cluster(internal->cur_cluster, internal->buf);
+  return internal->buf[pos_l];
 }
 
 int fat32fs_read(struct file* file, void* buf, size_t len){
-/*
   if ((file->vnode->mode & F_RD) == 0){
     log_puts((char *) "[Error] Read permission denied\n", WARNING);
     return -2;
@@ -167,31 +202,69 @@ int fat32fs_read(struct file* file, void* buf, size_t len){
     return -1;
   }
   for (size_t i = 0; i<len; i++){
-    if (file->f_pos < internal->size && internal->content[file->f_pos] != '\0'){
-      ((char*)buf)[i] = internal->content[file->f_pos];
+    if (file->f_pos < internal->size){
+      ((char*)buf)[i] = fat32_get_char(internal, file->f_pos);
       file->f_pos++;
+      r++;
+    }
+    else{
+      ((char*)buf)[i] = '\0';
+      break;
+    }
+  }
+  return r;
+}
+
+int fat32fs_write(struct file* file, const void* buf, size_t len){
+  /*
+  if ((file->vnode->mode & F_WR) == 0){
+    log_puts((char *) "[Error] Write permission denied\n", WARNING);
+    return -2;
+  }
+  int r = 0;
+  struct fat32fs_internal *internal = (struct fat32fs_internal *) file->vnode->internal;
+  for (size_t i = 0; i< len; i++){
+    if (internal->size < TMPFS_MAX_SIZE){
+      internal->content[file->f_pos] = ((char *)buf)[i];
+      file->f_pos++;
+      //internal->size++;
       r++;
     }
     else{
       break;
     }
   }
+  internal->size = file->f_pos;
+  internal->content[internal->size] = '\0';
   return r;
   */
-  return 0;
+  return -1;
 }
 
-int fat32fs_write(struct file* file, const void* buf, size_t len){
-  //log_puts("Enter Write\n", INFO);
-  log_puts((char *) "[Error] Write permission denied\n", WARNING);
-  return -2;
-}
-
-int fat32fs_file_cat(struct vnode *vnode){
-  /*
+int fat32fs_cat(struct vnode *vnode){
   struct fat32fs_internal *internal = (struct fat32fs_internal*)vnode->internal;
-  uart_puts_n(internal->content, internal->size);
-  */
+  uint32_t next_cluster = internal->first_cluster;
+  uint32_t size = internal->size;
+  int cluster_p_count = 0;
+  while(next_cluster < FAT_END_CLUSTER){
+    char buf[SECTOR_SIZE];
+    get_cluster(next_cluster, buf);
+    next_cluster = get_fat(next_cluster);
+    int i;
+    for (i=0; i<size; i++){
+      if (i == SECTOR_SIZE) break;
+      if (buf[i] == '\n') uart_write('\n');
+      else if (buf[i] < 0x20 || buf[i] == 0x7f) uart_write('.');
+      else uart_write(buf[i]);
+    }
+    size -= i;
+    if (size == 0){
+      return 0;
+    }
+    cluster_p_count++;
+    if (cluster_p_count >= 20) break;
+  }
+  log_puts("\n\n[INFO] File too large. cat only show first 20 sctors.", INFO);
   return 0;
 }
 
@@ -245,6 +318,8 @@ int fat32fs_file_release(struct vnode *vnode){
   log_puts((char *) "[INFO] Release file < ", INFO);
   log_puts(d->name, INFO);
   log_puts((char *) " > .\n", INFO);
+  struct fat32fs_internal *internal = (struct fat32fs_internal*)vnode->internal;
+  if (internal->buf) free(internal->buf);
   free(d);
   free(vnode->internal);
   free(vnode);
