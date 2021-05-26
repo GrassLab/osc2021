@@ -56,6 +56,7 @@ struct vnode* current_dir;
 void vfs_test();
 void vfs_ls_test();
 void vfs_hard_test();
+void vfs_fat_test();
 
 void vfs_init();
 int register_filesystem(struct filesystem* fs);

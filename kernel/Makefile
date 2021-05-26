@@ -35,4 +35,4 @@ kernel8.img: kernel8.elf
 
 run:
 	$(QEMU) -M raspi3 -kernel $(BUILD_DIR)/kernel8.img -display none -serial null -serial stdio \
-		-initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb
+		-initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -drive if=sd,file=sfn_nctuos.img,format=raw

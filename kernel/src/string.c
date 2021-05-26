@@ -89,6 +89,32 @@ char *strcpy(char *dst, const char *src) {
   return ptr;
 }
 
+char *strncpy(char *dst, const char *src, size_t len) {
+  // return if no memory is allocated to the destination
+  if (dst == 0) return 0;
+
+  // take a pointer pointing to the beginning of destination string
+  char *ptr = dst;
+
+  // copy the C-string pointed by source into the array
+  // pointed by destination
+  while (*src != ' ') {
+    *dst = *src;
+    dst++;
+    src++;
+    len--;
+    if (!len) {
+      break;
+    }
+  }
+
+  // include the terminating null character
+  *dst = '\0';
+
+  // destination is returned by standard strcpy()
+  return ptr;
+}
+
 void strcat(char *to, const char *from) {
   while (*to) {
     to++;

@@ -80,6 +80,8 @@ void cmd_thread_vfs_ls_test() { thread_vfs_ls_test(); }
 
 void cmd_thread_vfs_hard_test() { thread_vfs_hard_test(); }
 
+void cmd_thread_fatfs_test() { thread_fatfs_test(); }
+
 void clear_buffer() {
   buffer_pos = 0;
   for (int i = 0; i < MAX_BUFFER_SIZE; i++) {
@@ -152,6 +154,8 @@ void run_shell() {
       cmd_thread_vfs_ls_test();
     } else if (strcmp(buffer, "vfs hard") == 0) {
       cmd_thread_vfs_hard_test();
+    } else if (strcmp(buffer, "fat") == 0) {
+      cmd_thread_fatfs_test();
     }
   }
 }

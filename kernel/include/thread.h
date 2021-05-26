@@ -72,6 +72,7 @@ void thread_test2();
 void thread_vfs_test();
 void thread_vfs_ls_test();
 void thread_vfs_hard_test();
+void thread_fatfs_test();
 
 void thread_init();
 thread_info *thread_create(void (*func)());

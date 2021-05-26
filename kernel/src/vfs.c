@@ -2,6 +2,7 @@
 
 #include "alloc.h"
 #include "cpio.h"
+#include "fatfs.h"
 #include "printf.h"
 #include "string.h"
 #include "thread.h"
@@ -22,6 +23,11 @@ void vfs_hard_test() {
   exec("vfs_test_hard", argv);
 }
 
+void vfs_fat_test() {
+  const char* argv[] = {"fatfs_test", 0};
+  exec("fatfs_test", argv);
+}
+
 void vfs_init() {
   fs_list.head = 0;
   fs_list.tail = 0;
@@ -32,6 +38,15 @@ void vfs_init() {
   tmpfs->name = "tmpfs";
   tmpfs->setup_mount = tmpfs_setup_mount;
   register_filesystem(tmpfs);
+
+  // init and register tmpfs
+  fatfs_init();
+  struct filesystem* fatfs =
+      (struct filesystem*)malloc(sizeof(struct filesystem));
+  fatfs->name = "fatfs";
+  fatfs->setup_mount = fatfs_setup_mount;
+  register_filesystem(fatfs);
+
   // use tmpfs to mount root filesystem
   rootfs = (struct mount*)malloc(sizeof(struct mount));
   struct filesystem* fs = get_fs_by_name("tmpfs");
@@ -42,6 +57,9 @@ void vfs_init() {
   fs->setup_mount(fs, rootfs);
   current_dir = rootfs->root;
   cpio_populate_rootfs();
+
+  // vfs_fat_test();
+  // thread_fatfs_test();
 }
 
 int register_filesystem(struct filesystem* fs) {
@@ -141,6 +159,7 @@ struct file* vfs_open(const char* pathname, int flags) {
     if (!file_found) {
       // printf("[Error] File does not exist: %s\n", pathname);
     } else {
+      if (target->mount) target = target->mount->root;
       fd = (struct file*)malloc(sizeof(struct file));
       fd->vnode = target;
       fd->f_ops = target->f_ops;

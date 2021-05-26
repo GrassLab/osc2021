@@ -111,9 +111,7 @@ int tmpfs_write(struct file* file, const void* buf, size_t len) {
   struct tmpfs_fentry* fentry = (struct tmpfs_fentry*)file->vnode->internal;
   for (size_t i = 0; i < len; i++) {
     fentry->buf->buffer[file->f_pos++] = ((char*)buf)[i];
-    if (fentry->buf->size < file->f_pos) {
-      fentry->buf->size = file->f_pos;
-    }
+    fentry->buf->size = file->f_pos;
   }
   return len;
 }

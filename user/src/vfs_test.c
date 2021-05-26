@@ -21,7 +21,9 @@ int main(int argc, char **argv) {
     sz = read(b, buf, 100);
     sz += read(a, buf + sz, 100);
     buf[sz] = '\0';
-    printf("%s\n", buf); // should be Hello World!
+    printf("%s\n", buf);  // should be Hello World!
+    close(a);
+    close(b);
   }
 
   printf("\nfile1.txt\n");
