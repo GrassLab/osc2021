@@ -35,3 +35,24 @@ void str_copy(const char *src, char *target){
     }
   }
 }
+
+//https://yangacer.blogspot.com/2014/05/utf8-unicode-c_9750.html
+int to_utf8(uint32_t unicode, char *utf8){
+  uint8_t len = 0;
+  uint8_t mask = 0xF0; // 1111 0000
+  len =
+    unicode < 0x10000 ? 
+    unicode < 0x800 ? 
+    unicode < 0x80 ?
+    1 : 2 : 3 : 4 ;
+  mask >>= 8 - len;
+  mask <<= 8 - len;
+  if (len == 1) mask = 0;
+  utf8[len] = '\0';
+  for (int i = len-1; i>=1; i--){
+    utf8[i] = (unicode & 0x3f) | 0x80;
+    unicode >>= 6;
+  }
+  utf8[0] = (uint8_t)(mask | unicode);
+  return len;
+}

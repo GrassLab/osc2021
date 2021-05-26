@@ -44,7 +44,7 @@ run: kernel8_qemu.img initramfs.cpio
 	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -serial null -serial stdio -initrd initramfs.cpio
 
 sd: kernel8_qemu.img initramfs.cpio
-	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -serial null -serial stdio -initrd initramfs.cpio -drive if=sd,file=../../img/sfn_nctuos.img,format=raw
+	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -serial null -serial stdio -initrd initramfs.cpio -drive if=sd,file=../../img/sdb_part.img,format=raw
 
 asm: kernel8.img
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -d in_asm -serial null -serial pty

@@ -39,7 +39,7 @@ struct filesystem* cpiofs_get_fs(){
   return &cpiofs;
 }
 
-void set_file_vnode(struct mount *mount, struct dentry *new_d, int size, char *content){
+static void set_file_vnode(struct mount *mount, struct dentry *new_d, int size, char *content){
   struct vnode *vnode = new_d->vnode;
   vnode->mount = mount;
   vnode->mode = CPIOFS_DEFAULT_MODE;
@@ -53,7 +53,7 @@ void set_file_vnode(struct mount *mount, struct dentry *new_d, int size, char *c
   internal->content = content;
 }
 
-void set_dir_vnode(struct mount *mount, struct dentry *new_d){
+static void set_dir_vnode(struct mount *mount, struct dentry *new_d){
   struct vnode *vnode = new_d->vnode;
   vnode->mount = mount;
   vnode->mode = CPIOFS_DEFAULT_MODE;

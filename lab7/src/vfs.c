@@ -9,6 +9,7 @@
 # include "exception.h"
 # include "flags.h"
 # include "cpiofs.h"
+# include "fat32fs.h"
 
 struct mount rootmount;
 //struct mount cpiomount;
@@ -469,6 +470,9 @@ int do_mount(const char *mountpoint, const char *fsname){
   }
   else if (str_cmp(fsname, (char *)"cpiofs") == 1){
     fs = cpiofs_get_fs();
+  }
+  else if (str_cmp(fsname, (char *)"fat32fs") == 1){
+    fs = fat32fs_get_fs();
   }
   if (fs){
     struct task *cur = get_current();

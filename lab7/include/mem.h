@@ -1,3 +1,5 @@
+# include "typedef.h"
+
 # define MEM_TABLE_MAX_SIZE 4000
 
 # define MALLOC(type, num) (type*)malloc(sizeof(type)*num)
@@ -18,3 +20,4 @@ void mem_init();
 void mem_ll_show();
 void*  malloc(int mbytes);
 void free(void* addr);
+void memcpy(void *src, void *target, uint64_t size);

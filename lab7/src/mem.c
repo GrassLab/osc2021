@@ -120,6 +120,7 @@ void* malloc(int mbytes){
   }
   //add r in mem table
   if(r) mem_add_new_node(mbytes, page_need, (unsigned long long)r);
+  else log_puts("[Severe] malloc fail.\n", SEVERE);
   return r;
 }
 
@@ -146,4 +147,12 @@ void free(void* addr){
     mem_uart_puts(ct);
     mem_uart_puts((char *) "> not found\n");
   }
+}
+
+void memcpy(void *src, void *target, uint64_t size){
+  uint8_t* csrc = (uint8_t*)src;
+  uint8_t* cdest = (uint8_t*)target;
+
+  for (uint64_t i = 0; i < size; i++)
+      cdest[i] = csrc[i];
 }

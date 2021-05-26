@@ -1,5 +1,9 @@
 # include "typedef.h"
+# include "list.h"
+# include "vfs.h"
+
 # define SECTOR_SIZE       512
+# define DIR_S_SIZE        32
 # define SANITY_CHECK      0xAA55
 
 # define SECTOR_TABLE_COLS     16
@@ -11,6 +15,13 @@
 # define FAT_LOADED    1
 # define FAT_DIRTY     2
 
+# define FAT_CLUS_DEL_ORD     0xE5
+# define FAT_CLUS_ATTRIB_LFN  0x0F
+# define FAT_CLUS_ATTRIB_DIR  0x10
+# define FAT_CLUS_NAME_END    0x20
+
+# define FAT_END_CLUSTER  0x0FFFFFF8
+
 struct partition{
   uint8_t boot_flag;
   uint8_t CHS_begin[3];
@@ -18,7 +29,7 @@ struct partition{
   uint8_t CHS_end[3];
   uint32_t LBA_begin;
   uint32_t n_sector;
-}__attribute__((packed));
+};
 
 struct MBR{
   char boot_code[446];
@@ -62,7 +73,53 @@ struct fat{
   char buf[SECTOR_SIZE];
 };
 
+struct fat32_file_info{
+  char *name;
+  uint32_t size;
+  uint32_t first_cluster;
+  enum dentry_type type;
+  list_head list;
+};
+
+struct SFN{
+  char name[8];
+  char extension_name[3];
+  uint8_t attrib;
+  uint8_t resereved;
+  uint8_t create_time_s;
+  uint16_t create_time;
+  uint16_t create_date;
+  uint16_t access_date;
+  uint16_t first_cluster_h;
+  uint16_t modify_time;
+  uint16_t modify_date;
+  uint16_t first_cluster_l;
+  uint32_t size;
+}__attribute__((packed));
+
+struct LFN{
+  uint8_t ord;
+  char name1[10];
+  uint8_t attrib;
+  uint8_t resereved;
+  uint8_t checksum;
+  char name2[12];
+  uint16_t first_cluster_l;
+  char name3[4];
+}__attribute__((packed));
+
+union directory_t{
+  struct SFN SFN;
+  struct LFN LFN;
+};
+
+struct cluster_data{
+  uint32_t cluster_num;
+  char buf[SECTOR_SIZE];
+};
+
 void get_cluster(int n, char *buf);
 uint32_t get_fat(uint32_t n);
 void sdlistblock(int n);
 void sdload();
+void get_fat32_dir_list(uint32_t _cluster, list_head *r_list);
