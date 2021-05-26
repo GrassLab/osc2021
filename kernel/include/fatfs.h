@@ -108,8 +108,10 @@ struct vnode_operations* fatfs_v_ops;
 struct file_operations* fatfs_f_ops;
 
 void fatfs_init();
+void fatfs_set_directory(struct fatfs_fentry* fentry,
+                         struct fatfs_dentry* dentry);
 void fatfs_set_fentry(struct fatfs_fentry* fentry, FILE_TYPE type,
-                      struct vnode* vnode, int starting_cluster);
+                      struct vnode* vnode, int starting_cluster, int buf_size);
 int fatfs_setup_mount(struct filesystem* fs, struct mount* mount);
 int fatfs_lookup(struct vnode* dir_node, struct vnode** target,
                  const char* component_name);
