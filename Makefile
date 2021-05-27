@@ -74,3 +74,9 @@ run:
 
 run-debug:
 	qemu-system-aarch64 -s -S -M raspi3 -kernel $(BUILD_DIR)/kernel8.img -initrd $(BUILD_DIR)/initramfs.cpio -serial null -serial stdio -display none
+
+.PHONY: mount
+mount:
+	sudo mount -t msdos -o loop,rw,sync,offset=1048576 ./sfn_nctuos.img mount/
+umount:
+	sudo umount mount
