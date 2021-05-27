@@ -96,7 +96,7 @@ void zombie_reaper(){
         if (n->state == ZOMBIE){
           char ct[20];
           int_to_str(n->pid, ct);
-          log_puts((char * ) "[INFO] Reaper PID : ", INFO);
+          log_puts((char * ) "\n[INFO] Reaper PID : ", INFO);
           log_puts(ct, INFO);
           log_puts((char * ) "\n", INFO);
           struct task *rm_task = n;

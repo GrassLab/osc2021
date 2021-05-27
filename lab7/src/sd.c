@@ -20,6 +20,11 @@ void get_cluster(int n, char *buf){
   readblock(idx, buf);
 }
 
+void put_cluster(int n, char *buf){
+  int idx = (sd_meta.cluster_begin_lba+(n-sd_meta.BPB_RootClus)*sd_meta.BPB_SecPerClus);
+  writeblock(idx, buf);
+}
+
 uint32_t get_fat(uint32_t n){
   if (n == FAT_END_CLUSTER) return FAT_END_CLUSTER;
   int hidx = n/(SECTOR_SIZE/sizeof(uint32_t));
@@ -219,12 +224,10 @@ void get_fat_list_argv(uint32_t cluster, struct cluster_data *argv){
   argv[r].cluster_num = cluster;
 }
 
-static union directory_t* get_dir_t(int n, struct cluster_data *argv){
+union directory_t* get_dir_t(int n, struct cluster_data *argv){
   if (argv[n/(SECTOR_SIZE/DIR_S_SIZE)].cluster_num >= FAT_END_CLUSTER) return 0;
   union directory_t *dt = (union directory_t*)(argv[n/(SECTOR_SIZE/DIR_S_SIZE)].buf);
   union directory_t *r = &dt[n%(SECTOR_SIZE/DIR_S_SIZE)];
-  //showblock(0, argv[n/(SECTOR_SIZE/DIR_S_SIZE)].buf);
-  char ct[20];
   if(r->LFN.ord != 0){
     return r;
   }
@@ -255,18 +258,19 @@ static void get_LFN_word(union directory_t *data, uint16_t *list){
   memcpy(data->LFN.name3, list+11, 4);
 }
 
-void get_fat32_dir_list(uint32_t _cluster, list_head *r_list){
+void get_fat32_dir_list(uint32_t _cluster, list_head *r_list, struct cluster_data **fat_argv){
   char buf[SECTOR_SIZE];
   uint32_t cluster = _cluster;
   int fat_argc = get_fat_list_argc(_cluster);
   log_puts("qq2\n", FINE);
-  struct cluster_data *fat_argv = MALLOC(struct cluster_data, fat_argc+1);
+  *fat_argv = MALLOC(struct cluster_data, fat_argc+1);
   log_puts("qq3\n", FINE);
-  get_fat_list_argv(_cluster, fat_argv);
+  get_fat_list_argv(_cluster, *fat_argv);
+  log_puts("qq4\n", FINE);
   int idx = 0;
   list_head_init(r_list);
   while(1){
-    union directory_t *data = get_dir_t(idx, fat_argv);
+    union directory_t *data = get_dir_t(idx, *fat_argv);
     if (data == 0){
       break;
     }
@@ -282,7 +286,7 @@ void get_fat32_dir_list(uint32_t _cluster, list_head *r_list){
       char *name = MALLOC(char, ord*13*3+1);
       int name_p = 0;
       for (int i = 1; i<=ord; i++){
-        union directory_t *dt = get_dir_t(idx-i, fat_argv);
+        union directory_t *dt = get_dir_t(idx-i, *fat_argv);
         uint16_t LFN_words[13];
         get_LFN_word(dt, LFN_words);
         for (int j=0; j<13; j++){
@@ -299,13 +303,14 @@ void get_fat32_dir_list(uint32_t _cluster, list_head *r_list){
         }
       }
       
-      data = get_dir_t(idx, fat_argv);
+      data = get_dir_t(idx, *fat_argv);
       struct fat32_file_info *t = MALLOC(struct fat32_file_info, 1);
       list_add_next(&(t->list), r_list);
       t->first_cluster = ( (data->SFN.first_cluster_h) << 16) | (data->SFN.first_cluster_l);
       t->size = data->SFN.size;
       t->type = ((data->SFN.attrib & FAT_CLUS_ATTRIB_DIR) >0) ? DIR : FILE;
       t->name = name;
+      t->dir_t_no = idx;
       
       log_puts("Get one LFN ", FINE);
       if (t->type == DIR){
@@ -324,6 +329,7 @@ void get_fat32_dir_list(uint32_t _cluster, list_head *r_list){
       t->first_cluster = ( (data->SFN.first_cluster_h) << 16) | (data->SFN.first_cluster_l);
       t->size = data->SFN.size;
       t->type = ((data->SFN.attrib & FAT_CLUS_ATTRIB_DIR) >0) ? DIR : FILE;
+      t->dir_t_no = idx;
       char *name = MALLOC(char, 14);
       t->name = name;
       int name_idx = 0;
@@ -356,5 +362,4 @@ void get_fat32_dir_list(uint32_t _cluster, list_head *r_list){
     }
     idx++;
   }
-  free(fat_argv);
 }

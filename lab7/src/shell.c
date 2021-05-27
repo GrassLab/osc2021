@@ -188,6 +188,14 @@ void invoke_cmd(char *cmd){
       user_task_create(fat32_demo_1, 3);
       yield();
     }
+    else if (str_cmp(argv[1], (char *) "fat32.2")){
+      user_task_create(fat32_demo_2, 3);
+      yield();
+    }
+    else if (str_cmp(argv[1], (char *) "fat32.3")){
+      user_task_create(fat32_demo_3, 3);
+      yield();
+    }
   }
   else if (str_cmp(argv[0], (char *) "logger") == 1){
     if (str_cmp(argv[1], (char *) "status")){

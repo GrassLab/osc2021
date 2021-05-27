@@ -67,6 +67,11 @@ struct fat32_meta{
   uint32_t  cluster_begin_lba;
 };
 
+struct cluster_data{
+  uint32_t cluster_num;
+  char buf[SECTOR_SIZE];
+};
+
 struct fat{
   int flag;
   uint32_t *data;
@@ -78,6 +83,8 @@ struct fat32_file_info{
   uint32_t size;
   uint32_t first_cluster;
   enum dentry_type type;
+  struct cluster_data cluster_data;
+  int dir_t_no;
   list_head list;
 };
 
@@ -113,13 +120,11 @@ union directory_t{
   struct LFN LFN;
 };
 
-struct cluster_data{
-  uint32_t cluster_num;
-  char buf[SECTOR_SIZE];
-};
-
 void get_cluster(int n, char *buf);
+void put_cluster(int n, char *buf);
 uint32_t get_fat(uint32_t n);
 void sdlistblock(int n);
 void sdload();
-void get_fat32_dir_list(uint32_t _cluster, list_head *r_list);
+int get_fat_list_argc(uint32_t cluster);
+union directory_t* get_dir_t(int n, struct cluster_data *argv);
+void get_fat32_dir_list(uint32_t _cluster, list_head *r_list, struct cluster_data **fat_argv);

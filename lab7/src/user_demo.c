@@ -189,3 +189,24 @@ void fat32_demo_1(){
   close(fd);
   exit();
 }
+
+void fat32_demo_2(){
+  chdir("sd");
+  int fd = open("Hi.txt", O_WR);
+  char write_data[] = "Write by Rpi~.Write by Rpi~.Write by Rpi~.Write by Rpi~.";
+  write(fd, write_data, str_len(write_data));
+  close(fd);
+  exit();
+}
+
+void fat32_demo_3(){
+  chdir("sd/SUBDIR");
+  int fd = open("新文字文件.txt", O_RD);
+  assert(fd>=0, "File open fail");
+  char buf[100];
+  read(fd, buf, 100);
+  buf[99] = '\0';
+  uart_write(buf, str_len(buf));
+  close(fd);
+  exit();
+}

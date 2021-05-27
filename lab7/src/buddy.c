@@ -50,7 +50,8 @@ int dma_get_chunk_size(int slot_no){
   }
   else{
     int t = 16 - (slot_no-(BUDDY_DMA_LEVEL_THRE/BUDDY_DMA_UNIT_SIZE));
-    return BUDDY_PAGE_SIZE/t;
+    t = BUDDY_PAGE_SIZE/t;
+    return align_up(t, BUDDY_DMA_UNIT_SIZE);
   }
 }
 
