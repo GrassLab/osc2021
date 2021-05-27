@@ -13,7 +13,7 @@
 # include "user_demo.h"
 # include "log.h"
 # include "vfs.h"
-# include "sd.h"
+# include "fat32.h"
 
 char *argv[SHELL_MAX_ARGC];
 

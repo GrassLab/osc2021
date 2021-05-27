@@ -10,7 +10,7 @@
 # include "my_math.h"
 # include "my_string.h"
 # include "sdhost.h"
-# include "sd.h"
+# include "fat32.h"
 
 
 int main(){
@@ -23,6 +23,7 @@ int main(){
   mem_init();
   vfs_init();
   sd_init();
+  sdload();
   task_init();
 
   
@@ -31,7 +32,6 @@ int main(){
 # else
   uart_puts((char *) "[Rpi mode]\n");
 # endif
-  sdload();
   /*
   char name_test[10] = "新";
   //name_test[1] = 0x65;

@@ -87,18 +87,18 @@ void user_demo_test(){
 }
 
 void file_demo_1(){
-  char buf[110];
+  char buf[30];
   //uart_write((char *) "File Test", 16);
   //uart_write((char *) "\n", 1);
-  int a = open("tt/hello", O_CREAT | O_WR);
-  int b = open("tt/world", O_CREAT | O_WR);
+  int a = open("demo/hello", O_CREAT | O_WR);
+  int b = open("demo/world", O_CREAT | O_WR);
   write(a, "Hello ", 6);
   write(b, "World!", 6);
   close(a);
   close(b);
   //uart_write((char *) "write done\n", 16);
-  b = open("tt/hello", O_RD);
-  a = open("tt/world", O_RD);
+  b = open("demo/hello", O_RD);
+  a = open("demo/world", O_RD);
   int sz;
   sz = read(b, buf, 100);
   sz += read(a, buf + sz, 100);
@@ -112,7 +112,7 @@ void file_demo_1(){
 }
 
 void file_demo_2(){
-  char buf[110];
+  char buf[30];
   //uart_write((char *) "File Test", 16);
   //uart_write((char *) "\n", 1);
   int b = open("hello", O_RD);

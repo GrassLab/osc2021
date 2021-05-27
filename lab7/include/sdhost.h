@@ -1,7 +1,8 @@
 // mmio
 //#define KVA 0xffff000000000000
-#define KVA 0x0
-#define MMIO_BASE (KVA + 0x3f000000)
+//#define KVA 0x0
+//#define MMIO_BASE (KVA + 0x3f000000)
+# include "mem_addr.h"
 
 // SD card command
 #define GO_IDLE_STATE 0

@@ -1,0 +1,4 @@
+Command       | Description
+--------------|--------------------------------------------
+cpio ls       | List all file in initramfs
+cpio cat      | Show single file in initramfs

@@ -1,4 +1,4 @@
-# include "sd.h"
+# include "fat32.h"
 # include "uart.h"
 # include "sdhost.h"
 # include "my_math.h"
@@ -195,6 +195,7 @@ void sdload(){
   sd_meta.fat_begin_lba = first_partition_lba+P_LBA.BPB_RsvdSecCnt;
   sd_meta.cluster_begin_lba = sd_meta.fat_begin_lba+(P_LBA.BPB_NumFATs*P_LBA.BPB_FATSz32);
   show_sd_meta_info();
+  log_puts("\t[All sector data]\n", INFO);
   showblock(first_partition_lba, buf);
   
   fat_table_init();
@@ -259,8 +260,8 @@ static void get_LFN_word(union directory_t *data, uint16_t *list){
 }
 
 void get_fat32_dir_list(uint32_t _cluster, list_head *r_list, struct cluster_data **fat_argv){
-  char buf[SECTOR_SIZE];
-  uint32_t cluster = _cluster;
+  //char buf[SECTOR_SIZE];
+  //uint32_t cluster = _cluster;
   int fat_argc = get_fat_list_argc(_cluster);
   log_puts("qq2\n", FINE);
   *fat_argv = MALLOC(struct cluster_data, fat_argc+1);

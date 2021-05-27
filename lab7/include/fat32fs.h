@@ -1,5 +1,5 @@
 # include "vfs.h"
-# include "sd.h"
+# include "fat32.h"
 # include "typedef.h"
 
 # define FAT32FS_DEFAULT_MODE   6
@@ -9,7 +9,7 @@ struct fat32fs_internal{
   uint32_t size;
   uint32_t first_cluster;
   uint32_t cur_cluster;
-  int cur_cluster_no;
+  uint32_t cur_cluster_no;
   struct cluster_data *dir_cluster_data;
   int dir_t_no;
   char *buf;

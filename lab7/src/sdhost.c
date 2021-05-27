@@ -1,4 +1,5 @@
 # include "sdhost.h"
+# include "log.h"
 
 static inline void delay(unsigned long tick) {
   while (tick--) {
@@ -166,7 +167,9 @@ void writeblock(int block_idx, void* buf) {
 }
 
 void sd_init() {
+  log_puts((char *) "[INFO] SD Init.\n", INFO);
   pin_setup();
   sdhost_setup();
   sdcard_setup();
+  log_puts((char *) "[INFO] SD Init DONE\n", INFO);
 }

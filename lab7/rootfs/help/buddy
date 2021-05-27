@@ -2,3 +2,5 @@ Command       | Description
 --------------|--------------------------------------------
 buddy table   | buddy system visualization
 buddy status  | print buddy system link list
+alloc <size>  | allocate memory
+free <addr>   | free memory (addr in HEX)

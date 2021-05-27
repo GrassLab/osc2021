@@ -284,7 +284,7 @@ int fat32fs_cat(struct vnode *vnode){
     get_cluster(next_cluster, buf);
     next_cluster = get_fat(next_cluster);
     int i;
-    for (i=0; i<size; i++){
+    for (i=0; i<(int)size; i++){
       if (i == SECTOR_SIZE) break;
       if (buf[i] == '\n') uart_puts("\n");
       else if (buf[i] < 0x20 || buf[i] == 0x7f) uart_write('.');
