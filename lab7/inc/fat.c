@@ -344,6 +344,8 @@ void parseMBR(){
 	if(buf[510]!=0x55||buf[511]!=0xaa)ERROR("invalid MBR signature!");
 	if(buf[446]!=0x80)ERROR("invalid partition status!");
 	unsigned char* partition_entry=buf+446;
+	unsigned char partition_type=*(unsigned char*)(partition_entry+4);
+	if(partition_type!=0xb)ERROR("not FAT32!");
 	//unsigned int beg=*(unsigned int*)(partition_entry+8);//need aligned
 	//unsigned int num=*(unsigned int*)(partition_entry+12);//need aligned
 	for(int i=0;i<4;++i){
