@@ -14,6 +14,7 @@ typedef struct{
 	unsigned int table_beg,table_num,table_size;
 	unsigned int data_beg;
 	unsigned int* table;
+	unsigned int* dirty;
 }MetaData;
 
 typedef struct{
@@ -130,18 +131,24 @@ void syncFAT(file* f){
 		for(int i=0;old_blks<cur_blks&&i<metadata.table_size*512/4;++i){
 			if(metadata.table[i]!=0)continue;
 			metadata.table[tail]=i;
+			metadata.dirty[tail/512]=1;
 			tail=i;
 			metadata.table[tail]=0xFFFFFF8;
+			metadata.dirty[tail/512]=1;
 			old_blks++;
 		}
 		for(int i=0;i<metadata.table_size;++i){
-			readblock(metadata.table_beg+i,((char*)(metadata.table))+i*512);
+			if(metadata.dirty[i]){
+				writeblock(metadata.table_beg+i,((char*)(metadata.table))+i*512);
+				metadata.dirty[i]=0;
+			}
 		}
 	}
 	{//update data
 		unsigned char* data=(unsigned char*)(content->cache);
 		int cur=content->id;
 		for(int i=0;i<content->len;i+=512){
+			if(cur<2||cur>0xFFFFFEF)ERROR("wrong table id!");
 			writeblock(metadata.data_beg+cur,data);
 			data+=512;
 			cur=metadata.table[cur];
@@ -280,6 +287,8 @@ void parseRoot(vnode* root){
 	//for(int i=0;i<50;++i)uart_printf("%d\n",*(unsigned int*)(table+i*4));
 	if(metadata.table!=0)ERROR("dirty table!");
 	metadata.table=(unsigned int*)table;
+	metadata.dirty=(unsigned int*)falloc(metadata.table_size*4);
+	for(int i=0;i<metadata.table_size;++i)metadata.dirty[i]=0;
 
 	root->v_ops=(vnode_operations*)dalloc(sizeof(vnode_operations));
 	root->v_ops->lookup=lookupFAT;
