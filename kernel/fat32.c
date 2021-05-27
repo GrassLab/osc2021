@@ -227,7 +227,7 @@ int fat32_lookup(vnode* dir_node, vnode** target, const char* component_name) {
             node->mount = dir_node->mount;
             node->v_ops = dir_node->v_ops;
             node->internal = content;
-            content->parent_cluster_index = ((dentry*)(node->internal))->cluster_index;
+            content->parent_cluster_index = ((dentry*)(dir_node->internal))->cluster_index;
             
             if(target) {
                 *target = node;
