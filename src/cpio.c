@@ -2,7 +2,7 @@
 #include "utils.h"
 
 //#define CPIO_LOAD_ADDR 0x20000000
-#define CPIO_LOAD_ADDR 0x8000000
+#define CPIO_LOAD_ADDR 0x8000000 /* For Qemu */
 
 const unsigned int header_size = 110;
 
@@ -15,13 +15,19 @@ void read_cpio_archive() {
     file_count = 0;
 
     while(1) {
-        int mode = char_2_int(*(cpio_addr + pc + 14));
+        int mode = ctoi(*(cpio_addr + pc + 14));
         for (int i = 1; i < 8; i++) {
             mode *= 16;
-            mode += char_2_int(*(cpio_addr + pc + 14 + i));
+            mode += ctoi(*(cpio_addr + pc + 14 + i));
         }
         if (!mode)
             break;
+        /* Check file type */
+        if ((mode & 0x4000)) {
+            file_list[file_count].file_type = DIR;
+        } else {
+            file_list[file_count].file_type = FILE;
+        }
         /* Check if file is executable */
         if (((mode & 448) >> 6) % 2) {
             file_list[file_count].executable = true;
@@ -29,14 +35,14 @@ void read_cpio_archive() {
             file_list[file_count].executable = false;
         }
 
-        unsigned int file_size = char_2_int(*(cpio_addr + pc + 54));
-        unsigned int name_size = char_2_int(*(cpio_addr + pc + 94));
+        unsigned int file_size = ctoi(*(cpio_addr + pc + 54));
+        unsigned int name_size = ctoi(*(cpio_addr + pc + 94));
         int remainder;
         for (int i = 1; i < 8; i++) {
             file_size *= 16;
-            file_size += char_2_int(*(cpio_addr + pc + 54 + i));
+            file_size += ctoi(*(cpio_addr + pc + 54 + i));
             name_size *= 16;
-            name_size += char_2_int(*(cpio_addr + pc + 94 + i));
+            name_size += ctoi(*(cpio_addr + pc + 94 + i));
         }
         file_list[file_count].file_size = file_size;
         if (file_size) {

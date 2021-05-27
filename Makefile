@@ -11,6 +11,7 @@ ASM_SRCS = $(wildcard $(SRC_DIR)/*.S)
 ASM_OBJS = $(ASM_SRCS:$(SRC_DIR)/%.S=$(OUT_DIR)/%.o)
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+IMG_FILE = sfn_nctuos.img
 
 CFLAGS = -Wall -I include -c
 
@@ -32,7 +33,7 @@ asm:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -d in_asm
 
 run: all
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -initrd initramfs.cpio
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -initrd initramfs.cpio -drive if=sd,file=$(IMG_FILE),format=raw
 
 debug: all
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -S -s -initrd initramfs.cpio

@@ -59,7 +59,7 @@ static void execute_file(const char *file_name) {
 }
 
 static void free_mem(const char *num) {
-    int pos = str_2_int(num);
+    int pos = atoi(num);
     if (addr[pos] != NULL) {
         kfree(addr[pos]);
         addr[pos] = NULL;
@@ -71,7 +71,7 @@ static void free_mem(const char *num) {
 }
 
 static void allocate_mem(const char *num) {
-    addr[addr_pos] = kmalloc(str_2_int(num));
+    addr[addr_pos] = kmalloc(atoi(num));
     while(addr[++addr_pos]) {}
     addr_count++;
 }
