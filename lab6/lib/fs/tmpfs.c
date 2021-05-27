@@ -5,11 +5,12 @@
 #include <list.h>
 #include <stat.h>
 #include <file.h>
+#include <asm/errno.h>
 
 #define TMPFS_NORMAL_FILE (1 << 0)
 #define TMPFS_DIRECTORY (1 << 1)
 
-static int mount_tmpfs(struct vnode *mountpoint);
+static int mount_tmpfs(struct mount **mountpoint);
 
 static int tmpfs_lookup(struct vnode* dir_node, struct vnode **target, const char *component_name);
 static int tmpfs_create(struct vnode* dir_node, const char *component_name);
@@ -192,15 +193,31 @@ static int tmpfs_rmdir(struct vnode* dir_node, const char *component_name) {
     return 0;
 }
 
-static int mount_tmpfs(struct vnode *mountpoint) {
+static int mount_tmpfs(struct mount **mountpoint) {
     struct mount *mnt = kmalloc(sizeof(struct mount));
+    if (!mnt) {
+        return -ENOSPC;
+    }
+
+    struct vnode *root = kcalloc(sizeof(struct vnode));
+    if (!root) {
+        kfree(mnt);
+        return -ENOSPC;
+    }
+
+    root->name = "/";
+    root->parent = root;
+    root->nodes = LIST_HEAD_INIT(root->nodes);
+    root->subnodes = LIST_HEAD_INIT(root->subnodes);
+    root->f_mode = S_IFDIR;
+    root->mnt = mnt;
+    root->v_ops = &tmpfs_v_ops;
+    root->f_ops = &tmpfs_f_ops;
+    root->flags = TMPFS_DIRECTORY;
+
+    mnt->root = root;
     mnt->fs = &tmpfs;
-    mnt->root = mountpoint;
 
-    mountpoint->mnt = mnt;
-    mountpoint->v_ops = &tmpfs_v_ops;
-    mountpoint->f_ops = &tmpfs_f_ops;
-    mountpoint->flags = TMPFS_DIRECTORY;
-
+    *mountpoint = mnt;
     return 0;
 }

@@ -16,5 +16,10 @@
 #define SYS_CLOSE 9
 #define SYS_GETCWD 10
 #define SYS_CHDIR 11
+#define SYS_MKDIR 12
+#define SYS_RMDIR 13
+#define SYS_MOUNT 14
+#define SYS_UMOUNT 15
+#define SYS_SLEEP 16
 
 #endif

@@ -2,7 +2,6 @@
 #define __UTILS_H_
 
 #include <stddef.h>
-#include <mm.h>
 
 int strncmp(const char *a, const char *b, size_t n) {
   size_t i = 0;
@@ -29,38 +28,6 @@ void memcpy(void *dst, const void *src, size_t n) {
   while(n--) {
     *_dst++ = *_src++;
   }
-}
-
-char *strncpy(char *dst, const char *src, size_t n) {
-  size_t i;
-
-  for (i = 0; i < n && src[i] != '\0'; i++)
-    dst[i] = src[i];
-  for ( ; i < n; i++)
-    dst[i] = '\0';
-
-  return dst;
-}
-
-char *strcpy(void *dst, const void *src) {
-  char *_dst = dst;
-  const char *_src = src;
-
-  while(*_src) {
-    *_dst++ = *_src++;
-  }
-
-  *_dst = '\0';
-
-  return dst;
-}
-
-char *strdup(const char *s) {
-  int len = strlen(s) + 1;
-  char *p = kmalloc(len);
-  memcpy(p, s, len);
-
-  return p;
 }
 
 void *memset(void *s, int c, size_t n) {

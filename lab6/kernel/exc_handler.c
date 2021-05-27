@@ -28,7 +28,11 @@ void irq_handler(struct pt_regs *regs) {
 }
 
 void el1_sync_handler(struct pt_regs *regs) {
-    panic("segfault ocurred in EL1");
+    unsigned long elr = read_sysreg(elr_el1);
+    unsigned long esr = read_sysreg(esr_el1);
+    unsigned ec = ESR_ELx_EC(esr);
+    unsigned iss = ESR_ELx_ISS(esr);
+    panic("segfault ocurred in EL1: PC=0x%lu, EC=%x, ISS=0x%x", elr, ec, iss);
 }
 
 void sync_handler(struct pt_regs *regs) {

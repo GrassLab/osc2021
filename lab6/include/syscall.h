@@ -21,6 +21,12 @@ enum {
     SYS_CLOSE,
     SYS_GETCWD,
     SYS_CHDIR,
+    SYS_MKDIR,
+    SYS_RMDIR,
+    SYS_MOUNT,
+    SYS_UMOUNT,
+    SYS_SLEEP,
+    // SYS_OPENDIR,
     NR_syscalls
 };
 

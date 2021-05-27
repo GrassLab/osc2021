@@ -7,6 +7,7 @@
 #include <list.h>
 #include <timer.h>
 #include <mm.h>
+#include <syscall_wrapper.h>
 
 size_t jiffies;
 struct ktimer *timer_list;
@@ -101,4 +102,9 @@ void core_timer_handler() {
     if (jiffies >= cur->timeout_tick) {
         cur->need_resched = 1;
     }
+}
+
+SYSCALL_DEFINE1(sleep, size_t, msec) {
+    task_sleep(msec);
+    return 0;
 }

@@ -5,6 +5,7 @@
 #include <string.h>
 #include <interrupt.h>
 #include <sched.h>
+#include <syscall_wrapper.h>
 
 /* for userland */
 static struct task_struct *fork_context() {
@@ -49,11 +50,11 @@ static struct task_struct *fork_context() {
  * so be careful to use this function only for fork syscall */
 static pid_t fork_user_thread() {
     struct task_struct *ts = fork_context();
-    add_task(ts);
 
+    add_task(ts);
     return ts->pid;
 }
 
-pid_t do_fork() {
+SYSCALL_DEFINE0(fork) {
     return fork_user_thread();
 }

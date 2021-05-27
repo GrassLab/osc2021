@@ -1,6 +1,8 @@
 #ifndef __SYSCALL_WRAPPER_H_
 #define __SYSCALL_WRAPPER_H_
 
+#include <sysreg.h>
+
 #define __MAP0(m, ...)
 #define __MAP1(m, t, a, ...) m(t, a)
 #define __MAP2(m, t, a, ...) m(t, a), __MAP1(m, __VA_ARGS__)
@@ -41,5 +43,8 @@
         return do_sys##name(__MAP(x, __SC_CAST, __VA_ARGS__));          \
     }                                                                   \
     static inline long do_sys##name(__MAP(x, __SC_DECL, __VA_ARGS__))
+
+#define SYSCALL_METADATA(name) \
+    extern long sys_##name(const struct pt_regs *regs);
 
 #endif

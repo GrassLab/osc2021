@@ -7,6 +7,7 @@
 #define atomic_add_fetch(target, n) ({ target += n; target; })
 #define atomic_sub_fetch(target, n) ({ target -= n; target; })
 #else
+/* TODO: the usage is wrong, atomic instructions only works when MMU is enabled */
 #define atomic_fetch_add(target, n) __atomic_fetch_add(&(target), n, __ATOMIC_RELAXED)
 #define atomic_fetch_sub(target, n) __atomic_fetch_sub(&(target), n, __ATOMIC_RELAXED)
 #define atomic_add_fetch(target, n) __atomic_add_fetch(&(target), n, __ATOMIC_RELAXED)

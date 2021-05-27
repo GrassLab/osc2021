@@ -12,6 +12,7 @@
 #include <preempt.h>
 #include <atomic.h>
 #include <file.h>
+#include <syscall_wrapper.h>
 
 #define DEFAULT_TIMEOUT 5
 
@@ -162,4 +163,10 @@ void schedule() {
     switch_task(nxt);
 
     irq_restore(flags);
+}
+
+SYSCALL_DEFINE1(exit, int, status) {
+    kill_task(current, status);
+
+    return -1;
 }

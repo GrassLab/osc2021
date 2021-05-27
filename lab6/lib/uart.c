@@ -2,6 +2,7 @@
 #include <interrupt.h>
 #include <waitqueue.h>
 #include <ringbuffer.h>
+#include <syscall_wrapper.h>
 
 #define DATA_READY_BIT (1 << 0)
 #define TRANSMITTER_EMPTY_BIT (1 << 5)
@@ -156,4 +157,20 @@ void write_hex_uart(unsigned long num) {
     n += 2;
   }
   print_uart(buf);
+}
+
+SYSCALL_DEFINE2(uart_read, char *, buf, int, count) {
+    for (int i = 0; i < count; i++) {
+        buf[i] = _getchar();
+    }
+
+    return count;
+}
+
+SYSCALL_DEFINE2(uart_write, char *, buf, int, count) {
+    for (int i = 0; i < count; i++) {
+        _putchar(buf[i]);
+    }
+
+    return count;
 }

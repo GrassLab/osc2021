@@ -4,6 +4,7 @@
 #include <fs/fs_struct.h>
 #include <preempt.h>
 #include <mm.h>
+#include <syscall_wrapper.h>
 
 static inline int pop_unused_fd(unsigned int *n) {
     int idx = __builtin_ctz(*n);
@@ -126,4 +127,20 @@ int do_close(int fd) {
 failed:
     enable_preempt();
     return ret;
+}
+
+SYSCALL_DEFINE2(open, const char *, pathname, int, flags) {
+    return do_open(pathname, flags);
+}
+
+SYSCALL_DEFINE3(read, int, fd, void *, buf, size_t, count) {
+    return do_read(fd, buf, count);
+}
+
+SYSCALL_DEFINE3(write, int, fd, const void *, buf, size_t, count) {
+    return do_write(fd, buf, count);
+}
+
+SYSCALL_DEFINE1(close, int, fd) {
+    return do_close(fd);
 }

@@ -10,6 +10,7 @@
 #include <preempt.h>
 #include <fs/vfs.h>
 #include <file.h>
+#include <syscall_wrapper.h>
 
 static uint32_t align_up(uint32_t size, int alignment) {
   return (size + alignment - 1) & -alignment;
@@ -102,6 +103,10 @@ FAILED:
     kfree(prog);
 
     return -1;
+}
+
+SYSCALL_DEFINE2(exec, const char *, path, const char **, argv) {
+    return do_exec(path, argv);
 }
 
 /* only used for kthread to initialize a userland process */

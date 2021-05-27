@@ -79,7 +79,7 @@ static void recursive_build(const char *pathname, void *data, size_t size) {
   p = pp = strdup(pathname);
 
   if (p[0] == '/') {
-    now = current->fs.root.node;
+    now = rootfs->root;
     p++;
   } else {
     now = current->fs.pwd.node;
@@ -122,7 +122,7 @@ static void recursive_build(const char *pathname, void *data, size_t size) {
 
 void cpio_create_root() {
   if (!cpio_buf || !cpio_end) {
-    panic("")
+    panic("initramfs not found")
   }
 
   uintptr_t ptr = (uintptr_t)cpio_buf;
