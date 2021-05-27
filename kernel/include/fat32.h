@@ -5,8 +5,7 @@
 #include "def.h"
 
 struct file_info {
-    char name[9];
-    char ext[4];
+    char name[12];
     int size;
 };
 
@@ -36,5 +35,7 @@ void sd_init_fs(struct vnode *root);
 struct vnode *create_fat32_vnode(struct vnode *parent, struct file_info *f_info, struct entry_info *e_info);
 struct fat32_internal *create_fat32_vnode_internal(struct file_info *f_info, struct entry_info *e_info);
 void fat32_update_size(struct vnode *node, int size);
+// void parse_name(const char *component_name, char *name, char *ext);
+void copy_filename_with_ext(char *target, char *name, char *ext);
 
 #endif

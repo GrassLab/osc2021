@@ -38,7 +38,6 @@ int fat32_setup(struct filesystem *fs, struct mount* mount)
     // create root internal
     struct file_info f_info = {
         .name = "/",
-        .ext = "",
         .size = 0
     };
 
@@ -197,10 +196,6 @@ int fat32_read (struct file *file, void *buf, size_t len)
     
     file->f_pos += len;
 
-    // for (int i = 0; i < len; i++) {
-    //     printf("%p", ((char *)buf)[i]);
-    // }
-
     return len;
 }
 
@@ -239,8 +234,7 @@ void sd_init_fs(struct vnode *root)
 
         // prepare file info
         struct file_info f_info;
-        strcpy(f_info.ext, ext);
-        strcpy(f_info.name, filename);
+        copy_filename_with_ext(f_info.name, filename, ext);
         f_info.size = filesize;
          
 
@@ -249,14 +243,6 @@ void sd_init_fs(struct vnode *root)
         e_info.start_cluster = cluster_index;
         e_info.dir_cluster = 0;
         e_info.entry_index = j;
-        
-
-        printf("start cluster is %d\n", e_info.start_cluster);
-        printf("dir cluster is: %d\n", e_info.dir_cluster);
-        printf("entry index is: %d\n", e_info.entry_index);
-        printf("file size: %d\n", *(int *)&(buffer[32 * e_info.entry_index + 0x1C]));
-        
-
 
         struct vnode *node = create_fat32_vnode(root, &f_info, &e_info);
 
@@ -284,7 +270,6 @@ struct fat32_internal *create_fat32_vnode_internal(struct file_info *f_info, str
 {
     struct fat32_internal *internal = malloc(sizeof(struct fat32_internal));
     strcpy(internal->f_info.name, f_info->name);
-    strcpy(internal->f_info.ext, f_info->ext);
     internal->f_info.size = f_info->size;
 
     internal->e_info.dir_cluster = e_info->dir_cluster;
@@ -302,14 +287,47 @@ void fat32_update_size(struct vnode *node, int size)
     readblock(DATA_BASE_BLOCK_INDEX + internal->e_info.dir_cluster, buffer);
     
     int *size_ptr = (int *)&(buffer[32 * internal->e_info.entry_index + 0x1C]);
-    printf("%d, %d, %d\n", internal->e_info.start_cluster, internal->e_info.dir_cluster, internal->e_info.entry_index);
-    printf("original size: %d\n", *size_ptr);
     *size_ptr = size;
 
     writeblock(DATA_BASE_BLOCK_INDEX + internal->e_info.dir_cluster, buffer);
+}
+
+// void parse_name(const char *component_name, char *name, char *ext)
+// {
+//     int i;
+//     for (i = 0; i < strlen(component_name); i++) {
+//         if (component_name[i] == '.') {
+//             printf("break!\n");
+//             break;
+//         }
+
+//         name[i] = component_name[i];
+//     }
 
 
-    readblock(DATA_BASE_BLOCK_INDEX + internal->e_info.dir_cluster, buffer);
+//     if (component_name[i] == '.') {
+//         int j;
+//         for (j = 0; j < 3; j++) {
+//             ext[j] = component_name[i + j + 1];
+//         }
+//     }
+// }
 
-    printf("update size: %d\n", *(int *)&(buffer[32 * internal->e_info.entry_index + 0x1C]));
+void copy_filename_with_ext(char *target, char *name, char *ext)
+{
+    int i = 0;
+    while ( name[i] != '\0' && name[i] != ' ' ) {
+        target[i] = name[i];
+        i++;
+    }
+
+    if (strlen(ext) > 0) {
+        target[i] = '.';
+
+        int j;
+        for (j = 0; j < 3; j++) {
+            target[i + j + 1] = ext[j];
+        }
+        target[i + j + 1] = '\0';
+    }
 }

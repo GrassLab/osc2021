@@ -85,10 +85,11 @@ void exec_command(char *input)
         printf("%s\n", buf); // should be Hello World!
 
     }  else if (strcmp(input, "fat32_read") == 0) { 
-        char buf[100] = { 0 };
+        char buf[1024] = { 0 };
 
-        int fd = open("HELLO", O_CREAT),
-            readbytes = read(fd, buf, 20);
+        int fd = open("HELLO.TXT", O_CREAT);
+
+        int readbytes = read(fd, buf, 200);
 
         for (int i = 0; i < readbytes; i++) {
             putchar(buf[i]);
@@ -102,7 +103,7 @@ void exec_command(char *input)
         get(content, 512);
 
 
-        int fd = open("HELLO", O_CREAT);
+        int fd = open("HELLO.TXT", O_CREAT);
         write(fd, content, strlen(content));
         close(fd);
     } else {
