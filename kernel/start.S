@@ -64,7 +64,7 @@ from_el2_to_el1:
 
 // save general registers to stack
 .macro save_all
-    sub sp, sp, 32 * 8
+    sub sp, sp, 36 * 8
     stp x0, x1, [sp ,16 * 0]
     stp x2, x3, [sp ,16 * 1]
     stp x4, x5, [sp ,16 * 2]
@@ -81,10 +81,28 @@ from_el2_to_el1:
     stp x26, x27, [sp ,16 * 13]
     stp x28, x29, [sp ,16 * 14]
     str x30, [sp, 16 * 15]
+
+    mrs x19, sp_el0
+    mrs x20, elr_el1
+    mrs x21, spsr_el1
+
+    stp x19, x20, [sp, 16 * 16]
+    str x21, [sp, 16 * 17]
+    mov x0, sp
+    ands x1, x0, 15
+    sub x0, x0, x1
+    mov sp, x0
 .endm
 
 // load general registers from stack
 .macro load_all
+    ldp x21, x20, [sp, 16 * 17]
+    ldp x19, x20, [sp, 16 * 16]
+
+    msr spsr_el1, x21
+    msr elr_el1, x20
+    msr sp_el0, x19
+
     ldp x0, x1, [sp ,16 * 0]
     ldp x2, x3, [sp ,16 * 1]
     ldp x4, x5, [sp ,16 * 2]
@@ -101,7 +119,7 @@ from_el2_to_el1:
     ldp x26, x27, [sp ,16 * 13]
     ldp x28, x29, [sp ,16 * 14]
     ldr x30, [sp, 16 * 15]
-    add sp, sp, 32 * 8
+    add sp, sp, 36 * 8
 .endm
 
 // Exception Table
@@ -118,16 +136,16 @@ exception_vector_table:
   b unknown_handler
   .align 7
 
-  b el1_synchronous
+  b unknown_handler
   .align 7
-  b el1_IRQ
+  b unknown_handler
   .align 7
   b unknown_handler
   .align 7
   b unknown_handler
   .align 7
 
-  b el0_synchronous
+  b el0_exception
   .align 7
   b el0_IRQ
   .align 7
@@ -151,9 +169,10 @@ unknown_handler:
   load_all
   eret
 
-el0_synchronous:
+el0_exception:
   save_all
-  bl handle_synchronous
+  mov x0, sp
+  bl handle_exception
   load_all
   eret
 
@@ -163,14 +182,7 @@ el0_IRQ:
   load_all
   eret
 
-el1_synchronous:
-    save_all
-    bl handle_synchronous
-    load_all
-    eret
-
-el1_IRQ:
-    save_all
-    bl handle_irq
-    load_all
-    eret
+.global child_return_from_fork
+child_return_from_fork:
+  load_all
+  eret

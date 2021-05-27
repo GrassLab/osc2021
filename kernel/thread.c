@@ -20,7 +20,8 @@ void thread_init()
 
         thread_table[i]->id = i;
         thread_table[i]->used = false;
-        uart_puts_h(&thread_table[i]->state);
+        //uart_puts_h(&thread_table[i]->state);
+        uart_puts("\n");
         thread_table[i]->state = Thread_Wait;
         thread_table[i]->next = NULL;
     }
@@ -120,14 +121,14 @@ void schedule()
     }
     
     if (next->state != Thread_Wait) return;
-
-    //uart_puts_h(current->context.lr);
-    //uart_puts(" switch to ");
-    //uart_puts_h(next->context.lr);
-    //uart_puts(" ");
-    //uart_puts_i(next->id);
-    //uart_puts(" ");
-
+    /*
+    uart_puts_h(current->context.lr);
+    uart_puts(" switch to ");
+    uart_puts_h(next->context.lr);
+    uart_puts(" ");
+    uart_puts_i(next->id);
+    uart_puts("\n");
+    */
     switch_to(&current->context, &next->context);
 }
 
@@ -176,6 +177,54 @@ void thread_exit()
     current->state = Thread_Exit;
 
     schedule();
+}
+
+void thread_fork(struct Trap_Frame * tf)
+{
+    struct Thread * parent = current_thread();
+    struct Thread * child = thread_create(0);
+    int child_id = child->id;
+
+    // task copy
+    char * task_p_addr = (char*)parent;
+    char * task_c_addr = (char*)child;
+    int count = 0;
+    while(count < THREAD_SIZE)
+    {
+        *(task_c_addr + count) = *(task_p_addr + count);
+        count++;
+    }
+    
+    parent->context.sp = (unsigned long)tf;
+    child->id = child_id;
+    
+    // child copy
+    int parent_ustack_size = parent->program_addr + PROCESS_SIZE - tf->sp_el0; 
+    
+    child->context.sp = parent->context.sp + ((unsigned long)child - (unsigned long)parent);
+    child->context.fp = (unsigned long)(child + THREAD_SIZE);
+    child->context.lr = (unsigned long)child_return_from_fork;
+
+    unsigned long child_ustack = (unsigned long)buddy_alloc(PROCESS_SIZE) + PROCESS_SIZE;
+
+    char * parent_stack_addr = (char*)(tf->sp_el0);
+    char * child_stack_addr = (char*)(child_ustack - parent_ustack_size);
+    child->program_addr = child_ustack - PROCESS_SIZE;
+
+    count = 0;
+    while (count < parent_ustack_size)
+    {
+        *(child_stack_addr + count) = *(parent_stack_addr + count);
+        count++;
+    }
+
+    // return value
+    struct Trap_Frame * child_tf = (struct Trap_Frame *)child->context.sp;
+    child_tf->sp_el0 = child_ustack - parent_ustack_size;
+    child_tf->regs[0] = 0;  // fork child return
+    child_tf->regs[29] = child_ustack; // fp
+
+    tf->regs[0] = child_id;
 }
 
 void log_runqueue()

@@ -135,7 +135,7 @@ void push_list_tail(int num, int index)
     struct freelist_node * node = (struct freelist_node *)(BUDDY_LIST_START + BUDDY_LIST_NODE_SIZE * list_node_addr_counter);
     struct freelist_node * current = &buddy_list[num];
     list_node_addr_counter++;
-
+    /*
     char temp[10];
     uart_puts("\tOperation: Push index ");
     itoa(index, temp, 0);
@@ -144,7 +144,7 @@ void push_list_tail(int num, int index)
     itoa(num, temp, 0);
     uart_puts(temp);
     uart_puts("\n");
-    
+    */
     if (current->index == EMPTY)
     {
         current->index = index;
@@ -168,7 +168,7 @@ int pop_list_head(int num)
 {
     struct freelist_node * current = &buddy_list[num];
     int index = current->index;
-
+    /*
     char temp[10];
     uart_puts("\tOperation: Pop index ");
     itoa(index, temp, 0);
@@ -177,7 +177,7 @@ int pop_list_head(int num)
     itoa(num, temp, 0);
     uart_puts(temp);
     uart_puts("\n");
-    
+    */ 
     if (current->next != NULL)
     {
         buddy_list[num] = *current->next;
@@ -257,7 +257,7 @@ int buddy_divid_mem(const int list_index)
     int res = 0;
     int frame_index = buddy_list[list_index].index;
     int frame_index_next = frame_index + pow(2, frame_array[frame_index].val - 1);
-    
+    /*
     char str_size[10], str_index1[10], str_index2[10]; 
     itoa(list_index, str_size, 0);
     itoa(frame_index, str_index1, 0);    
@@ -269,7 +269,7 @@ int buddy_divid_mem(const int list_index)
     uart_puts(", ");
     uart_puts(str_index2);
     uart_puts("\n");
-
+    */
     pop_list_head(list_index);
     push_list_tail(list_index - 1, frame_index);
     push_list_tail(list_index - 1, frame_index_next);
@@ -476,6 +476,7 @@ void * buddy_contiguous_alloc(const int size)
         }
     }
 
+    /*
     char temp[10];
     uart_puts("Operation: Block [");
     itoa(target_block_index, temp, 0);
@@ -484,7 +485,7 @@ void * buddy_contiguous_alloc(const int size)
     itoa(target_block_index + pow(2, target_list_index), temp, 0);
     uart_puts(temp);
     uart_puts("] at is allocated\n");
-
+    */
     return ptr;
 }
 

@@ -12,6 +12,13 @@ enum Thread_State
     Thread_Exit
 };
 
+struct Trap_Frame {
+    unsigned long regs[32];
+    unsigned long sp_el0;
+    unsigned long elr_el1;
+    unsigned long spsr_el1;
+};
+
 struct Context {
     unsigned long x19;
     unsigned long x20;
@@ -34,6 +41,7 @@ struct Thread {
     int id;
     bool used;
 
+    unsigned long program_addr;
     enum Thread_State state;
 
     struct Thread * next;
@@ -45,10 +53,17 @@ struct RunQueue {
 };
 
 void thread_init();
+void thread_exit();
+void thread_fork(struct Trap_Frame * tf);
+
+struct Thread * current_thread();
+
 void thread_test(int test_id);
 
 void log_runqueue();
 
 void switch_to();
+
+void child_return_from_fork(); // start.S
 
 #endif

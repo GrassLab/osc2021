@@ -1,34 +1,30 @@
 #include "../../lib/uart.h"
+#include "../../lib/string.h"
 #include "../../lib/sys_call.h"
 
 int main(int argc, char **argv)
 {
-    uart_puts_h(&argc);
-    uart_puts(" ");
-    uart_puts_i(*(0x10009FB0));
-    for (int i = 0; i < 10; ++i)
-    {
-        uart_puts_h(*(unsigned long*)(0x10009FB0 + i * 8));
-        uart_puts(" ");
-    }
-    uart_puts_h(&argv);
-    uart_puts("\n");
+    char* temp_str = "User Program:\n";
+    write(temp_str, strlen(temp_str));
 
-    uart_puts("Argv Test, pid: ");
-    uart_puts_i(getpid());
-    uart_puts("\n");
+    temp_str = "Argv Test, pid: ";
+    write(temp_str, strlen(temp_str));
+    itoa(getpid(), temp_str, 0);
+    write(temp_str, strlen(temp_str));
+    write("\n", 1);
 
-    uart_puts("argc: ");
-    uart_puts_i(argc);
-    uart_puts("\n");
+    temp_str = "argc: ";
+    write(temp_str, strlen(temp_str));
+    itoa(argc, temp_str, 0);
+    write(temp_str, strlen(temp_str));
+    write("\n", 1);
     for (int i = 0; i < argc; ++i)
     {
-        uart_puts(argv[i]);
-        uart_puts("\n");
+        write(argv[i], strlen(argv[i]));
+        write(" ", 1);
     }
+    write("\n", 1);
     
-    while(1){}
-
     char * fork_argv[2];
     fork_argv[0] = "fork_test";
     fork_argv[1] = 0;

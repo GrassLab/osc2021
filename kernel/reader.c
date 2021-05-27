@@ -1,6 +1,7 @@
 #include "reader.h"
 #include "process.h"
 #include "allocator.h"
+#include "thread.h"
 #include "../lib/uart.h"
 #include "../lib/string.h"
 
@@ -55,9 +56,11 @@ void LoadUserProgram(char filename[])
 	        break;
         }
     }
-
     address_user_program = buddy_alloc(PROCESS_SIZE);
     address_user_stack = address_user_program + PROCESS_SIZE;
+    struct Thread * t = current_thread();
+    t->program_addr = (unsigned long)address_user_program;
+    
     for (int i = 0; i < cpio_archive[file_i].size; ++i)
     {
         *(address_user_program + i) = cpio_archive[file_i].contents[i];
@@ -247,42 +250,36 @@ int ReadCpioContent(struct cpio_file * cpio_, int offset)
 void LoadArgument(char * argv[])
 {
     int argc = 0;
+    int s_len = 0;
     while(argv[argc] != 0)
     {
         argc++;
+        s_len += strlen(argc[argv]) + 1;
     }
 
-    address_user_stack -= (1 + 1 + argc + 1 + argc) * 8;    // argc + argv** + argv* + NULL + argv
-    address_user_stack -= (char*)((int)address_user_stack & 15);
-    
+    address_user_stack -= ((1 + 1 + argc) * 8 + s_len);    // argc + argv** + argv* + NULL + argv
+    address_user_stack -= ((int)address_user_stack & 15);
     char * temp_stack_ptr = address_user_stack;
-    *(temp_stack_ptr) = argc;
+    *(unsigned long *)(temp_stack_ptr) = argc;
     temp_stack_ptr += 8;
     *(unsigned long *)(temp_stack_ptr) = (unsigned long)(temp_stack_ptr + 8);    // argv** = argv[0]
     temp_stack_ptr += 8;
 
-    char * argv_addr = temp_stack_ptr + argc * 8;   // argv*
-    *argv_addr = NULL;
-    argv_addr += 8;
+    char * argv_addr = temp_stack_ptr + (argc + 1) * 8;   // argv begin
     for (int i = 0; i < argc; ++i)
     {
-        *(unsigned long*)(temp_stack_ptr) = (unsigned long)(argv_addr + 8 * i);  // argv[0] = argv[0][0]
-        *(argv_addr + 8 * i) = argv[i];
-    }
-    
-    uart_puts_h(address_user_stack);
-    uart_puts(" ");
-    uart_puts_i(*address_user_stack);
+        *(unsigned long*)(temp_stack_ptr) = (unsigned long)argv_addr;  // argv[0] = argv[0][0]
+        for (int j = 0; j < strlen(argv[i]); ++j)
+        {
+            *argv_addr = argv[i][j];
+            argv_addr++;
+        }
+        *argv_addr = '\0';
+        argv_addr++;
 
-    uart_puts("\n");
-
-    for (int i = 0; i < 10; ++i)
-    {
-        uart_puts_h(*(unsigned long*)(address_user_stack + i * 8));
-        uart_puts(" ");
+        temp_stack_ptr += 8;
     }
-    uart_puts("\n");
-    uart_puts("\n");
+    *(unsigned long*)(temp_stack_ptr) = NULL;
 }
 
 void cpio_exec(char * filename, char * argv[])
@@ -292,8 +289,14 @@ void cpio_exec(char * filename, char * argv[])
     LoadArgument(argv);
 
     FromEl1toEl0();
+
     //EnableTimer();
     EnableInterrupt();
+
+    // save arg from sp to x0, x1
+    asm volatile("mrs x3, sp_el0");
+    asm volatile("ldr x0, [x3, 0]");
+    asm volatile("ldr x1, [x3, 8]");
     
     asm volatile("eret"); // return user code
 }
