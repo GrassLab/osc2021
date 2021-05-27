@@ -175,8 +175,8 @@ int fat32_write (struct file *file, const void *buf, size_t len)
     file->f_pos += len;
 
 
-    int filesize = internal->f_info.size > file->f_pos ? internal->f_info.size : file->f_pos;
-    fat32_update_size(file->vnode, filesize);
+    internal->f_info.size = internal->f_info.size > file->f_pos ? internal->f_info.size : file->f_pos;
+    fat32_update_size(file->vnode, internal->f_info.size);
 
     return len;
 }
@@ -251,6 +251,13 @@ void sd_init_fs(struct vnode *root)
         e_info.entry_index = j;
         
 
+        printf("start cluster is %d\n", e_info.start_cluster);
+        printf("dir cluster is: %d\n", e_info.dir_cluster);
+        printf("entry index is: %d\n", e_info.entry_index);
+        printf("file size: %d\n", *(int *)&(buffer[32 * e_info.entry_index + 0x1C]));
+        
+
+
         struct vnode *node = create_fat32_vnode(root, &f_info, &e_info);
 
         append_child(root, node);
@@ -292,18 +299,17 @@ void fat32_update_size(struct vnode *node, int size)
 {
     struct fat32_internal *internal = node->internal;
     char buffer[512];
-    readblock(internal->e_info.dir_cluster, buffer);
+    readblock(DATA_BASE_BLOCK_INDEX + internal->e_info.dir_cluster, buffer);
     
     int *size_ptr = (int *)&(buffer[32 * internal->e_info.entry_index + 0x1C]);
     printf("%d, %d, %d\n", internal->e_info.start_cluster, internal->e_info.dir_cluster, internal->e_info.entry_index);
     printf("original size: %d\n", *size_ptr);
     *size_ptr = size;
 
-    buffer[32 * internal->e_info.entry_index + 0x1C] = 10;
+    writeblock(DATA_BASE_BLOCK_INDEX + internal->e_info.dir_cluster, buffer);
 
 
+    readblock(DATA_BASE_BLOCK_INDEX + internal->e_info.dir_cluster, buffer);
 
-    writeblock(internal->e_info.dir_cluster, buffer);
-
-    printf("update size: %d\n", size);
+    printf("update size: %d\n", *(int *)&(buffer[32 * internal->e_info.entry_index + 0x1C]));
 }
