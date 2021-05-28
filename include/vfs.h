@@ -29,8 +29,8 @@
 struct vnode
 {
     struct dentry *dentry;
-    struct vnode_operations* v_ops;
-    struct file_operations* f_ops;
+    struct vnode_operations *v_ops;
+    struct file_operations *f_ops;
     int v_type;
     void *internal; // internal representation of a vnode 
 };
@@ -46,14 +46,14 @@ struct dentry
 
     // If it's directory and mounted by mount() function,
     // it will point to specific mount struct. otherwise it's NULL
-    struct mount* mount; 
+    struct mount *mount; 
 };
 
 struct file 
 {
     struct vnode *vnode;
     size_t f_pos; // The next read/write position of this opened file
-    struct file_operations* f_ops;
+    struct file_operations *f_ops;
     int flags; // unused
     int nr_internal_moemory_page_allocated;
 };
@@ -61,13 +61,15 @@ struct file
 struct mount 
 {
     struct dentry *root; // root directory
-    struct filesystem *fs;     
+    struct filesystem *fs;
+
+    char *device_name;     
 };
 
 struct filesystem
 {
     char *name;
-    int (*setup_mount)(struct filesystem* fs, struct mount* mount, const char *component_name);
+    int (*setup_mount)(struct filesystem *fs, struct mount *mount, const char *component_name);
 };
 
 struct vnode_operations
@@ -97,20 +99,20 @@ struct files_struct
 
 void rootfs_init();
 
-int _vnode_path_traversal(struct vnode *rootnode, const char* pathname, struct vnode **target_file, char *target_component_name);
-int _lookUp_pathname(const char* pathname, struct vnode **target_file, char *target_component_name);
+int _vnode_path_traversal(struct vnode *rootnode, const char *pathname, struct vnode **target_file, char *target_component_name);
+int _lookUp_pathname(const char *pathname, struct vnode **target_file, char *target_component_name);
 /* VFS API */
 int register_filesystem(struct filesystem* fs);
 
 struct file *vfs_open(const char *pathname, int flags);
-int vfs_close(struct file* file);
+int vfs_close(struct file *file);
 int vfs_write(struct file *file, const void *buf, size_t len);
 int vfs_read(struct file *file, void *buf, size_t len);
 
 int vfs_mkdir(const char *pathname);
 int vfs_chdir(const char *pathname);
-int vfs_mount(const char* device, const char* mountpoint, const char* filesystem);
-int vfs_unmount(const char* mountpoint);
+int vfs_mount(const char *device, const char *mountpoint, const char *filesystem);
+int vfs_unmount(const char *mountpoint);
 
 char *vfs_read_directory(struct file *file);
 void vfs_print_directory_by_pathname(const char *pathname);
@@ -122,7 +124,7 @@ void _vfs_dump_vnode();
 void _vfs_dump_dentry();
 void _vfs_dump_file_struct();
 
-/* Test case for vfs */
+/* Test case for Lab6 - vfs */
 void vfs_test();
 void vfs_requirement1_test();
 void vfs_requirement1_read_file_populated_in_cpio();

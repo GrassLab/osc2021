@@ -133,7 +133,7 @@ void *sys_malloc(int bytes)
 int sys_clone()
 {
     // TODO:
-    // Not required in lab
+    // Not required in lab 5
     return 0;
 }
 
