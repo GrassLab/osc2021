@@ -40,8 +40,10 @@ void main() {
 
   vfs_init();
   register_filesystem(&tmpfs);
-  mount_root_fs("tmpfs");
-  vfs_open("hello/world/ian", 0);
+  // mount_root_fs("tmpfs");
+  // vfs_open("hello/world/ian", 0);
+
+  tmpfs_dev();
 
   uart_println("finished, start busy waiting...");
   while (1) {

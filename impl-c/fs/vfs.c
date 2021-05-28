@@ -23,17 +23,6 @@ static const int _DO_LOG = 0;
 
 struct mount *rootfs;
 
-/**
- * @brief Get the first component name by returning it's start/end index pair in
- * `path`
- * @warning: `path[start_idx,end_idx]` does not contain '\0'
- * @param start_idx return the start index
- * @param end_idx return the end index(inclusive)
- * @retval 0 for succeed, -1 for failed
- */
-static int get_component(const char *path, /* Return*/ int *start_idx,
-                         /* Return*/ int *end_idx);
-
 #define __BUSY_WAIT                                                            \
   {                                                                            \
     while (1) {                                                                \
@@ -106,7 +95,8 @@ struct file *vfs_open(const char *pathname, int flags) {
   // 1. Lookup pathname from the root vnode.
   struct vnode *cwd = rootfs->root;
 
-  char *path, *query_name;
+  const char *path;
+  char *query_name;
   int ret, start_idx, end_idx, name_size;
   struct vnode *target_child;
 
@@ -126,11 +116,16 @@ struct file *vfs_open(const char *pathname, int flags) {
 
       // Query file by it's name
       cwd->v_ops->lookup(cwd, &target_child, query_name);
+
       if (target_child != NULL) {
         path = &path[end_idx + 1];
         cwd = target_child;
+        kfree(query_name);
+      } else {
+        uart_println("cannot found file: %s", query_name);
+        kfree(query_name);
+        break;
       }
-      kfree(query_name);
     }
   } while (ret == 0);
 
@@ -154,18 +149,17 @@ int vfs_read(struct file *file, void *buf, size_t len) {
   return 0;
 }
 
-static int get_component(const char *path, /* Return*/ int *start_idx,
-                         /* Return*/ int *end_idx) {
+int get_component(const char *path, /* Return*/ int *start_idx,
+                  /* Return*/ int *end_idx) {
   if (start_idx == NULL || end_idx == NULL) {
     return -1;
   }
   if (path == NULL) {
     goto get_cmpt_failed;
   }
-  const char *p;
+
   *start_idx = -1;
   *end_idx = -1;
-
   const char *start;
   start = ignore_leading(path, PATH_DELIM);
   if (start == NULL) {

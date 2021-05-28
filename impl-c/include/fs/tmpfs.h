@@ -8,6 +8,8 @@
 
 int tmpfs_init();
 
+void tmpfs_dev();
+
 // make a node to be initramfs
 int tmpfs_init_node();
 

@@ -77,3 +77,16 @@ void vfs_init();
 
 // Only used for running tests
 void test_vfs();
+
+#define FILE_O_CREAT (1 << 0)
+
+/**
+ * @brief Get the first component name by returning it's start/end index pair in
+ * `path`
+ * @warning: `path[start_idx,end_idx]` does not contain '\0'
+ * @param start_idx return the start index
+ * @param end_idx return the end index(inclusive)
+ * @retval 0 for succeed, -1 for failed
+ */
+int get_component(const char *path, /* Return*/ int *start_idx,
+                  /* Return*/ int *end_idx);
