@@ -8,6 +8,7 @@ int main(int argc, char* argv[]){
     int b=open("world",O_CREAT);
     write(a,"Hello ",6);
     write(b,"World!",6);
+    write(a,"Hello ",6);
     close(a);
     close(b);
 
