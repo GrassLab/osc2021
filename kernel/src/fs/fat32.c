@@ -292,26 +292,6 @@ void fat32_update_size(struct vnode *node, int size)
     writeblock(DATA_BASE_BLOCK_INDEX + internal->e_info.dir_cluster, buffer);
 }
 
-// void parse_name(const char *component_name, char *name, char *ext)
-// {
-//     int i;
-//     for (i = 0; i < strlen(component_name); i++) {
-//         if (component_name[i] == '.') {
-//             printf("break!\n");
-//             break;
-//         }
-
-//         name[i] = component_name[i];
-//     }
-
-
-//     if (component_name[i] == '.') {
-//         int j;
-//         for (j = 0; j < 3; j++) {
-//             ext[j] = component_name[i + j + 1];
-//         }
-//     }
-// }
 
 void copy_filename_with_ext(char *target, char *name, char *ext)
 {
