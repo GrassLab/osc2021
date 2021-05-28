@@ -1,4 +1,4 @@
-# OSDI 2020 - LAB 06 Virtual File System
+# OSDI 2021 - Lab 07 File System Meets Hardware
 
 ## Author
 
@@ -7,30 +7,24 @@
 | 0856167    | Yunyung        | 許振揚| yungyung7654321@gmail.com  |
 
 ### Introduction
-A file system manages data in storage mediums. Each file system has a specific way to store and retrieve the data. Hence, a virtual file system(VFS) is common in general-purpose OS to provide a unified interface for all file systems.
-
-In this lab, we’ll implement a memory-based file system(tmpfs) to get familiar with the concept of VFS. In the next lab, we’ll implement the FAT32 file system to access files from an SD card. It’s recommended to do both together.
+In the previous lab, the file’s operations were only in the memory. In this lab, we are going to read data from an external storage device, modify it in the memory, and write it back. In addition, we are going to implement the basic of the FAT32 file system.
 
 ### Goals of this lab
-- Understand how to set up a root file system.
+- Understand how to read/write data from an SD card.
 
-- Implement temporary file system (tmpfs) as root file system.
+- Implement the FAT32 file system.
 
-- Understand how to create, open, close, read, and write files.
+- Implement the FAT32 file system that meet the VFS interface.
 
-- Implement VFS interface, including create, open, close, read, write, mkdir, chdir, ls <directory>, mount/unmount interface.
+- Mount the FAT32 partition in sd card to VFS.
 
-- Implement multi-level VFS and absoute/relative pathname lookup.
+- Read/Parse Master Boot Record(MBR) and FAT32 boot sector.
 
-- Understand how a user process access files through the virtual file system.
+- Understand how to access devices by the VFS.
 
-- Implement a user process to access files through VFS.
+- Implement Open(lookup)/Read/Write/Create function and register to VFS interface for manipulating a file in FAT32 and sd card.
 
-- Understand how to mount a file system and look up a file across file systems.
-
-- Implement mount/unmount a file system and look up a file across file systems.
-
-- Understand how to design the procfs.
+- Understand how memory be used as a cache for slow external storage mediums.
 
 ## Directory structure
 ```
@@ -62,7 +56,10 @@ In this lab, we’ll implement a memory-based file system(tmpfs) to get familiar
 │   ├── wait.h
 │   ├── vfs.h
 │   ├── fs.h
-│   └── tmpfs.h
+│   ├── tmpfs.h
+│   ├── mbr.h           # header file of Master boot Record
+│   ├── sdhost.h    
+│   └── fat32.h
 │
 ├── src                 # source files
 │   ├── command.c       # source file to process command
@@ -89,8 +86,14 @@ In this lab, we’ll implement a memory-based file system(tmpfs) to get familiar
 │   ├── sched.c
 │   ├── vfs.c 
 │   ├── fs.c
-│   └── tmpfs.c
+│   ├── tmpfs.c
+│   ├── sdhost.c        # Implmentation of sd care device driver
+│   └── fat32.c
 │ 
+├── sdcard              # Files for sd card device (Lab7)
+│   ├── sfn_nctuos.img  # Flash Bootable Image for SD Card with FAT32 file system. FAT32 is Short Filenames(SFN) version.
+│   └── ...             # Other simple files to test Lab7
+│
 ├── rootfs              # files and user programs will be made as cpio archive
 │   └── ...             # any file 
 │
@@ -133,12 +136,13 @@ make clean
 
 ## Run on QEMU
 ```
-make run
-```
-
-## Run on QEMU with cpio
-```
+# Run QEMU with initramfs.cpio and sd card
+make run_all
+# Run QEMU without initramfs.cpio
 make run_cpio
+# Run QEMU without initramfs.cpio and sd card
+make run 
+
 ```
 
 ## How to interact with Rpi3
