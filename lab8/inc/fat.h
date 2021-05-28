@@ -1,0 +1,1 @@
+void fat_Setup(filesystem* fs,mount* mnt);
