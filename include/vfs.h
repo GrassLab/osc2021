@@ -132,4 +132,8 @@ void user_ls_process(const char *pathname);
 void vfs_user_process_test();
 void vfs_elective2_user_process_test();
 void vfs_ls_print_test(const char *pathname);
+
+/* Test cases for Lab7 - fat32 */
+void Lab7_fat32_test();
+
 #endif
