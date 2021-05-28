@@ -5,8 +5,10 @@ get_el:
     lsr x0, x0, #2
     ret
 
+/* 
 .globl delay
 delay:
     subs x0, x0, #1
     bne delay
     ret
+*/

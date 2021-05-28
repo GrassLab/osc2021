@@ -1,1 +1,1 @@
-extern struct filesystem tmpfs;
+extern struct filesystem tmpfs, fat32;

@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "sched.h"
 #include "cpio.h"
+#include "fat32.h"
 
 struct mount *rootfs;
 
@@ -27,7 +28,7 @@ int register_filesystem(struct filesystem* fs) {
     if (!strcmp(fs->name, "tmpfs")) {
         int res = tmpfs_register();
         if (res == TMPFS_ERROR) {
-            printf("[register_filesystem] Register error");
+            printf("[register_filesystem] Register tmpfs error");
             return VFS_ERROR;
         }
 
@@ -35,6 +36,12 @@ int register_filesystem(struct filesystem* fs) {
     }
 
     if (!strcmp(fs->name, "fat32")) {
+        int res = fat32_register();
+        if (res == TMPFS_ERROR) {
+            printf("[register_filesystem] Register fat32 error");
+            return VFS_ERROR;
+        }
+
         printf("[register_filesystem] Register fat32 filesystem\n");
     }
 
@@ -81,6 +88,7 @@ void _finalComponentName(const char *pathname, char *target_component_name)
 
 int _vnode_path_traversal(struct vnode *rootnode, const char *pathname, struct vnode **target_file, char *target_component_name)
 {
+    // TODO: explain how this function work, this function is most important but quite complex
     int path_idx = 0;
     int isNextVnodeFound = 0;
     char temp_component_name[DNAME_INLINE_LEN];
@@ -180,7 +188,7 @@ int _vnode_path_traversal(struct vnode *rootnode, const char *pathname, struct v
     return FALSE;
 }
 
-int _lookUp_pathname(const char* pathname, struct vnode **target_file, char *target_component_name)
+int _lookUp_pathname(const char *pathname, struct vnode **target_file, char *target_component_name)
 {
     struct vnode *rootnode;
     int loopUp_result;
@@ -195,13 +203,16 @@ int _lookUp_pathname(const char* pathname, struct vnode **target_file, char *tar
 
     loopUp_result = _vnode_path_traversal(rootnode, pathname, target_file, target_component_name);
 
-    printf("[_lookUp_pathname] (*target_file)->dentry->name: %s\n", (*target_file)->dentry->name);
-    // if target_file is found
+    if (loopUp_result)
+        printf("[_lookUp_pathname] Found Target: (*target_file)->dentry->name: %s\n", (*target_file)->dentry->name);
+    else 
+        printf("[_lookUp_pathname] Parent: (*target_file)->dentry->name: %s\n", (*target_file)->dentry->name);
+    
     return loopUp_result; 
     
 }
 
-struct file* vfs_open(const char* pathname, int flags) {
+struct file* vfs_open(const char *pathname, int flags) {
     if (flags == O_CREAT) {
         printf("\n==========> vfs_open(%s, %s) <==========\n", pathname, "O_CREAT");
     } else {
@@ -257,7 +268,7 @@ int vfs_write(struct file* file, const void* buf, size_t len) {
     return nr_byte_written;
 }
 
-int vfs_read(struct file* file, void* buf, size_t len) {
+int vfs_read(struct file *file, void *buf, size_t len) {
     if (file->vnode->v_type != REGULAR_FILE){
         printf("Read a non regular file\n");
         return VFS_READ_FILE_ERROR;
@@ -387,7 +398,7 @@ int vfs_chdir(const char *pathname)
     return TRUE;
 }
 
-int vfs_mount(const char* device, const char* mountpoint, const char* filesystem)
+int vfs_mount(const char *device, const char *mountpoint, const char *filesystem)
 {
     printf("================== vfs_mount ==================\n");
     struct vnode *target_file;
@@ -400,28 +411,31 @@ int vfs_mount(const char* device, const char* mountpoint, const char* filesystem
     }
     
     struct mount *mt = (struct mount *) kmalloc(sizeof(struct mount));
-    struct filesystem *fs = (struct filesystem *) kmalloc(sizeof(struct filesystem));
     
+    mt->device_name = (char *) kmalloc(sizeof(char) * (strlen(device) + 1));
+    strcpy(mt->device_name, device);
+
     if (!strcmp(filesystem, "tmpfs")) {
         printf("[vfs_mount] tmpfs filesystem mount\n");
-        fs->name = (char *) kmalloc(sizeof(char) * strlen(filesystem));
-        strcpy(fs->name, filesystem);
-        fs->setup_mount = tmpfs_setup_mount;
-        fs->setup_mount(fs, mt, target_component_name);
-
-        target_file->dentry->mount = mt; // Say this directory is mount by other device/fs
-        // We don't need to register tmpfs filesystem again, because tmpfs is kernel rot file system
-        //register_filesystem(fs); 
-        
-        // Assign parent of this mountpoint as original dentry for go back to original fs 
-        mt->root->parent = target_file->dentry;
-        //printf("mt->root->parent->name = %s\n", mt->root->parent->name);
-        return TRUE;
+        tmpfs.setup_mount(&tmpfs, mt, target_component_name);
+        // We don't need to register tmpfs filesystem again, because tmpfs is kernel root file system
+        //register_filesystem(&tmpfs);
     }
 
-    
-    
-    return FALSE;
+    if (!strcmp(filesystem, "fat32")) {
+        printf("[vfs_mount] fat32 filesystem mount\n");
+        register_filesystem(&fat32); 
+        fat32.setup_mount(&fat32, mt, target_component_name); // TODO: Should modify target_component_name to "/" ?
+    }
+
+    target_file->dentry->mount = mt; // Say this directory is mount by other device/fs
+    mt->root->parent = target_file->dentry; // Assign parent of this mountpoint as original dentry for go back to original fs 
+    #ifdef __FS_DEBUG
+    printf("mt->root->parent->name = %s\n", mt->root->parent->name);
+    printf("mt->device_name = %s\n", mt->device_name);
+    #endif
+
+    return TRUE;
 }
 
 int vfs_unmount(const char* mountpoint)
@@ -499,8 +513,44 @@ void _vfs_dump_file_struct()
 }
 
 
+void vfs_ls_print_test(const char *pathname)
+{
+    printf("\n--------------------> vfs ls <----------------------\n");
+    printf("Requested pathname : %s", pathname);
+    vfs_print_directory_by_pathname(pathname);
+    printf("-------------------------------------------------------\n");
+}
+
+/** 
+ * Test cases for Lab7
+ */ 
+void Lab7_fat32_test()
+{
+    printf("\n--------------> Lab7 fat32 test | Lab7_fat32_test() <--------------\n");
+    //vfs_ls_print_test("/sdp1"); // TODO: Find out sdp1 dentry, but child directory not loaded from SDCARD
+    // Rquirement1 - Get the FAT32 partition.
+    _dump_fat32_metadata(&fat32_metadata);
+
+    // Requirement 2 -  Look up and open a file in FAT32. Read / Write a file in FAT32.
+    // Read
+    char buf[BLOCK_SIZE];
+    struct file *f1 = vfs_open("/sdp1/FATTEST.TXT", 0);
+    int sz = vfs_read(f1, buf, 100);
+    printf("[Lab7_fat32_test] Read size: %d, content: %s\n", sz, buf); // Should be "Fat32 Test file Content.""
+    vfs_close(f1);
+    // Write 
+    f1 = vfs_open("/sdp1/FATTEST.TXT", 0);
+    int sz2 = vfs_write(f1, "Hello World! This is Lab7 - FAT32 with SD card device", 53);
+    printf("[Lab7_fat32_test] Write size: %d\n", sz2); // Should be 53.
+    
+    // Elective 1, Create a Fat32 file
+    vfs_open("/sdp1/NEW.TXT", O_CREAT);
+
+    vfs_ls_print_test("/sdp1");
+}
+
 /**
- * Test cases for VFS
+ * Test cases for Lab6 - VFS
  */
 void vfs_test()
 {
@@ -628,6 +678,7 @@ void vfs_elective2_user_process_test()
     sz = call_sys_read(fd, buf, 2);
     printf("size = %d, content = %s\n", sz, buf);
 
+    call_sys_exit();
     // call_sys_mkdir("newDir");
     // call_sys_open("newDir/newFile", O_CREAT);
     // call_sys_open("newDir/newFile87", O_CREAT);
@@ -676,13 +727,5 @@ void vfs_elective2_user_process_test()
     //     printf("Open file error\n");
     // }
    
-    call_sys_exit();
 }
 
-void vfs_ls_print_test(const char *pathname)
-{
-    printf("\n--------------------> vfs ls <----------------------\n");
-    printf("Requested pathname : %s", pathname);
-    vfs_print_directory_by_pathname(pathname);
-    printf("-------------------------------------------------------\n");
-}

@@ -10,7 +10,7 @@
 #include "sys.h"
 #include "cpio.h"
 #include "vfs.h"
-
+#include "sdhost.h"
 /* Initial Logo */
 //   ___  ____  ____ ___   ____   ___ ____  _  __   __                 
 //  / _ \/ ___||  _ \_ _| |___ \ / _ \___ \/ | \ \ / /   _ _ __   __ _ 
@@ -206,9 +206,16 @@ int main()
     // Initialize root file system
     rootfs_init();
 
-    // vfs test cases
-    Lab6_vfs_test_demo();
-    Lab6_vfs_eletive2_demo();
+    // sd card device init
+    sd_init();
+    sd_mount();
+    
+    /* Lab7 Test cases */
+    Lab7_fat32_test();
+
+    // Lab6 - vfs test cases
+    // Lab6_vfs_test_demo();
+    // Lab6_vfs_eletive2_demo();
 
     /* Lab5 Test cases */
     // Requirement 1 - Implement the thread mechanism. 

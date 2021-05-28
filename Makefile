@@ -2,7 +2,7 @@
 # https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/Makefile
 ARMGNU ?= aarch64-linux-gnu
 
-COPS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude #-ggdb #-D__DEBUG
+COPS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude #-ggdb #-D__FS_DEBUG #-D__DEBUG 
 ASMOPS = -Iinclude 
 
 BUILD_DIR = build
@@ -36,7 +36,15 @@ run:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio
 
 debug:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -initrd initramfs.cpio -serial null -display none -S -s 
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -initrd initramfs.cpio -serial null -drive if=sd,file=./sdcard/sfn_nctuos.img,format=raw -display none -S -s 
 
 run_cpio:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -initrd initramfs.cpio
+
+# run with sd card (Lab7)
+run_sd:
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -drive if=sd,file=./sdcard/sfn_nctuos.img,format=raw
+
+# run with cpio and sd card
+run_all:
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -initrd initramfs.cpio -drive if=sd,file=./sdcard/sfn_nctuos.img,format=raw

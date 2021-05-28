@@ -2,6 +2,11 @@
 #define	_BOOT_H
 
 extern int get_el ( void );
-extern void delay ( unsigned long);
+
+static inline void delay(unsigned long tick) {
+    while (tick--) {
+        asm volatile("nop");
+    }
+}
 
 #endif  /*_BOOT_H */
