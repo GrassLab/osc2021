@@ -12,7 +12,7 @@ SRC = $(wildcard **/*.S) $(wildcard **/*.c)
 OBJS = $(wildcard ./*.o)
 BUILD_OBJS = $(wildcard build/*.o)
 
-CFLAGS = -Wall -Iinclude -nostartfiles -ffreestanding
+CFLAGS = -Wall -Iinclude/libs -Iinclude -nostartfiles -ffreestanding
 CFLAGS += -g -ggdb
 
 TARGET = kernel8.img

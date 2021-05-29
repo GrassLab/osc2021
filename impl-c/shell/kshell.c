@@ -3,7 +3,7 @@
 #include "shell/shell.h"
 
 #include "bool.h"
-#include "cfg.h"
+#include "config.h"
 #include "cpio.h"
 #include "string.h"
 #include "uart.h"

@@ -50,6 +50,7 @@ def init_global():
                 "get_pid.out",
                 "argv_test.out",
                 "fork_test.out",
+                "file.out",
             ],
             run_cross=True,
             clean_target_folder=False,

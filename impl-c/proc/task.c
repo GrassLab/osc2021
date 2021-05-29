@@ -5,6 +5,7 @@
 #include "proc/sched.h"
 
 #include "bool.h"
+#include "fs/vfs.h"
 #include "list.h"
 #include "mm.h"
 #include "mm/frame.h"
@@ -13,7 +14,7 @@
 #include "timer.h"
 #include "uart.h"
 
-#include "cfg.h"
+#include "config.h"
 #include "log.h"
 
 #include <stdint.h>
@@ -49,6 +50,11 @@ struct task_struct *task_create(void *func) {
   t->status = TASK_STATUS_ALIVE;
   t->id = new_tid++;
 
+  t->fd_size = 0;
+  for (int i = 0; i < TASK_MX_NUM_FD; i++) {
+    t->fd[i] = NULL;
+  }
+
   // A task would only bind to a user thread if called with exec_user
   t->user_stack = (uintptr_t)(NULL);
   t->user_sp = (uintptr_t)(NULL);
@@ -76,56 +82,51 @@ int sys_exec(const char *name, char *const args[]) {
   return -1;
 }
 
-int sys_fork(const struct trap_frame *tf) {
-
-  struct task_struct *parent = get_current();
-
-  {
-    // just logging
-    uintptr_t el1_sp;
-    asm volatile("mov %0, sp" : "=r"(el1_sp));
-    log_println("current sp(sp_el1): %x", el1_sp);
+int sys_open(const char *pathname, int flags) {
+  struct task_struct *task = get_current();
+  struct file *file;
+  if (task->fd_size >= TASK_MX_NUM_FD) {
+    return SYS_OPEN_MX_FD_REACHED;
   }
+  if (NULL == (file = vfs_open(pathname, flags))) {
+    return SYS_OPEN_FILE_NOT_FOUND;
+  }
+  for (int i = 0; i < TASK_MX_NUM_FD; i++) {
+    if (task->fd[i] == NULL) {
+      task->fd[i] = file;
+      return i;
+    }
+  }
+  // Should not this line
+  return -1;
+}
 
-  struct task_struct *child = task_create(NULL);
+int sys_close(int fd) {
+  struct task_struct *task = get_current();
+  if ((fd < 0 || fd > TASK_MX_NUM_FD) || (task->fd[fd] == NULL)) {
+    return -1;
+  }
+  task->fd[fd] = NULL;
+  task->fd_size--;
+  return 0;
+}
 
-  // USER STACK
-  child->user_stack = (uintptr_t)kalloc(FRAME_SIZE);
-  memcpy((char *)child->user_stack, (const char *)parent->user_stack,
-         FRAME_SIZE);
+int sys_write(int fd, const void *buf, int count) {
+  struct task_struct *task = get_current();
+  if ((fd < 0 || fd > TASK_MX_NUM_FD) || (task->fd[fd] == NULL)) {
+    return -1;
+  }
+  struct file *file = task->fd[fd];
+  return file->f_ops->write(file, buf, count);
+}
 
-  // KERNEL STACK
-  memcpy((char *)child->kernel_stack, (const char *)parent->kernel_stack,
-         FRAME_SIZE);
-
-  // CODE
-  // TODO: fix this (memory leak)
-  // parent should free memory
-  // parent should be collected after child
-  child->code = NULL;
-
-  // Child return
-  // direct to the exception return point
-  uintptr_t kstack_tf_offset = ((uintptr_t)tf) - parent->kernel_stack;
-  struct trap_frame *child_tf =
-      (struct trap_frame *)(child->kernel_stack + kstack_tf_offset);
-  child->cpu_context.sp = (uintptr_t)child_tf;
-  child->cpu_context.lr = (uint64_t)fork_child_eret;
-  child_tf->regs[0] = 0;
-
-  log_println("parent kstack:%x ustack:%x", parent->kernel_stack,
-              parent->user_stack);
-  log_println("   tf:%x ctx.fp:%x ctx.sp:%x ctx.lr: %x", tf,
-              parent->cpu_context.fp, parent->cpu_context.sp,
-              parent->cpu_context.lr);
-
-  log_println("child kstack:%x ustack:%x ", child->kernel_stack,
-              child->user_stack);
-  log_println("   tf:%x ctx.fp:%x ctx.sp:%x ctx.lr: %x", child_tf,
-              child->cpu_context.fp, child->cpu_context.sp,
-              child->cpu_context.lr);
-
-  return child->id;
+int sys_read(int fd, void *buf, int count) {
+  struct task_struct *task = get_current();
+  if ((fd < 0 || fd > TASK_MX_NUM_FD) || (task->fd[fd] == NULL)) {
+    return -1;
+  }
+  struct file *file = task->fd[fd];
+  return file->f_ops->read(file, buf, count);
 }
 
 // note: void exit();
@@ -163,6 +164,12 @@ void task_start_user() {
   exec_user(name, args);
 }
 
+void test_user_io() {
+  char *name = "./file.out";
+  char *args[4] = {"./file.out", NULL};
+  exec_user(name, args);
+}
+
 void test_tasks() {
   proc_init();
 
@@ -171,7 +178,8 @@ void test_tasks() {
   asm volatile("msr tpidr_el1, %0\n" ::"r"((uint64_t)root_task));
 
   // create a task to bootup the very first user program
-  task_create(task_start_user);
+  // task_create(task_start_user);
+  task_create(test_user_io);
 
   task_create(foo);
   // task_create(foo);

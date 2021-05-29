@@ -1,4 +1,6 @@
-#include "cfg.h"
+#include "config.h"
+#include "fs/tmpfs.h"
+#include "fs/vfs.h"
 #include "mm.h"
 #include "mm/startup.h"
 #include "proc.h"
@@ -35,6 +37,10 @@ void main() {
 #ifdef CFG_RUN_TEST
   run_tests();
 #endif
+
+  vfs_init();
+  register_filesystem(&tmpfs);
+  mount_root_fs("tmpfs");
 
   test_tasks();
   // run_shell();

@@ -1,6 +1,6 @@
 #pragma once
 #include "bool.h"
-#include "cfg.h"
+#include "config.h"
 #include "test.h"
 
 #define STARTUP_MAX_RESERVE_COUNT 10

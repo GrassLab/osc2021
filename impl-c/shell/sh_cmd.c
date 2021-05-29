@@ -2,7 +2,7 @@
 #include "shell/cmd.h"
 
 #include "bool.h"
-#include "cfg.h"
+#include "config.h"
 #include "cpio.h"
 #include "log.h"
 #include "string.h"
@@ -29,7 +29,7 @@ static void cmdHelp();
 // static void cmdLoadUser();
 static void cmdReboot();
 
-Cmd cmdList[5] = {
+Cmd cmdList[] = {
     {.name = "hello", .help = "Greeting", .func = cmdHello},
     {.name = "ls", .help = "List files", .func = cmdLs},
     // {.name = "load_user",

@@ -10,8 +10,9 @@ HELLO = hello_world.out
 GETPID = get_pid.out
 ARGV = argv_test.out
 FORK = fork_test.out
+FILE = file.out
 
-all: $(HELLO) $(GETPID) $(ARGV) $(FORK)
+all: $(HELLO) $(GETPID) $(ARGV) $(FORK) $(FILE)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -42,6 +43,11 @@ $(FORK): $(FORK_DEPS)
 	$(LD) $(FORK_DEPS) -T linker.ld -o $(FORK_ELF)
 	$(OBJCOPY) -O binary $(FORK_ELF) $(FORK)
 
+FILE_DEPS = $(libs) file.o
+FILE_ELF = file.elf
+$(FILE): $(FILE_DEPS)
+	$(LD) $(FILE_DEPS) -T linker.ld -o $(FILE_ELF)
+	$(OBJCOPY) -O binary $(FILE_ELF) $(FILE)
 
 .PHONY: clean
 clean:

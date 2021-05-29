@@ -1,5 +1,5 @@
 #include "bool.h"
-#include "cfg.h"
+#include "config.h"
 #include "list.h"
 #include "log.h"
 #include "mm.h"

@@ -2,7 +2,7 @@
 #include "string.h"
 #include "uart.h"
 
-#include "cfg.h"
+#include "config.h"
 #include "log.h"
 #include "test.h"
 

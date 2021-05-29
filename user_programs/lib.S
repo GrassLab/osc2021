@@ -4,7 +4,10 @@
 #define SYS_EXEC 4
 #define SYS_EXIT 5
 #define SYS_FORK 6
-
+#define SYS_OPEN 7
+#define SYS_CLOSE 8
+#define SYS_WRITE 9
+#define SYS_READ 10
 
 // Program Runtime
 .section ".text._runtime"
@@ -54,5 +57,29 @@ exit:
 .global fork
 fork:
     mov x8, SYS_FORK
+    svc 0
+    ret
+
+.global open
+open:
+    mov x8, SYS_OPEN
+    svc 0
+    ret
+
+.global close
+close:
+    mov x8, SYS_CLOSE
+    svc 0
+    ret
+
+.global write
+write:
+    mov x8, SYS_WRITE
+    svc 0
+    ret
+
+.global read
+read:
+    mov x8, SYS_READ
     svc 0
     ret

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "bool.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -42,3 +43,10 @@ int cpioLs(void *archive);
 
 // Get file by return it's content and the size in memory.
 void *cpioGetFile(void *archive, const char *name, unsigned long *size);
+
+int cpioParseHeader(CpioNewcHeader *header, const char **filename,
+                    uint64_t *_filesize, uint64_t *mode, void **data,
+                    CpioNewcHeader **next);
+
+static inline bool s_ISFILE(uint64_t mode) { return (mode >> 12) == 8; }
+static inline bool s_ISDIR(uint64_t mode) { return (mode >> 12) == 4; }
