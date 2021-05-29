@@ -113,6 +113,10 @@ _start:
 	ldr x0, =exception_table
 	msr VBAR_EL1, x0
 
+//MMU init
+	bl initMMU
+	bl initMMULower
+
 //bss init
 	ldr x1, =__bss_start//64-bit load
 	ldr w2, =__bss_size//32-bit load

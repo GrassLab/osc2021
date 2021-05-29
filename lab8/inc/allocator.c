@@ -1,10 +1,11 @@
 #include "allocator.h"
+#include "mmio.h"
 #define debug 0
 #if debug
 #include "uart.h"
 #endif
 
-#define A_BASE 0x10000000
+#define A_BASE (KVA+0x10000000)
 #define A_SIZE 0x10000000
 #define F_SIZE (1<<12)
 #define F_NUM (A_SIZE/F_SIZE)

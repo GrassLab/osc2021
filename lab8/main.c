@@ -211,13 +211,16 @@ void printHWInfo(){
 	}
 }
 
+int gg=10;
+
 void main(){
 	uart_init();
 	printHWInfo();
 	allocator_init();
 	sd_init();
-
 	vfs_init(fat_Setup);
+
+	uart_printf("%x\n",&gg);
 
 	shell();
 }

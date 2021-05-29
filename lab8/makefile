@@ -3,7 +3,7 @@ APP:=kernel8
 LINKER:=linker.ld
 CFLAGS:=-nostdinc -nostdlib -nostartfiles
 LIBS:=$(wildcard inc/*.c)
-OBJS:=start.o main.o exception.o $(LIBS:.c=.o)
+OBJS:=start.o main.o exception.o mmu.o $(LIBS:.c=.o)
 
 all:
 	cd inc&&make
@@ -20,10 +20,11 @@ start.o:start.S
 
 %.o:%.c
 	aarch64-linux-gnu-gcc $(CFLAGS) -c $<
+	aarch64-linux-gnu-gcc $(CFLAGS) -S $<
 
 run:
 	make all
-	qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial stdio -drive if=sd,file=./archive/sdcard/sfn_nctuos.img,format=raw
+	qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial stdio -drive if=sd,file=./archive/sdcard/sfn_nctuos.img,format=raw #-d in_asm
 	#qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial pty -initrd ./archive/initramfs.cpio
 	#qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial pty -initrd ./archive/initramfs.cpio -d int
 
@@ -34,3 +35,4 @@ clean:
 	cd inc&&make clean
 	-rm $(APP).img
 	-rm *.o
+	-rm *.s
