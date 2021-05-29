@@ -50,6 +50,6 @@ file* vfsOpen(const char* pathname, int flags);
 int vfsClose(file* file);
 int vfsWrite(file* file, const void* buf, int len);
 int vfsRead(file* file, void* buf, int len);
-int vfsInit(void* setup_mount_f,void* write_f, void* read_f );
+int vfsInit(void* setup_mount_f);
 
 #endif

@@ -54,11 +54,11 @@ int vfsClose(file* f){
     my_free(f);
     return 0;
 }
-int vfsInit(void *setup_mount_f, void *write_f,void *read_f){
+int vfsInit(void *setup_mount_f){
     int (*setup_mount)(filesystem* fs,mount* mnt) = setup_mount_f;
 
-    my_write_f = write_f;
-    my_read_f = read_f;
+    //my_write_f = write_f;
+    //my_read_f = read_f;
     setup_mount(&my_filesystem,&my_mount);
     uart_printf("%s fs has been setup\n",my_filesystem.name);
 }

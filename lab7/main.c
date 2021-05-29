@@ -8,6 +8,7 @@
 #include "include/tmpfs.h"
 #include "include/vfs.h"
 #include "include/sd.h"
+#include "include/fat32.h"
 
 void main()
 {
@@ -16,9 +17,9 @@ void main()
     //memory allocator init
     mem_init();
     sd_init();
-    file_operations f_ops;
-    tmpfsfopsGet(&f_ops);
-    vfsInit(tmpfsSetup,f_ops.write,f_ops.read);
+    //file_operations f_ops;
+    //tmpfsfopsGet(&f_ops);
+    vfsInit(fatSetup);
 /*test sd init
     unsigned char* buf = (unsigned char*)my_alloc(512);
     readblock(0,buf);
