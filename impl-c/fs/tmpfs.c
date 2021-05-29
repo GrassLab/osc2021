@@ -54,6 +54,10 @@ struct filesystem tmpfs = {
 
 #define content_ptr(vnode) (Content *)((vnode)->internal)
 
+/**
+ * Because we build our CPIO by using `find .` command, this rebuild process
+ * is just exploit some feauture of the `find` command's output
+ **/
 static void build_root_tree(struct vnode *root_dir);
 
 const char *node_name(struct vnode *dir) {
@@ -102,6 +106,7 @@ void tmpfs_dev() {
   uart_println("root tree:");
   tmpfs_dumpdir(my_root.root, 0);
   uart_println("done...");
+
   while (1) {
     ;
   }
@@ -185,10 +190,6 @@ static struct vnode *build_root_find_parent_dir(const char *fullpath,
   return NULL;
 }
 
-/**
- * Because we build our CPIO by using `find .` command, this rebuild process
- * is just exploit some feauture of the `find` command's output
- **/
 void build_root_tree(struct vnode *root_dir) {
   CpioNewcHeader *next;
   const char *path;
@@ -316,8 +317,24 @@ void tmpfs_dumpdir(struct vnode *dir_node, int cur_level) {
     }
   }
 }
+
 int tmpfs_create(struct vnode *dir_node, struct vnode **target,
                  const char *component_name) {
-  // TODO
+  struct vnode *child_node;
+  Content *child_content, *parent_content;
+
+  child_node = create_vnode(component_name, TMPFS_NODE_TYPE_FILE);
+  child_content = content_ptr(child_node);
+  child_content->size = 0;
+
+  parent_content = content_ptr(dir_node);
+  parent_content->children[parent_content->size++] = child_node;
+
+  log_println("[tmpfs] create `%s` under `%s`", node_name(child_node),
+              node_name(dir_node));
+
+  if (target != NULL) {
+    *target = child_node;
+  }
   return 0;
 }

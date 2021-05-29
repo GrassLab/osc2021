@@ -37,6 +37,15 @@ struct filesystem registered = {
     .next = NULL,
 };
 
+/**
+ * @brief Find a vnode for opening files
+ * @param pathname full path of the target
+ * @param flags FILE operation flags
+ * @param root root vnode of the system
+ */
+static struct vnode *find_vnode(const char *pathname, int flags,
+                                struct vnode *root);
+
 void vfs_init() {
   rootfs = kalloc(sizeof(struct mount));
   if (rootfs == NULL) {
@@ -61,6 +70,7 @@ int mount_root_fs(const char *fs_impl) {
   }
   log_println("rootfs impl found: %s", rootfs_target->name);
   rootfs_target->setup_mount(rootfs_target, rootfs);
+  log_println("[vfs] rootfs build successfully");
   return 0;
 }
 
@@ -87,13 +97,8 @@ int register_filesystem(struct filesystem *fs) {
   return 0;
 }
 
-struct file *vfs_open(const char *pathname, int flags) {
-
-  // 2. Create a new file descriptor for this vnode if found.
-  // 3. Create a new file if O_CREAT is specified in flags.
-
-  // 1. Lookup pathname from the root vnode.
-  struct vnode *cwd = rootfs->root;
+struct vnode *find_vnode(const char *pathname, int flags, struct vnode *root) {
+  struct vnode *cwd = root;
 
   const char *path;
   char *query_name;
@@ -101,35 +106,73 @@ struct file *vfs_open(const char *pathname, int flags) {
   struct vnode *target_child;
 
   path = pathname;
-  do {
-    query_name = NULL;
-    ret = start_idx = end_idx = -1;
+  query_name = NULL;
+  ret = start_idx = end_idx = -1;
+  // Resolve the componenet name until reach the end
+  for (; 0 == (ret = get_component(path, &start_idx, &end_idx));
+       query_name = NULL, start_idx = end_idx = -1) {
 
-    // Retrieve the literal name of the child
-    ret = get_component(path, &start_idx, &end_idx);
-    if (ret == 0) {
+    // Copy name
+    {
       name_size = end_idx - start_idx + 1;
       query_name = kalloc(name_size + 1);
       memcpy(query_name, &path[start_idx], name_size);
       query_name[name_size] = '\0';
-      uart_println("vfs query: %s", query_name);
-
-      // Query file by it's name
-      cwd->v_ops->lookup(cwd, &target_child, query_name);
-
-      if (target_child != NULL) {
-        path = &path[end_idx + 1];
-        cwd = target_child;
-        kfree(query_name);
-      } else {
-        uart_println("cannot found file: %s", query_name);
-        kfree(query_name);
-        break;
-      }
     }
-  } while (ret == 0);
 
-  return NULL;
+    // Query file by it's name
+    cwd->v_ops->lookup(cwd, &target_child, query_name);
+
+    // Child found, go to the next level
+    if (target_child != NULL) {
+      path = &path[end_idx + 1];
+      cwd = target_child;
+      kfree(query_name);
+      continue;
+    }
+
+    // Child not found, handle properly and return...
+    // Get next component to makesure this is the final level
+    path = &path[end_idx + 1];
+    ret = get_component(path, &start_idx, &end_idx);
+    if (ret == 0) {
+      // There're still component names not resolved, this is not the final
+      // level
+      uart_println("Not existing middle pathname: `%s`", query_name);
+      kfree(query_name);
+      return NULL;
+    }
+    if (flags & FILE_O_CREAT) {
+      ret = cwd->v_ops->create(cwd, &target_child, query_name);
+      kfree(query_name);
+      return (ret == 0) ? target_child : NULL;
+    } else {
+      kfree(query_name);
+      return NULL;
+    }
+  }
+  return target_child;
+}
+
+struct file *vfs_open(const char *pathname, int flags) {
+
+  // 2. Create a new file descriptor for this vnode if found.
+  // 3. Create a new file if O_CREAT is specified in flags.
+
+  // 1. Lookup pathname from the root vnode.
+  struct vnode *target;
+  target = find_vnode(pathname, flags, rootfs->root);
+  if (target == NULL) {
+    uart_println("[vfs] not found");
+    return NULL;
+  }
+  uart_println("[vfs] create file handle for `%s`", pathname);
+  struct file *f = kalloc(sizeof(struct file));
+  f->node = target;
+  f->f_pos = 0;
+  f->f_ops = target->f_ops;
+  f->flags = 0; // TBD
+  return f;
 }
 
 int vfs_close(struct file *file) {
@@ -144,7 +187,8 @@ int vfs_write(struct file *file, const void *buf, size_t len) {
 }
 
 int vfs_read(struct file *file, void *buf, size_t len) {
-  // 1. read min(len, readable file data size) byte to buf from the opened file.
+  // 1. read min(len, readable file data size) byte to buf from the opened
+  // file.
   // 2. return read size or error code if an error occurs.
   return 0;
 }
