@@ -1,9 +1,11 @@
 #pragma once
+#include "fs/vfs.h"
 #include <stddef.h>
 #include <stdint.h>
 
 #define TASK_STATUS_DEAD 0
 #define TASK_STATUS_ALIVE 1
+#define TASK_MX_NUM_FD 10
 
 struct cpu_context {
   uint64_t x19;
@@ -25,6 +27,9 @@ struct task_struct {
   struct cpu_context cpu_context;
   unsigned long id;
   int status;
+
+  int fd_size;
+  struct file *fd[TASK_MX_NUM_FD];
 
   uintptr_t kernel_stack;
   uintptr_t user_stack;

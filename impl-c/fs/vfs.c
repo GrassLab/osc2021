@@ -181,15 +181,11 @@ int vfs_close(struct file *file) {
 }
 
 int vfs_write(struct file *file, const void *buf, size_t len) {
-  // 1. write len byte from buf to the opened file.
-  // 2. return written size or error code if an error occurs.
-  return 0;
+  return file->f_ops->write(file, buf, len);
 }
 
 int vfs_read(struct file *file, void *buf, size_t len) {
-  // 1. read min(len, readable file data size) byte to buf from the opened
-  // file.
-  // 2. return read size or error code if an error occurs.
+  return file->f_ops->read(file, buf, len);
   return 0;
 }
 

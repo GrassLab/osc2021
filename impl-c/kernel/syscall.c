@@ -68,6 +68,43 @@ void syscall_routing(int num, struct trap_frame *tf) {
     break;
   }
 
+  case SYS_OPEN: {
+    log(SYS_OPEN);
+    const char *pathname = (const char *)tf->regs[0];
+    int flags = (int)tf->regs[1];
+    int ret = sys_open(pathname, flags);
+    tf->regs[0] = ret;
+    break;
+  }
+
+  case SYS_CLOSE: {
+    log(SYS_CLOSE);
+    int fd = (int)tf->regs[0];
+    int ret = sys_close(fd);
+    tf->regs[0] = ret;
+    break;
+  }
+
+  case SYS_WRITE: {
+    log(SYS_WRITE);
+    int fd = (int)tf->regs[0];
+    const void *buf = (const void *)tf->regs[1];
+    int count = (int)tf->regs[2];
+    int ret = sys_write(fd, buf, count);
+    tf->regs[0] = ret;
+    break;
+  }
+
+  case SYS_READ: {
+    log(SYS_READ);
+    int fd = (int)tf->regs[0];
+    void *buf = (void *)tf->regs[1];
+    int count = (int)tf->regs[2];
+    int ret = sys_read(fd, buf, count);
+    tf->regs[0] = ret;
+    break;
+  }
+
   default: {
     uart_println("syscall not implemented: %d", num);
     while (1) {

@@ -255,12 +255,18 @@ int tmpfs_setup_mount(struct filesystem *fs, struct mount *mount) {
 
 int tmpfs_write(struct file *f, const void *buf, unsigned long len) {
   // TODO
+  log_println("[tmpfs] write: `%s`, len:%d", node_name(f->node), len);
   return 0;
 }
 
 int tmpfs_read(struct file *f, void *buf, unsigned long len) {
   // TODO
-  return 0;
+  char *data = "Hello from TMPFS";
+  int data_len = strlen(data) + 1;
+  log_println("[tmpfs] read: `%s`, len:%d", node_name(f->node), len);
+  int ret_length = data_len < len ? data_len : len;
+  memcpy(buf, data, ret_length);
+  return ret_length;
 }
 
 int tmpfs_lookup(struct vnode *dir_node, struct vnode **target,

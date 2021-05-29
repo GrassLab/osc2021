@@ -10,7 +10,7 @@
  *  static const int _DO_LOG = 0;
  * #endif
  */
-
+#include "uart.h"
 #define LOG_DIM_START ("\033[90;m")
 #define LOG_DIM_END ("\033[0m")
 
