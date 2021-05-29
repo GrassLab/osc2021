@@ -10,7 +10,7 @@
 
 #define PATH_DELIM '/'
 
-#ifdef CFG_LOG_FS_VFS
+#ifdef CFG_LOG_VFS
 static const int _DO_LOG = 1;
 #else
 static const int _DO_LOG = 0;
@@ -87,7 +87,7 @@ int register_filesystem(struct filesystem *fs) {
   registered.next = fs;
   fs->next = _first;
 
-#ifdef CFG_LOG_FS_VFS
+#ifdef CFG_LOG_VFS
   log_println("Filesystems registered:");
   int i = 0;
   for (cur = registered.next, i = 0; cur != NULL; cur = cur->next, i++) {
@@ -156,17 +156,14 @@ struct vnode *find_vnode(const char *pathname, int flags, struct vnode *root) {
 
 struct file *vfs_open(const char *pathname, int flags) {
 
-  // 2. Create a new file descriptor for this vnode if found.
-  // 3. Create a new file if O_CREAT is specified in flags.
-
-  // 1. Lookup pathname from the root vnode.
   struct vnode *target;
   target = find_vnode(pathname, flags, rootfs->root);
   if (target == NULL) {
     uart_println("[vfs] not found");
     return NULL;
   }
-  uart_println("[vfs] create file handle for `%s`", pathname);
+
+  log_println("[vfs] create file handle for `%s`", pathname);
   struct file *f = kalloc(sizeof(struct file));
   f->node = target;
   f->f_pos = 0;

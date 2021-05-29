@@ -41,16 +41,8 @@ void main() {
   vfs_init();
   register_filesystem(&tmpfs);
   mount_root_fs("tmpfs");
-  struct file *f;
-  f = vfs_open("folder/testaaaa.txt", 0);
 
-  // tmpfs_dev();
-
-  uart_println("finished, start busy waiting...");
-  while (1) {
-    ;
-  }
-  // test_tasks();
+  test_tasks();
   // run_shell();
 }
 // =====

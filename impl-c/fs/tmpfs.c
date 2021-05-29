@@ -2,6 +2,7 @@
 #include "fs/vfs.h"
 
 #include "cpio.h"
+#include "minmax.h"
 #include "mm.h"
 #include "stdint.h"
 #include "string.h"
@@ -20,18 +21,17 @@ static const int _DO_LOG = 0;
 // TODO: use linked-list to replace staticaly allocate space
 #define TMPFS_DIR_CAPACITY 10
 
-#define TMPFS_MX_FILE_NAME_LEN 256
-
 #define TMPFS_NODE_TYPE_DIR 1
 #define TMPFS_NODE_TYPE_FILE 2
 
-#define RING_BFR_SIZE 256
+#define TMPFS_MX_FILE_NAME_LEN 256
 
 // Private content for vnode in tmpfs
 typedef struct {
   char *name;
   uint8_t node_type;
   size_t size;
+  size_t capacity;
 
   // Differernt node could access differnt attribute
   union {
@@ -40,7 +40,9 @@ typedef struct {
       struct vnode **children;
     };
     // File node
-    struct {};
+    struct {
+      char *data;
+    };
   };
 } Content;
 
@@ -93,25 +95,6 @@ static int parse_node_type(int64_t cpio_mode) {
   }
 }
 
-void wait() {
-  for (uint64_t i = 0; i < (1 << 23); i++) {
-    ;
-  }
-}
-
-void tmpfs_dev() {
-  struct mount my_root;
-  tmpfs_setup_mount(&tmpfs, &my_root);
-  uart_println("dev finish");
-  uart_println("root tree:");
-  tmpfs_dumpdir(my_root.root, 0);
-  uart_println("done...");
-
-  while (1) {
-    ;
-  }
-}
-
 // bind operations
 int tmpfs_init() {
   tmpfs_v_ops = kalloc(sizeof(struct vnode_operations));
@@ -137,9 +120,16 @@ static struct vnode *create_vnode(const char *name, uint8_t node_type) {
     cnt->name = (char *)kalloc(sizeof(char) * strlen(name));
     strcpy(cnt->name, name);
     cnt->node_type = node_type;
-    cnt->size = 0;
     if (node_type == TMPFS_NODE_TYPE_DIR) {
       cnt->children = kalloc(sizeof(struct vnode *) * TMPFS_DIR_CAPACITY);
+      cnt->capacity = TMPFS_DIR_CAPACITY;
+      cnt->size = 0;
+
+      // lazy allocate
+    } else if (node_type == TMPFS_NODE_TYPE_FILE) {
+      cnt->data = NULL;
+      cnt->capacity = 0;
+      cnt->size = 0;
     }
   }
   node->internal = cnt;
@@ -231,11 +221,22 @@ void build_root_tree(struct vnode *root_dir) {
     child_node = create_vnode(component_name, node_type);
     node_content = content_ptr(child_node);
     node_content->size = filesize;
+
+    // Setup file content
+    if (node_type == TMPFS_NODE_TYPE_FILE) {
+      node_content->data = kalloc(filesize);
+      memcpy(node_content->data, fileContent, filesize);
+      node_content->capacity = filesize;
+    }
+
     parent_content = content_ptr(parent_dir);
     parent_content->children[parent_content->size++] = child_node;
     log_println("[tmpfs] %s: create `%s` under `%s`", path,
                 node_name(child_node), node_name(parent_dir));
   }
+#ifdef CFG_LOG_TMPFS_DUMP_TREE
+  tmpfs_dumpdir(root_dir, 0);
+#endif
 };
 
 int tmpfs_setup_mount(struct filesystem *fs, struct mount *mount) {
@@ -254,19 +255,40 @@ int tmpfs_setup_mount(struct filesystem *fs, struct mount *mount) {
 }
 
 int tmpfs_write(struct file *f, const void *buf, unsigned long len) {
-  // TODO
+  Content *content = content_ptr(f->node);
+  size_t request_end = f->f_pos + len;
+
+  // Need to enlarge size
+  if (request_end > content->capacity) {
+    size_t new_size = request_end << 1;
+    log_println("[tmpfs] Enlarge file capacity from %d to %d",
+                content->capacity, new_size);
+    char *new_data = kalloc(sizeof(char) * new_size);
+    if (content->data != NULL) {
+      memcpy(new_data, content->data, content->size);
+      kfree(content->data);
+    }
+    content->data = new_data;
+    content->capacity = new_size;
+  }
+  memcpy(&content->data[f->f_pos], buf, len);
+  f->f_pos += len;
+  content->size = max(request_end, content->size);
   log_println("[tmpfs] write: `%s`, len:%d", node_name(f->node), len);
-  return 0;
+  return len;
 }
 
 int tmpfs_read(struct file *f, void *buf, unsigned long len) {
-  // TODO
-  char *data = "Hello from TMPFS";
-  int data_len = strlen(data) + 1;
-  log_println("[tmpfs] read: `%s`, len:%d", node_name(f->node), len);
-  int ret_length = data_len < len ? data_len : len;
-  memcpy(buf, data, ret_length);
-  return ret_length;
+  Content *content = content_ptr(f->node);
+
+  size_t request_end = f->f_pos + len;
+  size_t read_len = min(request_end, content->size) - f->f_pos;
+  log_println("[tmpfs] read: f_pos:%d, size:%d", f->f_pos, content->size);
+
+  memcpy(buf, &content->data[f->f_pos], read_len);
+  f->f_pos += read_len;
+  log_println("[tmpfs] read: `%s`, len:%d", node_name(f->node), read_len);
+  return read_len;
 }
 
 int tmpfs_lookup(struct vnode *dir_node, struct vnode **target,
@@ -274,8 +296,8 @@ int tmpfs_lookup(struct vnode *dir_node, struct vnode **target,
   Content *dir_content = content_ptr(dir_node);
 
 #ifdef CFG_LOG_TMPFS_LOOKUP
-  uart_println("[tmpfs] lookup: `%s` under folder: `%s`", component_name,
-               dir_content->name);
+  uart_println("%s[tmpfs] lookup: `%s` under folder: `%s`%s", LOG_DIM_START,
+               component_name, dir_content->name, LOG_DIM_END);
 #endif
 
   // "." means the current directory
@@ -301,11 +323,6 @@ int tmpfs_lookup(struct vnode *dir_node, struct vnode **target,
 
 void tmpfs_dumpdir(struct vnode *dir_node, int cur_level) {
   Content *dir_content = content_ptr(dir_node);
-  // for (int i = 0; i < cur_level; i++) {
-  //   uart_puts("  ");
-  // }
-  // uart_println("+ %s", dir_content->name);
-
   Content *child_content;
   struct vnode *child_vnode;
   for (int i = 0; i < dir_content->size; i++) {

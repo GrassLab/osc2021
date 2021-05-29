@@ -1,14 +1,19 @@
 #include "lib.h"
 
 int main() {
+  char buf[256];
   int a = open("hello", FILE_O_CREAT);
-  char buf[200];
-  int size = 0;
-  size = read(a, buf, 200);
-  if (size > 0) {
-    printf("read data: %s\n", buf);
-  }
-  int ret = close(a);
-  printf("Closed? %s\n", ret == 0 ? "yes" : "no");
+  int b = open("world", FILE_O_CREAT);
+  write(a, "Hello ", 6);
+  write(b, "World!", 6);
+  close(a);
+  close(b);
+  b = open("hello", 0);
+  a = open("world", 0);
+  int sz;
+  sz = read(b, buf, 100);
+  sz += read(a, buf + sz, 100);
+  buf[sz] = '\0';
+  printf("%s\n", buf); // should be Hello World!
   return 0;
 }

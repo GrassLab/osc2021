@@ -18,9 +18,10 @@
 // #define CFG_LOG_PROC_SCHED
 // #define CFG_LOG_PROC_ARGV
 // #define CFG_LOG_PROC_EXEC
-#define CFG_LOG_FS_VFS
+#define CFG_LOG_VFS
 #define CFG_LOG_TMPFS
-// #define CFG_LOG_TMPFS_LOOKUP
+#define CFG_LOG_TMPFS_LOOKUP
+#define CFG_LOG_TMPFS_DUMP_TREE
 
 /**
  *  TEST
