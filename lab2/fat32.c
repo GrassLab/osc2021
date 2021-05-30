@@ -124,8 +124,10 @@ int fat32_sync()
 {
     struct page_cache *cp = &Cache;
 
-    for (int i = 0; i < MAX_CACHE_SIZE; ++i)
-        writeblock(cp->tag[i], cp->cache + i * 512);
+    for (int i = 0; i < MAX_CACHE_SIZE; ++i) {
+        if (cp->tag[i] != -1)
+            writeblock(cp->tag[i], cp->cache + i * 512);
+    }
     
     return 0;
 }

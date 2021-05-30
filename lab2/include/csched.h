@@ -1,6 +1,8 @@
 #define MAX_TASK_NR 32
+#define MAX_VMA_NR 128
 #define MAX_WAIT_NR 8
 #define MAX_WAIT_ARGS_NR 16
+#define MAX_PROCESS_PAGE 16
 
 #define MAX_SIG_NR 2 // SIGINT, SIGKILL
 #define SIG_INT_NUM  0
@@ -37,6 +39,26 @@ struct sig_struct {
     char *ksp;
 };
 
+#define VM_ANONYMOUS 0x1 // 1: anoymous; 0: file
+#define VM_SHARED    0x2 // 1: shared  ; 0: private
+
+struct vm_area_struct {
+    unsigned long vm_start;
+    unsigned long vm_end;
+    unsigned int vm_prot;
+    unsigned int vm_flag;
+    struct vm_area_struct *vm_next;
+};
+
+struct mm_struct {
+    struct vm_area_struct *mmap;
+    unsigned long *pgd;
+    char *cpio_start;
+    int cpio_size;
+    int page_nr;
+    struct page *pages[MAX_PROCESS_PAGE];
+};
+
 struct task {
     struct cpu_context ctx;
     int pid;
@@ -56,6 +78,7 @@ struct task {
     struct task *next, *prev;
     struct file *fd_tab[8];
     struct vnode *wd;
+    struct mm_struct *mm;
 };
 
 struct trap_frame {
@@ -87,3 +110,5 @@ int schedule();
 int sys_exit();
 extern void cpu_switch_to(struct task* prev, struct task* next);
 int rm_from_ready(struct task *old);
+int init_mms_pool();
+int init_vma_pool();

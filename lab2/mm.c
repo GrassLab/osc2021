@@ -1,11 +1,11 @@
 #include "include/mini_uart.h"
 #include "include/cutils.h"
+#include "include/csched.h"
 #include "include/mm.h"
 #include "utils.h"
 #define MAX_NR_REGIONS_POOL 20
 #define MAX_ORDER 14 // original: 7 15
 #define MAX_ORDER_NR_PAGES (1 << (MAX_ORDER - 1)) // 16384 pages
-#define BUDDY_BASE 0x100000 //0x2000
 #define PAGE_SIZE 0x1000 // 4KB
 #define PAGE_OFFSET(ADDR) ((PAGE_SIZE - 1) & (ADDR)) 
 #define MAX_PD_TYPE 8
@@ -19,6 +19,8 @@ struct page free_list[MAX_ORDER];
 struct page page_frames[MAX_ORDER_NR_PAGES];
 struct page_descriptor pd_list[MAX_PD_TYPE];
 struct page *dynamic_mem_page_pool[MAX_DMPP];
+
+extern struct task *current;
 
 int insert_into_pdlist(struct page_descriptor *pd_new, struct page_descriptor *pd_prev)
 {
@@ -319,6 +321,7 @@ struct page *get_free_frames(int nr)
             }
             page_walk->blk_odr = order;
             block_set_free(page_walk, 0);
+            page_walk->ref = 1;
             // page_walk->free = 0;
 
             return page_walk;
@@ -614,7 +617,7 @@ int is_present(unsigned long *pt_ent)
     return *pt_ent & 0x1;
 }
 
-unsigned long *alloc_page_table()
+unsigned long *_alloc_page_table()
 {
     struct page *page;
     unsigned long *tar;
@@ -630,14 +633,31 @@ unsigned long *alloc_page_table()
     return tar;
 }
 
-int kernel_page_fault(unsigned long va)
+unsigned long *alloc_page_table(struct mm_struct *mm)
+{
+    struct page *page;
+    unsigned long *tar;
+
+    if (!(page = get_free_frames(1))) {
+        uart_send_string("From alloc_page_table: fail\r\n");
+        return 0;
+    }
+    mm->pages[mm->page_nr++] = page;
+    tar = (unsigned long*)page->addr;
+    for (int i = 0; i < 512; ++i)
+        tar[i] = 0;
+
+    return tar;
+}
+
+int kernel_space_map(unsigned long va)
 {
     unsigned long *pt_ent, *pd_walk, pg;
 
     pd_walk = kpgd;
     pt_ent = &pd_walk[(va >> PGD_SHIFT) & PD_IDX_MASK];
     if (!is_present(pt_ent)) {
-        pg = (unsigned long)alloc_page_table();
+        pg = (unsigned long)_alloc_page_table();
         *pt_ent = KVA_TO_PA(pg) | BOOT_PGD_ATTR;
     }
 
@@ -645,7 +665,7 @@ int kernel_page_fault(unsigned long va)
     pd_walk = (unsigned long*)pg;
     pt_ent = &pd_walk[(va >> PUD_SHIFT) & PD_IDX_MASK];
     if (!is_present(pt_ent)) {
-        pg = (unsigned long)alloc_page_table();
+        pg = (unsigned long)_alloc_page_table();
         *pt_ent = KVA_TO_PA(pg) | BOOT_PUD_ATTR;
     }
 
@@ -657,22 +677,21 @@ int kernel_page_fault(unsigned long va)
             *pt_ent = (va & 0xFFFFFFE00000) | BOOT_PMD_DEV_ATTR;
         else
             *pt_ent = (va & 0xFFFFFFE00000) | BOOT_PMD_NOR_ATTR;
-            // *pt_ent = (va & 0xFFF) | BOOT_PMD_NOR_ATTR;
+            *pt_ent = (va & 0xFFF) | BOOT_PMD_NOR_ATTR;
     }
 
     return 0;
 }
 
-int kernel_page_fault_(unsigned long va)
+int kernel_space_map_(unsigned long va)
 {
     unsigned long *pt_ent, *pd_walk, pg;
 
     pd_walk = kpgd;
     pt_ent = &pd_walk[(va >> PGD_SHIFT) & PD_IDX_MASK];
     if (!is_present(pt_ent)) {
-        pg = (unsigned long)alloc_page_table();
+        pg = (unsigned long)_alloc_page_table();
         *pt_ent = KVA_TO_PA(pg) | BOOT_PGD_ATTR;
-        uart_send_string("From kernel_page_fault_:A \r\n");
     }
 
     // pd_walk = *pt_ent & PD_ENT_ADDR_MASK;
@@ -684,7 +703,6 @@ int kernel_page_fault_(unsigned long va)
     // uart_send_string("\r\n");
     if (!is_present(pt_ent)) {
         *pt_ent = (va & 0xFFFFC0000000) | BOOT_PMD_DEV_ATTR;
-        uart_send_string("From kernel_page_fault_:A-1 \r\n");
     }
 
     return 0;
@@ -694,15 +712,363 @@ unsigned long *create_kernel_pgd(unsigned long start, unsigned long length)
 { // length unit is byte
     unsigned long addr_walk, addr_end, step_len;
 
-    kpgd = alloc_page_table();
+    kpgd = _alloc_page_table();
     addr_walk = start & 0xFFFFFFE00000;
     addr_end = (start + length) & 0xFFFFFFE00000;
     step_len = 1 << 21;
-    while (addr_walk < addr_end) {
-        kernel_page_fault(addr_walk);
+    while (addr_walk <= addr_end) {
+        kernel_space_map(addr_walk);
         addr_walk += step_len;
     }
+
+    set_ttbr1(KVA_TO_PA((unsigned long)kpgd));
+    set_ttbr0(KVA_TO_PA((unsigned long)kpgd));
+    // set_ttbr1(0x7000);
+    // _set_ttbr0(0x7000);
 
     return kpgd;
 }
 
+
+int load_cpio_file(char *page_addr, char *cpio_start,
+    unsigned long offset)
+{
+    char *from;
+
+    if (offset >= 0x1000) {
+        from = align_down(cpio_start + offset, 0x1000);
+    }
+    else {
+        from = cpio_start;
+    }
+    memcpy(page_addr, from, 0x1000);
+
+    return 0;
+}
+
+// int user_space_map(unsigned long va, int anon)
+// {
+//     unsigned long *pt_ent, *pd_walk, pg;
+//     char *page;
+
+//     pd_walk = current->mm->pgd;
+//     pt_ent = &pd_walk[(va >> PGD_SHIFT) & PD_IDX_MASK];
+//     if (!is_present(pt_ent)) {
+//         pg = (unsigned long)alloc_page_table();
+//         *pt_ent = KVA_TO_PA(pg) | BOOT_PGD_ATTR;
+//     }
+
+//     pd_walk = (unsigned long*)pg;
+//     pt_ent = &pd_walk[(va >> PUD_SHIFT) & PD_IDX_MASK];
+//     if (!is_present(pt_ent)) {
+//         pg = (unsigned long)alloc_page_table();
+//         *pt_ent = KVA_TO_PA(pg) | BOOT_PUD_ATTR;
+//     }
+
+//     pd_walk = (unsigned long*)pg;
+//     pt_ent = &pd_walk[(va >> PMD_SHIFT) & PD_IDX_MASK];
+//     if (!is_present(pt_ent)) {
+//         pg = (unsigned long)alloc_page_table();
+//         *pt_ent = KVA_TO_PA(pg) | BOOT_PMD_ATTR;
+//     }
+
+//     pd_walk = (unsigned long*)pg;
+//     pt_ent = &pd_walk[(va >> PTE_SHIFT) & PD_IDX_MASK];
+//     if (!is_present(pt_ent)) {
+//         pg = (unsigned long)alloc_page_table();
+//         *pt_ent = KVA_TO_PA(pg) | BOOT_PTE_NOR_ATTR;
+//         if (!anon){
+//             load_cpio_file((char*)pg, current->mm->cpio_start, va);
+//         }
+//     }
+//     return 0;
+// }
+
+int load_content_to_page(char *page_kva, unsigned long offset,
+    struct mm_struct *mm, struct vm_area_struct *vma)
+{
+    // TODO: copy amount may be affected by file size.
+    memcpy(page_kva, mm->cpio_start + offset, 0x1000);
+    return 0;
+}
+
+int direct_map(struct mm_struct *mm, unsigned long va, unsigned long p_va)
+{
+    unsigned long *pt_ent, *pd_walk, pg;
+    char *page;
+
+    pd_walk = mm->pgd;
+    pt_ent = &pd_walk[(va >> PGD_SHIFT) & PD_IDX_MASK];
+    if (!is_present(pt_ent)) {
+        pg = (unsigned long)alloc_page_table(mm);
+        *pt_ent = KVA_TO_PA(pg) | BOOT_PGD_ATTR;
+    }
+
+    pd_walk = (unsigned long*)pg;
+    pt_ent = &pd_walk[(va >> PUD_SHIFT) & PD_IDX_MASK];
+    if (!is_present(pt_ent)) {
+        pg = (unsigned long)alloc_page_table(mm);
+        *pt_ent = KVA_TO_PA(pg) | BOOT_PUD_ATTR;
+    }
+
+    pd_walk = (unsigned long*)pg;
+    pt_ent = &pd_walk[(va >> PMD_SHIFT) & PD_IDX_MASK];
+    if (!is_present(pt_ent)) {
+        pg = (unsigned long)alloc_page_table(mm);
+        *pt_ent = KVA_TO_PA(pg) | BOOT_PMD_ATTR;
+    }
+
+    pd_walk = (unsigned long*)pg;
+    pt_ent = &pd_walk[(va >> PTE_SHIFT) & PD_IDX_MASK];
+    if (!is_present(pt_ent))
+        *pt_ent = KVA_TO_PA(p_va) | BOOT_PTE_NOR_ATTR;
+
+    return 0;
+}
+
+
+unsigned long *create_user_pgd(struct mm_struct *mm)
+{ // length unit is byte
+    unsigned long addr_walk, addr_end, step_len, page;
+    struct vm_area_struct *vma;
+
+    vma = mm->mmap;
+    while (vma) {
+        addr_walk = vma->vm_start; // vm_start should align to 0x1000
+        addr_end = vma->vm_end;
+        step_len = 0x1000;
+        while (addr_walk <= addr_end) {
+            page = (unsigned long)alloc_page_table(mm); // va
+            if (!(vma->vm_flag & VM_ANONYMOUS)) {// Only file-page needs to load content
+                load_content_to_page((char*)page, addr_walk, mm, vma);
+            }
+            direct_map(mm, addr_walk, page);
+            addr_walk += step_len;
+        }
+        vma = vma->vm_next;
+    }
+    return current->mm->pgd;
+}
+
+int destroy_mmap(struct mm_struct *mm)
+{ // Destory vma link list
+    struct vm_area_struct *vma_walk, *vma_last;
+
+    vma_walk = mm->mmap;
+    while (vma_walk) {
+        vma_last = vma_walk;
+        vma_walk = vma_walk->vm_next;
+        /* Free vma_last */
+        vma_last->vm_end = 0;
+    }
+    return 0;
+}
+
+int destroy_pgd(struct mm_struct *mm)
+{
+    // Clear all pages: i starting from 1, because
+    // pages[0] is pgd. We only need to zero it.
+    for (int i = 1; i < mm->page_nr; ++i)
+        if (--(mm->pages[i]->ref)) {// when ref becomes zero, free the page.
+            free_frames(mm->pages[i]);
+        }
+    // Zero pgd
+    for (int i = 0; i < 512; ++i)
+        mm->pgd[i] = 0;
+    return 0;
+}
+
+int vma_insert(struct vm_area_struct *head, struct vm_area_struct *new)
+{
+    struct vm_area_struct *vma_walk;
+
+    
+    for (vma_walk = head; vma_walk; vma_walk = vma_walk->vm_next) {
+        if (!vma_walk->vm_next) {
+            if (new->vm_start > vma_walk->vm_end) {
+                vma_walk->vm_next = new;
+                return 0;
+            }
+            return -1;
+        } else {
+            if (new->vm_end < vma_walk->vm_next->vm_start &&
+                new->vm_start > vma_walk->vm_end) {
+                vma_walk->vm_next = new;
+                new->vm_next = vma_walk->vm_next;
+                return 0;
+            }
+        }
+    }
+    return -1;
+}
+
+int create_mmap(struct mm_struct *mm)
+{
+    struct vm_area_struct *vma;
+
+    /* .text vma */
+    vma = (struct vm_area_struct *)((unsigned long)new_vma() + 0xffff000000000000);
+    vma->vm_start = 0x0;
+    vma->vm_end = mm->cpio_size;
+    vma->vm_prot = 0;
+    vma->vm_flag = VM_SHARED;
+    mm->mmap = vma;
+
+    /* stack vma */
+    vma = (struct vm_area_struct *)((unsigned long)new_vma() + 0xffff000000000000);
+    vma->vm_start = align_down(0x0000fffffffffff0, 0x1000);
+    vma->vm_end = 0x0000fffffffffff0;
+    vma->vm_prot = 0;
+    vma->vm_flag = VM_ANONYMOUS;
+    vma_insert(mm->mmap, vma);
+
+    return 0;
+}
+
+int create_user_space(struct mm_struct *mm)
+{
+    int from_kernel;
+
+    from_kernel = 1;
+    if (mm->mmap) { // Happens when user program calls exec()
+        from_kernel = 0;
+        destroy_mmap(mm);
+        destroy_pgd(mm);
+    }
+    create_mmap(mm);
+    /* create_user_pgd() was used when
+       we don't have demand paging. */
+    create_user_pgd(mm);
+    if (1 || from_kernel){
+        set_ttbr0(KVA_TO_PA((unsigned long)(mm->pgd)));
+    }
+
+    return 0;
+}
+
+unsigned long va_to_page(unsigned long va, struct mm_struct *mm)
+{ // return virtual address of page of va
+    unsigned long *pt_ent, *pd_walk;
+
+    pd_walk = mm->pgd;
+    pt_ent = &pd_walk[(va >> PGD_SHIFT) & PD_IDX_MASK];
+    if (!is_present(pt_ent))
+        return 0;
+    
+    pd_walk = PA_TO_KVA(*pt_ent & PD_ENT_ADDR_MASK);
+    pt_ent = &pd_walk[(va >> PUD_SHIFT) & PD_IDX_MASK];
+    if (!is_present(pt_ent))
+        return 0;
+
+    pd_walk = PA_TO_KVA(*pt_ent & PD_ENT_ADDR_MASK);
+    pt_ent = &pd_walk[(va >> PMD_SHIFT) & PD_IDX_MASK];
+    if (!is_present(pt_ent))
+        return 0;
+
+    pd_walk = PA_TO_KVA(*pt_ent & PD_ENT_ADDR_MASK);
+    pt_ent = &pd_walk[(va >> PTE_SHIFT) & PD_IDX_MASK];
+    if (!is_present(pt_ent))
+        return 0;
+
+    return PA_TO_KVA(*pt_ent & PD_ENT_ADDR_MASK);
+}
+
+
+
+int copy_user_space(struct mm_struct *mm_dest, struct mm_struct *mm_src)
+{
+    struct vm_area_struct *vma_src, *vma_dest;
+    unsigned long addr_walk, addr_end, step_len, page_dest, page_src;
+    struct page *frame;
+
+    /* Copy vma and page table */
+    mm_dest->mmap = (struct vm_area_struct *)((unsigned long)new_vma() + 0xffff000000000000);
+    vma_dest = mm_dest->mmap;
+    for (vma_src = mm_src->mmap; vma_src; ) {
+        // Copy vma
+        memcpy((char*)vma_dest, (char*)vma_src, sizeof(struct vm_area_struct));
+        // Copy page table
+        addr_walk = vma_dest->vm_start; // vm_start should align to 0x1000
+        addr_end = vma_dest->vm_end;
+        step_len = 0x1000;
+        while (addr_walk <= addr_end) {
+            page_src = va_to_page(addr_walk, mm_src); // Parent's page
+            if (vma_dest->vm_flag & VM_SHARED) { // shared pages
+                frame = (struct page*)VA_TO_FRAME(page_src);
+                frame->ref++;
+                mm_dest->page_nr++;
+                direct_map(mm_dest, addr_walk, page_src);
+            }
+            else { // private page needs its own page
+                page_dest = (unsigned long)alloc_page_table(mm_dest); // va
+                memcpy((char*)page_dest, (char*)page_src, 0x1000);
+                direct_map(mm_dest, addr_walk, page_dest);
+            }
+            addr_walk += step_len;
+        }
+        // Iterate vma_src
+        if ((vma_src = vma_src->vm_next)) {
+            vma_dest->vm_next = (struct vm_area_struct *)((unsigned long)new_vma() + 0xffff000000000000);
+            vma_dest = vma_dest->vm_next;
+        }
+    }
+    /* Copy others */
+    mm_dest->cpio_start = mm_src->cpio_start;
+    mm_dest->cpio_size = mm_src->cpio_size;
+
+    return 0;
+}
+
+
+struct vm_area_struct *addr_to_vma(unsigned long addr, struct mm_struct *mm)
+{
+    struct vm_area_struct *vma;
+
+    vma = mm->mmap;
+    while (vma) {
+        if ((addr >= vma->vm_start) && (addr <=vma->vm_end))
+            return vma;
+        vma = vma->vm_next;
+    }
+    return 0; // NULL
+}
+
+#define DFSC_TF_0 0x4               // 000100 "Translation fault, level 0" PGD fault
+#define DFSC_TF_1 0x5               // 000101 "Translation fault, level 1" PUD fault
+#define DFSC_TF_2 0x6               // 000110 "Translation fault, level 2" PMD fault
+#define DFSC_TF_3 0x7               // 000111 "Translation fault, level 3" PTE fault
+#define DFSC_PERMISSION_FAULT_1 0xD // 001101 "Permission fault, level 1"
+/* Data Fault Status Code
+ * DFSC: ESR_ELx[5:0]
+ * DDI0487C_a_armv8_arm.pdf p.2463
+ */
+int do_mem_abort(unsigned long addr, unsigned long esr)
+{
+    unsigned long dfsc;
+    unsigned long page;
+    struct mm_struct *mm;
+    struct vm_area_struct *vma;
+
+    dfsc = (esr & 0x3F);
+    uart_send_string("From do_mem_abort: A\r\n");
+    uart_send_ulong(dfsc);
+    uart_send_string("\r\n");
+    if ((dfsc & 0b111100) == 0b100) { // range from 4 ~ 7: Translation fault
+        mm = current->mm;
+        if (!(vma = addr_to_vma(addr, mm))) { // addr is not in address space
+            uart_send_string("Segmentation fault: failing at ");
+            uart_send_ulong(addr);
+            uart_send_string("\r\n");
+            sys_exit();
+        }
+        // addr is in address space, so we have to prepare the page for it.
+        // TODO: check vma->vm_prot is legal
+        page = (unsigned long)alloc_page_table(mm); // va
+        if (!(vma->vm_flag & VM_ANONYMOUS)) // Only file-page needs to load content
+            load_content_to_page((char*)page, addr & 0xFFFFFFFFFFFFF000, mm, vma);
+        direct_map(mm, addr, page);
+        return 0;
+    }
+    uart_send_string("Error: failed by other reason\r\n");
+    sys_exit();
+}

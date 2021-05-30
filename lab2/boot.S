@@ -31,6 +31,13 @@ master:
     sub    x1, x1, x0
     bl     memzero
 
+    // mov    x0, 0
+    // mov    x1, 0x40000000
+    // bl     create_kernel_pgd
+    // msr    ttbr0_el1, x0 // load PGD to the bottom translation based register.
+    // msr    ttbr1_el1, x0 // also load PGD to the upper translation based register.
+
+
     ldr    x0, =0xffff000030000000     // Set EL1 sp in advance
     msr    SP_EL1, x0
     eret
@@ -77,5 +84,6 @@ el1_entry:
     mrs    x3, sctlr_el1
     orr    x3, x3, 1
     msr    sctlr_el1, x3 // enable MMU, cache remains disabled
+
 
     br     x2

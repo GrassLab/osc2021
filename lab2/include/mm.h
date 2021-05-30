@@ -1,4 +1,5 @@
 #define PAGE_SIZE 0x1000 // 4KB
+#define BUDDY_BASE 0x100000 //0x2000
 
 struct page {
     unsigned long addr;
@@ -18,6 +19,7 @@ struct page {
     // e.g. 3 -> 2^3;
     //     -1 -> compound tail page;
     //     -2 -> free_list head;
+    int ref; // count of reference of this page
 };
 
 struct page_descriptor {
@@ -65,10 +67,17 @@ int rd_init();
 #define PD_TABLE 0x3 // 0b11
 #define PD_BLOCK 0x1 // 0b01
 #define PD_ACCESS (1 << 10)
+#define PD_UK_ACCESS (1 << 6)
 #define BOOT_PGD_ATTR PD_TABLE
 #define BOOT_PUD_ATTR PD_TABLE
-#define BOOT_PMD_NOR_ATTR (PD_ACCESS | (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_BLOCK)
-#define BOOT_PMD_DEV_ATTR (PD_ACCESS | (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_BLOCK)
+#define BOOT_PMD_ATTR PD_TABLE
+#define BOOT_PMD_NOR_ATTR (PD_ACCESS | PD_UK_ACCESS | (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_BLOCK)
+#define BOOT_PMD_DEV_ATTR (PD_ACCESS | PD_UK_ACCESS | (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_BLOCK)
+#define BOOT_PTE_NOR_ATTR (PD_ACCESS | PD_UK_ACCESS | (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_TABLE)
+// #define BOOT_PTE_NOR_ATTR (PD_UK_ACCESS | (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_TABLE)
+// #define BOOT_PMD_NOR_ATTR (PD_ACCESS |  (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_BLOCK)
+// #define BOOT_PMD_DEV_ATTR (PD_ACCESS |  (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_BLOCK)
+// #define BOOT_PTE_NOR_ATTR (PD_ACCESS |  (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_TABLE)
 
 #define PD_IDX_MASK 0x1FF
 #define PD_ENT_ADDR_MASK 0xFFFFFFFFF000
@@ -78,6 +87,8 @@ int rd_init();
 #define PTE_SHIFT 12
 
 #define KVA_TO_PA(va) ((va) - 0xffff000000000000)
+#define PA_TO_KVA(pa) ((pa) + 0xffff000000000000)
+#define VA_TO_FRAME(va) (((va) - 0xffff000000000000 - BUDDY_BASE) >> 12);
 
 
 int is_present(unsigned long *pt_ent);
@@ -85,3 +96,5 @@ unsigned long *alloc_page_table();
 int kernel_page_fault(unsigned long va);
 int kernel_page_fault_(unsigned long va);
 unsigned long *create_kernel_pgd(unsigned long start, unsigned long length);
+unsigned long *create_user_pgd(struct mm_struct *mm);
+int do_mem_abort(unsigned long addr, unsigned long esr);

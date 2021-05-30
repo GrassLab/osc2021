@@ -349,9 +349,11 @@ void do_uart_handler()
     // }
 }
 
-void invalid_handler()
+void invalid_handler(unsigned long esr)
 {
-    uart_send_string("From invalid_handler\r\n");
+    uart_send_string("From invalid_handler: ESR=");
+    uart_send_uint(esr);
+    uart_send_string("\r\n");
     while (1);
 }
 

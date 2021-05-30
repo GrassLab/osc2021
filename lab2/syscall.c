@@ -15,6 +15,8 @@ extern struct task task_pool[];
 struct trap_frame* get_trap_frame(struct task *tsk)
 {
     return tsk->tf;
+    // return (struct trap_frame*)KVA_TO_PA(tsk->tf);
+
     // return (struct trap_frame*)(tsk->kernel_stack_page + 0x1000 - sizeof(struct trap_frame));
 }
 
@@ -102,6 +104,41 @@ int sys_uart_write(const char buf[], int size)
     return cnt;
 }
 
+// int sys_fork(void)
+// {
+//     struct task *new;
+//     struct trap_frame *child_tf;
+
+//     if (!(new = new_ts()))
+//         return 0; // null
+//     /* Setting task struct */
+//     // memcpy(new, current, sizeof(struct task));
+//     new->kernel_stack_page = kmalloc(0x1000); // 4kb
+//     child_tf = (struct trap_frame*)(new->kernel_stack_page + 0x1000 - sizeof(struct trap_frame));
+//     new->ksp = (char*)child_tf;
+//     memcpy((char*)child_tf, (char*)current->tf, sizeof(struct trap_frame));
+//     new->user_stack_page = kmalloc(0x1000); // 4kb
+//     memcpy(new->user_stack_page, current->user_stack_page, 0x1000);
+//     // child has to return to its own stack, and the offset of sp in stack page in same with parent.
+//     child_tf->sp_el0 = (unsigned long)new->user_stack_page + (current->tf->sp_el0 - (unsigned long)current->user_stack_page);
+//     new->usp = current->usp;
+//     new->ctx.x19 = 0; // indicating that this is user fork 
+//     new->ctx.x30 = (unsigned long)ret_from_fork; // pc
+//     new->ctx.sp = (unsigned long)new->ksp; // TODO: user space stack pointer.
+//     new->status = TASK_NEW;
+//     new->flag = current->flag;
+//     new->priority = current->priority;
+//     new->counter = new->priority;
+//     new->preemptable = 0;
+//     child_tf->regs[0] = 0;
+//     new->sig.sigpend = 0;
+//     new->mm = new_mm_struct();
+//     new->mm->pgd = alloc_page_table();
+    
+//     add_to_ready(new);
+//     return new->pid;
+// }
+
 int sys_fork(void)
 {
     struct task *new;
@@ -115,10 +152,14 @@ int sys_fork(void)
     child_tf = (struct trap_frame*)(new->kernel_stack_page + 0x1000 - sizeof(struct trap_frame));
     new->ksp = (char*)child_tf;
     memcpy((char*)child_tf, (char*)current->tf, sizeof(struct trap_frame));
-    new->user_stack_page = kmalloc(0x1000); // 4kb
-    memcpy(new->user_stack_page, current->user_stack_page, 0x1000);
-    // child has to return to its own stack, and the offset of sp in stack page in same with parent.
-    child_tf->sp_el0 = (unsigned long)new->user_stack_page + (current->tf->sp_el0 - (unsigned long)current->user_stack_page);
+
+    // new->mm = new_mm_struct();
+    new->mm = PA_TO_KVA((unsigned long)new_mm_struct());
+    new->mm->pgd = alloc_page_table(new->mm);
+    copy_user_space(new->mm, current->mm);
+
+    child_tf->sp_el0 = current->tf->sp_el0;
+
     new->usp = current->usp;
     new->ctx.x19 = 0; // indicating that this is user fork 
     new->ctx.x30 = (unsigned long)ret_from_fork; // pc
@@ -134,8 +175,6 @@ int sys_fork(void)
     add_to_ready(new);
     return new->pid;
 }
-
-
 
 int sys_sigreturn(unsigned long __unused)
 {
@@ -278,7 +317,6 @@ unsigned long syscall_handler(unsigned long x0, unsigned long x1,
             break;
         case SYS_EXEC:
             ret = sys_exec(x0, (char**)x1);
-    uart_send_string("From syscall_handler: A\r\n");
             break;
         case SYS_FORK:
             ret = sys_fork();
