@@ -125,11 +125,27 @@ void fatLookup(vnode *dir_node, vnode** target, char* component_name){
             parseDentry((Dentry*)(buf+i),childs[cnt],dir_node,1);
             cnt++;
         }
-            while(1){}//Continue here;
-
+        node->component = childs;
+        node->capacity = len/32; //can have how many child
+        //uart_printf("capacity: %d\n",len/32);
+        node->len = cnt;
+        //uart_printf("len: %d\n",node->len);
+        node->dirty = 0;
     }
 
+    vnode** childs = (vnode**)(node->component);
+    for(int i = 0 ;i<node->len;++i){
+        vnode* child = childs[i];
+        Node* child_node = (Node*)(child->internal);
+        if(compString(child_node->name,component_name) == 0){
+            if(target){
+                *target = child;
+            }
+            return i;
+        }
+    }
 
+    return -1;
 
 };
 
@@ -137,7 +153,43 @@ void fatCreate(){
     //TODO;
     while(1);
 };
-void fatRead(){}
+
+void initData(Node* internal){
+    unsigned char* buf;
+    unsigned int len = getChain(internal->id,&buf);
+    internal->component = buf;
+    internal->capacity = len;
+    internal->dirty = 0;
+}
+
+int fatRead(file* f, void* buf, unsigned long len){
+    vnode* v_node = f->v_node;
+    Node* internal = (Node*)v_node->internal;
+    if(internal->type != 0){
+        uart_printf("You are not reading a file\n");
+        while(1);
+    }
+
+    if(internal->component==0){
+        initData(internal);
+    }
+
+    char* cache = (char*)internal->component;
+    char* buffer = (char*)buf;
+    int ret = 0;
+    for(int i = f->f_pos;i<internal->len;++i){
+            if(ret<len){
+                buffer[ret++] = cache[i];
+            }else{
+                break;
+            }
+    }
+
+    f->f_pos+=ret;
+    return ret;
+
+
+}
 void fatWrite(){};
 
 void parseROOT(vnode* root){
@@ -257,7 +309,11 @@ int fatSetup(filesystem* fs, mount *mnt){
     parseMBR();
     parseFAT32();
     parseROOT(mnt->root);
-    mnt->root->v_ops->lookup(mnt->root,0,"KERNEL8.IMG");
+//    mnt->root->v_ops->lookup(mnt->root,0,"BOOTCODE.BIN");
+    char buf[50];
+    file* x = vfsOpen("HIHI.TXT",0);
+    fatRead(x,buf,10);
+    uart_printf("%s\n",buf);
 
     return 0;
 }
