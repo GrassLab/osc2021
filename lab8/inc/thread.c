@@ -156,28 +156,15 @@ void taskUpdate(Task* p,Task* c){
 	}
 
 	c->id=p->child;
-	uart_puts("Please enter app load address (Hex): ");
-	c->a_addr=uart_getX(1);
 	c->child=0;
 	for(int i=0;i<FD_TABLE_SIZE;++i)c->fd_table[i]=0;//TODO: give child new fds
+	initPT(&(c->page_table));
+	dupPT(p->page_table,c->page_table,0);
 	c->next=tmp;
 
 	long k_delta=(long)c-(long)p;
-	long a_delta=(long)c->a_addr-(long)p->a_addr;
 	c->context[10]+=k_delta;//kernel fp
 	c->context[12]+=k_delta;//kernel sp
-	c->context[14]+=a_delta;//elr_el1
-	c->context[15]+=a_delta;//sp_el0
-	c->context[45]+=a_delta;//user fp
-	c->context[46]+=a_delta;//user lr
-
-	src=(char*)(p->context[15]);
-	dst=(char*)(c->context[15]);
-	for(int i=0,ii=p->a_addr+p->a_size-(p->context[15]);i<ii;++i){//program copy
-		*dst=*src;
-		dst++;
-		src++;
-	}
 }
 
 void doFork(){//called by idle()

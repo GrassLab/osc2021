@@ -1,6 +1,7 @@
 #include "mmu.h"
 #include "error.h"
 #include "allocator.h"
+#include "uart.h"
 
 //number of the most significant bits that must be either all 0s or all 1s
 #define TCR_CONFIG_REGION_48bit (((64 - 48) << 0) | ((64 - 48) << 16))
@@ -26,9 +27,40 @@
 
 #define VA2PA(x) ((unsigned long)(x)&0xffffffffffff)
 #define PA2VA(x) ((unsigned long)(x)|0xffff000000000000)
+#define debug 1
+
+void dupPT(void* page_table_src,void* page_table_dst,int level){
+	if(page_table_src==0||page_table_dst==0)ERROR("invalid table!");
+
+	//frame
+	if(level==4){
+		char* src=(char*)PA2VA(page_table_src);
+		char* dst=(char*)PA2VA(page_table_dst);
+		for(int i=0;i<4096;++i)*dst=*src;
+		return;
+	}
+
+	//table
+	unsigned long* table_src=(unsigned long*)PA2VA(page_table_src);
+	unsigned long* table_dst=(unsigned long*)PA2VA(page_table_dst);
+	for(int i=0;i<512;++i){
+		if(table_src[i]!=0){
+			initPT((void**)&table_dst[i]);
+			dupPT((void*)table_src[i],(void*)table_dst[i],level+1);
+
+			unsigned long tmp=table_src[i]&0xfff;
+			table_dst[i]|=tmp;
+		}
+	}
+}
 
 void removePT(void* page_table,int level){
 	if(page_table==0)ERROR("invalid table!");
+
+	#if debug
+		for(int i=0;i<level;++i)uart_send('\t');
+		uart_printf("%x\n",page_table);
+	#endif
 
 	//frame
 	if(level==4){
@@ -56,7 +88,7 @@ void initPT(void** page_table){
 
 void* updatePT(void* page_table0,void* va){//all address in table are physical address
 	if(page_table0==0)ERROR("invalid table!");
-	
+
 	unsigned long tmp=(unsigned long)va;
 	int index[4];
 	tmp>>=12;
