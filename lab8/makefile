@@ -3,7 +3,7 @@ APP:=kernel8
 LINKER:=linker.ld
 CFLAGS:=-nostdinc -nostdlib -nostartfiles
 LIBS:=$(wildcard inc/*.c)
-OBJS:=start.o main.o exception.o mmu.o $(LIBS:.c=.o)
+OBJS:=start.o main.o exception.o $(LIBS:.c=.o)
 
 all:
 	cd inc&&make
@@ -20,7 +20,6 @@ start.o:start.S
 
 %.o:%.c
 	aarch64-linux-gnu-gcc $(CFLAGS) -c $<
-	aarch64-linux-gnu-gcc $(CFLAGS) -S $<
 
 run:
 	make all
@@ -35,4 +34,3 @@ clean:
 	cd inc&&make clean
 	-rm $(APP).img
 	-rm *.o
-	-rm *.s

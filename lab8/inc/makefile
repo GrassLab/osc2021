@@ -7,8 +7,10 @@ all:
 	for obj in $(OBJS);do\
 		make $$obj;\
 	done
-%.o:%.c
+%.o:%.c %.h
 	aarch64-linux-gnu-gcc $(CFLAGS) -c $<
+	aarch64-linux-gnu-gcc $(CFLAGS) -S $<
 
 clean:
 	-rm *.o
+	-rm *.s
