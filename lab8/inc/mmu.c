@@ -27,7 +27,7 @@
 
 #define VA2PA(x) ((unsigned long)(x)&0xffffffffffff)
 #define PA2VA(x) ((unsigned long)(x)|0xffff000000000000)
-#define debug 1
+#define debug 0
 
 void dupPT(void* page_table_src,void* page_table_dst,int level){
 	if(page_table_src==0||page_table_dst==0)ERROR("invalid table!");
@@ -36,7 +36,7 @@ void dupPT(void* page_table_src,void* page_table_dst,int level){
 	if(level==4){
 		char* src=(char*)PA2VA(page_table_src);
 		char* dst=(char*)PA2VA(page_table_dst);
-		for(int i=0;i<4096;++i)*dst=*src;
+		for(int i=0;i<4096;++i)dst[i]=src[i];
 		return;
 	}
 
@@ -46,7 +46,7 @@ void dupPT(void* page_table_src,void* page_table_dst,int level){
 	for(int i=0;i<512;++i){
 		if(table_src[i]!=0){
 			initPT((void**)&table_dst[i]);
-			dupPT((void*)table_src[i],(void*)table_dst[i],level+1);
+			dupPT((void*)(table_src[i]&0xfffffffff000),(void*)(table_dst[i]),level+1);
 
 			unsigned long tmp=table_src[i]&0xfff;
 			table_dst[i]|=tmp;
