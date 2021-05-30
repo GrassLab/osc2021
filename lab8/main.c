@@ -218,16 +218,5 @@ void main(){
 	sd_init();
 	vfs_init(fat_Setup);
 
-	char* base=(char*)(4096*2);
-	for(int i=0;i<4096;i+=8){
-		unsigned long* ptr=(unsigned long*)(base+i+0xffff000000000000);
-		uart_printf("%x",*ptr);
-		if((i+8)%128!=0){
-			uart_send(' ');
-		}else{
-			uart_send('\n');
-		}
-	}
-
 	shell();
 }

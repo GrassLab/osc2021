@@ -4,6 +4,7 @@
 #include "cpio.h"
 #include "vfs.h"
 #include "error.h"
+#include "mmu.h"
 
 #define TASKSIZE 4096
 #define FD_TABLE_SIZE 5
@@ -16,6 +17,7 @@ typedef struct _Task{
 	int status;
 	unsigned long a_addr,a_size,child;
 	file* fd_table[FD_TABLE_SIZE];
+	void* page_table;
 	struct _Task* next;
 	/*
 	task stack:this ~ this+TASKSIZE
@@ -74,6 +76,17 @@ void threadSchedule(){
 
 		//uart_printf("%d %x %x %x\n",rq.beg->id,rq.beg->context[10],rq.beg->context[11],rq.beg->context[12]);
 		//uart_printf("%d -> %d\n",rq.end->id,rq.beg->id);
+
+		//change page table
+		asm volatile("\
+			mov x0, %0\n\
+			dsb ish\n\
+			msr ttbr0_el1, x0\n\
+			tlbi vmalle1is\n\
+			dsb ish\n\
+			isb\n\
+		"::"r"(rq.beg->page_table));
+		//change control flow
 		asm volatile("\
 			mov x1, %0\n\
 			mrs x0, tpidr_el1\n\
@@ -96,6 +109,7 @@ Task* threadCreate(void* func){
 	new_task->status=0;
 	new_task->a_addr=new_task->a_size=new_task->child=0;
 	for(int i=0;i<FD_TABLE_SIZE;++i)new_task->fd_table[i]=0;
+	new_task->page_table=0;
 	new_task->next=0;
 
 	if(rq.beg){
@@ -229,22 +243,35 @@ unsigned long putArgv(char** argv,unsigned long ret){
 	return ret;
 }
 
-void loadFSApp(char* path,unsigned long a_addr,char** argv,unsigned long* task_a_addr,unsigned long* task_a_size){
-	file* f=vfs_open(path,0);
+void loadFSApp(char* path,unsigned long a_addr,char** argv,Task* task){
+	task->a_addr=a_addr;
+	//task->a_size=?;//TODO
 
-	*task_a_addr=a_addr;
-	*task_a_size=vfs_read(f,(void*)a_addr,0x10000);
+	//init page table
+	initPT(&(task->page_table));
+	asm volatile("mov x0, %0 			\n"::"r"(task->page_table));
+	asm volatile("msr ttbr0_el1, x0 	\n");
+
+	//load program
+	file* f=vfs_open(path,0);
+	for(unsigned long va=a_addr;;va+=4096){
+		updatePT(task->page_table,(void*)va);
+		int cnt=vfs_read(f,(void*)va,4096);
+		if(cnt<4096)break;
+	}
 	vfs_close(f);
-	if((*task_a_size)>=0x10000)ERROR("app is too large!");
+
+	//load arg
+	updatePT(task->page_table,(void*)(a_addr-4096));
+	unsigned long sp_addr=putArgv(argv,a_addr);
 
 	uart_puts("loading...\n");
-	unsigned long sp_addr=putArgv(argv,a_addr);
 	asm volatile("mov x0, 0x340			\n");//enable interrupt
 	asm volatile("msr spsr_el1, x0		\n");
 	asm volatile("msr elr_el1, %0		\n"::"r"(a_addr));
 	asm volatile("msr sp_el0, %0		\n"::"r"(sp_addr));
 
-	asm volatile("mrs x3, sp_el0		\n"::);
+	asm volatile("mov x3, %0			\n"::"r"(sp_addr));
 	asm volatile("ldr x0, [x3, 0]		\n"::);
 	asm volatile("ldr x1, [x3, 8]		\n"::);
 
@@ -259,9 +286,16 @@ int tidGet(){
 
 void exec(char* path,char** argv){//TODO: reset sp
 	unsigned long a_addr;
-	uart_puts("Please enter app load address (Hex): ");
-	a_addr=uart_getX(1);
-	loadFSApp(path,a_addr,argv,&(rq.beg->a_addr),&(rq.beg->a_size));
+	while(1){
+		uart_puts("Please enter app link address (Hex): ");
+		a_addr=uart_getX(1);
+		if(a_addr%4096){
+			uart_puts("Not aligned!\n");
+		}else{
+			break;
+		}
+	}
+	loadFSApp(path,a_addr,argv,rq.beg);
 	ERROR("exec fail!");
 }
 
@@ -273,6 +307,7 @@ void exit(){
 			sys_close(i);
 		}
 	}
+	if(cur->page_table)removePT(cur->page_table,0);
 	cur->status|=TASKEXIT;
 	threadSchedule();
 

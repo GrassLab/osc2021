@@ -1,3 +1,7 @@
+#include "mmu.h"
+#include "error.h"
+#include "allocator.h"
+
 //number of the most significant bits that must be either all 0s or all 1s
 #define TCR_CONFIG_REGION_48bit (((64 - 48) << 0) | ((64 - 48) << 16))
 //smallest block of memory that can be independently mapped in the translation tables
@@ -19,6 +23,66 @@
 #define BOOT_PUD_ATTR (PD_ACCESS | (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_BLOCK)//for L1 (ARM peripherals)
 #define BOOT_L2D_ATTR (PD_ACCESS | (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_BLOCK)//for L2 (peripherals)
 #define BOOT_L2N_ATTR (PD_ACCESS | (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_BLOCK)//for L2 (normal)
+
+#define VA2PA(x) ((unsigned long)(x)&0xffffffffffff)
+#define PA2VA(x) ((unsigned long)(x)|0xffff000000000000)
+
+void removePT(void* page_table,int level){
+	if(page_table==0)ERROR("invalid table!");
+
+	//frame
+	if(level==4){
+		ffree(PA2VA(page_table));
+		return;
+	}
+
+	//table
+	unsigned long* table=(unsigned long*)PA2VA(page_table);
+	for(int i=0;i<512;++i){
+		if(table[i]!=0){
+			unsigned long tmp=table[i];
+			tmp=tmp-(tmp&0xfff);
+			removePT((void*)tmp,level+1);
+		}
+	}
+	ffree(PA2VA(page_table));
+}
+
+void initPT(void** page_table){
+	char* table=(char*)falloc(4096);
+	for(int i=0;i<4096;++i)table[i]=0;
+	*page_table=(void*)VA2PA(table);
+}
+
+void* updatePT(void* page_table0,void* va){//all address in table are physical address
+	if(page_table0==0)ERROR("invalid table!");
+	
+	unsigned long tmp=(unsigned long)va;
+	int index[4];
+	tmp>>=12;
+	index[3]=tmp&0x1ff;
+	tmp>>=9;
+	index[2]=tmp&0x1ff;
+	tmp>>=9;
+	index[1]=tmp&0x1ff;
+	tmp>>=9;
+	index[0]=tmp&0x1ff;
+
+	unsigned long* table=(unsigned long*)PA2VA(page_table0);
+	for(int i=0;i<=2;++i){
+		if(table[index[i]]==0){
+			initPT((void**)&table[index[i]]);
+			table[index[i]]|=PD_TABLE;
+		}
+		tmp=table[index[i]];
+		tmp=tmp-(tmp&0xfff);
+		table=(unsigned long*)PA2VA(tmp);
+	}
+	if(table[index[3]]!=0)ERROR("invalid va!");
+	void* frame=falloc(4096);
+	table[index[3]]=VA2PA(frame)|(1<<10)|(1<<6)|MAIR_IDX_NORMAL_NOCACHE<<2|0b11;
+	return frame;
+}
 
 void initMMULower(){//convenient to debug by aborting lower VA region
 	asm volatile("msr ttbr0_el1, %0\n"::"r"(-1));
