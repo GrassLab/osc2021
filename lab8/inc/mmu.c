@@ -112,6 +112,7 @@ void* updatePT(void* page_table0,void* va){//all address in table are physical a
 	}
 	if(table[index[3]]!=0)ERROR("invalid va!");
 	void* frame=falloc(4096);
+	for(int i=0;i<4096;++i)((char*)frame)[i]=0;
 	table[index[3]]=VA2PA(frame)|(1<<10)|(1<<6)|MAIR_IDX_NORMAL_NOCACHE<<2|0b11;
 	return frame;
 }

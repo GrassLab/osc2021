@@ -1,6 +1,6 @@
 #include "inc/syscall.h"
 
-int global=0;
+int global=100;
 
 int main(void){
 	int local=0;
@@ -14,11 +14,9 @@ int main(void){
 			delay(1000000);
 		}
 	}else{
-		/*
 		int* a=0;
 		uart_printf("%d\n",*a);
 		uart_printf("Should not be printed\n");
-		*/
 	}
 	exit();
 }

@@ -97,6 +97,11 @@ void exception_handler(){
 			uart_printf("TODO\n");
 			return;
 		}
+	}else if(((esr>>26)&0x3f)==0x24){
+		unsigned long far;
+		asm volatile("mrs %0, far_el1\n":"=r"(far):);
+		uart_printf("[Data Abort] pid: %d, far_el1: %x\n",tidGet(),far);
+		exit();
 	}else{
 		uart_printf("unknown esr_el1...\n");
 		while(1){}
