@@ -25,6 +25,7 @@ ARM64
 ## Directory structure
 
 ```
+etc : bootable images
 lab0: Environment Setup
 lab1: Hello World
 lab2: Booting
