@@ -1,5 +1,6 @@
 #include "allocator.h"
 #include "mmio.h"
+#include "error.h"
 #define debug 0
 #if debug
 #include "uart.h"
@@ -25,6 +26,8 @@ int listInsert(List* l,int v){
 }
 
 int listGet(List* l,int i){
+	if((l->beg<=l->end&&(i<l->beg||i>=l->end))||
+		(l->beg>l->end&&(i>=l->end||i<l->beg)))ERROR("index out of bound!");
 	int ret=l->data[i];
 	l->data[i]=l->data[l->beg];
 	l->beg=(l->beg+1)%(F_NUM+1);
@@ -92,6 +95,11 @@ void reclaimFrame(int i){
 	int p=i;
 	int level=__lg(p);
 	while(frame_table[p^1]>=0){
+		//beg will be moved in listGet(),
+		//so it need to update its bucket position
+		int beg_id=lists[level].data[lists[level].beg];
+		frame_table[beg_id]=frame_table[p^1];
+
 		listGet(&lists[level],frame_table[p^1]);
 		frame_table[p^1]=-1;
 
@@ -129,6 +137,7 @@ int findFrame(int tar_size){
 		int end=lists[i].end;
 		if(cur_size>=F_SIZE&&cur_size>=tar_size&&beg!=end){
 			int ret=listGet(&lists[i],beg);
+			if(frame_table[ret]==-1)ERROR("the frame is being used!");
 			frame_table[ret]=-1;
 
 			ret=getFrame(ret,tar_size,cur_size);

@@ -294,7 +294,7 @@ void exit(){
 			sys_close(i);
 		}
 	}
-	if(cur->page_table)removePT(cur->page_table,0);
+	if(cur->page_table!=0)removePT(cur->page_table,0);
 	cur->status|=TASKEXIT;
 	threadSchedule();
 
@@ -379,7 +379,11 @@ void threadTest(){
 	threadCreate(foo);
 
 	idle();
+
+	//no task anymore
 	ffree((unsigned long)cur);
+	rq.beg=rq.end=0;
+	task_cnter=0;
 }
 
 void foo1(){

@@ -23,7 +23,7 @@ start.o:start.S
 
 run:
 	make all
-	qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial stdio -drive if=sd,file=./archive/sdcard/sfn_nctuos.img,format=raw #-d int
+	qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial stdio -drive if=sd,file=./archive/sdcard/sfn_nctuos.img,format=raw #-d in_asm
 	#qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial pty -initrd ./archive/initramfs.cpio
 	#qemu-system-aarch64 -M raspi3 -kernel $(APP).img -display none -serial null -serial pty -initrd ./archive/initramfs.cpio -d int
 
