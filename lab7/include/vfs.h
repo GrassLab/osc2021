@@ -35,6 +35,7 @@ typedef struct _filesystem {
 typedef struct _file_operations {
   int (*write) (file* file, const void* buf, int len);
   int (*read) (file* file, void* buf, int len);
+  void (*sync)(file* file);
 }file_operations;
 
 typedef struct _vnode_operations {
@@ -50,6 +51,7 @@ file* vfsOpen(const char* pathname, int flags);
 int vfsClose(file* file);
 int vfsWrite(file* file, const void* buf, int len);
 int vfsRead(file* file, void* buf, int len);
+void vfsSync(file* file);
 int vfsInit(void* setup_mount_f);
 
 #endif

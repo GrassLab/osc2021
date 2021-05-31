@@ -34,9 +34,10 @@ file* vfsOpen(const char* pathname,int flags ){
     new_file->v_node = child;
     //uart_printf("open vnode :%d\n",new_file->v_node);
     new_file->f_pos = 0;
-    new_file->f_ops = (file_operations*)(my_alloc(sizeof(file_operations)));
-    new_file->f_ops->write = my_write_f;
-    new_file->f_ops->read = my_read_f;
+//    new_file->f_ops = (file_operations*)(my_alloc(sizeof(file_operations)));
+//    new_file->f_ops->write = my_write_f;
+//    new_file->f_ops->read = my_read_f;
+    new_file->f_ops = dir_node->f_ops;
     new_file->flags = flags;
     return new_file;
 }
@@ -49,8 +50,11 @@ int vfsRead(file* f, void* buf, int length){
     return f->f_ops->read(f,buf,length);
 }
 
+void vfsSync(file* f){
+    f->f_ops->sync(f);
+}
+
 int vfsClose(file* f){
-    my_free(f->f_ops);
     my_free(f);
     return 0;
 }

@@ -15,6 +15,7 @@ typedef struct _Metadata{
     unsigned int sector_size;//size per sector in bits
     unsigned int data_beg;//begin of data region
     unsigned int *table;//point to begin of FATs
+    unsigned int *dirty;
 }Metadata;
 
 typedef struct _Dentry{
@@ -31,7 +32,7 @@ typedef struct _Dentry{
 typedef struct _Node{
     vnode* parent;
     unsigned char name[13];
-    unsigned char type;//1:DIR 2:FILE
+    unsigned char type;//1:DIR 0:FILE
     unsigned int id;
     unsigned int len;
     unsigned int dirty;
@@ -44,13 +45,19 @@ Metadata metadata;
 void parseDentry(Dentry* dentry, vnode* v_node, vnode* parent, int display){
     unsigned char name[13];
     int cnt =0;
+
     for(int i =0;i<8;++i){
         if(dentry->name1[i]==' ')break;
         name[cnt++] = dentry->name1[i];
     }
-    name[cnt++] = '.';
+//    name[cnt++] = '.';
+    int flag = 1;
     for(int i =0;i<3;++i){
         if(dentry->name2[i]==' ')break;
+        if(flag){
+            name[cnt++]='.';
+            flag=0;
+        }
         name[cnt++] = dentry->name2[i];
     }
     name[cnt] = 0;
@@ -105,6 +112,90 @@ unsigned int getChain(unsigned int id, unsigned char** buf){
         id = metadata.table[id];
     }
     return len;
+}
+
+void fatSync(file* f){
+    vnode* v_node = f->v_node;
+    Node* node = (Node*)(v_node->internal);
+    vnode* parent = node->parent;
+    if(node->type == 1){
+        uart_printf("directory sync\n");
+        while(1);
+    }
+    if(node->component == 0 || node->dirty ==0){
+        return;
+    }
+
+    node->dirty = 0;
+    //update table
+
+    int old_blks = getChainLen(node->id);
+    int new_blks = node->len / 512;
+    if(node->len%512) new_blks++;
+    if(old_blks > new_blks){
+        uart_printf("old_blks>new_blks\n");
+        while(1);
+    }
+    int tail = node->id;
+    while(metadata.table[tail]<0xFFFFFF8)tail = metadata.table[tail];
+    for(int i =0;i<metadata.table_size*512/4 && old_blks<new_blks; ++i){
+        if(metadata.table[i]!=0)continue; 
+        metadata.table[tail] = i;
+        metadata.dirty[tail/512] = 1;
+        tail = i;
+        metadata.table[tail] = 0xFFFFFF8;
+        metadata.dirty[tail/512] = 1;
+        old_blks++;
+    }
+    for(int i =0;i<metadata.table_size;++i){
+        if(metadata.dirty[i]){
+            writeblock(metadata.table_beg+i,((char*)(metadata.table))+i*512); 
+            metadata.dirty[i] = 0;
+        }
+    }
+
+    //update data 
+    unsigned char* data = (unsigned char*)(node->component);
+    int cur = node->id;
+    //uart_printf("cur id:%x\n",cur);
+    for(int i = 0;i<node->len;i+=512){
+        if(cur<2||cur>0xFFFFFEF){
+            uart_printf("Invalid table id\n");
+           // uart_printf("cur id:%x\n",cur);
+            while(1);
+        }
+        writeblock(metadata.data_beg+cur,data);
+        data+=512;
+        cur = metadata.table[cur];
+    }
+
+    //updata parent
+    int pos = -1;
+    vnode** childs = (vnode**)(((Node*)(parent->internal))->component);
+    int child_num = ((Node*)(parent->internal))->len;
+    for(int i =0; i<child_num;++i){
+        vnode* child = childs[i];
+        Node* child_content = (Node*)(child->internal);
+        if(compString(node->name,child_content->name) == 0){
+            pos = i;
+            break;
+        }
+    }
+     if(pos == -1){
+        uart_printf("sync an unknown file\n");
+        while(1);
+     }
+     int dirsize= 512/32;
+      cur = ((Node*)(parent->internal))->id;
+     for(int i = 0; i<pos/dirsize; ++i){
+        cur = metadata.table[cur];
+     }
+     char* buf = (char*)my_alloc(512);
+     readblock(metadata.data_beg+cur,buf);
+     Dentry* dentry = (Dentry*)(buf+pos%dirsize*32);
+     dentry->len = node->len;
+     writeblock(metadata.data_beg+cur,buf);
+     my_free(buf);
 }
 
 void fatLookup(vnode *dir_node, vnode** target, char* component_name){
@@ -162,9 +253,45 @@ void initData(Node* internal){
     internal->dirty = 0;
 }
 
+int fatWrite(file* f, void* buf, unsigned long len){
+    vnode* v_node = f->v_node;
+    Node* node = (Node*)(v_node->internal);
+    if(node->type !=0){
+        uart_printf("not file type\n");
+        while(1);
+    }
+    if(node->component == 0){
+        initData(node);
+    }
+    //uart_printf("%s\n",(char*)(node->component)); 
+
+    char* cache = (char*)(node->component);
+    if(f->f_pos+len > node->capacity){
+        char* new_cache = (char*)my_alloc((f->f_pos+len)*2);
+        for(int i = 0; i< node->len;++i){
+            new_cache[i] = cache[i];
+        }
+        node->capacity = (f->f_pos+len)*2;
+        node->component = new_cache; 
+        my_free(cache);
+        cache = new_cache;
+    }
+    char* buffer = (char*)buf;
+    for(int i = 0;i<len;++i){
+        cache[f->f_pos] = buffer[i];
+        f->f_pos++;
+    }
+
+    if(node->len < f->f_pos){
+        node->len = f->f_pos;
+    }
+    node->dirty = 1;
+    return len;
+}
+
 int fatRead(file* f, void* buf, unsigned long len){
     vnode* v_node = f->v_node;
-    Node* internal = (Node*)v_node->internal;
+    Node* internal = (Node*)(v_node->internal);
     if(internal->type != 0){
         uart_printf("You are not reading a file\n");
         while(1);
@@ -173,10 +300,11 @@ int fatRead(file* f, void* buf, unsigned long len){
     if(internal->component==0){
         initData(internal);
     }
-
-    char* cache = (char*)internal->component;
+    //uart_printf("%s\n",internal->component);
+    char* cache = (char*)(internal->component);
     char* buffer = (char*)buf;
     int ret = 0;
+    //uart_printf("f_pos:%d, node->len:%d\n",f->f_pos,internal->len);
     for(int i = f->f_pos;i<internal->len;++i){
             if(ret<len){
                 buffer[ret++] = cache[i];
@@ -190,7 +318,6 @@ int fatRead(file* f, void* buf, unsigned long len){
 
 
 }
-void fatWrite(){};
 
 void parseROOT(vnode* root){
     unsigned char *table = (unsigned char*)my_alloc(metadata.table_size*512);
@@ -203,13 +330,17 @@ void parseROOT(vnode* root){
         while(1);
     }
     metadata.table = (unsigned int*)table;
-    //TODO:findout use of dirty
+    metadata.dirty = (unsigned int*)my_alloc(metadata.table_size*4);
+    for(int i = 0;i<metadata.table_size; ++i){
+        metadata.dirty[i] = 0;
+    }
     root->v_ops = (vnode_operations*)my_alloc(sizeof(vnode_operations));
     root->v_ops->lookup = fatLookup;
     root->v_ops->create = fatCreate;
     root->f_ops = (file_operations*)my_alloc(sizeof(file_operations));
     root->f_ops->write = fatWrite;
     root->f_ops->read = fatRead;
+    root->f_ops->sync = fatSync;
     root->internal = (void*)my_alloc(sizeof(Node));
     Node* node = (Node*)root->internal;
     node->name[0] = '.';
@@ -233,11 +364,11 @@ void parseFAT32(){
         uart_printf("Invalid sector size\n");
     }
      unsigned int cluster_size = (unsigned char)buf[13];
-     uart_printf("cluster_size:%d\n",cluster_size);
+     //uart_printf("cluster_size:%d\n",cluster_size);
      unsigned int num_of_reserved_sec = *(unsigned short*)(buf+14);
-     uart_printf("reserved sec:%d\n",num_of_reserved_sec);
+    // uart_printf("reserved sec:%d\n",num_of_reserved_sec);
      unsigned int num_of_FAT = (unsigned char)buf[16];
-     uart_printf("num of fat:%d\n",num_of_FAT);
+     //uart_printf("num of fat:%d\n",num_of_FAT);
      unsigned int num_of_sec_in_par = buf[20];
      num_of_sec_in_par = num_of_sec_in_par<<8+buf[19];
 
@@ -254,7 +385,7 @@ void parseFAT32(){
         while(1);
     }
      sec_per_FAT = *(unsigned int*)(buf+36);
-     uart_printf("sec per fat:%d\n",sec_per_FAT);
+     //uart_printf("sec per fat:%d\n",sec_per_FAT);
 
      metadata.sector_num = num_of_sec_in_par;
      metadata.sector_size = sector_size;
@@ -262,7 +393,7 @@ void parseFAT32(){
      metadata.table_num = num_of_FAT;
      metadata.table_size = sec_per_FAT;
      metadata.data_beg = metadata.table_beg + num_of_FAT*sec_per_FAT -2 ;//TODO:findout why -2 // root diretory start at cluster #2
-    uart_printf("databeg:%d\n",metadata.data_beg);
+    //uart_printf("databeg:%d\n",metadata.data_beg);
      my_free(buf);
 }
 
@@ -300,20 +431,25 @@ void parseMBR(){
 }
 int fatSetup(filesystem* fs, mount *mnt){
     char *name = (char*)my_alloc(6);
-    name = "fat32";
+    name[0] = 'f';
+    name[1] = 'a';
+    name[2] = 't';
+    name[3] = '3';
+    name[4] = '2';
+    name[5] = 0;
     fs->name = name;
     fs->setup_mount = fatSetup;
     mnt->root = (vnode*)my_alloc(sizeof(vnode));
     mnt->fs = fs;
     mnt->root->mount = mnt;
+    uart_printf("parsing MBR\n");
     parseMBR();
+    uart_printf("mbr ok\n");
     parseFAT32();
+    uart_printf("32 ok\n");
     parseROOT(mnt->root);
-//    mnt->root->v_ops->lookup(mnt->root,0,"BOOTCODE.BIN");
-    char buf[50];
-    file* x = vfsOpen("HIHI.TXT",0);
-    fatRead(x,buf,10);
-    uart_printf("%s\n",buf);
+    uart_printf("root ok\n");
+
 
     return 0;
 }

@@ -28,7 +28,7 @@ rd.o:$(CPIO)
 
 run:
 #	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio
-	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio -drive if=sd,file=./archive/sfn_nctuos.img,format=raw -initrd ./initramfs.cpio -d int
+	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio -drive if=sd,file=./archive/sfn_nctuos.img,format=raw -initrd ./initramfs.cpio
 try: clean cpio all run
 
 debug: clean cpio all 

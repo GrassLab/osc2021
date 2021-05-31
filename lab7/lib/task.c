@@ -117,6 +117,11 @@ void zombiekill(){
 void cur_exit(){
     task_struct *cur = get_current();
     cur->state = TASK_DEAD;
+    for(int i = 0;i<5;++i){
+        if(cur->fd_table[i]){
+            sys_close(i);
+        }
+    }
     threadSchedule();
 }
 
@@ -250,6 +255,7 @@ int sys_open(char* pathname, int flags){
 
 int sys_close(int file_index){
     task_struct *cur = get_current();
+    vfsSync(cur->fd_table[file_index]);
     vfsClose(cur->fd_table[file_index]);
     cur->fd_table[file_index] = 0;
     return 0;
@@ -308,27 +314,8 @@ void test2(){
     idle();
 }
 void foo3(){
-    char* argv[] = {0};
-    exec("app3",argv);
-  //char buf[100];
-
-  //  task_struct* task = get_current();
-  //  int a=sys_open("hello",O_CREAT);
-  //  int b=sys_open("world",O_CREAT);
-  //  file* task_file = task->fd_table[a];
-  //  tmpfsDump(my_mount.root,0);
-  //  sys_write(a,"Hello ",6);
-  //  sys_write(b,"World!",6);
-  //  tmpfsDump(my_mount.root,0);
-  //  sys_close(a);
-  //  sys_close(b);
-  //  b=sys_open("hello",0);
-  //  a=sys_open("world",0);
-  //  int sz;
-  //  sz=sys_read(b,buf,100);
-  //  sz+=sys_read(a,buf+sz,100);
-  //  buf[sz]='\0';
-  //  uart_printf("%s\n", buf); // should be Hello World!
+    char* argv[] = {"HIHI.TXT","HIHI.TXT",0};
+    exec("app4",argv);
     cur_exit();
     return ;
 
