@@ -1,7 +1,7 @@
 #include "fs/tmpfs.h"
 #include "fs/vfs.h"
 
-#include "cpio.h"
+#include "dev/cpio.h"
 #include "minmax.h"
 #include "mm.h"
 #include "stdint.h"

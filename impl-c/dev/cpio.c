@@ -1,4 +1,4 @@
-#include "cpio.h"
+#include "dev/cpio.h"
 #include "config.h"
 #include "log.h"
 #include "string.h"

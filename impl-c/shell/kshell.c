@@ -4,7 +4,7 @@
 
 #include "bool.h"
 #include "config.h"
-#include "cpio.h"
+#include "dev/cpio.h"
 #include "string.h"
 #include "uart.h"
 
