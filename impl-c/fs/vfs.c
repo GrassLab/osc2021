@@ -173,7 +173,7 @@ struct file *vfs_open(const char *pathname, int flags) {
 }
 
 int vfs_close(struct file *file) {
-  // 1. release the file descriptor
+  kfree(file);
   return 0;
 }
 

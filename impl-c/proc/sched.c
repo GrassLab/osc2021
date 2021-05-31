@@ -69,17 +69,8 @@ void kill_zombies() {
     task = ((struct task_entry *)entry)->task;
     log_println("recycle space for task:%d", task->id);
     list_del(entry);
-
     kfree(entry);
-    // TODO: manage parent code free and child code free
-    // if (task->code) {
-    //   kfree(task->code);
-    // }
-    if (task->user_stack) {
-      kfree((void *)task->user_stack);
-    }
-    kfree((void *)task->kernel_stack);
-    kfree(task);
+    task_free(task);
   }
 }
 

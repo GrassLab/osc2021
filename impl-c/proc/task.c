@@ -28,6 +28,7 @@ static const int _DO_LOG = 0;
 static void foo();
 
 extern void fork_child_eret();
+static inline void close_fd(struct task_struct *task, int fd);
 
 uint32_t new_tid = 0;
 
@@ -70,6 +71,25 @@ struct task_struct *task_create(void *func) {
   return t;
 }
 
+void task_free(struct task_struct *task) {
+  // TODO: manage parent code free and child code free
+  // if (task->code) {
+  //   kfree(task->code);
+  // }
+  if (task->user_stack) {
+    kfree((void *)task->user_stack);
+  }
+  kfree((void *)task->kernel_stack);
+
+  // Close all file descriptors
+  for (int i = 0; i < TASK_MX_NUM_FD; i++) {
+    if (task->fd[i] != NULL) {
+      close_fd(task, i);
+    }
+  }
+  kfree(task);
+}
+
 int sys_getpid() {
   struct task_struct *task = get_current();
   return task->id;
@@ -94,6 +114,7 @@ int sys_open(const char *pathname, int flags) {
   for (int i = 0; i < TASK_MX_NUM_FD; i++) {
     if (task->fd[i] == NULL) {
       task->fd[i] = file;
+      task->fd_size++;
       return i;
     }
   }
@@ -101,13 +122,27 @@ int sys_open(const char *pathname, int flags) {
   return -1;
 }
 
+void close_fd(struct task_struct *task, int fd) {
+  if (task->fd[fd] != NULL) {
+    vfs_close(task->fd[fd]);
+    task->fd[fd] = NULL;
+  }
+  // check for bugs
+  task->fd_size--;
+  if (task->fd_size < 0) {
+    uart_println("[Task free] BUG!!! fd not synce");
+    while (1) {
+      ;
+    }
+  }
+}
+
 int sys_close(int fd) {
   struct task_struct *task = get_current();
   if ((fd < 0 || fd > TASK_MX_NUM_FD) || (task->fd[fd] == NULL)) {
     return -1;
   }
-  task->fd[fd] = NULL;
-  task->fd_size--;
+  close_fd(task, fd);
   return 0;
 }
 
