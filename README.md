@@ -8,20 +8,31 @@
 
 ## How to build
 
-**WIP**
+`make`
 
 ## How to run
 
-**WIP**
+`make run`
 
 ## How to burn it into pi3
 
-**WIP**
+`dd if=<bootable image> of=<device>`
 
 ## Architecture
 
-**WIP**
+ARM64
 
 ## Directory structure
 
-**WIP**
+```
+lab0: Environment Setup
+lab1: Hello World
+lab2: Booting
+lab3: Allocator
+lab4: Exception and Interrupt
+lab5: Thread and User Process
+lab6: Virtual File System
+lab7: File System Meets Hardware
+lab8: Virtual Memory
+test: load kernel images through UART
+```
