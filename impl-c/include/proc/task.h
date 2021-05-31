@@ -41,6 +41,9 @@ struct task_struct {
 };
 
 struct task_struct *task_create(void *func);
+
+void task_free(struct task_struct *task);
+
 void cur_task_exit();
 
 extern uint32_t new_tid;
