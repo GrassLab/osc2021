@@ -308,7 +308,7 @@ struct task *pick_next()
 int schedule()
 {
     struct task *next, *prev;
-
+// uart_send_string("[SCHEDULE]\r\n");
     prev = current;
     next = pick_next();
     if (prev == next) // Need no sched.

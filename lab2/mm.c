@@ -746,44 +746,6 @@ int load_cpio_file(char *page_addr, char *cpio_start,
     return 0;
 }
 
-// int user_space_map(unsigned long va, int anon)
-// {
-//     unsigned long *pt_ent, *pd_walk, pg;
-//     char *page;
-
-//     pd_walk = current->mm->pgd;
-//     pt_ent = &pd_walk[(va >> PGD_SHIFT) & PD_IDX_MASK];
-//     if (!is_present(pt_ent)) {
-//         pg = (unsigned long)alloc_page_table();
-//         *pt_ent = KVA_TO_PA(pg) | BOOT_PGD_ATTR;
-//     }
-
-//     pd_walk = (unsigned long*)pg;
-//     pt_ent = &pd_walk[(va >> PUD_SHIFT) & PD_IDX_MASK];
-//     if (!is_present(pt_ent)) {
-//         pg = (unsigned long)alloc_page_table();
-//         *pt_ent = KVA_TO_PA(pg) | BOOT_PUD_ATTR;
-//     }
-
-//     pd_walk = (unsigned long*)pg;
-//     pt_ent = &pd_walk[(va >> PMD_SHIFT) & PD_IDX_MASK];
-//     if (!is_present(pt_ent)) {
-//         pg = (unsigned long)alloc_page_table();
-//         *pt_ent = KVA_TO_PA(pg) | BOOT_PMD_ATTR;
-//     }
-
-//     pd_walk = (unsigned long*)pg;
-//     pt_ent = &pd_walk[(va >> PTE_SHIFT) & PD_IDX_MASK];
-//     if (!is_present(pt_ent)) {
-//         pg = (unsigned long)alloc_page_table();
-//         *pt_ent = KVA_TO_PA(pg) | BOOT_PTE_NOR_ATTR;
-//         if (!anon){
-//             load_cpio_file((char*)pg, current->mm->cpio_start, va);
-//         }
-//     }
-//     return 0;
-// }
-
 int load_content_to_page(char *page_kva, unsigned long offset,
     struct mm_struct *mm, struct vm_area_struct *vma)
 {
@@ -792,9 +754,10 @@ int load_content_to_page(char *page_kva, unsigned long offset,
     return 0;
 }
 
-int direct_map(struct mm_struct *mm, unsigned long va, unsigned long p_va)
+int direct_map(struct mm_struct *mm, unsigned long va,
+    unsigned long p_va, unsigned long flag)
 {
-    unsigned long *pt_ent, *pd_walk, pg;
+    unsigned long *pt_ent, *pd_walk, pg, val;
     char *page;
 
     pd_walk = mm->pgd;
@@ -802,6 +765,8 @@ int direct_map(struct mm_struct *mm, unsigned long va, unsigned long p_va)
     if (!is_present(pt_ent)) {
         pg = (unsigned long)alloc_page_table(mm);
         *pt_ent = KVA_TO_PA(pg) | BOOT_PGD_ATTR;
+    } else {
+        pg = PA_TO_KVA(*pt_ent & PD_ENT_ADDR_MASK);
     }
 
     pd_walk = (unsigned long*)pg;
@@ -809,6 +774,8 @@ int direct_map(struct mm_struct *mm, unsigned long va, unsigned long p_va)
     if (!is_present(pt_ent)) {
         pg = (unsigned long)alloc_page_table(mm);
         *pt_ent = KVA_TO_PA(pg) | BOOT_PUD_ATTR;
+    } else {
+        pg = PA_TO_KVA(*pt_ent & PD_ENT_ADDR_MASK);
     }
 
     pd_walk = (unsigned long*)pg;
@@ -816,12 +783,16 @@ int direct_map(struct mm_struct *mm, unsigned long va, unsigned long p_va)
     if (!is_present(pt_ent)) {
         pg = (unsigned long)alloc_page_table(mm);
         *pt_ent = KVA_TO_PA(pg) | BOOT_PMD_ATTR;
+    } else {
+        pg = PA_TO_KVA(*pt_ent & PD_ENT_ADDR_MASK);
     }
 
     pd_walk = (unsigned long*)pg;
     pt_ent = &pd_walk[(va >> PTE_SHIFT) & PD_IDX_MASK];
-    if (!is_present(pt_ent))
-        *pt_ent = KVA_TO_PA(p_va) | BOOT_PTE_NOR_ATTR;
+    if (!is_present(pt_ent)) {
+        val = KVA_TO_PA(p_va) | BOOT_PTE_NOR_ATTR | flag;
+        *pt_ent = val;
+    }
 
     return 0;
 }
@@ -839,10 +810,9 @@ unsigned long *create_user_pgd(struct mm_struct *mm)
         step_len = 0x1000;
         while (addr_walk <= addr_end) {
             page = (unsigned long)alloc_page_table(mm); // va
-            if (!(vma->vm_flag & VM_ANONYMOUS)) {// Only file-page needs to load content
+            if (!(vma->vm_flag & VM_ANONYMOUS)) // Only file-page needs to load content
                 load_content_to_page((char*)page, addr_walk, mm, vma);
-            }
-            direct_map(mm, addr_walk, page);
+            direct_map(mm, addr_walk, page, 0);
             addr_walk += step_len;
         }
         vma = vma->vm_next;
@@ -868,10 +838,12 @@ int destroy_pgd(struct mm_struct *mm)
 {
     // Clear all pages: i starting from 1, because
     // pages[0] is pgd. We only need to zero it.
-    for (int i = 1; i < mm->page_nr; ++i)
-        if (--(mm->pages[i]->ref)) {// when ref becomes zero, free the page.
+    for (int i = 1; i < mm->page_nr; ++i) {
+        if (--(mm->pages[i]->ref) == 0) // when ref becomes zero, free the page.
             free_frames(mm->pages[i]);
-        }
+        mm->pages[i] = 0;
+    }
+    mm->page_nr = 1;
     // Zero pgd
     for (int i = 0; i < 512; ++i)
         mm->pgd[i] = 0;
@@ -882,7 +854,6 @@ int vma_insert(struct vm_area_struct *head, struct vm_area_struct *new)
 {
     struct vm_area_struct *vma_walk;
 
-    
     for (vma_walk = head; vma_walk; vma_walk = vma_walk->vm_next) {
         if (!vma_walk->vm_next) {
             if (new->vm_start > vma_walk->vm_end) {
@@ -910,7 +881,7 @@ int create_mmap(struct mm_struct *mm)
     vma = (struct vm_area_struct *)((unsigned long)new_vma() + 0xffff000000000000);
     vma->vm_start = 0x0;
     vma->vm_end = mm->cpio_size;
-    vma->vm_prot = 0;
+    vma->vm_prot = PROT_RO;
     vma->vm_flag = VM_SHARED;
     mm->mmap = vma;
 
@@ -918,7 +889,7 @@ int create_mmap(struct mm_struct *mm)
     vma = (struct vm_area_struct *)((unsigned long)new_vma() + 0xffff000000000000);
     vma->vm_start = align_down(0x0000fffffffffff0, 0x1000);
     vma->vm_end = 0x0000fffffffffff0;
-    vma->vm_prot = 0;
+    vma->vm_prot = PROT_RW;
     vma->vm_flag = VM_ANONYMOUS;
     vma_insert(mm->mmap, vma);
 
@@ -936,12 +907,18 @@ int create_user_space(struct mm_struct *mm)
         destroy_pgd(mm);
     }
     create_mmap(mm);
-    /* create_user_pgd() was used when
-       we don't have demand paging. */
-    create_user_pgd(mm);
-    if (1 || from_kernel){
+    /* create_user_pgd() was used when we don't have demand paging.
+     * If we are using demand paging, than we should map stack space
+     * first. Because we are going to set the initial content of
+     * stack immediately. It will fail if we let demand paging
+     * to map the stack with unknown reason.
+     */
+    // create_user_pgd(mm);
+    struct vm_area_struct *vma = mm->mmap->vm_next;
+    unsigned long page = (unsigned long)alloc_page_table(mm); // va
+    direct_map(mm, 0x0000fffffffff000, page, 0);
+    if (1 || from_kernel)
         set_ttbr0(KVA_TO_PA((unsigned long)(mm->pgd)));
-    }
 
     return 0;
 }
@@ -973,7 +950,32 @@ unsigned long va_to_page(unsigned long va, struct mm_struct *mm)
     return PA_TO_KVA(*pt_ent & PD_ENT_ADDR_MASK);
 }
 
+unsigned long *va_to_pted(unsigned long va, struct mm_struct *mm)
+{ // return virtual address of page of va
+    unsigned long *pt_ent, *pd_walk;
 
+    pd_walk = mm->pgd;
+    pt_ent = &pd_walk[(va >> PGD_SHIFT) & PD_IDX_MASK];
+    if (!is_present(pt_ent))
+        return 0;
+    
+    pd_walk = PA_TO_KVA(*pt_ent & PD_ENT_ADDR_MASK);
+    pt_ent = &pd_walk[(va >> PUD_SHIFT) & PD_IDX_MASK];
+    if (!is_present(pt_ent))
+        return 0;
+
+    pd_walk = PA_TO_KVA(*pt_ent & PD_ENT_ADDR_MASK);
+    pt_ent = &pd_walk[(va >> PMD_SHIFT) & PD_IDX_MASK];
+    if (!is_present(pt_ent))
+        return 0;
+
+    pd_walk = PA_TO_KVA(*pt_ent & PD_ENT_ADDR_MASK);
+    pt_ent = &pd_walk[(va >> PTE_SHIFT) & PD_IDX_MASK];
+    if (!is_present(pt_ent))
+        return 0;
+
+    return pt_ent;
+}
 
 int copy_user_space(struct mm_struct *mm_dest, struct mm_struct *mm_src)
 {
@@ -994,15 +996,15 @@ int copy_user_space(struct mm_struct *mm_dest, struct mm_struct *mm_src)
         while (addr_walk <= addr_end) {
             page_src = va_to_page(addr_walk, mm_src); // Parent's page
             if (vma_dest->vm_flag & VM_SHARED) { // shared pages
-                frame = (struct page*)VA_TO_FRAME(page_src);
+                frame = &page_frames[VA_TO_FRAME(page_src)];
                 frame->ref++;
                 mm_dest->page_nr++;
-                direct_map(mm_dest, addr_walk, page_src);
+                direct_map(mm_dest, addr_walk, page_src, 0);
             }
             else { // private page needs its own page
                 page_dest = (unsigned long)alloc_page_table(mm_dest); // va
                 memcpy((char*)page_dest, (char*)page_src, 0x1000);
-                direct_map(mm_dest, addr_walk, page_dest);
+                direct_map(mm_dest, addr_walk, page_dest, 0);
             }
             addr_walk += step_len;
         }
@@ -1020,13 +1022,63 @@ int copy_user_space(struct mm_struct *mm_dest, struct mm_struct *mm_src)
 }
 
 
+int copy_page_table(unsigned long *pt_dest, unsigned long *pt_src,
+    int level, struct mm_struct *mm)
+{ // level should starting from 3.
+    int attr;
+    unsigned long pg;
+
+    for (int i = 0; i < 512; ++i) {
+        if (!is_present(&pt_src[i]))
+            continue;
+        if (level == 0) {
+            pt_src[i] |= PD_READ_ONLY;
+            pt_dest[i] = pt_src[i];
+            page_frames[VA_TO_FRAME(PA_TO_KVA(pt_src[i] & PD_ENT_ADDR_MASK))].ref++;
+        }
+        else {
+            attr = pt_src[i] & 0xFFF;
+            pg = (unsigned long)alloc_page_table(mm);
+            pt_dest[i] = KVA_TO_PA(pg) | attr;
+            copy_page_table(PA_TO_KVA(pt_dest[i] & PD_ENT_ADDR_MASK),
+                            PA_TO_KVA(pt_src[i] & PD_ENT_ADDR_MASK),
+                            level - 1, mm);
+        }
+    }
+    return 0;
+}
+
+int copy_user_space_cow(struct mm_struct *mm_dest, struct mm_struct *mm_src)
+{
+    struct vm_area_struct *vma_src, *vma_dest;
+
+    /* Copy vma and page table */
+    mm_dest->mmap = (struct vm_area_struct *)((unsigned long)new_vma() + 0xffff000000000000);
+    vma_dest = mm_dest->mmap;
+    for (vma_src = mm_src->mmap; vma_src; ) {
+        memcpy((char*)vma_dest, (char*)vma_src, sizeof(struct vm_area_struct));
+        if ((vma_src = vma_src->vm_next)) {
+            vma_dest->vm_next = (struct vm_area_struct *)((unsigned long)new_vma() + 0xffff000000000000);
+            vma_dest = vma_dest->vm_next;
+        }
+    }
+    /* Copy page table (without leaf) */
+    copy_page_table(mm_dest->pgd, mm_src->pgd, 3, mm_dest);
+    set_ttbr0(KVA_TO_PA((unsigned long)(mm_src->pgd)));
+    /* Copy others */
+    mm_dest->cpio_start = mm_src->cpio_start;
+    mm_dest->cpio_size = mm_src->cpio_size;
+
+    return 0;
+}
+
 struct vm_area_struct *addr_to_vma(unsigned long addr, struct mm_struct *mm)
 {
     struct vm_area_struct *vma;
 
     vma = mm->mmap;
     while (vma) {
-        if ((addr >= vma->vm_start) && (addr <=vma->vm_end))
+        if ((addr >= vma->vm_start) && (addr <= vma->vm_end))
             return vma;
         vma = vma->vm_next;
     }
@@ -1038,6 +1090,8 @@ struct vm_area_struct *addr_to_vma(unsigned long addr, struct mm_struct *mm)
 #define DFSC_TF_2 0x6               // 000110 "Translation fault, level 2" PMD fault
 #define DFSC_TF_3 0x7               // 000111 "Translation fault, level 3" PTE fault
 #define DFSC_PERMISSION_FAULT_1 0xD // 001101 "Permission fault, level 1"
+#define DFSC_PERMISSION_FAULT_2 0xE // 001110 "Permission fault, level 2"
+#define DFSC_PERMISSION_FAULT_3 0xF // 001111 "Permission fault, level 3"
 /* Data Fault Status Code
  * DFSC: ESR_ELx[5:0]
  * DDI0487C_a_armv8_arm.pdf p.2463
@@ -1045,30 +1099,69 @@ struct vm_area_struct *addr_to_vma(unsigned long addr, struct mm_struct *mm)
 int do_mem_abort(unsigned long addr, unsigned long esr)
 {
     unsigned long dfsc;
-    unsigned long page;
+    unsigned long page, page_src;
+    unsigned long *pted;
     struct mm_struct *mm;
     struct vm_area_struct *vma;
+    struct page *frame;
 
     dfsc = (esr & 0x3F);
-    uart_send_string("From do_mem_abort: A\r\n");
-    uart_send_ulong(dfsc);
-    uart_send_string("\r\n");
+    // uart_send_string("[From do_mem_abort]: pid=");
+    // uart_send_int(current->pid);
+    // uart_send_string(", dfsc=");
+    // uart_send_ulong(dfsc);
+    // uart_send_string(", addr=");
+    // uart_send_ulong(addr);
+    // uart_send_string("\r\n");
+    mm = current->mm;
     if ((dfsc & 0b111100) == 0b100) { // range from 4 ~ 7: Translation fault
-        mm = current->mm;
         if (!(vma = addr_to_vma(addr, mm))) { // addr is not in address space
-            uart_send_string("Segmentation fault: failing at ");
+            uart_send_string("[Segmentation fault A]: failing at ");
             uart_send_ulong(addr);
             uart_send_string("\r\n");
             sys_exit();
         }
         // addr is in address space, so we have to prepare the page for it.
         // TODO: check vma->vm_prot is legal
+        // uart_send_string("[DEMAND PAGING] alloc 1 page\r\n");
         page = (unsigned long)alloc_page_table(mm); // va
         if (!(vma->vm_flag & VM_ANONYMOUS)) // Only file-page needs to load content
             load_content_to_page((char*)page, addr & 0xFFFFFFFFFFFFF000, mm, vma);
-        direct_map(mm, addr, page);
+        direct_map(mm, addr, page, 0);
+        set_ttbr0(KVA_TO_PA((unsigned long)(mm->pgd)));
         return 0;
     }
-    uart_send_string("Error: failed by other reason\r\n");
+    else if ( (dfsc >= DFSC_PERMISSION_FAULT_1) && (dfsc <= DFSC_PERMISSION_FAULT_3)) 
+    { // Permission fault
+        if (!(vma = addr_to_vma(addr, mm))) { // addr is not in address space
+            uart_send_string("[Segmentation fault B]: failing at ");
+            uart_send_ulong(addr);
+            uart_send_string("\r\n");
+            sys_exit();
+        }
+        if (!(page_src = va_to_page(addr, mm)))
+            uart_send_string("[Error]: do_mem_abort panic\r\n");
+        frame = &page_frames[VA_TO_FRAME(page_src)]; // original page
+        pted = va_to_pted(addr, mm);
+        if (*pted & PD_READ_ONLY) { // pted of addr is readonly
+            if (!(vma->vm_flag & VM_SHARED) && (vma->vm_prot & PROT_RW)) {
+            // Do the copy-on-write stuff
+                // uart_send_string("[COPY ON WRITE] copy 1 page\r\n");
+                page = (unsigned long)alloc_page_table(mm); // va: new page
+                memcpy((char*)page, frame->addr, 0x1000);
+                *pted = 0; // Clear pted, so direct_map can reset it.
+                direct_map(mm, addr, page, 0); // Reset pted with no special flag.
+                if (--frame->ref == 0)
+                    free_frames(frame);
+                set_ttbr0(KVA_TO_PA((unsigned long)(mm->pgd)));
+                return 0;
+            }
+            uart_send_string("[Segmentation fault]: trying to write a read-only address: ");
+            uart_send_ulong(addr);
+            uart_send_string("\r\n");
+            sys_exit();
+        }
+    }
+    uart_send_string("[Error]: failed by other reason\r\n");
     sys_exit();
 }

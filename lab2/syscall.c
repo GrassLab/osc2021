@@ -156,7 +156,7 @@ int sys_fork(void)
     // new->mm = new_mm_struct();
     new->mm = PA_TO_KVA((unsigned long)new_mm_struct());
     new->mm->pgd = alloc_page_table(new->mm);
-    copy_user_space(new->mm, current->mm);
+    copy_user_space_cow(new->mm, current->mm);
 
     child_tf->sp_el0 = current->tf->sp_el0;
 
@@ -320,6 +320,7 @@ unsigned long syscall_handler(unsigned long x0, unsigned long x1,
             break;
         case SYS_FORK:
             ret = sys_fork();
+            // schedule();
             break;
         case SYS_EXIT:
             ret = sys_exit();

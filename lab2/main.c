@@ -16,9 +16,9 @@
 #include "utils.h"
 #define CMD_SIZE 64
 #define FILE_NAME_SIZE 64
-#define PM_PASSWORD 0x5a000000
-#define PM_RSTC 0x3F10001c
-#define PM_WDOG 0x3F100024
+#define PM_PASSWORD (0x5a000000 + 0xffff000000000000)
+#define PM_RSTC (0x3F10001c + 0xffff000000000000)
+#define PM_WDOG (0x3F100024 + 0xffff000000000000)
 
 int BSSTEST = 0;
 extern char *dt_base_g;
@@ -662,6 +662,7 @@ void user_thread()
     // *inva = 'k';
     // argv = {"user_logic", "hello1", "-aux", 0};
     exec("bin/argv_test", argv);
+    // exec("bin/fork_test", argv);
     // exit();
 }
 
@@ -690,13 +691,14 @@ void idle()
     struct task *walk;
 
     while (1) {
-        // uart_send_string("From idle\r\n");
+        // uart_send_string("[IDLE]\r\n");
         // delay(10000000);
         for (int i = 0; i < MAX_TASK_NR; ++i) {
             walk = &task_pool[i];
             if (walk->free == 0 && walk->status == TASK_ZOMBIE) {
                 uart_send_string("From idle: Find zombie and cleared.\r\n");
                 kfree(walk->kernel_stack_page);
+                destroy_pgd(walk->mm);
                 // kfree(walk->user_stack_page);
                 walk->free = 1;
             }
@@ -786,11 +788,6 @@ delay(10000000);
     cur_trap_frame->elr_el1 = 0x0; // user space start from 0.
     cur_trap_frame->spsr_el1 = 0x0; //0x0 0x3C5 enable_irq
 
-    // create_user_pgd(0, filesize); // virtual space: 0 ~ filesize
-
-    // set_user_program((char*)func_addr, current->usp, argc,
-    //     argv_fake_start, current->kernel_stack_page + 0x1000);
-    // never come back again.
     return argc;  // Geniusly
 }
 
@@ -908,7 +905,7 @@ int kernel_main(char *sp)
     current = new_ts();
     current->ctx.sp = (unsigned long)kmalloc(4096);
     thread_create((unsigned long)idle, 0);
-    // thread_create((unsigned long)shell, 0);
+    thread_create((unsigned long)shell, 0);
     // thread_create((unsigned long)test_thread_1, "CCC\r\n");
     // thread_create((unsigned long)test_thread_2, "DDD\r\n");
     thread_create((unsigned long)user_thread, 0);

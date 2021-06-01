@@ -95,7 +95,11 @@ syscall_entry:
     eret
 #define ESR_ELx_EC_SHIFT        26
 #define ESR_ELx_EC_SVC64        0x15
+#define ESR_ELx_EC_IABT_LOW     0x20
+#define ESR_ELx_EC_IABT         0x21
 #define ESR_ELx_EC_DABT_LOW     0x24
+#define ESR_ELx_EC_DABT         0x25
+
 el0_sync:
     save_all
     mov    x26, x0
@@ -110,6 +114,13 @@ el0_sync:
     b.eq   syscall_entry
     cmp    x24, #ESR_ELx_EC_DABT_LOW       // data abort in EL0
     b.eq   el0_da
+    cmp    x24, #ESR_ELx_EC_DABT           // data abort in ELx
+    b.eq   el0_da
+    cmp    x24, #ESR_ELx_EC_IABT_LOW       // instruction abort in EL0
+    b.eq   el0_da
+    cmp    x24, #ESR_ELx_EC_IABT           // instruction abort in ELx
+    b.eq   el0_da
+    mrs    x0, esr_el1
     b      invalid_handler
 
 el0_da:

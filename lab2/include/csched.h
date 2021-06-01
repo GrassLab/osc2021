@@ -2,7 +2,7 @@
 #define MAX_VMA_NR 128
 #define MAX_WAIT_NR 8
 #define MAX_WAIT_ARGS_NR 16
-#define MAX_PROCESS_PAGE 16
+#define MAX_PROCESS_PAGE 32
 
 #define MAX_SIG_NR 2 // SIGINT, SIGKILL
 #define SIG_INT_NUM  0
@@ -41,6 +41,8 @@ struct sig_struct {
 
 #define VM_ANONYMOUS 0x1 // 1: anoymous; 0: file
 #define VM_SHARED    0x2 // 1: shared  ; 0: private
+#define PROT_RO      0x1
+#define PROT_RW      0x2
 
 struct vm_area_struct {
     unsigned long vm_start;
@@ -56,6 +58,14 @@ struct mm_struct {
     char *cpio_start;
     int cpio_size;
     int page_nr;
+    /* TODO: pages[] holds page this process
+     * owned. However, in the execution time,
+     * process may release some pages(e.g. cow).
+     * At that moment, it will leave a hole
+     * in pages[i]. A better way is to redesign
+     * pages[] as a pool, so we can allocate
+     * page from it by finding empty hole.
+     */
     struct page *pages[MAX_PROCESS_PAGE];
 };
 

@@ -67,6 +67,7 @@ int rd_init();
 #define PD_TABLE 0x3 // 0b11
 #define PD_BLOCK 0x1 // 0b01
 #define PD_ACCESS (1 << 10)
+#define PD_READ_ONLY (1 << 7)
 #define PD_UK_ACCESS (1 << 6)
 #define BOOT_PGD_ATTR PD_TABLE
 #define BOOT_PUD_ATTR PD_TABLE
@@ -88,7 +89,7 @@ int rd_init();
 
 #define KVA_TO_PA(va) ((va) - 0xffff000000000000)
 #define PA_TO_KVA(pa) ((pa) + 0xffff000000000000)
-#define VA_TO_FRAME(va) (((va) - 0xffff000000000000 - BUDDY_BASE) >> 12);
+#define VA_TO_FRAME(va) (((va) - 0xffff000000000000 - BUDDY_BASE) >> 12)
 
 
 int is_present(unsigned long *pt_ent);
