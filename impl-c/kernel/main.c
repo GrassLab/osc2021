@@ -1,4 +1,6 @@
 #include "config.h"
+#include "dev/sd.h"
+#include "fs/fat.h"
 #include "fs/tmpfs.h"
 #include "fs/vfs.h"
 #include "mm.h"
@@ -33,6 +35,7 @@ void main() {
   // KAllocManager_show_status();
 
   init_sys("Init Proc subsystem", proc_init);
+  init_sys("SD card driver", sd_init);
 
 #ifdef CFG_RUN_TEST
   run_tests();
@@ -40,7 +43,13 @@ void main() {
 
   vfs_init();
   register_filesystem(&tmpfs);
-  mount_root_fs("tmpfs");
+  register_filesystem(&fat);
+  fat_dev();
+  uart_println("dev finished...");
+  while (1) {
+    ;
+  }
+  // mount_root_fs("tmpfs");
 
   test_tasks();
   // run_shell();
