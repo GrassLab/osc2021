@@ -13,10 +13,6 @@
 #include <mm.h>
 #include <fs/vfs.h>
 
-void delay(unsigned n) {
-    while(n--);
-}
-
 void foo() {
     enable_interrupt();
     for(int i = 0; i < 10; ++i) {
@@ -48,11 +44,12 @@ int split(char *buf, char *outbuf[], int n) {
 
         int size = pe - ps;
         if (size) {
-            ps[size] = '\0';
             outbuf[idx++] = ps;
         }
 
         if (*pe) {
+            *pe = '\0';
+            pe++;
             while (*pe == ' ') pe++;
             ps = pe;
         } else {
