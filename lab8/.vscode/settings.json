@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "tmpfs.h": "c",
+        "string.h": "c",
+        "typeinfo": "cpp",
+        "type_traits": "c",
+        "uart.h": "c",
+        "page.h": "c"
+    }
+}
