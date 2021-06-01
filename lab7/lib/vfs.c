@@ -3,10 +3,12 @@
 #include "../include/stringUtils.h"
 #include "../include/memAlloc.h"
 #include "../include/tmpfs.h"
+#include "../include/printf.h"
+#include "../include/uart.h"
 
 
 
-file* vfsOpen(const char* pathname,int flags ){
+file* vfsOpen(char* pathname,int flags ){
     vnode* dir_node = my_mount.root;
     vnode* child;
     while(1){
@@ -42,7 +44,7 @@ file* vfsOpen(const char* pathname,int flags ){
     return new_file;
 }
 
-int vfsWrite(file* f, const void* buf, int length){
+int vfsWrite(file* f, void* buf, int length){
     return f->f_ops->write(f,buf,length);
 }
 
@@ -55,7 +57,7 @@ void vfsSync(file* f){
 }
 
 int vfsClose(file* f){
-    my_free(f);
+    my_free((unsigned long)f);
     return 0;
 }
 int vfsInit(void *setup_mount_f){

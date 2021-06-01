@@ -212,7 +212,7 @@ cpio_t* nextfile(cpio_t* cpio_addr){
     Align_4(&dsize);
 
     char *data = (char*)((char*)cpio_addr+HPP);
-    return data+dsize;
+    return (cpio_t*)(data+dsize);
 
 }
 /**

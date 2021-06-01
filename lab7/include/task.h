@@ -53,6 +53,11 @@ void cur_exit();
 void threadSchedule();
 void idle();
 int getpid();
+void test3();
+int sys_open(char* pathname,int flags);
+int sys_close(int fd);
+int sys_write(int fd, char* buf, int count);
+int sys_read(int fd, char* buf, int count);
 
 void _child_return_from_fork(void);
 #endif

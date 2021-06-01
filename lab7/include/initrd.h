@@ -49,4 +49,5 @@ char* fnameGet(cpio_t* cpio_addr);
 char* fdataGet(cpio_t* cpio_addr, unsigned long *fsize);
 int fmodeGet(cpio_t* cpio_addr);
 cpio_t* nextfile(cpio_t* cpio_addr);
+unsigned long hexToDex(char* s);
 #endif

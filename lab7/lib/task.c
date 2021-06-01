@@ -210,7 +210,7 @@ void sys_fork(trap_frame *tf){
     //read_input(buf);
     //unsigned long child_ustack = getHexFromString(buf);
 
-    unsigned long child_ustack = my_alloc(4096) + 4096;
+    unsigned long child_ustack = (unsigned long)(my_alloc(4096) + 4096);
 
     char *src_stack = (char*)(tf->sp_el0);
     char *dst_stack = (char*)(child_ustack - parent_ustack_size);
@@ -239,8 +239,8 @@ int getpid(trap_frame* tf){
 }
 
 int sys_open(char* pathname, int flags){
-    file* file = vfsOpen(pathname,flags);
     task_struct *cur = get_current();
+    file* file = vfsOpen(pathname,flags);
     int ret = -1;
 
     for(int i = 0;i<5;  ++i){
@@ -255,9 +255,11 @@ int sys_open(char* pathname, int flags){
 
 int sys_close(int file_index){
     task_struct *cur = get_current();
-    vfsSync(cur->fd_table[file_index]);
-    vfsClose(cur->fd_table[file_index]);
-    cur->fd_table[file_index] = 0;
+    if(cur->fd_table[file_index]){
+        vfsSync(cur->fd_table[file_index]);
+        vfsClose(cur->fd_table[file_index]);
+        cur->fd_table[file_index] = 0;
+    }
     return 0;
 }
 

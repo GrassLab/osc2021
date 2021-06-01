@@ -32,7 +32,7 @@ run:
 try: clean cpio all run
 
 debug: clean cpio all 
-	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio -initrd ./initramfs.cpio -d int -S -s
+	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio -drive if=sd,file=./archive/sfn_nctuos.img,format=raw -initrd ./initramfs.cpio -d int -S -s
 onboard:
 	sudo screen /dev/ttyUSB0 115200
 

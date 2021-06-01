@@ -3,6 +3,7 @@
 #include "../include/uart.h"
 #include "../include/memAlloc.h"
 #include "../include/stringUtils.h"
+#include "../include/sd.h"
 
 
 typedef struct _Metadata{
@@ -195,10 +196,10 @@ void fatSync(file* f){
      Dentry* dentry = (Dentry*)(buf+pos%dirsize*32);
      dentry->len = node->len;
      writeblock(metadata.data_beg+cur,buf);
-     my_free(buf);
+     my_free((unsigned long)buf);
 }
 
-void fatLookup(vnode *dir_node, vnode** target, char* component_name){
+int fatLookup(vnode *dir_node, vnode** target, char* component_name){
     Node *node = (Node*)dir_node->internal;
     if(node->type!=1){
         uart_printf("not a directory\n");
@@ -208,7 +209,7 @@ void fatLookup(vnode *dir_node, vnode** target, char* component_name){
     if(node->component == 0){
         unsigned char *buf;
         unsigned int len = getChain(node->id,&buf);
-        vnode** childs = (vnode*)my_alloc(len/32*8);
+        vnode** childs = (vnode**)my_alloc(len/32*8);
         int cnt =0;
         for(int i = 0 ;i<len;i+=32){
             if(buf[i] == 0)break;
@@ -240,7 +241,7 @@ void fatLookup(vnode *dir_node, vnode** target, char* component_name){
 
 };
 
-void fatCreate(){
+int fatCreate(vnode* dir_node, vnode** target, char* path){
     //TODO;
     while(1);
 };
@@ -253,7 +254,7 @@ void initData(Node* internal){
     internal->dirty = 0;
 }
 
-int fatWrite(file* f, void* buf, unsigned long len){
+int fatWrite(file* f, void* buf, int len){
     vnode* v_node = f->v_node;
     Node* node = (Node*)(v_node->internal);
     if(node->type !=0){
@@ -273,7 +274,7 @@ int fatWrite(file* f, void* buf, unsigned long len){
         }
         node->capacity = (f->f_pos+len)*2;
         node->component = new_cache; 
-        my_free(cache);
+        my_free((unsigned long)cache);
         cache = new_cache;
     }
     char* buffer = (char*)buf;
@@ -289,7 +290,7 @@ int fatWrite(file* f, void* buf, unsigned long len){
     return len;
 }
 
-int fatRead(file* f, void* buf, unsigned long len){
+int fatRead(file* f, void* buf, int len){
     vnode* v_node = f->v_node;
     Node* internal = (Node*)(v_node->internal);
     if(internal->type != 0){
@@ -359,18 +360,18 @@ void parseFAT32(){
     }
     //unsigned short sector_size = (unsigned short)buf[11];
     unsigned int sector_size = buf[12];
-    sector_size = sector_size<<8 + (unsigned short)buf[11];
+    sector_size = (sector_size<<8) + buf[11];
     if(sector_size != 512){
         uart_printf("Invalid sector size\n");
     }
-     unsigned int cluster_size = (unsigned char)buf[13];
+     unsigned int cluster_size = *(unsigned char*)(buf+13);
      //uart_printf("cluster_size:%d\n",cluster_size);
      unsigned int num_of_reserved_sec = *(unsigned short*)(buf+14);
     // uart_printf("reserved sec:%d\n",num_of_reserved_sec);
-     unsigned int num_of_FAT = (unsigned char)buf[16];
+     unsigned int num_of_FAT = buf[16];
      //uart_printf("num of fat:%d\n",num_of_FAT);
      unsigned int num_of_sec_in_par = buf[20];
-     num_of_sec_in_par = num_of_sec_in_par<<8+buf[19];
+     num_of_sec_in_par = (num_of_sec_in_par<<8)+buf[19];
 
      if(num_of_sec_in_par !=0){
         uart_printf("Not FAT32\n");
@@ -379,7 +380,7 @@ void parseFAT32(){
 
      num_of_sec_in_par = *(unsigned int*)(buf+32);
 
-     unsigned int sec_per_FAT = (unsigned short)buf[22];
+     unsigned int sec_per_FAT = *(unsigned short*)(buf+22);
      if(sec_per_FAT!=0){
         uart_printf("Not FAT32\n");
         while(1);
@@ -394,7 +395,7 @@ void parseFAT32(){
      metadata.table_size = sec_per_FAT;
      metadata.data_beg = metadata.table_beg + num_of_FAT*sec_per_FAT -2 ;//TODO:findout why -2 // root diretory start at cluster #2
     //uart_printf("databeg:%d\n",metadata.data_beg);
-     my_free(buf);
+     my_free((unsigned long)buf);
 }
 
 void parseMBR(){
@@ -411,8 +412,8 @@ void parseMBR(){
         while(1);
     }
 
-    char* partition_table = buf+446;
-    char partition_type = *(char*)(partition_table+4);
+    unsigned char* partition_table = buf+446;
+    unsigned char partition_type = *(unsigned char*)(partition_table+4);
     if(partition_type != 0xb){
         uart_printf("Not FAT32\n");
         while(1);
@@ -427,7 +428,7 @@ void parseMBR(){
     unsigned int num_in_par = *(unsigned int*)buf+4;
     metadata.partition_beg = sec_bet_MAP;
 
-    my_free(buf);
+    my_free((unsigned long)buf);
 }
 int fatSetup(filesystem* fs, mount *mnt){
     char *name = (char*)my_alloc(6);

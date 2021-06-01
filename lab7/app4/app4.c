@@ -4,6 +4,7 @@ int main(int argc,char** argv){
     char buffer[101];
 
     int fd=open(argv[1],0);
+    uart_printf("\n");
     uart_printf("read somthing from %s(fd %d):\n",argv[1],fd);
     while(1){
         int ret=read(fd,buffer,100);

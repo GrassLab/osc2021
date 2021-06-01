@@ -14,5 +14,7 @@ typedef struct _Node{
 
 int tmpfsSetup(filesystem* fs, mount* mnt);
 void tmpfsfopsGet(file_operations* f_ops);
+void tmpfsDump(vnode* dir_node,int level);
+char* slashIgnore(char* src,char* dst);
 
 #endif

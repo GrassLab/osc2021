@@ -29,7 +29,7 @@ char* slashIgnore(char* src, char* dst){
 
 }
 
-int tmpfsWrite(file* f, void* buf, unsigned long length){
+int tmpfsWrite(file* f, void* buf, int length){
     vnode* v_node = f->v_node;
     Node* node = (Node*)(v_node->internal);
     int cur_pos = f->f_pos;
@@ -50,7 +50,7 @@ int tmpfsWrite(file* f, void* buf, unsigned long length){
 
 }
 
-int tmpfsRead(file* f, void* buf, unsigned long length){
+int tmpfsRead(file* f, void* buf, int length){
     vnode* v_node = f->v_node;
     Node* node = (Node*)(v_node->internal);
     int cur_pos = f->f_pos;
@@ -154,9 +154,9 @@ int tmpNodeInit(mount* mnt, vnode* root){
     node->components = (vnode**)my_alloc(sizeof(vnode*) * default_component_size);
 
     unsigned long fsize;//file size stored in cpio
-    cpio_t* cpio_addr = 0x8000000;
+    cpio_t* cpio_addr = (cpio_t*)0x8000000;
     while(1){
-        const char* fname = fnameGet(cpio_addr);
+        char* fname = fnameGet(cpio_addr);
         char* fdata = fdataGet(cpio_addr,&fsize);
         int mode = fmodeGet(cpio_addr);
         if(compString(fname, "TRAILER!!!") == 0) break;
