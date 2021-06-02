@@ -1,5 +1,5 @@
 extern int get_pid(void);
-extern void exec(unsigned long func, char **argv);
+extern void exec(char *filename, char **argv);
 // extern void exec(char *filename, char **argv);
 extern int fork(void);
 extern void exit(void);
@@ -20,3 +20,5 @@ extern int mount(const char* device,
 extern int umount(const char* mountpoint);
 extern int sync();
 extern int mknod(const char *pathname, int devnum);
+extern void *sys_mmap(void* addr, int len, int prot,
+    int flags, int fd, int file_offset);

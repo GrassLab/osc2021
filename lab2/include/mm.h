@@ -1,5 +1,6 @@
 #define PAGE_SIZE 0x1000 // 4KB
 #define BUDDY_BASE 0x100000 //0x2000
+#define MAX_PROCESS_PAGE 64
 
 struct page {
     unsigned long addr;
@@ -39,6 +40,33 @@ struct region_descriptor {
 	int free; // 1 for free, 0 for not
 	int used; // 1 for True, 0 for not
 };
+
+struct vm_area_struct {
+    unsigned long vm_start;
+    unsigned long vm_end;
+    unsigned int vm_prot;
+    unsigned int vm_flag;
+    struct vm_area_struct *vm_next;
+};
+
+
+struct mm_struct {
+    struct vm_area_struct *mmap;
+    unsigned long *pgd;
+    char *cpio_start;
+    int cpio_size;
+    int page_nr;
+    /* TODO: pages[] holds page this process
+     * owned. However, in the execution time,
+     * process may release some pages(e.g. cow).
+     * At that moment, it will leave a hole
+     * in pages[i]. A better way is to redesign
+     * pages[] as a pool, so we can allocate
+     * page from it by finding empty hole.
+     */
+    struct page *pages[MAX_PROCESS_PAGE];
+};
+
 
 void buddy_system_init(unsigned long mem_base);
 struct page *get_free_frames(int nr);
@@ -99,3 +127,8 @@ int kernel_page_fault_(unsigned long va);
 unsigned long *create_kernel_pgd(unsigned long start, unsigned long length);
 unsigned long *create_user_pgd(struct mm_struct *mm);
 int do_mem_abort(unsigned long addr, unsigned long esr);
+int destroy_pgd(struct mm_struct *mm);
+int create_user_space(struct mm_struct *mm);
+int copy_user_space_cow(struct mm_struct *mm_dest, struct mm_struct *mm_src);
+void *sys_mmap(void* addr, int len, int prot,
+    int flags, int fd, int file_offset);

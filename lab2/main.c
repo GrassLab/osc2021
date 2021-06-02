@@ -16,7 +16,7 @@
 #include "utils.h"
 #define CMD_SIZE 64
 #define FILE_NAME_SIZE 64
-#define PM_PASSWORD (0x5a000000 + 0xffff000000000000)
+#define PM_PASSWORD (0x5a000000)
 #define PM_RSTC (0x3F10001c + 0xffff000000000000)
 #define PM_WDOG (0x3F100024 + 0xffff000000000000)
 
@@ -385,8 +385,6 @@ int cmd_handler(char *cmd)
 
 int ls(char *path) {
     int fd = open(path, 0);
-    char name[100];
-    int size;
     // Modify the for loop to iterate
     // the directory entries of the
     // opened directory.
@@ -711,7 +709,6 @@ void idle()
 
 int sys_exec(char *filename, char *const argv[])
 {
-    unsigned long func_addr;
     struct mm_struct *mm;
     struct cpio_newc_header* ent;
     int filesize, namesize;

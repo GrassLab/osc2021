@@ -2,7 +2,6 @@
 #define MAX_VMA_NR 128
 #define MAX_WAIT_NR 8
 #define MAX_WAIT_ARGS_NR 16
-#define MAX_PROCESS_PAGE 32
 
 #define MAX_SIG_NR 2 // SIGINT, SIGKILL
 #define SIG_INT_NUM  0
@@ -44,30 +43,17 @@ struct sig_struct {
 #define PROT_RO      0x1
 #define PROT_RW      0x2
 
-struct vm_area_struct {
-    unsigned long vm_start;
-    unsigned long vm_end;
-    unsigned int vm_prot;
-    unsigned int vm_flag;
-    struct vm_area_struct *vm_next;
-};
+#define MAP_ANONYMOUS 0x1
+#define MAP_SHARED    0x2
+#define MAP_FIXED     0x4
+#define MAP_POPULATE  0x8
 
-struct mm_struct {
-    struct vm_area_struct *mmap;
-    unsigned long *pgd;
-    char *cpio_start;
-    int cpio_size;
-    int page_nr;
-    /* TODO: pages[] holds page this process
-     * owned. However, in the execution time,
-     * process may release some pages(e.g. cow).
-     * At that moment, it will leave a hole
-     * in pages[i]. A better way is to redesign
-     * pages[] as a pool, so we can allocate
-     * page from it by finding empty hole.
-     */
-    struct page *pages[MAX_PROCESS_PAGE];
-};
+#define PROT_NONE  0x1
+#define PROT_READ  0x2
+#define PROT_WRITE 0x4
+#define PROT_EXEC  0x8
+
+
 
 struct task {
     struct cpu_context ctx;
@@ -122,3 +108,5 @@ extern void cpu_switch_to(struct task* prev, struct task* next);
 int rm_from_ready(struct task *old);
 int init_mms_pool();
 int init_vma_pool();
+struct vm_area_struct *new_vma();
+struct mm_struct *new_mm_struct();

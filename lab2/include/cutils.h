@@ -1,3 +1,5 @@
+unsigned long _align_upper(unsigned long addr, int alignment);
+unsigned long _align_down(unsigned long addr, int alignment);
 char *align_upper(char *addr, int alignment);
 char *align_down(char *addr, int alignment);
 int strlen(const char *str);

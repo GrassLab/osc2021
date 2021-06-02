@@ -154,7 +154,8 @@ int sys_fork(void)
     memcpy((char*)child_tf, (char*)current->tf, sizeof(struct trap_frame));
 
     // new->mm = new_mm_struct();
-    new->mm = PA_TO_KVA((unsigned long)new_mm_struct());
+    // new->mm = (struct mm_struct*)PA_TO_KVA((unsigned long)new_mm_struct());
+    new->mm = new_mm_struct();
     new->mm->pgd = alloc_page_table(new->mm);
     copy_user_space_cow(new->mm, current->mm);
 
@@ -376,6 +377,10 @@ unsigned long syscall_handler(unsigned long x0, unsigned long x1,
             break;
         case SYS_MKNOD:
             ret = sys_mknod((char*)x0, (int)x1);
+            break;
+        case SYS_MMAP:
+            ret = (unsigned long)sys_mmap((void*)x0, (int)x1,
+                (int)x2, (int)x3, (int)x4, (int)x5);
             break;
         default:
             uart_send_string("Error: Unknown syscall type.");
