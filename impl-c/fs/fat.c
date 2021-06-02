@@ -27,6 +27,8 @@ typedef struct {
   uint8_t node_type;
   size_t capacity;
   size_t size;
+
+  void *data;                // data in memory
   uint32_t start_cluster_id; // Start idx inside the SD card
 } Content;
 #define content_ptr(vnode) (Content *)((vnode)->internal)
@@ -39,7 +41,35 @@ struct BackingStoreInfo {
   uint32_t fat_begin_lba;
   uint32_t root_cluster;
   uint32_t sec_per_cluster;
+  uint32_t sec_per_alloc_table;
+
+  // FAT table
+  uint32_t *alloc_table; // Array of 32 bit integers
+  uint32_t alloc_table_entry_cnt;
 };
+
+// Directory entry in the FAT file systems
+struct Dentry {
+  char name[8];
+  char extension[3];
+  uint8_t attr;
+  uint8_t _reserved1[8]; // reserved
+  uint16_t cluster1;
+  uint8_t _reserved2[4]; // reserved
+  uint16_t cluster2;
+  uint32_t size;
+} __attribute__((packed));
+
+enum FAT_DentryType {
+  FAT_DENTRY_END = 0x0,
+  FAT_DENTRY_UNUSED = 0xE5,
+
+  // Short/Long file name
+  FAT_DENTRY_SFN = 0x1,
+  FAT_DENTRY_LFN = 0x2,
+};
+
+static enum FAT_DentryType dentry_type(struct Dentry *dentry);
 
 // lazy init
 int fat_initialized = false;
@@ -51,33 +81,23 @@ struct filesystem fat = {
 
 struct BackingStoreInfo fatConfig;
 
-// Parse FAT layout information from the
-//  first sector of the filesystem(VolumnID)
-static int get_fat_config(uint32_t partition_lba_begin,
-                          struct BackingStoreInfo *keyInfo);
-
-static int parse_backing_store_info();
-
-static struct vnode *create_vnode(const char *name, uint8_t node_type,
-                                  uint32_t start_cluster_id);
-
-static inline uint32_t cluster2lba(uint32_t clusterId) {
-  return fatConfig.cluster_begin_lba +
-         (clusterId - 2) * fatConfig.sec_per_cluster;
-}
-
-// Create & Initialize a empty vnode for FAT
-// static struct vnode *create_vnode(const char *name, uint8_t node_type);
-
 #define FATAL(msg)                                                             \
   uart_println(msg);                                                           \
   while (1) {                                                                  \
     ;                                                                          \
   }
 
-void fat_dev() {
-  fat_init();
-  create_vnode("/", FAT_NODE_TYPE_DIR, fatConfig.root_cluster);
+static int parse_backing_store_info();
+static int get_fat_config(uint32_t partition_lba_begin,
+                          struct BackingStoreInfo *keyInfo);
+static uint32_t fetch_file(uint32_t begin_lba, void **ret_file);
+static int follow_cluster_chain(uint32_t cluster_idx,
+                                /* Return */ size_t *ret_len);
+static struct vnode *create_vnode(const char *name, uint8_t node_type,
+                                  uint32_t start_cluster_id);
+static inline uint32_t cluster2lba(uint32_t clusterId) {
+  return fatConfig.cluster_begin_lba +
+         (clusterId - 2) * fatConfig.sec_per_cluster;
 }
 
 struct vnode *create_vnode(const char *name, uint8_t node_type,
@@ -95,6 +115,8 @@ struct vnode *create_vnode(const char *name, uint8_t node_type,
     strcpy(cnt->name, name);
     cnt->node_type = node_type;
     cnt->start_cluster_id = start_cluster_id;
+    cnt->data = NULL;
+    cnt->size = 0;
   }
   node->internal = cnt;
   log_println("create node: `%s`, cluster_id: %d", cnt->name,
@@ -102,14 +124,32 @@ struct vnode *create_vnode(const char *name, uint8_t node_type,
   return node;
 }
 
-int fat_write(struct file *f, const void *buf, unsigned long len) { return 0; }
-int fat_read(struct file *f, void *buf, unsigned long len) { return 0; }
-int fat_lookup(struct vnode *dir_node, struct vnode **target,
-               const char *component_name) {
-  return 0;
+void fat_dev() {
+  fat_init();
+  void *root_data;
+  uint32_t num_sector;
+  num_sector = fetch_file(fatConfig.root_cluster, &root_data);
+
+  struct vnode *root_dir =
+      create_vnode("/", FAT_NODE_TYPE_DIR, fatConfig.root_cluster);
+  Content *root_content = content_ptr(root_dir);
+  // populate root dir content
+  root_content->data = root_data;
+  root_content->size = num_sector * (512 / sizeof(uint32_t));
+
+  struct vnode *target;
+  fat_lookup(root_dir, &target, "good");
 }
-int fat_create(struct vnode *dir_node, struct vnode **target,
-               const char *component_name) {
+
+int fat_setup_mount(struct filesystem *fs, struct mount *mount) {
+  if (fat_initialized == false) {
+    fat_init();
+    fat_initialized = true;
+  }
+
+  // TODO: setup root node
+
+  uart_println("fat setup");
   return 0;
 }
 
@@ -126,68 +166,54 @@ int fat_init() {
     FATAL("Could not parse FAT information from SD card");
     return 1;
   }
-  uart_println("fat init finished");
-  fat_initialized = true;
-  return 0;
-}
 
-int fat_setup_mount(struct filesystem *fs, struct mount *mount) {
-  if (fat_initialized == false) {
-    fat_init();
+  // Copy the allocation table to memory
+  fatConfig.alloc_table =
+      kalloc(fatConfig.alloc_table_entry_cnt * sizeof(uint32_t));
+  uintptr_t addr_table = (uintptr_t)fatConfig.alloc_table;
+  for (size_t i = 0; i < fatConfig.sec_per_alloc_table; i++) {
+    readblock(fatConfig.fat_begin_lba + i, (void *)(addr_table + i * 512));
   }
-  uart_println("fat setup");
+
+  uart_println("fat init finished");
   return 0;
 }
 
-int get_fat_config(uint32_t partition_lba_begin,
-                   struct BackingStoreInfo *keyInfo) {
-  if (keyInfo == NULL) {
+int fat_write(struct file *f, const void *buf, unsigned long len) { return 0; }
+
+int fat_read(struct file *f, void *buf, unsigned long len) { return 0; }
+
+int fat_lookup(struct vnode *dir_node, struct vnode **target,
+               const char *component_name) {
+
+  Content *dir_content = content_ptr(dir_node);
+  if (dir_content->node_type != FAT_NODE_TYPE_DIR) {
+    uart_println("Only able to lookup dir");
     return -1;
   }
 
-  int ret_val = 0;
-  uint8_t *bfr = (uint8_t *)kalloc(512);
-  readblock(partition_lba_begin, bfr);
-
-  if (bfr[510] != 0x55 || bfr[511] != 0xAA) {
-    ret_val = 1;
-    goto _fat_vol_parse_end;
+  if (dir_content->data == NULL) {
+    uart_println("TODO: fetch data from backing store");
+    while (1) {
+      ;
+    }
   }
-  uintptr_t sec_start = (uintptr_t)bfr;
-
-  uint16_t signature = *(uint32_t *)(sec_start + 0x1FE);
-  if (signature != 0xAA55) {
-    FATAL("Corrupted FAT VolumnID");
+  uart_println("Lookup `%s`", component_name);
+  struct Dentry *dentry = (struct Dentry *)dir_content->data;
+  int type;
+  for (int i = 0; i < dir_content->size; i++, dentry++) {
+    type = dentry_type(dentry);
+    if (type == FAT_DENTRY_UNUSED || type == FAT_DENTRY_END) {
+      continue;
+    }
+    uart_println("Entry %d: name:%s", i, dentry->name);
   }
+  return 0;
+}
 
-  uint8_t sec_per_clus, num_alloc_tables;
-  uint16_t byts_per_sec, rsvd_sec_cnt;
-  uint32_t sec_per_alloc_table, root_cluster;
-
-  byts_per_sec = *(uint16_t *)(sec_start + 0x0B); // value should always be 512
-  sec_per_clus = *(uint8_t *)(sec_start + 0x0D);  // Sector per cluster
-  rsvd_sec_cnt = *(uint16_t *)(sec_start + 0x0E);
-  num_alloc_tables = *(uint8_t *)(sec_start + 0x10); // always = 2
-  sec_per_alloc_table = *(uint32_t *)(sec_start + 0x24);
-  root_cluster = *(uint32_t *)(sec_start + 0x2C); // Usually 0x00000002
-  ret_val = 0;
-
-  if (num_alloc_tables != 2 || byts_per_sec != 512) {
-    uart_println("[FAT] numFAT:%d , bytePerSec:%d", num_alloc_tables,
-                 byts_per_sec);
-    FATAL("FAT format not supported");
-  }
-
-  keyInfo->parition_start_lba = partition_lba_begin;
-  keyInfo->cluster_begin_lba = partition_lba_begin + rsvd_sec_cnt +
-                               (num_alloc_tables * sec_per_alloc_table);
-  keyInfo->fat_begin_lba = partition_lba_begin + rsvd_sec_cnt;
-  keyInfo->root_cluster = root_cluster;
-  keyInfo->sec_per_cluster = sec_per_clus;
-
-_fat_vol_parse_end:
-  kfree(bfr);
-  return ret_val;
+int fat_create(struct vnode *dir_node, struct vnode **target,
+               const char *component_name) {
+  return 0;
 }
 
 int parse_backing_store_info() {
@@ -227,9 +253,150 @@ _fat_parse_end:
   return ret;
 }
 
+/**
+ * @brief Parse FAT layout information from the first sector of the
+ * filesystem(VolumnID)
+ */
+int get_fat_config(uint32_t partition_lba_begin,
+                   struct BackingStoreInfo *keyInfo) {
+  if (keyInfo == NULL) {
+    return -1;
+  }
+
+  int ret_val = 0;
+  uint8_t *bfr = (uint8_t *)kalloc(512);
+  readblock(partition_lba_begin, bfr);
+
+  if (bfr[510] != 0x55 || bfr[511] != 0xAA) {
+    ret_val = 1;
+    goto _get_fat_config_end;
+  }
+  uintptr_t sec_start = (uintptr_t)bfr;
+
+  uint16_t signature = *(uint32_t *)(sec_start + 0x1FE);
+  if (signature != 0xAA55) {
+    FATAL("Corrupted FAT VolumnID");
+  }
+
+  uint8_t sec_per_clus, num_alloc_tables;
+  uint16_t byts_per_sec, rsvd_sec_cnt;
+  uint32_t sec_per_alloc_table, root_cluster;
+
+  byts_per_sec = *(uint16_t *)(sec_start + 0x0B); // value should always be 512
+  sec_per_clus = *(uint8_t *)(sec_start + 0x0D);  // Sector per cluster
+  rsvd_sec_cnt = *(uint16_t *)(sec_start + 0x0E);
+  num_alloc_tables = *(uint8_t *)(sec_start + 0x10); // always = 2
+  sec_per_alloc_table = *(uint32_t *)(sec_start + 0x24);
+  root_cluster = *(uint32_t *)(sec_start + 0x2C); // Usually 0x00000002
+  ret_val = 0;
+
+  if (num_alloc_tables != 2 || byts_per_sec != 512) {
+    uart_println("[FAT] numFAT:%d , bytePerSec:%d", num_alloc_tables,
+                 byts_per_sec);
+    FATAL("FAT format not supported");
+  }
+
+  keyInfo->parition_start_lba = partition_lba_begin;
+  keyInfo->cluster_begin_lba = partition_lba_begin + rsvd_sec_cnt +
+                               (num_alloc_tables * sec_per_alloc_table);
+  keyInfo->fat_begin_lba = partition_lba_begin + rsvd_sec_cnt;
+  keyInfo->root_cluster = root_cluster;
+  keyInfo->sec_per_cluster = sec_per_clus;
+  keyInfo->sec_per_alloc_table = sec_per_alloc_table;
+
+  // The Allocation table contains entries with 32 Byte each.
+  // Total number of entries in the allocation table could be derived from
+  //  num_entries =  entries_per_sec * sectors_per_table
+  // Knowing that each sector contains 512 Bytes, we get `entries_per_sec` = 16
+  uint32_t num_entries = (byts_per_sec / 32) * sec_per_alloc_table;
+  keyInfo->alloc_table_entry_cnt = num_entries;
+  log_println("[FAT] entries in FAT: %d", num_entries);
+
+_get_fat_config_end:
+  kfree(bfr);
+  return ret_val;
+}
+
+/**
+ * @brief Get the length of the file by following links in the allocation table
+ * @param ret_len length of the file
+ * @retval 0 for success, fail otherwise
+ */
+int follow_cluster_chain(uint32_t cluster_idx, /* Return */ size_t *ret_len) {
+  if (cluster_idx < 0 || ret_len == NULL) {
+    return -1;
+  }
+  size_t len = 1;
+  uint32_t next;
+  for (uint32_t idx = cluster_idx;; idx = next, len++) {
+    next = fatConfig.alloc_table[idx];
+    if (next >= 0xFFFFFF8) {
+      break;
+    }
+  }
+  *ret_len = len;
+  return 0;
+}
+
+/**
+ * @brief Fetch the entire file from SD card to memory
+ * @warning would allocate a new memory space
+ * @param ret_file pointer to the file
+ * @retval len of the file
+ **/
+uint32_t fetch_file(uint32_t cluster_idx, void **ret_file) {
+  if (ret_file == NULL) {
+    return -1;
+  }
+  size_t num_sectors;
+  if (0 != follow_cluster_chain(cluster_idx, &num_sectors)) {
+    *ret_file = NULL;
+    return -1;
+  }
+  // Copy the entire file into a contiguous memory space
+  uintptr_t buffer = (uintptr_t)kalloc(num_sectors * 512);
+  uint32_t cur_idx = cluster_idx;
+  for (size_t i = 0; i < num_sectors; i++) {
+    readblock(cluster2lba(cur_idx), (void *)(buffer + i * 512));
+    cur_idx = fatConfig.alloc_table[cur_idx];
+  }
+  *ret_file = (void *)buffer;
+  return num_sectors;
+}
+
+static enum FAT_DentryType dentry_type(struct Dentry *dentry) {
+  uint8_t *first_byte = (uint8_t *)dentry;
+  switch (*first_byte) {
+  case FAT_DENTRY_UNUSED:
+    return FAT_DENTRY_UNUSED;
+  case FAT_DENTRY_END:
+    return FAT_DENTRY_END;
+  }
+  // All lower 4 bits are set
+  if ((dentry->attr & 0xF) == 0xF) {
+    return FAT_DENTRY_LFN;
+  }
+  return FAT_DENTRY_SFN;
+}
+
 #ifdef CFG_RUN_FS_FAT_TEST
+#define ENSURE_STRUCT_SIZE(_type, size)                                        \
+  {                                                                            \
+    int actual_size = sizeof(struct _type);                                    \
+    if (actual_size != (size)) {                                               \
+      uart_println("Test failed: size of %s, expect: %d, got: %d", #_type,     \
+                   (size), actual_size);                                       \
+      assert((sizeof(struct _type) == (size)));                                \
+    }                                                                          \
+  }
+
+static bool test_fat_struct_size() {
+  ENSURE_STRUCT_SIZE(Dentry, 32);
+  return true;
+};
 #endif
 void test_fat() {
 #ifdef CFG_RUN_FS_FAT_TEST
+  unittest(test_fat_struct_size, "FS", "FAT - size of structs");
 #endif
 }

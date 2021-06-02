@@ -51,7 +51,7 @@ int mbr_num_partitions(struct MBR *mbr) {
     }                                                                          \
   }
 
-bool test_struct_size() {
+static bool test_mbr_struct_size() {
   ENSURE_STRUCT_SIZE(MBR_Entry, 16);
   ENSURE_STRUCT_SIZE(MBR, 512);
   return true;
@@ -60,6 +60,6 @@ bool test_struct_size() {
 
 void test_mbr() {
 #ifdef CFG_RUN_DEV_MBR_TEST
-  unittest(test_struct_size, "DEV", "MBR - size of structs");
+  unittest(test_mbr_struct_size, "DEV", "MBR - size of structs");
 #endif
 }
