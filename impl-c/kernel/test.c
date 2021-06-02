@@ -1,5 +1,7 @@
 #include "test.h"
 #include "config.h"
+#include "dev/mbr.h"
+#include "fs/fat.h"
 #include "fs/vfs.h"
 #include "mm/startup.h"
 #include "proc/argv.h"
@@ -19,4 +21,6 @@ void run_tests() {
   test_shell_cmd();
   test_argv_parse();
   test_vfs();
+  test_mbr();
+  test_fat();
 }
