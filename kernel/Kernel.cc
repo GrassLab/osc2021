@@ -1,8 +1,6 @@
 // Copyright (c) 2021 Marco Wang <m.aesophor@gmail.com>. All rights reserved.
 #include <kernel/Kernel.h>
 
-#include <fs/CPIOArchive.h>
-
 namespace valkyrie::kernel {
 
 Kernel& Kernel::get_instance() {
@@ -33,8 +31,7 @@ void Kernel::run() {
   */
  
   printk("VFS: mounting rootfs...\n");
-  _vfs.mount_rootfs(make_unique<TmpFS>(), CPIOArchive(CPIO_ARCHIVE_ADDR));
-  //_vfs.get_rootfs().fs->show();
+  _vfs.mount_rootfs();
 
   printk("starting task scheduler...\n");
   _task_scheduler.run();

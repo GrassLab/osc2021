@@ -4,6 +4,7 @@
 #include <Algorithm.h>
 #include <List.h>
 #include <String.h>
+#include <driver/SDCardDriver.h>
 #include <fs/CPIOArchive.h>
 #include <fs/DirectoryEntry.h>
 #include <fs/File.h>
@@ -21,14 +22,27 @@ VFS& VFS::get_instance() {
 
 VFS::VFS()
     : _rootfs(),
+      _storage_devices(),
       _opened_files() {}
 
 
-bool VFS::mount_rootfs(UniquePtr<FileSystem> fs,
-                       const CPIOArchive& archive) {
-  _rootfs = { move(fs) };
+void VFS::mount_rootfs() {
+  // TODO: currently it only supports SD card.
+  auto sdcard = make_unique<StorageDevice>(SDCardDriver::get_instance());
+  _storage_devices.push_back(move(sdcard));
 
-  if (!archive.is_valid()) {
+  mount_rootfs(_storage_devices.front()->get_first_partition().get_filesystem());
+  printk("VFS: mounted root filesystem\n");
+}
+
+void VFS::mount_rootfs(FileSystem& fs) {
+  _rootfs = { &fs };
+}
+
+void VFS::mount_rootfs(FileSystem& fs, const CPIOArchive& archive) {
+  _rootfs = { &fs };
+
+  if (!archive.is_valid()) [[unlikely]] {
     printk("initramfs unpacking failed invalid magic at start of compressed archive\n");
     Kernel::panic("VFS: unable to mount root fs\n");
   }
@@ -37,8 +51,6 @@ bool VFS::mount_rootfs(UniquePtr<FileSystem> fs,
     mode_t mode = (entry.content_len) ? S_IFREG : S_IFDIR;
     create(entry.pathname, entry.content, entry.content_len, mode, 0, 0);
   });
-
-  return _rootfs.fs;
 }
 
 
@@ -107,7 +119,7 @@ SharedPtr<File> VFS::open(const String& pathname, int options) {
 }
 
 int VFS::close(SharedPtr<File> file) {
-  if (!file) {
+  if (!file) [[unlikely]] {
     return -1;
   }
 
@@ -115,7 +127,9 @@ int VFS::close(SharedPtr<File> file) {
     return f->vnode == file->vnode;
   });
 
-  if (it == _opened_files.end()) {
+  // `file` != nullptr but the file is not opened.
+  // The user is probably trying to close an unopened file?
+  if (it == _opened_files.end()) [[unlikely]] {
     return -1;
   }
   
@@ -139,29 +153,27 @@ int VFS::close(SharedPtr<File> file) {
 int VFS::write(SharedPtr<File> file, const void* buf, size_t len) {
   // 1. write len byte from buf to the opened file.
   // 2. return written size or error code if an error occurs.
-  if (!file) {
+  if (!file) [[unlikely]] {
     return -1;
   }
 
   if (file->vnode->is_regular_file()) {
     auto new_content = make_unique<char[]>(len);
     memcpy(new_content.get(), buf, len);
-    file->vnode->set_content(move(new_content));
-
+    file->vnode->set_content(move(new_content), len);
   } else {
     printk("vfs_write on this file type is not supported yet, mode = 0x%x\n", file->vnode->get_mode());
     return -1;
   }
 
   file->pos += len;
-  file->vnode->set_size(file->pos);
   return len;
 }
 
 int VFS::read(SharedPtr<File> file, void* buf, size_t len) {
   // 1. read min(len, readable file data size) byte to buf from the opened file.
   // 2. return read size or error code if an error occurs.
-  if (!file) {
+  if (!file) [[unlikely]] {
     return -1;
   }
 
@@ -172,7 +184,6 @@ int VFS::read(SharedPtr<File> file, void* buf, size_t len) {
     file->pos += len;
 
   } else if (file->vnode->is_directory()) {
-
     // Here `file->pos` is used as the index of the last iterated child.
     // FIXME: lol this is fooking slow, but i'm too busy this week...
     if (file->pos >= file->vnode->get_children_count()) {
@@ -181,6 +192,11 @@ int VFS::read(SharedPtr<File> file, void* buf, size_t len) {
     } else {
       DirectoryEntry e;
       SharedPtr<Vnode> child_vnode = file->vnode->get_ith_child(file->pos);
+      if (!child_vnode) [[unlikely]] {
+        Kernel::panic("vfs_read: child_vnode == nullptr. "
+                      "get_ith_child() is probably buggy.\n");
+      }
+
       strncpy(e.name, child_vnode->get_name().c_str(), sizeof(e.name));
       memcpy(buf, reinterpret_cast<char*>(&e), sizeof(e));
       file->pos++;
@@ -205,6 +221,18 @@ int VFS::access(const String& pathname, int options) {
   }
 
   return 0;
+}
+
+int VFS::mkdir(const String& pathname, mode_t mode) {
+
+}
+
+int VFS::rmdir(const String& pathname) {
+
+}
+
+int VFS::unlink(const String& pathname) {
+
 }
 
 
@@ -246,6 +274,7 @@ SharedPtr<Vnode> VFS::resolve_path(const String& pathname,
   auto vnode = _rootfs.fs->get_root_vnode();
 
   for (auto it = components.begin(); it != components.end(); it++) {
+
     if (out_parent && it.index() == components.size() - 1) {
       *out_parent = vnode;
     }

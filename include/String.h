@@ -51,17 +51,23 @@ class String {
 
   char& operator [](size_t i) { return _s[i]; }
 
-  bool operator ==(const String& other) const {
-    return !strcmp(c_str(), other.c_str());
+  bool operator ==(const String& r) const {
+    return !strcmp(c_str(), r.c_str());
   }
 
-  String operator +(const String& other) const {
+  String operator +(const String& r) const {
+    if (r.empty()) {
+      return *this;
+    }
+
     String ret;
-    ret._s = make_unique<char[]>(size() + other.size() + 1);
+    ret._s = make_unique<char[]>(size() + r.size() + 1);
     strcpy(ret._s.get(), _s.get());
-    strcat(ret._s.get(), other._s.get());
+    strcat(ret._s.get(), r._s.get());
     return ret;
   }
+
+  //operator bool() const { return !empty(); }
 
 
   Iterator begin() { return Iterator::begin(*this); }
@@ -70,9 +76,97 @@ class String {
   ConstIterator end() const { return ConstIterator::end(*this); }
 
 
-  String substr(size_t begin, size_t len) const {
+  // Searches the string for the first character that matches any of
+  // the characters specified in its arguments.
+  //
+  // When pos is specified, the search only includes characters at
+  // or after position pos, ignoring any possible occurrences before pos.
+  size_t find_first_of(char c, size_t pos = 0) const {
+    size_t len = size();
+    for (size_t i = 0; i < len; i++) {
+      if (at(i) == c) {
+        return i;
+      }
+    }
+    return npos;
+  }
+
+  size_t find_first_not_of(char c, size_t pos = 0) const {
+    size_t len = size();
+    for (size_t i = 0; i < len; i++) {
+      if (at(i) != c) {
+        return i;
+      }
+    }
+    return npos;
+  }
+
+  // Searches the string for the last character that matches any of
+  // the characters specified in its arguments.
+  //
+  // When pos is specified, the search only includes characters at
+  // or before position pos, ignoring any possible occurrences after pos.
+  size_t find_last_of(char c, size_t pos = npos) const {
+    if (empty()) {
+      return npos;
+    }
+
+    pos = (pos == npos) ? size() - 1 : pos;
+    for (int i = pos; i >= 0; i--) {
+      if (at(i) == c) {
+        return i;
+      }
+    }
+    return npos;
+  }
+
+  size_t find_last_not_of(char c, size_t pos = npos) const {
+    if (empty()) {
+      return npos;
+    }
+
+    pos = (pos == npos) ? size() - 1 : pos;
+    for (int i = pos; i >= 0; i--) {
+      if (at(i) != c) {
+        return i;
+      }
+    }
+    return npos;
+  }
+
+
+  // FIXME: maybe we should conform to the STL version...
+  // but I'm too busy this week @_@
+  void remove(const char val) {
+    size_t slow = 0;
+    size_t fast = 0;
+    
+    while (fast < size()) {
+      if (_s[fast] == val) {
+        fast++;
+      } else {
+        _s[slow] = _s[fast];
+        slow++;
+        fast++;
+      }
+    }
+    
+    size_t new_size = size() - (fast - slow);
+    if (new_size > 0) {
+      _s[new_size - 1] = 0;
+    } else {
+      _s[0] = 0;
+    }
+  }
+
+
+  String substr(size_t begin, size_t len = npos) const {
+    if (empty()) {
+      return {};
+    }
+
     // Sanitize `len`.
-    if (begin + len > size()) {
+    if (len == npos || begin + len > size()) {
       len = size() - begin;
     }
 
@@ -110,7 +204,28 @@ class String {
     return substrings;
   }
 
+  void to_upper() {
+    constexpr int offset = 'a' - 'A';
 
+    for (auto& c : *this) {
+      if (c >= 'a' && c <= 'z') {
+        c -= offset;
+      }
+    }
+  }
+
+  void to_lower() {
+    constexpr int offset = 'a' - 'A';
+
+    for (auto& c : *this) {
+      if (c >= 'A' && c <= 'Z') {
+        c += offset;
+      }
+    }
+  }
+
+
+  void clear() { _s.reset(); }
   bool empty() const { return size() == 0; }
   size_t size() const { return (_s) ? strlen(_s.get()) : 0; }
   const char& at(size_t i) const { return _s[i]; }
@@ -120,6 +235,10 @@ class String {
   char& back() { return _s[size() - 1]; }
   const char& front() const { return _s[0]; }
   const char& back() const { return _s[size() - 1]; }
+
+
+  // Until the end of the string.
+  static const size_t npos = -1;
 
  private:
   UniquePtr<char[]> _s;

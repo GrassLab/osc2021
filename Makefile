@@ -8,7 +8,7 @@ OBJCOPY = aarch64-linux-gnu-objcopy
 OBJCOPYFLAGS = -O binary
 
 GDB = aarch64-linux-gnu-gdb
-GDBFLAGS = -x ./debug.gdb
+GDBFLAGS = -x scripts/debug.gdb
 
 BUILD_DIR = build
 ELF = valkyrie.elf
@@ -30,6 +30,7 @@ run-debug:
 	qemu-system-aarch64 -M raspi3b\
 		-kernel $(BUILD_DIR)/$(IMG)\
 		-initrd initramfs.cpio\
+		-drive if=sd,file=../sd.img,format=raw\
 		-display none\
 		-serial null\
 		-serial stdio\
@@ -39,6 +40,7 @@ run:
 	qemu-system-aarch64 -M raspi3\
 		-kernel $(BUILD_DIR)/$(IMG)\
 		-initrd initramfs.cpio\
+		-drive if=sd,file=../sd.img,format=raw\
 		-display none\
 		-serial null\
 		-serial stdio

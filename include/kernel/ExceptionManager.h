@@ -2,7 +2,7 @@
 #ifndef VALKYRIE_EXCEPTION_MANAGER_H_
 #define VALKYRIE_EXCEPTION_MANAGER_H_
 
-#include <dev/IO.h>
+#include <driver/IO.h>
 #include <kernel/TaskletScheduler.h>
 #include <proc/TrapFrame.h>
 
@@ -30,7 +30,12 @@ namespace valkyrie::kernel {
 class ExceptionManager final {
  public:
   static ExceptionManager& get_instance();
+
   ~ExceptionManager() = default;
+  ExceptionManager(const ExceptionManager&) = delete;
+  ExceptionManager(ExceptionManager&&) = delete;
+  ExceptionManager& operator =(const ExceptionManager&) = delete;
+  ExceptionManager& operator =(ExceptionManager&&) = delete;
 
   [[gnu::always_inline]] static void enable() {
     asm volatile("msr DAIFCLR, #0b1111");

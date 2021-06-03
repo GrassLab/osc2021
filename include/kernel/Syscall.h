@@ -5,7 +5,6 @@
 #include <Types.h>
 #include <Utility.h>
 #include <dev/Console.h>
-#include <kernel/Compiler.h>
 #include <proc/TrapFrame.h>
 
 namespace valkyrie::kernel {
@@ -27,6 +26,9 @@ enum Syscall {
   SYS_KILL,
   SYS_SIGNAL,
   SYS_ACCESS,
+  SYS_MKDIR,
+  SYS_RMDIR,
+  SYS_UNLINK,
   __NR_syscall
 };
 
@@ -50,6 +52,9 @@ int sys_sched_yield();
 long sys_kill(pid_t pid, int signal);
 int sys_signal(int signal, void (*handler)());
 int sys_access(const char* pathname, int options);
+int sys_mkdir(const char* pathname, mode_t mode);
+int sys_rmdir(const char* pathname);
+int sys_unlink(const char* pathname);
 
 
 inline bool is_syscall_id_valid(const uint64_t id) {
@@ -65,7 +70,7 @@ inline bool is_syscall_id_valid(const uint64_t id) {
 template <typename... Args>
 size_t do_syscall(const uint64_t id, Args... args) {
   // Check if syscall id is valid.
-  if (unlikely(!is_syscall_id_valid(id))) {
+  if (!is_syscall_id_valid(id)) [[unlikely]] {
     printk("bad system call: (id=0x%x)\n", id);
     return -1;
   }

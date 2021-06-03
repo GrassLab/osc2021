@@ -3,7 +3,7 @@
 #define VALKYRIE_MINI_UART_H_
 
 #include <Types.h>
-#include <dev/GPIO.h>
+#include <driver/GPIO.h>
 
 // Quoting from BCM2837-ARM-Peripherals.pdf (pg. 6)
 // ------------------------------------------------
@@ -41,7 +41,12 @@ namespace valkyrie::kernel {
 class MiniUART {
  public:
   static MiniUART& get_instance();
+
   ~MiniUART() = default;
+  MiniUART(const MiniUART&) = delete;
+  MiniUART(MiniUART&&) = delete;
+  MiniUART& operator =(const MiniUART&) = delete;
+  MiniUART& operator =(MiniUART&&) = delete;
 
   char getchar();
   void gets(char* s);
