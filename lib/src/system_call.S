@@ -28,3 +28,19 @@ sys_fork:
 .global sys_exit
 sys_exit:
     svc 6
+
+.global sys_open
+sys_open:
+    svc 7
+
+.global sys_read
+sys_read:
+    svc 8
+
+.global sys_close
+sys_close:
+    svc 9
+
+.global sys_write
+sys_write:
+    svc 10

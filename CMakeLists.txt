@@ -5,7 +5,7 @@ project(OSC2021)
 # global variables
 set(CMAKE_C_COMPILER aarch64-linux-gnu-gcc)
 set(LIB_DIR ${CMAKE_SOURCE_DIR}/lib)
-set(CMAKE_C_FLAGS "-Wall -nostdlib -ffreestanding -Werror")
+set(CMAKE_C_FLAGS "-Wall -nostdlib -ffreestanding -Werror -O0")
 
 if (${DEBUG})
     message("\n######### WARNING: THIS iS DEBUG MODE #########\n")

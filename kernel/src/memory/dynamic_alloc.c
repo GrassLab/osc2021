@@ -81,7 +81,7 @@ void *get_chunk(int chunk_size)
 
 void augment_pool()
 {
-    printf("augmenting...\r\n");
+    // printf("augmenting...\r\n");
     struct dym_frame *new_frame = NULL;
     alloc_page((void *)&new_frame, 1);
     
@@ -140,7 +140,7 @@ void augment_pool()
     //augment
     append_to_pool(16, new_frame->chunk_16);
 
-    printf("augmented!\r\n");
+    // printf("augmented!\r\n");
 }
 
 void pool_stat()

@@ -10,13 +10,15 @@
 #include "io.h"
 #include "thread.h"
 #include "system_call.h"
+#include "vfs.h"
+
 
 void exec_command(char *input)
 {
     if (strcmp(input, "help") == 0) {
         char *support_cmds[] = {"help", "hello", "reboot", "open", "demo1", "demo2", "load"};
         for (int i = 1; i <= 7; i++) {
-            printf("%d. %s\r\n", i, support_cmds[i]);
+            printf("%d. %s\r\n", i, support_cmds[i - 1]);
         }
     } else if (strcmp(input, "hello") == 0) {
         printf("Hello World!\r\n");
@@ -49,6 +51,61 @@ void exec_command(char *input)
         while ( 1 ) {
             sys_schedule();
         }
+    } else if (strcmp(input, "lookup") == 0) {
+        // struct file *hello = vfs_open("hello", O_CREAT);
+        // struct file *world = vfs_open("world", O_CREAT);
+        char buf[100] = { 0 };
+        int readbytes;
+
+        int fd = open("test", O_CREAT);
+        readbytes = read(fd, buf, 20);
+        printf("fd: %d, read: %s, %d bytes\n", fd, buf, readbytes);
+        close(fd);
+
+        int fd2 = open("test2", O_CREAT);
+        memset(buf, 0, 100);
+        readbytes = read(fd2, buf, 20);
+        printf("fd: %d, read: %s, %d bytes\n", fd2, buf, readbytes);
+        close(fd2);
+
+    } else if (strcmp(input, "write") == 0) {
+        char buf[100] = { 0 };
+        int a = open("hello", O_CREAT);
+        int b = open("world", O_CREAT);
+        write(a, "Hello ", 6);
+        write(b, "World!", 6);
+        close(a);
+        close(b);
+        b = open("hello", 0);
+        a = open("world", 0);
+        int sz;
+        sz = read(b, buf, 100);
+        sz += read(a, buf + sz, 100);
+        buf[sz] = '\0';
+        printf("%s\n", buf); // should be Hello World!
+
+    }  else if (strcmp(input, "fat32_read") == 0) { 
+        char buf[1024] = { 0 };
+
+        int fd = open("HELLO.TXT", O_CREAT);
+
+        int readbytes = read(fd, buf, 200);
+
+        for (int i = 0; i < readbytes; i++) {
+            putchar(buf[i]);
+        }
+
+        printf("\n");
+        close(fd);
+    } else if (strcmp(input, "fat32_write") == 0) { 
+        printf("enter content: ");
+        char content[512];
+        get(content, 512);
+
+
+        int fd = open("HELLO.TXT", O_CREAT);
+        write(fd, content, strlen(content));
+        close(fd);
     } else {
         printf("Try another command\r\n");
     }

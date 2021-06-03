@@ -138,3 +138,38 @@ get_arg_and_do_exec:
     bl      do_exec
     mov     lr, x10
     ret     
+
+
+.global get_arg_and_do_open
+get_arg_and_do_open:
+    mov     x10, lr
+    bl      get_syscall_args
+    bl      do_open
+    mov     lr, x10
+    ret     
+
+
+.global get_arg_and_do_read
+get_arg_and_do_read:
+    mov     x10, lr
+    bl      get_syscall_args
+    bl      do_read
+    mov     lr, x10
+    ret     
+
+.global get_arg_and_do_close
+get_arg_and_do_close:
+    mov     x10, lr
+    bl      get_syscall_args
+    bl      do_close
+    mov     lr, x10
+    ret     
+
+.global get_arg_and_do_write
+get_arg_and_do_write:
+    mov     x10, lr
+    bl      get_syscall_args
+    bl      do_write
+    mov     lr, x10
+    ret     
+

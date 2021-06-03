@@ -6,6 +6,8 @@
 #include "def.h"
 #include "process.h"
 #include "thread.h"
+#include "vfs.h"
+#include "tmpfs.h"
 
 void cpio_exec(char *path, int argc, char *argv[])
 {
@@ -115,4 +117,72 @@ void * cpio_content_addr(CPIO_NEWC_HEADER *targetAddr)
     }
 
     return tmp;
+}
+
+void cpio_init_fs(struct vnode *root)
+{
+    CPIO_NEWC_HEADER *pCurrentFile = (CPIO_NEWC_HEADER *)RAMFS_ADDR;
+
+    char curName[20] = { 0 };
+    int namesize = 0;
+
+    struct vnode *target = NULL;
+    struct tmpfs_internal *target_internal  = NULL;
+
+    for (;;) {
+        // clear previous name
+        memset(curName, 0, 20);
+
+        // get current filename
+        namesize = cpio_attr_value(pCurrentFile, C_NAMESIZE) - 1;
+        char *pTemp = (char *)(pCurrentFile + 1);
+
+        for (int i = 0; i < namesize; i++, pTemp++) {
+            curName[i] = *pTemp;
+        }
+
+        // break if it's the end
+        if (strcmp(curName, "TRAILER!!!") == 0) {
+            break;
+        }
+
+        if (root->v_ops->create(root, &target, curName) != 0) {
+            printf("vnode \"%s\" create failed!\n", curName);
+
+            return;
+        }
+
+        target_internal = target->internal;
+        target_internal->size = cpio_attr_value(pCurrentFile, C_FILESIZE);
+        target_internal->start_addr = cpio_content_addr(pCurrentFile);
+
+        // printf("vnode \"%s\"'s content address: %ld\n", curName, target_internal->start_addr);
+
+        // proceed next file
+        pCurrentFile = get_next_file(pCurrentFile);
+        // printf("hi! name size: %d, name: %s\n", namesize, curName);
+    }
+}
+
+CPIO_NEWC_HEADER *get_next_file(CPIO_NEWC_HEADER *pCurrentFile)
+{
+    int namesize = cpio_attr_value(pCurrentFile, C_NAMESIZE) - 1;
+    char *pNextFile = (char *)(pCurrentFile + 1);
+
+    pNextFile += namesize;
+    
+    // aligned multiple of four
+    while (((pNextFile - (char *)pCurrentFile) % 4) != 0) {
+        *pNextFile = '\0';
+        pNextFile++;
+    }
+
+    pNextFile += cpio_attr_value(pCurrentFile, C_FILESIZE);
+    
+    while (((pNextFile - (char *)pCurrentFile) % 4) != 0) {
+        *pNextFile = '\0';
+        pNextFile++;
+    }
+
+    return (CPIO_NEWC_HEADER *)pNextFile;
 }

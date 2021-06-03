@@ -9,6 +9,7 @@
 #include "scheduler.h"
 #include "string.h"
 #include "exception.h"
+#include "fd.h"
 
 int distribute_pid = 1;
 
@@ -48,6 +49,7 @@ struct Thread * create_process(void *source_addr, int size, int argc, char *argv
     t->tid = get_new_tid();
     t->state = RUNNING;
     t->code = start_addr;
+    init_fd_table(&t->fd_table);
 
     // // create thread stack
     alloc_page((void **)&t->kernel_sp, THREAD_STACK_SIZE);
@@ -146,6 +148,8 @@ void do_fork()
     // set fork return value
     current_ctx->reg[0] = forked->pid;
     forked_ctx->reg[0] = 0;
+
+    // TODO: copy fd table
 
 
     thread_pool_add(forked);

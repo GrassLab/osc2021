@@ -1,7 +1,8 @@
 #include "string.h"
 #include "mini_uart.h"
+#include "def.h"
 
-int strcmp(char *str1, char *str2)
+int strcmp(const char *str1, const char *str2)
 {
     int result = 1;
     int i = 0;
@@ -21,17 +22,33 @@ int strcmp(char *str1, char *str2)
     return result;
 }
 
-int strcpy(char *str1, char *str2)
+int strcpy(char *dest, const char *src)
 {
-    int length = strlen(str2);
-    for (int i = 0; i < length; i++) {
-        str1[i] = str2[i];
+    int i = 0, length = strlen(src);
+    for (; i < length; i++) {
+        dest[i] = src[i];
     }
+
+    dest[i] = '\0';
 
     return 0;
 }
 
-int strlen(char *str) 
+char *strncpy(char *dest, const char *src, size_t count)
+{
+    int i = 0;
+    for (; i < count; i++) {
+        dest[i] = src[i];
+    }
+
+    dest[i] = '\0';
+
+    return 0;
+}
+
+
+
+int strlen(const char *str) 
 {
     int len = 0;
     while (*str != '\0')
@@ -84,7 +101,44 @@ char *itoa(unsigned int value, char *str, int base)
     } else {
         while(value != 0)
         {
-            str[i] = (value % base) + '0';
+            int mod = value % base; 
+            if (base == 16 && mod > 9) {
+                str[i] = mod - 10 +'A';
+            } else {
+                str[i] = mod + '0';
+            }
+            value = value / base;
+
+            i++;
+        }
+    }
+    
+    int len = strlen(str);
+
+    for (int low = 0, high = len - 1; low < high; low++, high--)
+    {
+        int temp = str[low];
+        str[low] = str[high];
+        str[high] = temp;
+    }
+
+    return str;
+}
+
+char *litoa(unsigned long int value, char *str, int base)
+{   
+    int i = 0;
+    if (value == 0) {
+        str[0] = '0';
+    } else {
+        while(value != 0)
+        {
+            int mod = value % base; 
+            if (base == 16 && mod > 9) {
+                str[i] = mod - 10 +'A';
+            } else {
+                str[i] = mod + '0';
+            }
             value = value / base;
 
             i++;
