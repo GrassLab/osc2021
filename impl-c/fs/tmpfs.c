@@ -62,7 +62,7 @@ struct filesystem tmpfs = {
  **/
 static void build_root_tree(struct vnode *root_dir);
 
-const char *node_name(struct vnode *dir) {
+static const char *node_name(struct vnode *dir) {
   Content *cnt = content_ptr(dir);
   return cnt->name;
 }

@@ -28,10 +28,20 @@ typedef struct {
   size_t capacity;
   size_t size;
 
-  void *data;                // data in memory
+  void *data;                // data in memory (directly copied from SDcard)
   uint32_t start_cluster_id; // Start idx inside the SD card
+
+  // Cached information
+  bool cached;
+  // Only used in dir node
+  struct vnode **children;
 } Content;
 #define content_ptr(vnode) (Content *)((vnode)->internal)
+
+static const char *node_name(struct vnode *node) {
+  Content *cnt = content_ptr(node);
+  return cnt->name;
+}
 
 // Store the key inforamtion about the FAT File system in SD card
 struct BackingStoreInfo {
@@ -52,11 +62,23 @@ struct BackingStoreInfo {
 struct Dentry {
   char name[8];
   char extension[3];
-  uint8_t attr;
+  union {
+    uint8_t val;
+    struct __attribute__((packed)) _Dentry_attr {
+      uint8_t read_only : 1;
+      uint8_t hidden : 1;
+      uint8_t system : 1;
+      uint8_t volume_id : 1;
+      uint8_t dir : 1;
+      uint8_t archive : 1;
+      uint8_t _unused : 2;
+    } fields;
+
+  } attr;                // 1 Bytes
   uint8_t _reserved1[8]; // reserved
-  uint16_t cluster1;
+  uint16_t first_cluster_high;
   uint8_t _reserved2[4]; // reserved
-  uint16_t cluster2;
+  uint16_t first_cluster_low;
   uint32_t size;
 } __attribute__((packed));
 
@@ -99,6 +121,8 @@ static inline uint32_t cluster2lba(uint32_t clusterId) {
   return fatConfig.cluster_begin_lba +
          (clusterId - 2) * fatConfig.sec_per_cluster;
 }
+static int build_dir_cache(struct vnode *dir_node);
+static struct vnode *create_vnode_from_dentry(struct Dentry *dentry);
 
 struct vnode *create_vnode(const char *name, uint8_t node_type,
                            uint32_t start_cluster_id) {
@@ -114,12 +138,15 @@ struct vnode *create_vnode(const char *name, uint8_t node_type,
     cnt->name = (char *)kalloc(sizeof(char) * strlen(name));
     strcpy(cnt->name, name);
     cnt->node_type = node_type;
+    cnt->size = 0;
+    cnt->capacity = 0;
     cnt->start_cluster_id = start_cluster_id;
     cnt->data = NULL;
-    cnt->size = 0;
+    cnt->cached = false;
+    cnt->children = NULL;
   }
   node->internal = cnt;
-  log_println("create node: `%s`, cluster_id: %d", cnt->name,
+  log_println("create vnode: `%s`, cluster_id: %d", cnt->name,
               cnt->start_cluster_id);
   return node;
 }
@@ -135,10 +162,17 @@ void fat_dev() {
   Content *root_content = content_ptr(root_dir);
   // populate root dir content
   root_content->data = root_data;
-  root_content->size = num_sector * (512 / sizeof(uint32_t));
+  // Number of dentries (not all are valid) described in the backing store
+  root_content->capacity = num_sector * (512 / sizeof(uint32_t));
 
   struct vnode *target;
-  fat_lookup(root_dir, &target, "good");
+  int ret;
+  ret = fat_lookup(root_dir, &target, "FIXUP.DAT");
+  if (ret == 0) {
+    uart_println("found node: %s", node_name(target));
+  } else {
+    uart_println("failed to find node");
+  }
 }
 
 int fat_setup_mount(struct filesystem *fs, struct mount *mount) {
@@ -191,24 +225,34 @@ int fat_lookup(struct vnode *dir_node, struct vnode **target,
     uart_println("Only able to lookup dir");
     return -1;
   }
-
+  log_println("Lookup `%s` under node:`%s`", component_name,
+              node_name(dir_node));
+  // we only have it's vnode but not data
   if (dir_content->data == NULL) {
     uart_println("TODO: fetch data from backing store");
     while (1) {
       ;
     }
   }
-  uart_println("Lookup `%s`", component_name);
-  struct Dentry *dentry = (struct Dentry *)dir_content->data;
-  int type;
-  for (int i = 0; i < dir_content->size; i++, dentry++) {
-    type = dentry_type(dentry);
-    if (type == FAT_DENTRY_UNUSED || type == FAT_DENTRY_END) {
-      continue;
+
+  if (dir_content->cached == false) {
+    if (0 != build_dir_cache(dir_node)) {
+      FATAL("Could not build cache for dentry");
     }
-    uart_println("Entry %d: name:%s", i, dentry->name);
   }
-  return 0;
+
+  dir_content = content_ptr(dir_node);
+  const char *child_name;
+  for (int i = 0; i < dir_content->size; i++) {
+    child_name = node_name(dir_content->children[i]);
+    if (0 == strcmp(child_name, component_name)) {
+      if (target != NULL) {
+        *target = dir_content->children[i];
+      }
+      return 0;
+    }
+  }
+  return -1;
 }
 
 int fat_create(struct vnode *dir_node, struct vnode **target,
@@ -373,10 +417,85 @@ static enum FAT_DentryType dentry_type(struct Dentry *dentry) {
     return FAT_DENTRY_END;
   }
   // All lower 4 bits are set
-  if ((dentry->attr & 0xF) == 0xF) {
+  if ((dentry->attr.val & 0xF) == 0xF) {
     return FAT_DENTRY_LFN;
   }
   return FAT_DENTRY_SFN;
+}
+
+struct vnode *create_vnode_from_dentry(struct Dentry *dentry) {
+  // SFN
+  char name[13]; // 8(name) + 1('.') + 3(extension) + 1('\')
+  {
+    int size = 0;
+    for (int i = 0; i < 8; i++) {
+      if (dentry->name[i] == ' ')
+        break;
+      name[size++] = dentry->name[i];
+    }
+    int put_delim = 1;
+    for (int i = 0; i < 3; i++) {
+      if (dentry->extension[i] == ' ')
+        break;
+      if (put_delim == 1) {
+        name[size++] = '.';
+        put_delim = 0;
+      }
+      name[size++] = dentry->extension[i];
+    }
+    name[size++] = '\0';
+  }
+
+  int vnode_type =
+      dentry->attr.fields.dir == 1 ? FAT_NODE_TYPE_DIR : FAT_NODE_TYPE_FILE;
+
+  // TODO: upper four bit should be cleared. since it's reserved
+  uint32_t cluster_id =
+      (dentry->first_cluster_high << 16) + dentry->first_cluster_low;
+
+  struct vnode *node = create_vnode(name, vnode_type, cluster_id);
+  return node;
+}
+
+int build_dir_cache(struct vnode *dir_node) {
+  Content *dir_content = content_ptr(dir_node);
+  if (dir_content->node_type != FAT_NODE_TYPE_DIR) {
+    return -1;
+  }
+  struct Dentry *dentry;
+  int type;
+  // Count available children (size of the dir)
+  {
+    uint32_t num_children = 0;
+    dentry = (struct Dentry *)dir_content->data;
+    for (int i = 0; i < dir_content->capacity; i++, dentry++) {
+      type = dentry_type(dentry);
+      if (type == FAT_DENTRY_UNUSED) {
+        continue;
+      } else if (type == FAT_DENTRY_END) {
+        break;
+      }
+      num_children++;
+    }
+    dir_content->size = num_children;
+  }
+
+  // Build child vnodes
+  {
+    dir_content->children =
+        (struct vnode **)kalloc(sizeof(struct vnode *) * dir_content->size);
+    dentry = (struct Dentry *)dir_content->data;
+    for (int num_built = 0; num_built < dir_content->size; dentry++) {
+      type = dentry_type(dentry);
+      if (type == FAT_DENTRY_UNUSED) {
+        continue;
+      }
+      dir_content->children[num_built] = create_vnode_from_dentry(dentry);
+      num_built++;
+    }
+  }
+  dir_content->cached = true;
+  return 0;
 }
 
 #ifdef CFG_RUN_FS_FAT_TEST
@@ -392,6 +511,7 @@ static enum FAT_DentryType dentry_type(struct Dentry *dentry) {
 
 static bool test_fat_struct_size() {
   ENSURE_STRUCT_SIZE(Dentry, 32);
+  ENSURE_STRUCT_SIZE(_Dentry_attr, 1);
   return true;
 };
 #endif
