@@ -25,6 +25,7 @@
 
 #include "gpio.h"
 #include "utils.h"
+#include "printf.h"
 
 /* Auxilary mini UART registers */
 #define AUX_ENABLE      ((volatile unsigned int*)(MMIO_BASE+0x00215004))
@@ -176,4 +177,15 @@ unsigned long uart_getX(int display){
 		}
 	}
 	return ret;
+}
+
+unsigned int uart_printf(char* fmt,...){
+	char dst[100];
+    //__builtin_va_start(args, fmt): "..." is pointed by args
+    //__builtin_va_arg(args,int): ret=(int)*args;args++;return ret;
+    __builtin_va_list args;
+    __builtin_va_start(args,fmt);
+    unsigned int ret=vsprintf(dst,fmt,args);
+    uart_puts(dst);
+    return ret;
 }

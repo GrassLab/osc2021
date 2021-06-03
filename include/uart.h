@@ -7,3 +7,4 @@ void uart_puts_int(int i);
 void uart_puts_hex(unsigned long i);
 int uart_read_buff(char* s,int size,int display);
 unsigned long uart_getX(int display);
+unsigned int uart_printf(char* fmt,...);

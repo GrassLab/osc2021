@@ -90,7 +90,7 @@ void init_buckets() {
 	Node *p = (Node *)((unsigned long)BASE_MEM + 4096*0);
     node_init(p, 0);
     list_push(&buckets[BUCKETS_NUM-1], p);
-	uart_puts("=====Init frame freelist=====\n");
+	uart_puts("[System info]: init frame freelist...\n");
 	// print_free_list();
 }
 
@@ -222,6 +222,7 @@ void* kmalloc(unsigned int size) {
     }
 	// print_free_list();
     uart_puts("(error) kmalloc fail!\n");
+	while(1);
     return 0;
 }
 

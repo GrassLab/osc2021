@@ -88,6 +88,7 @@ typedef struct _thread{
     // if preempt_flag > 0, the thread must not be interrupted
     unsigned int preempt_flag;
     file *fd_table[FD_MAX_SIZE];
+    int child;
 } thread;
 
 typedef struct _pt_regs {

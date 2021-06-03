@@ -53,7 +53,9 @@ void main() {
     uart_init();
     init_buckets();
     filesystem* fs = kmalloc(sizeof(filesystem));
-    int temp = register_filesystem(fs);
+    if(register_filesystem(fs)) {
+        uart_printf("register filesystem fail!\n");
+    }
 
     char *welcome = "\\                             .       .\n \\                           / `.   .\' \" \n \\                  .---.  <    > <    >  .---.\n   \\                 |   \\  \\ - ~ ~ - /  /    |\n         _____          ..-~             ~-..-~\n        |     |  \\~~~\\.\'                    `./~~~/\n       ---------  \\__/                        \\__/\n      .\'  O    \\     /               /       \\  \" \n     (_____,    `._.\'               |         }  \\/~~~/\n      `----.          /       }     |        /    \\__/\n            `-.      |       /      |       /      `. ,~~|\n                ~-.__|      /_ - ~ ^|      /- _      `..-\'   \n                     |     /        |     /     ~-.     `-. _  _  _\n                     |_____|        |_____|         ~ - . _ _ _ _ _>\n";
     uart_puts(welcome);
@@ -99,6 +101,9 @@ void main() {
         }
         else if(!strcmp(input, "lab6-2")) {
             lab6_required_2();
+        }
+        else if(!strcmp(input, "lab7")) {
+            lab7();
         }
         else {
             uart_puts("Error: ");

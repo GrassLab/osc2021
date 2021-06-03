@@ -8,7 +8,8 @@ OBJCOPY = aarch64-linux-gnu-objcopy
 OBJDUMP = aarch64-linux-gnu-objdump
 OBJCOPYFLAGS = -O binary
 
-GDB = gdb-multiarch
+#GDB = gdb-multiarch
+GDB = aarch64-linux-gnu-gdb
 GDBFLAGS = -x ./debug.gdb
 
 BUILD_DIR = build
@@ -37,6 +38,7 @@ debug:
 		-serial stdio\
 		-S -s\
 		-initrd archive/initramfs.cpio\
+		-drive if=sd,file=sfn_nctuos.img,format=raw
 
 run:
 	qemu-system-aarch64 -M raspi3\
@@ -45,6 +47,7 @@ run:
 		-serial null\
 		-serial stdio\
 		-initrd archive/initramfs.cpio\
+		-drive if=sd,file=sfn_nctuos.img,format=raw
 		
 asm:
 	qemu-system-aarch64 -M raspi3\
