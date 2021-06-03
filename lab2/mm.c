@@ -754,6 +754,17 @@ int load_content_to_page(char *page_kva, unsigned long offset,
     return 0;
 }
 
+int load_elf_content_to_page(char *page_kva, unsigned long va,
+    struct mm_struct *mm, struct vm_area_struct *vma)
+{ // va should be align with 0x1000 not matter what vma->vm_pgoff is.
+    // TODO: copy amount may be affected by file size.
+                // 0x1000 * i - vma->vm_start (p_vaddr)
+    // unsigned long offset;
+    // offset = va - vma->vm_start;
+    memcpy(page_kva, mm->cpio_start + vma->vm_pgoff + va, 0x1000);
+    return 0;
+}
+
 int direct_map(struct mm_struct *mm, unsigned long va,
     unsigned long p_va, unsigned long flag)
 {
@@ -810,7 +821,7 @@ unsigned long *create_user_pgd(struct mm_struct *mm)
         while (addr_walk <= addr_end) {
             page = (unsigned long)alloc_page_table(mm); // va
             if (!(vma->vm_flag & VM_ANONYMOUS)) // Only file-page needs to load content
-                load_content_to_page((char*)page, addr_walk, mm, vma);
+                load_elf_content_to_page((char*)page, addr_walk, mm, vma);
             direct_map(mm, addr_walk, page, 0);
             addr_walk += step_len;
         }
@@ -901,6 +912,111 @@ int create_mmap(struct mm_struct *mm)
     return 0;
 }
 
+struct Elf64_Ehdr{
+    unsigned char   e_ident[16]; 
+    unsigned short  e_type;
+    unsigned short  e_machine;
+    unsigned int    e_version;
+    unsigned long   e_entry;
+    unsigned long   e_phoff;
+    unsigned long   e_shoff;
+    unsigned int    e_flags;
+    unsigned short  e_ehsize;
+    unsigned short  e_phentsize;
+    unsigned short  e_phnum;
+    unsigned short  e_shentsize;
+    unsigned short  e_shnum;
+    unsigned short  e_shstrndx;
+};
+
+struct Elf64_Phdr {
+    unsigned int   p_type;
+    unsigned int   p_flags;
+    unsigned long  p_offset;
+    unsigned long  p_vaddr;
+    unsigned long  p_paddr;
+    unsigned long  p_filesz;
+    unsigned long  p_memsz;
+    unsigned long  p_align;
+};
+#define PF_X (1 << 0)        /* Segment is executable */
+#define PF_W (1 << 1)        /* Segment is writable */
+#define PF_R (1 << 2)        /* Segment is readable */
+#define PT_LOAD 0x1
+
+int print_phdr(struct Elf64_Phdr *phdr)
+{
+    uart_send_string("p_vaddr=");
+    uart_send_ulong(phdr->p_vaddr);
+    uart_send_string("\r\n");
+    uart_send_string("p_offset=");
+    uart_send_ulong(phdr->p_offset);
+    uart_send_string("\r\n");
+    uart_send_string("p_paddr=");
+    uart_send_ulong(phdr->p_paddr);
+    uart_send_string("\r\n");
+    uart_send_string("p_filesz=");
+    uart_send_ulong(phdr->p_filesz);
+    uart_send_string("\r\n");
+    uart_send_string("p_memsz=");
+    uart_send_ulong(phdr->p_memsz);
+    uart_send_string("\r\n");
+    uart_send_string("p_flags=");
+    uart_send_uint(phdr->p_flags);
+    uart_send_string("\r\n");
+    return 0;
+}
+
+int create_elf_mmap(struct mm_struct *mm)
+{
+    struct vm_area_struct *vma;
+    unsigned int p_flags, vm_prot;
+    /* stack vma */
+    // vma = (struct vm_area_struct *)((unsigned long)new_vma());// + 0xffff000000000000);
+    // vma->vm_start = _align_down(0x0000fffffffffff0, 0x1000);
+    // vma->vm_end = 0x0000fffffffffff0;
+    // vma->vm_prot = PROT_READ | PROT_WRITE;
+    // vma->vm_flag = VM_ANONYMOUS;
+    // vma_insert(mm, vma);
+    sys_mmap(0x0000fffffffff000, 0x1000, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_POPULATE, -1, 0);
+
+    struct Elf64_Ehdr *elf_hdr = (struct Elf64_Ehdr*)mm->cpio_start;
+    if ((elf_hdr->e_ident[1] != 'E') || (elf_hdr->e_ident[2] != 'L') || (elf_hdr->e_ident[3] != 'F'))
+        uart_send_string("Error: not an ELF file. \r\n");
+    
+    struct Elf64_Phdr *elf_pdr = (struct Elf64_Phdr*)(mm->cpio_start + elf_hdr->e_phoff);
+    for (int i = 0; i < elf_hdr->e_phnum; ++i) {
+        if (elf_pdr[i].p_type != PT_LOAD)
+            continue;
+        vma = new_vma();
+        vma->vm_start = elf_pdr[i].p_vaddr;
+        vma->vm_end = _align_upper(elf_pdr[i].p_vaddr + elf_pdr[i].p_memsz, 0x1000);
+        vma->vm_prot = 0;
+        vma->vm_pgoff = elf_pdr[i].p_offset;
+        p_flags = elf_pdr[i].p_flags;
+        if (p_flags & PF_R)
+            vma->vm_prot |= PROT_READ;
+        if (p_flags & PF_W)
+            vma->vm_prot |= PROT_WRITE;
+        if (p_flags & PF_X)
+            vma->vm_prot |= PROT_EXEC;
+        vma->vm_flag = VM_SHARED;
+        vma_insert(mm, vma);
+// vm_prot = 0;
+// p_flags = elf_pdr[i].p_flags;
+// if (p_flags & PF_R)
+//     vm_prot |= PROT_READ;
+// if (p_flags & PF_W)
+//     vm_prot |= PROT_WRITE;
+// if (p_flags & PF_X)
+//     vm_prot |= PROT_EXEC;
+// // void *sys_mmap(void* addr, int len, int prot, int flags, int fd, int file_offset)
+// sys_mmap(elf_pdr[i].p_vaddr, elf_pdr[i].p_memsz, vm_prot,
+//     MAP_FIXED | MAP_POPULATE | VM_SHARED, -1, elf_pdr[i].p_offset);
+    }
+    return 0;
+}
+
 int create_user_space(struct mm_struct *mm)
 {
     int from_kernel;
@@ -911,7 +1027,7 @@ int create_user_space(struct mm_struct *mm)
         destroy_mmap(mm);
         destroy_pgd(mm);
     }
-    create_mmap(mm);
+    create_elf_mmap(mm);
     /* create_user_pgd() was used when we don't have demand paging.
      * If we are using demand paging, than we should map stack space
      * first. Because we are going to set the initial content of
@@ -919,8 +1035,8 @@ int create_user_space(struct mm_struct *mm)
      * to map the stack with unknown reason.
      */
     // create_user_pgd(mm);
-    unsigned long page = (unsigned long)alloc_page_table(mm); // va
-    direct_map(mm, 0x0000fffffffff000, page, 0);
+    // unsigned long page = (unsigned long)alloc_page_table(mm); // va
+    // direct_map(mm, 0x0000fffffffff000, page, 0);
     if (1 || from_kernel)
         set_ttbr0(KVA_TO_PA((unsigned long)(mm->pgd)));
 
@@ -1127,7 +1243,7 @@ void *sys_mmap(void* addr, int len, int prot,
 
     mm = current->mm;
     /* Set vma according to arguments. */
-    vma = (struct vm_area_struct *)((unsigned long)new_vma());// + 0xffff000000000000);
+    vma = new_vma();// + 0xffff000000000000);
         // Determine _len
     if (len % 0x1000)
         _len = len + 0x1000 - (len % 0x1000);
@@ -1153,6 +1269,7 @@ void *sys_mmap(void* addr, int len, int prot,
     vma->vm_end = _addr + _len;
     vma->vm_prot = prot;
     vma->vm_flag = flags;
+    vma->vm_pgoff = file_offset;
     vma_insert(mm, vma);
 
     /* Populate or demand paging */
@@ -1161,7 +1278,7 @@ void *sys_mmap(void* addr, int len, int prot,
         for (int i = 0; i < page_num; ++i) {
             page = (unsigned long)alloc_page_table(mm); // va
             if (!(flags & MAP_ANONYMOUS)) // TODO: elf and vfs's fd
-                load_content_to_page((char*)page, 0x1000 * i, mm, vma);
+                load_elf_content_to_page((char*)page, 0x1000 * i, mm, vma);
             direct_map(mm, _addr, page, 0);
         }
     }
@@ -1190,13 +1307,13 @@ int do_mem_abort(unsigned long addr, unsigned long esr)
     struct page *frame;
 
     dfsc = (esr & 0x3F);
-    // uart_send_string("[From do_mem_abort]: pid=");
-    // uart_send_int(current->pid);
-    // uart_send_string(", dfsc=");
-    // uart_send_ulong(dfsc);
-    // uart_send_string(", addr=");
-    // uart_send_ulong(addr);
-    // uart_send_string("\r\n");
+    uart_send_string("[From do_mem_abort]: pid=");
+    uart_send_int(current->pid);
+    uart_send_string(", dfsc=");
+    uart_send_ulong(dfsc);
+    uart_send_string(", addr=");
+    uart_send_ulong(addr);
+    uart_send_string("\r\n");
     mm = current->mm;
     if ((dfsc & 0b111100) == 0b100) { // range from 4 ~ 7: Translation fault
         if (!(vma = addr_to_vma(addr, mm))) { // addr is not in address space
@@ -1207,10 +1324,11 @@ int do_mem_abort(unsigned long addr, unsigned long esr)
         }
         // addr is in address space, so we have to prepare the page for it.
         // TODO: check vma->vm_prot is legal
-        // uart_send_string("[DEMAND PAGING] alloc 1 page\r\n");
+        uart_send_string("[DEMAND PAGING] alloc 1 page\r\n");
         page = (unsigned long)alloc_page_table(mm); // va
         if (!(vma->vm_flag & VM_ANONYMOUS)) // Only file-page needs to load content
-            load_content_to_page((char*)page, addr & 0xFFFFFFFFFFFFF000, mm, vma);
+            load_elf_content_to_page((char*)page, addr & 0xFFFFFFFFFFFFF000, mm, vma);
+            // load_content_to_page((char*)page, addr & 0xFFFFFFFFFFFFF000, mm, vma);
         direct_map(mm, addr, page, 0);
         set_ttbr0(KVA_TO_PA((unsigned long)(mm->pgd)));
         return 0;
@@ -1230,7 +1348,7 @@ int do_mem_abort(unsigned long addr, unsigned long esr)
         if (*pted & PD_READ_ONLY) { // pted of addr is readonly
             if (!(vma->vm_flag & VM_SHARED) && (vma->vm_prot & PROT_WRITE)) {
             // Do the copy-on-write stuff
-                // uart_send_string("[COPY ON WRITE] copy 1 page\r\n");
+                uart_send_string("[COPY ON WRITE] copy 1 page\r\n");
                 page = (unsigned long)alloc_page_table(mm); // va: new page
                 memcpy((char*)page, (char*)frame->addr, 0x1000);
                 *pted = 0; // Clear pted, so direct_map can reset it.

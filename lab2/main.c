@@ -147,6 +147,9 @@ int ls_initramfs()
         if (!strcmp(name_start, "TRAILER!!!"))
             break;
         data_start = align_upper(name_start + namesize, 4);
+        uart_send_string("From ls_initramfs: ");
+        uart_send_ulong((unsigned long)data_start);
+        uart_send_string("\r\n");
         uart_send_string(name_start);
         uart_send_string("\r\n");
         ent = (struct cpio_newc_header*)align_upper(data_start + filesize, 4);
@@ -659,8 +662,8 @@ void user_thread()
     // char *inva = 0x00ff0000ffff0000;
     // *inva = 'k';
     // argv = {"user_logic", "hello1", "-aux", 0};
-    exec("bin/argv_test", argv);
-    // exec("bin/fork_test", argv);
+    // exec("bin/argv_test", argv);
+    exec("bin/ff.elf", argv);
     // exit();
 }
 
@@ -857,6 +860,7 @@ int shell()
 }
 
 extern unsigned long *kpgd;
+
 
 int kernel_main(char *sp)
 {

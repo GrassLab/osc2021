@@ -46,6 +46,9 @@ struct vm_area_struct {
     unsigned long vm_end;
     unsigned int vm_prot;
     unsigned int vm_flag;
+    unsigned long vm_pgoff;     /* Offset (within vm_file) in PAGE_SIZE units */
+    struct file *vm_file;      /* File we map to (can be NULL). */
+    struct vnode *vm_vnode;
     struct vm_area_struct *vm_next;
 };
 
