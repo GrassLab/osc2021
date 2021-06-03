@@ -23,28 +23,26 @@
 #
 #
 
-SRCS = $(wildcard *.c) $(wildcard ../lib/*.c)
+TARGET = fork_test
+SRCS = $(wildcard *.c) $(wildcard ../../lib/*.c)
 OBJS = $(SRCS:.c=.o)
 CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
 CC = aarch64-linux-gnu-gcc
 LINKER = aarch64-linux-gnu-ld
 OBJ_CPY = aarch64-linux-gnu-objcopy
 
-all: clean kernel8.img
-
-start.o: start.S
-	$(CC) $(CFLAGS) -c start.S -o start.o
+all: clean $(TARGET).img
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-kernel8.img: start.o $(OBJS)
-	$(LINKER) -nostdlib -nostartfiles start.o $(OBJS) -T linker.ld -o kernel8.elf
-	$(OBJ_CPY) -O binary kernel8.elf kernel8.img
-	cp kernel8.img ../kernel8.img
+$(TARGET).img: $(OBJS)
+	$(LINKER) -nostdlib -nostartfiles $(OBJS) -T linker.ld -o $(TARGET).elf
+	$(OBJ_CPY) -O binary $(TARGET).elf $(TARGET).img
+	cp $(TARGET).img ../../rootfs/$(TARGET).img
 
 clean:
-	rm kernel8.elf kernel8.img ../kernel8.img ../lib/*.o *.o >/dev/null 2>/dev/null || true
+	rm $(TARGET).elf $(TARGET).img ../lib/*.o *.o >/dev/null 2>/dev/null || true
 
 run:
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio -d int 
+	qemu-system-aarch64 -M raspi3 -kernel $(TARGET).img -serial null -serial stdio -d int 

@@ -18,3 +18,5 @@
 @import url("table.css");
 
 @import url("iefixes.css");
+
+/* find . | cpio -o -H newc > ../initramfs.cpio */

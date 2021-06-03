@@ -1,7 +1,7 @@
 #include "shell.h"
-#include "string.h"
 #include "command.h"
-#include "uart.h"
+#include "../lib/uart.h"
+#include "../lib/string.h"
 
 void ShellStart()
 {
@@ -10,11 +10,13 @@ void ShellStart()
     char buffer[MAX_BUFFER_LEN];
     enum SPECIAL_CHARACTER input_parse;
 
-	CommandBuddyInit();
-
     strset(buffer, 0, MAX_BUFFER_LEN);
 
+	CommandInit();
+
     uart_puts("# ");
+	// thread test by default
+	//CommandThreadTest(1);
 
     while(1)
     {
@@ -73,23 +75,25 @@ void CommandController(enum SPECIAL_CHARACTER input_parse, char c, char buffer[]
 		}
 	    }
 
-        if      (!strcmp(buffer,  "help"     )) CommandHelp();
-	    else if (!strcmp(buffer,  "hello"    )) CommandHello();
-	    else if (!strcmp(buffer,  "ls"       )) CommandCpiols();
-	    else if (!strcmp(buffer,  "timestamp")) CommandTimestamp();
-	    else if (!strcmp(buffer,  "reboot"   )) CommandReboot();
-		else if (!strcmp(buffer,  "loglist"  )) CommandBuddyLogList();
-		else if (!strcmp(buffer,  "logpool"  )) CommandBuddyLogPool();
-		else if (!strcmp(buffer,  "logtable" )) CommandBuddyLogTable();
-		else if (!strcmp(command, "alloc"    )) CommandBuddyAlloc(atoi(arg));
-		else if (!strcmp(command, "free"     )) CommandBuddyFree(atoi(arg));
-		else if (!strcmp(command, "free16"   )) CommandBuddyFreePool(16,  atoi(arg));
-		else if (!strcmp(command, "free32"   )) CommandBuddyFreePool(32,  atoi(arg));
-		else if (!strcmp(command, "free64"   )) CommandBuddyFreePool(64,  atoi(arg));
-		else if (!strcmp(command, "free128"  )) CommandBuddyFreePool(128, atoi(arg));
-	    else if (!strcmp(command, "cat"      )) CommandCpiocat(arg);
-		else if (!strcmp(command, "exe"      )) CommandCpioexe(arg);
-	    else                                    CommandNotFound(buffer);
+        if      (!strcmp(buffer,  "help"      )) CommandHelp();
+	    else if (!strcmp(buffer,  "hello"     )) CommandHello();
+	    else if (!strcmp(buffer,  "ls"        )) CommandCpiols();
+	    else if (!strcmp(buffer,  "timestamp" )) CommandTimestamp();
+	    else if (!strcmp(buffer,  "reboot"    )) CommandReboot();
+		else if (!strcmp(buffer,  "loglist"   )) CommandBuddyLogList();
+		else if (!strcmp(buffer,  "logpool"   )) CommandBuddyLogPool();
+		else if (!strcmp(buffer,  "logtable"  )) CommandBuddyLogTable();
+		else if (!strcmp(buffer,  "buddyinit" )) CommandBuddyInit();
+		else if (!strcmp(command, "alloc"     )) CommandBuddyAlloc(atoi(arg));
+		else if (!strcmp(command, "free"      )) CommandBuddyFree(atoi(arg));
+		else if (!strcmp(command, "free16"    )) CommandBuddyFreePool(16,  atoi(arg));
+		else if (!strcmp(command, "free32"    )) CommandBuddyFreePool(32,  atoi(arg));
+		else if (!strcmp(command, "free64"    )) CommandBuddyFreePool(64,  atoi(arg));
+		else if (!strcmp(command, "free128"   )) CommandBuddyFreePool(128, atoi(arg));
+		else if (!strcmp(command, "threadtest")) CommandThreadTest(atoi(arg));
+	    else if (!strcmp(command, "cat"       )) CommandCpiocat(arg);
+		else if (!strcmp(command, "exe"       )) CommandCpioexe(arg);
+	    else                                     CommandNotFound(buffer);
 	}
 
 	(*counter) = 0;

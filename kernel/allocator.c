@@ -1,8 +1,8 @@
 #include "allocator.h"
-#include "type.h"
-#include "math.h"
-#include "uart.h"
-#include "string.h"
+#include "../lib/type.h"
+#include "../lib/math.h"
+#include "../lib/uart.h"
+#include "../lib/string.h"
 
 #define BUDDY_START_ADDR 0x10000000
 #define BUDDY_END_ADDR 0x1f000000
@@ -132,9 +132,10 @@ void buddy_log_pool()
 
 void push_list_tail(int num, int index)
 {
-    struct freelist_node * node = (struct freelist_node *)((char)BUDDY_LIST_START + BUDDY_LIST_NODE_SIZE * list_node_addr_counter);
+    struct freelist_node * node = (struct freelist_node *)(BUDDY_LIST_START + BUDDY_LIST_NODE_SIZE * list_node_addr_counter);
     struct freelist_node * current = &buddy_list[num];
     list_node_addr_counter++;
+    /*
     char temp[10];
     uart_puts("\tOperation: Push index ");
     itoa(index, temp, 0);
@@ -143,18 +144,19 @@ void push_list_tail(int num, int index)
     itoa(num, temp, 0);
     uart_puts(temp);
     uart_puts("\n");
-
+    */
     if (current->index == EMPTY)
     {
         current->index = index;
     }
     else
-    {    
+    {
+            
         while(current->next != NULL)
         {
             current = current->next;
         }
-
+        
         current->next = node;
         current->next->index = index;
         current->next->prev = current;
@@ -166,7 +168,7 @@ int pop_list_head(int num)
 {
     struct freelist_node * current = &buddy_list[num];
     int index = current->index;
-
+    /*
     char temp[10];
     uart_puts("\tOperation: Pop index ");
     itoa(index, temp, 0);
@@ -175,7 +177,7 @@ int pop_list_head(int num)
     itoa(num, temp, 0);
     uart_puts(temp);
     uart_puts("\n");
-    
+    */ 
     if (current->next != NULL)
     {
         buddy_list[num] = *current->next;
@@ -191,6 +193,7 @@ int pop_list_head(int num)
 
 void buddy_initialize()
 {
+    
     for (int i = 1; i < FRAME_ARRAY_SIZE; ++i)
     {
         frame_array[i].val = CONTIGUOUS;
@@ -202,6 +205,7 @@ void buddy_initialize()
         buddy_list[i].prev = NULL;
         buddy_list[i].next = NULL;
     }
+    
     for (int i = 0; i < FRAME_ARRAY_SIZE; i += pow(2, BUDDY_LIST_SIZE - 1))
     {
         push_list_tail(BUDDY_LIST_SIZE - 1, i);
@@ -213,7 +217,7 @@ void buddy_initialize()
         allocated_table[i].index = EMPTY;
         allocated_table[i].page_num = 0;
     }
-
+    
     pool_16.ptr = buddy_contiguous_alloc(4096);
     pool_16.num = 256;
     for (int i = 0; i < pool_16.num; ++i)
@@ -253,7 +257,7 @@ int buddy_divid_mem(const int list_index)
     int res = 0;
     int frame_index = buddy_list[list_index].index;
     int frame_index_next = frame_index + pow(2, frame_array[frame_index].val - 1);
-    
+    /*
     char str_size[10], str_index1[10], str_index2[10]; 
     itoa(list_index, str_size, 0);
     itoa(frame_index, str_index1, 0);    
@@ -265,7 +269,7 @@ int buddy_divid_mem(const int list_index)
     uart_puts(", ");
     uart_puts(str_index2);
     uart_puts("\n");
-
+    */
     pop_list_head(list_index);
     push_list_tail(list_index - 1, frame_index);
     push_list_tail(list_index - 1, frame_index_next);
@@ -429,7 +433,7 @@ void * buddy_contiguous_alloc(const int size)
     int target_list_index = -1;
 
     void * ptr = 0x0000;
-
+    
     for (int i = 0; i < BUDDY_LIST_SIZE; ++i)
     {
         if (pow(2, i) < alloc_page_num)
@@ -442,25 +446,25 @@ void * buddy_contiguous_alloc(const int size)
             break;
         }
     }
-
+    
     if (target_list_index == -1)
     {
         buddy_mem_insufficient();
         return NULL;
     }
-
+    
     while(alloc_page_num * 2 <= pow(2, target_list_index))
     {
         target_list_index = buddy_divid_mem(target_list_index);
     }
-
+    
     int target_block_index = pop_list_head(target_list_index);
     for (int i = 0; i < pow(2, target_list_index); ++i)
     {
         frame_array[target_block_index + i].val = ALLOCATED;
     }
-    ptr = (char*)BUDDY_START_ADDR + target_block_index * PAGE_SIZE;
-
+    ptr = BUDDY_START_ADDR + target_block_index * PAGE_SIZE;
+    
     for (int i = 0; i < ALLOCATED_TABLE_MAX; ++i)
     {
         if (allocated_table[i].index == EMPTY)
@@ -472,6 +476,7 @@ void * buddy_contiguous_alloc(const int size)
         }
     }
 
+    /*
     char temp[10];
     uart_puts("Operation: Block [");
     itoa(target_block_index, temp, 0);
@@ -480,7 +485,7 @@ void * buddy_contiguous_alloc(const int size)
     itoa(target_block_index + pow(2, target_list_index), temp, 0);
     uart_puts(temp);
     uart_puts("] at is allocated\n");
-
+    */
     return ptr;
 }
 
