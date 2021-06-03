@@ -47,32 +47,36 @@ void shell() {
 void do_command(char* command) {
   if(strncmp(command, "help", 5) == 0) {
     printf("help: print all available commands.\n\
-            hello: print Hello World!.\n\
-            reboot: reboot rpi3.\n\
-            loadimg: load kernel image.\n\
-            lscpio: list cpio files.\n\
-            lsdtb: list dtb node name.\n\
-            sdtbprop [node name]: list [node name] property.\n\
-            cat [file]: cat cpio file.\n\
-            bmalloc [size]: buddy malloc.\n\
-            bfree [address]: buddy free.\n\
-            dmalloc [size]: dynamic malloc.\n\
-            dfree [address]: dynamic free.\n\
-            svc: trigger exception.\n\
-            run [address]: run user program in el0.\n\
-            el12el0: from el1 to el0.\n\
-            asyncw [input]: asynchronous write.\n\
-            asyncr: asynchronous read.\n\
-            settimeout [message] [timeout]: set time out and print message.\n\
-            dynamictest: dynamic malloc testing.\n\
-            buddytest: buddy malloc testing.\n\
-            variedtest: varied malloc test\n\
-            enabtimer: enable core timer interrupt.\n\
-            disatimer: disable core timer interrupt.\n\
-            lab5_test1: kernel thread test\n\
-            lab5_test2: argv, fork test\n\
-            lab6_test1: vfs/tmpfs open, read, write test.\n\
-            lab6_test2: ls [directory] test.\n");
+    hello: print Hello World!.\n\
+    reboot: reboot rpi3.\n\
+    loadimg: load kernel image.\n\
+    lscpio: list cpio files.\n\
+    lsdtb: list dtb node name.\n\
+    sdtbprop [node name]: list [node name] property.\n\
+    cat [file]: cat cpio file.\n\
+    bmalloc [size]: buddy malloc.\n\
+    bfree [address]: buddy free.\n\
+    dmalloc [size]: dynamic malloc.\n\
+    dfree [address]: dynamic free.\n\
+    svc: trigger exception.\n\
+    run [address]: run user program in el0.\n\
+    el12el0: from el1 to el0.\n\
+    asyncw [input]: asynchronous write.\n\
+    asyncr: asynchronous read.\n\
+    settimeout [message] [timeout]: set time out and print message.\n\
+    dynamictest: dynamic malloc testing.\n\
+    buddytest: buddy malloc testing.\n\
+    variedtest: varied malloc test\n\
+    enabtimer: enable core timer interrupt.\n\
+    disatimer: disable core timer interrupt.\n\
+    lab5_test1: kernel thread test\n\
+    lab5_test2: argv, fork test\n\
+    lab6_test1: vfs/tmpfs open, read, write test.\n\
+    lab6_test2: ls [directory] test.\n\
+    ls [dir]: ls [driectory].\n\
+    read [file]: vfs_read [filename].\n\
+    write [file]: vfs_write [filename].\n");
+    
 
   } 
   else if(strncmp(command, "hello", 6) == 0) {
@@ -193,6 +197,39 @@ void do_command(char* command) {
     char name[FILE_NAME_LEN];
     strncpy(name, command + 3, strlen(command) - 2);
     ls(name);
+  }
+  else if(strncmp(command, "read", 4) == 0) {
+    char name[FILE_NAME_LEN];
+    strncpy(name, command + 5, strlen(command) - 4);
+    vfs_read_test(name);
+  }
+  else if(strncmp(command, "write", 5) == 0) {
+    char name[FILE_NAME_LEN];
+    strncpy(name, command + 6, strlen(command) - 5);
+    
+    printf("input write content: ");
+    memset(command, strlen(command), '\0');
+    int i = 0;
+    while(1) {
+      char c = uart_getc();
+      c = c=='\r'?'\n':c;
+      if(c != '\n' && c != '\x7f') {
+        command[i++] = c;
+        uart_send(c);
+      }
+      else if(c == '\x7f') {
+        uart_send('\x08');
+        uart_send(' ');
+        uart_send('\x08');
+        command[--i] = '\0';
+      }
+      else {
+        command[i] = '\0';
+        uart_puts("\n");
+        break;
+      }
+    }
+    vfs_write_test(name, command, strlen(command));
   }
   else {
     printf("unknown command\n");

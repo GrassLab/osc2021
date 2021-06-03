@@ -54,7 +54,6 @@ void* tmpfs_vnode_create(struct mount* _mount, enum tmpfs_type type) {
 }
 
 static int setup_mount(struct filesystem* fs, struct mount* _mount) {
-
   _mount->fs = fs;
   _mount->root = tmpfs_vnode_create(_mount, dir_t);
   if(_mount->root == null) {

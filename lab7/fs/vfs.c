@@ -114,9 +114,9 @@ int vfs_read(struct file* file, void* buf, size_t len) {
 void root_fs_init() {
   int err;
   //init tmpfs
-  extern void* tmpfs_init();
+  /*extern void* tmpfs_init();
   tmpfs_init();
-
+  
   rootfs = (struct mount*)varied_malloc(sizeof(struct mount));
 
   if(rootfs == null)
@@ -129,9 +129,24 @@ void root_fs_init() {
     return;
   }
   extern void tmpfs_load_initramfs(struct mount* mount);
-  tmpfs_load_initramfs(rootfs); 
+  tmpfs_load_initramfs(rootfs); */
   
-  //vfs_read_test();
-  //vfs_write_test();
+  //init fat32
+  extern void* fat32_init();
+  fat32_init();
+  
+  rootfs = (struct mount*)varied_malloc(sizeof(struct mount));
+
+  if(rootfs == null)
+    return;
+
+  err = registed_fs[0].setup_mount(&registed_fs[0], rootfs);
+  
+  if(err == -1) {
+    printf("mount root fs error\n");
+    return;
+  }
+
+  vfs_write_test();
 }
 
