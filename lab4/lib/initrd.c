@@ -2,6 +2,8 @@
 #include "../include/uart.h"
 #include "../include/stringUtils.h"
 #include "../include/shell.h"
+#include "../include/initrd.h"
+#include "../include/interrupt.h"
 
 /* cpio hpodc format */
 typedef struct {
@@ -85,7 +87,13 @@ void getName(char* target){
     read_input(target);
 }
 
-void loadprog(char* pathname, int addr){
+void loadprog(){
+    char pathname[100];
+  getName(pathname);
+  char addr[200];
+  uart_puts("Please enter address (Hex):");
+  read_input(addr);
+  unsigned long addr_hex = getHexFromString(addr); 
     cpio_t *file_addr = findFile((cpio_t*)0x8000000, pathname);
     if(!file_addr){
         uart_puts("file not found\n");
@@ -98,7 +106,7 @@ void loadprog(char* pathname, int addr){
     Align_4(&dsize);
 
     char *data = (char*)((char*)file_addr + HPP);
-    unsigned char *target = (unsigned char*)addr;
+    unsigned char *target = (unsigned char*)addr_hex;
     while(dsize--){
         *target = *data;
         target++;
@@ -107,10 +115,8 @@ void loadprog(char* pathname, int addr){
 
     asm volatile("mov x0, 0x340  \n");
     asm volatile("msr spsr_el1, x0   \n");
-    asm volatile("msr elr_el1, %0    \n"::"r"(addr));
-    asm volatile("msr sp_el0, %0    \n"::"r"(addr));
-    //asm volatile("mov x0, #(3<<20)   \n");
-    // asm volatile("msr cpacr_el0, x0    \n");
+    asm volatile("msr elr_el1, %0    \n"::"r"(addr_hex));
+    asm volatile("msr sp_el0, %0    \n"::"r"(addr_hex));
     core_timer_enable();
     asm volatile("eret    \n");
 }

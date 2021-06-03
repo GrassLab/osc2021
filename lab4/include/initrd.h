@@ -26,5 +26,5 @@
 #define __INITRD__
 
 void cpio();
-
+void loadprog();
 #endif

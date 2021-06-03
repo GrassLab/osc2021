@@ -8,7 +8,7 @@ typedef int bool;
 typedef struct __list_node{
 
   struct __list_node *prev, *next;
-  int start_addr;
+  unsigned long start_addr;
   int buddy_index;
   int fr_no;
 }list_node;
@@ -35,7 +35,7 @@ void list_remove(list_node *entry);
 bool check_list(int index);
 int mem_init();
 void* my_alloc(int size);
-void my_free(void *addr);
+void my_free(int addr);
 void* dy_alloc(int size);
 void mem_status_dump();
 void dy_mem_status_dump();
