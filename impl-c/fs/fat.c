@@ -62,6 +62,7 @@ struct BackingStoreInfo {
 struct Dentry {
   char name[8];
   char extension[3];
+
   union {
     uint8_t val;
     struct __attribute__((packed)) _Dentry_attr {
@@ -73,8 +74,8 @@ struct Dentry {
       uint8_t archive : 1;
       uint8_t _unused : 2;
     } fields;
+  } attr; // 1 Bytes
 
-  } attr;                // 1 Bytes
   uint8_t _reserved1[8]; // reserved
   uint16_t first_cluster_high;
   uint8_t _reserved2[4]; // reserved
@@ -141,6 +142,9 @@ struct vnode *create_vnode(const char *name, uint8_t node_type,
     cnt->size = 0;
     cnt->capacity = 0;
     cnt->start_cluster_id = start_cluster_id;
+
+    // Data should be fetched on demand
+    // dir: fat_lookup
     cnt->data = NULL;
     cnt->cached = false;
     cnt->children = NULL;
@@ -153,17 +157,8 @@ struct vnode *create_vnode(const char *name, uint8_t node_type,
 
 void fat_dev() {
   fat_init();
-  void *root_data;
-  uint32_t num_sector;
-  num_sector = fetch_file(fatConfig.root_cluster, &root_data);
-
   struct vnode *root_dir =
       create_vnode("/", FAT_NODE_TYPE_DIR, fatConfig.root_cluster);
-  Content *root_content = content_ptr(root_dir);
-  // populate root dir content
-  root_content->data = root_data;
-  // Number of dentries (not all are valid) described in the backing store
-  root_content->capacity = num_sector * (512 / sizeof(uint32_t));
 
   struct vnode *target;
   int ret;
@@ -213,9 +208,15 @@ int fat_init() {
   return 0;
 }
 
-int fat_write(struct file *f, const void *buf, unsigned long len) { return 0; }
+int fat_write(struct file *f, const void *buf, unsigned long len) {
+  // TODO
+  return -1;
+}
 
-int fat_read(struct file *f, void *buf, unsigned long len) { return 0; }
+int fat_read(struct file *f, void *buf, unsigned long len) {
+  // TODO
+  return -1;
+}
 
 int fat_lookup(struct vnode *dir_node, struct vnode **target,
                const char *component_name) {
@@ -227,11 +228,15 @@ int fat_lookup(struct vnode *dir_node, struct vnode **target,
   }
   log_println("Lookup `%s` under node:`%s`", component_name,
               node_name(dir_node));
-  // we only have it's vnode but not data
+
   if (dir_content->data == NULL) {
-    uart_println("TODO: fetch data from backing store");
-    while (1) {
-      ;
+    // Pull data from SD card
+    {
+      uint32_t num_sector;
+      log_println("fetch dir data from SD card");
+      num_sector =
+          fetch_file(dir_content->start_cluster_id, &dir_content->data);
+      dir_content->capacity = num_sector * (512 / sizeof(uint32_t));
     }
   }
 
@@ -257,7 +262,8 @@ int fat_lookup(struct vnode *dir_node, struct vnode **target,
 
 int fat_create(struct vnode *dir_node, struct vnode **target,
                const char *component_name) {
-  return 0;
+  // TODO
+  return -1;
 }
 
 int parse_backing_store_info() {
