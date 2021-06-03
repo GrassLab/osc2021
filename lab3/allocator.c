@@ -3,11 +3,12 @@
 #include "string.h"
 #include "util.h"
 
-#define ALLOCATE_START      0x10000000
-#define ALLOCATE_END        0x1fffffff
-#define FRAME_SIZE      (4 * 1024)
-#define FRAME_ARRAY_LEN     ((ALLOCATE_END - ALLOCATE_START + 1) / FRAME_SIZE)
-#define MAX_BLOCK_SIZE_EXP      17  // 1 << (MAX_BLOCK_SIZE_EXP - 1) = FRAME_ARRAY_LEN
+#define RECORD_DYNAMIC_BLOCK_ADDR     0x100000
+#define RECORD_DYNAMIC_BLOCK_SIZE     (1 * 1024 * 1024)
+#define MEM_BLOCKS_NUM      10
+
+#define FRAME_SIZE          4096    // 4K
+#define MAX_BLOCK_SIZE_EXP      19  // 1 << (MAX_BLOCK_SIZE_EXP - 1) = FRAME_ARRAY_LEN
 
 #define POOL_SIZE_LEN       (sizeof(pool_sizes) / sizeof(int))
 
@@ -15,14 +16,10 @@
 
 #define MAX_CHUNK_NUM       ((FRAME_SIZE / pool_sizes[0]) / 8)
 
+static Memblock reserved_block[MEM_BLOCKS_NUM];
+static Memblock dynamic_block[MEM_BLOCKS_NUM];
 
-/*
- * state >= 0 : There is an allocable, contiguous memory that starts from the idx’th frame with size=2^(val) × 4kb. 
- * state = -1 : The idx’th frame is free, but it belongs to a larger contiguous memory block.
- *              Hence, buddy system doesn’t directly allocate it.
- * state = -2 : The idx’th frame is already allocated, hence not allocable.
- */
-static Frame frame_array[FRAME_ARRAY_LEN];
+//static Frame frame_array[FRAME_ARRAY_LEN];
 static Frame *free_block_list[MAX_BLOCK_SIZE_EXP];
 
 static int pool_sizes[] = {16, 32, 64, 128, 256, 512};
@@ -34,7 +31,6 @@ void set_frame(Frame *frame, int state) {
 
 void set_chunk(Frame *frame, int size) {
     frame->chunk_size = size;
-    frame->chunk_num = (FRAME_SIZE / size) / 8;
 }
 
 void push_useless_block(Frame *block, int exp) {
@@ -53,48 +49,129 @@ Frame *peek_useless_block(int exp) {
     return free_block_list[exp];
 }
 
-void init_blocks() {
+int get_chunk_num(int chunk_size) {
+    return (FRAME_SIZE / chunk_size) / 8;
+}
+
+void init_mem_blocks() {
+    for (int i = 0; i < MEM_BLOCKS_NUM; i++) {
+        reserved_block[i].size = 0;
+        dynamic_block[i].size = 0;
+    }
+}
+
+void init_block_list() {
     for (int i = 0; i < MAX_BLOCK_SIZE_EXP; i++) {
         free_block_list[i] = NULL;
     }
 }
 
-void init_frame_array() {
-    for (int i = 0; i < FRAME_ARRAY_LEN; i++) {
-        frame_array[i].index = i;
-        frame_array[i].chunk_size = 0;
-        frame_array[i].next_chunks = NULL;
-        for (int j = 0; j < MAX_CHUNK_NUM; j++) {
-            frame_array[i].chunks[j] &= 0;
-        }
-        set_frame(&frame_array[i], -1);
+void set_reserved_mem(unsigned long start_addr, long size) {
+    int index = 0;
+    while (reserved_block[index].size  != 0) {
+        index++;
+        if (index >= MEM_BLOCKS_NUM)
+            break;
     }
 
-    unsigned long frame_array_len = FRAME_ARRAY_LEN;
+    if (index >= MEM_BLOCKS_NUM) {
+        uart_put_str("set_reserverd_mem fail. addr: ");
+        uart_put_addr(start_addr);
+        uart_put_str("\n");
+    }
+    else {
+        reserved_block[index].start_addr = start_addr;
+        reserved_block[index].size = size;
+        uart_put_str("start: ");
+        uart_put_addr(start_addr);
+        uart_put_str(", end: ");
+        uart_put_addr(start_addr + size - 1);
+        uart_put_str(", size: ");
+        uart_put_long(size);
+        uart_put_str(" Bytes\n");
+    }
+}
+
+void set_dynamic_mem(unsigned long start_addr, long size) {
     int index = 0;
-    for (int exp = 0; exp < MAX_BLOCK_SIZE_EXP; frame_array_len = frame_array_len >> 1, exp++) {
-        if (frame_array_len % 2) {
-            push_useless_block(&frame_array[index], exp);
-            set_frame(&frame_array[index], exp);
-            index += (1 << exp);
+    while (dynamic_block[index].size != 0) {
+        index++;
+        if (index >= MEM_BLOCKS_NUM)
+            break;
+    }
+
+    if (index >= MEM_BLOCKS_NUM) {
+        uart_put_str("set_dynamic_mem fail. addr: ");
+        uart_put_addr(start_addr);
+        uart_put_str("\n");
+    }
+    else {
+        dynamic_block[index].start_addr = start_addr;
+        dynamic_block[index].size = size;
+        uart_put_str("start: ");
+        uart_put_addr(start_addr);
+        uart_put_str(", end: ");
+        uart_put_addr(start_addr + size - 1);
+        uart_put_str(", size: ");
+        uart_put_long(size);
+        uart_put_str(" Bytes\n");
+    }
+}
+
+void init_reserved_mem() {
+    uart_put_str("[set reserved block]\n");
+    set_reserved_mem(0x80000, 0x40000);
+    set_reserved_mem(RECORD_DYNAMIC_BLOCK_ADDR, RECORD_DYNAMIC_BLOCK_SIZE);
+}
+
+void init_dynamic_mem() {
+    uart_put_str("[set dynamic block]\n");
+    set_dynamic_mem(0x20000000, FRAME_SIZE);
+    set_dynamic_mem(0x10000000, 1 * 1024 * 1024);
+}
+
+void init_frame_array() {
+    Frame *record_mem = (Frame *)RECORD_DYNAMIC_BLOCK_ADDR;
+    for (int i = 0; i < MEM_BLOCKS_NUM  && dynamic_block[i].size != 0; i++) {
+        dynamic_block[i].record_addr = (unsigned long)record_mem;
+        for (int index = 0; index < dynamic_block[i].size / FRAME_SIZE; index++, record_mem++) {
+            record_mem->index = index;
+            record_mem->dynamic_block_index = i;
+            record_mem->chunk_size = 0;
+            record_mem->next_chunks = NULL;
+            for (int j = 0; j < MAX_CHUNK_NUM; j++) {
+                record_mem->chunks[j] &= 0;
+            }
+            set_frame(record_mem, -1);
+        }
+
+        Frame *frame_array = (Frame *)dynamic_block[i].record_addr;
+        unsigned long frame_array_len = dynamic_block[i].size / FRAME_SIZE;
+        for (int exp = 0; exp < MAX_BLOCK_SIZE_EXP; frame_array_len = frame_array_len >> 1, exp++) {
+            if (frame_array_len % 2) {
+                push_useless_block(frame_array, exp);
+                set_frame(frame_array, exp);
+                frame_array += (1 << exp);
+            }
         }
     }
+    
+    for (; (unsigned long)record_mem < RECORD_DYNAMIC_BLOCK_ADDR + RECORD_DYNAMIC_BLOCK_SIZE; record_mem++) {
+        record_mem->index = -1;
+        set_frame(record_mem, -3);
+    }
+
 }
 
 void init_memory() {
-    uart_put_str("initial memory.\n");
-    init_blocks();
+    
+    init_mem_blocks();
+    init_block_list();
+    init_reserved_mem();
+    init_dynamic_mem();
+
     init_frame_array();
     
-}
-
-void welcome() {
-    uart_put_str("start allocator.\n");
-    uart_put_str("The range of memory you can manage is from ");
-    uart_put_addr(ALLOCATE_START);
-    uart_put_str(" to ");
-    uart_put_addr(ALLOCATE_END);
-    uart_put_str("\n");
 }
 
 unsigned long get_memory_unit(char *type) {
@@ -155,6 +232,17 @@ int check_block_exp(int block_num) {
     }
 }
 
+int which_dynamic_block_index_by_record_addr(unsigned long record_addr) {
+    int index = 0;
+    for (; index < MEM_BLOCKS_NUM; index++) {
+        if (dynamic_block[index].size == 0)
+            break;
+        if (record_addr < dynamic_block[index].record_addr)
+            return index - 1;
+    }
+    return index - 1;
+}
+
 Frame *set_useless_block(int exp) {
     if (exp == MAX_BLOCK_SIZE_EXP)
         return NULL;
@@ -162,15 +250,16 @@ Frame *set_useless_block(int exp) {
     Frame *block = peek_useless_block(exp);
     if (!block) {
         block = set_useless_block(exp + 1);
-        pop_useless_block(exp + 1);
 
         if (block) {
+            pop_useless_block(exp + 1);
             set_frame(block, exp);
             set_frame(block + (1 << exp), exp);
             push_useless_block(block + (1 << exp), exp);
             push_useless_block(block, exp);
             
-            unsigned long start_addr = ALLOCATE_START + block->index * FRAME_SIZE;
+            int dynamic_block_addr = which_dynamic_block_index_by_record_addr((unsigned long)block);
+            unsigned long start_addr = dynamic_block[dynamic_block_addr].start_addr + block->index * FRAME_SIZE;
             unsigned long middle_addr = start_addr + (1 << exp) * FRAME_SIZE;
             unsigned long end_addr = middle_addr + (1 << exp) * FRAME_SIZE - 1;
             uart_put_str("==================================================================\n");
@@ -199,7 +288,8 @@ void use_useless_block(int exp) {
         set_frame(block + i, -2);
     }
 
-    unsigned long start_addr = ALLOCATE_START + block->index * FRAME_SIZE;
+    int dynamic_block_addr = which_dynamic_block_index_by_record_addr((unsigned long)block);
+    unsigned long start_addr = dynamic_block[dynamic_block_addr].start_addr + block->index * FRAME_SIZE;
     unsigned long end_addr = start_addr + (1 << exp) * FRAME_SIZE - 1;
     uart_put_str("Allocate ");
     uart_put_int((1 << exp));
@@ -223,17 +313,22 @@ Frame *allocate_page(unsigned long size) {
     return block;
 }
 
+unsigned long page_allocator(unsigned long size) {
+    Frame *block = allocate_page(size);
+    return dynamic_block[block->dynamic_block_index].start_addr + block->index * FRAME_SIZE;
+}
+
 /* take top to pair others*/
-void merge_useless_blocks(int exp) {
+void merge_useless_blocks(int exp, Frame *frame_array) {
     Frame *top_block = free_block_list[exp];
     Frame *block = top_block;
     Frame *pre_block;
-    int new_page_index = block->index;
     while (block->next_block) {
         pre_block = block;
         block = block->next_block;
-        if (new_page_index / (1 << (exp + 1)) == (block->index) / (1 << (exp + 1))) {
-            int index = new_page_index / (1 << (exp + 1)) * (1 << (exp + 1));
+        if ( top_block->dynamic_block_index == block->dynamic_block_index &&
+            (top_block->index / (1 << (exp + 1)) == (block->index) / (1 << (exp + 1)))) {
+            int index = top_block->index / (1 << (exp + 1)) * (1 << (exp + 1));
             pop_useless_block(exp);
             if (pre_block == top_block)
                 free_block_list[exp] = block->next_block;
@@ -244,7 +339,8 @@ void merge_useless_blocks(int exp) {
             set_frame(&frame_array[index + (1 << exp)], -1);
             push_useless_block(&frame_array[index], exp + 1);
 
-            unsigned long start_addr = ALLOCATE_START + index * FRAME_SIZE;
+            int dynamic_block_addr = which_dynamic_block_index_by_record_addr((unsigned long)block);
+            unsigned long start_addr = dynamic_block[dynamic_block_addr].start_addr + index * FRAME_SIZE;
             unsigned long middle_addr = start_addr + (1 << exp) * FRAME_SIZE;
             unsigned long end_addr = middle_addr + (1 << exp) * FRAME_SIZE - 1;
             uart_put_str("==================================================================\n");
@@ -263,16 +359,17 @@ void merge_useless_blocks(int exp) {
             uart_put_str("\n");
             uart_put_str("==================================================================\n");
 
-            merge_useless_blocks(exp + 1);
+            merge_useless_blocks(exp + 1, frame_array);
             break;
         }
     }
 }
 
-void free_page(unsigned long address, unsigned long size) {
+void free_page(unsigned long address, unsigned long size, Frame *frame_array) {
     int frame_num = (size - 1) / FRAME_SIZE + 1;
     int block_exp = check_block_exp(frame_num);
-    int block_index = (address - ALLOCATE_START) / FRAME_SIZE;
+    int dynamic_block_addr = which_dynamic_block_index_by_record_addr((unsigned long)frame_array);
+    int block_index = (address - dynamic_block[dynamic_block_addr].start_addr) / FRAME_SIZE;
 
     if (frame_array[block_index].state != -2) {
         uart_put_str("This page already free!\n");
@@ -284,7 +381,7 @@ void free_page(unsigned long address, unsigned long size) {
        set_frame(&frame_array[block_index + i], -1);
     }
     
-    unsigned long start_addr = ALLOCATE_START + block_index * FRAME_SIZE;
+    unsigned long start_addr = dynamic_block[dynamic_block_addr].start_addr + block_index * FRAME_SIZE;
     unsigned long end_addr = start_addr + (1 << block_exp) * FRAME_SIZE - 1;
     uart_put_str("Free ");
     uart_put_int((1 << block_exp));
@@ -295,7 +392,7 @@ void free_page(unsigned long address, unsigned long size) {
     uart_put_str("\n");
 
     push_useless_block(&frame_array[block_index], block_exp);
-    merge_useless_blocks(block_exp);
+    merge_useless_blocks(block_exp, frame_array);
 }
 
 Frame *request_frame(int size_index) {
@@ -313,7 +410,8 @@ Frame *search_useless_chunk(int size_index) {
     if (pool_list[size_index]) {
         Frame *frame = pool_list[size_index];
         while (frame) {
-            for (int i = 0; i < frame->chunk_num; i++) {
+            int chunk_num = get_chunk_num(frame->chunk_size);
+            for (int i = 0; i < chunk_num; i++) {
                 if (frame->chunks[i] != 0xff)
                     return frame;
             }
@@ -327,10 +425,12 @@ Frame *search_useless_chunk(int size_index) {
 }
 
 unsigned long use_useless_chunk(Frame *frame) {
-    unsigned long start_addr = ALLOCATE_START + frame->index * FRAME_SIZE;
+    int dynamic_block_addr = which_dynamic_block_index_by_record_addr((unsigned long)frame);
+    unsigned long start_addr = dynamic_block[dynamic_block_addr].start_addr + frame->index * FRAME_SIZE;
     unsigned long end_addr;
+    int chunk_num = get_chunk_num(frame->chunk_size);
     int index = 0;
-    for (int i = 0; i < frame->chunk_num; i++) {
+    for (int i = 0; i < chunk_num; i++) {
         if (frame->chunks[i] != 0xff) {
             unsigned char x = 0x80;
             for (int j = 0; j < 8; j++) {
@@ -372,16 +472,18 @@ unsigned long allocate_small_memory(unsigned long size) {
 
 }
 
-void return_frame(int size_index) {
+void return_frame(int size_index, Frame *frame_array) {
     Frame *frame = pool_list[size_index];
     Frame *pre_frame = pool_list[size_index];
 
     while (frame) {
-        for (int i = 0; i < frame->chunk_num; i++) {
+        int chunk_num = get_chunk_num(frame->chunk_size);
+        for (int i = 0; i < chunk_num; i++) {
             if (frame->chunks[i] != 0)
                 break;
-            if (i == frame->chunk_num - 1) {
-                free_page(ALLOCATE_START + frame->index * FRAME_SIZE, FRAME_SIZE);
+            if (i == chunk_num - 1) {
+                int dynamic_block_addr = which_dynamic_block_index_by_record_addr((unsigned long)frame_array);
+                free_page(dynamic_block[dynamic_block_addr].start_addr + frame->index * FRAME_SIZE, FRAME_SIZE, frame_array);
                 if (pre_frame == frame)
                     pool_list[size_index] = frame->next_chunks;
                 else
@@ -395,8 +497,9 @@ void return_frame(int size_index) {
     }
 }
 
-void free_small_memory(unsigned long address, unsigned long size) {
-    int frame_index = (address - ALLOCATE_START) / FRAME_SIZE;
+void free_small_memory(unsigned long address, unsigned long size, Frame *frame_array) {
+    int dynamic_block_addr = which_dynamic_block_index_by_record_addr((unsigned long)frame_array);
+    int frame_index = (address - dynamic_block[dynamic_block_addr].start_addr) / FRAME_SIZE;
     Frame *frame = &frame_array[frame_index];
     
     int size_index = 0;
@@ -408,7 +511,7 @@ void free_small_memory(unsigned long address, unsigned long size) {
         return;
     }
 
-    int offest = address - ALLOCATE_START - frame_index * FRAME_SIZE;
+    int offest = address - dynamic_block[dynamic_block_addr].start_addr - frame_index * FRAME_SIZE;
     int chunk_index = offest / frame->chunk_size;
     int x = 0x80;
     for (int i = chunk_index % 8; i > 0; i--) {
@@ -432,12 +535,20 @@ void free_small_memory(unsigned long address, unsigned long size) {
     uart_put_addr(end_addr);
     uart_put_str("\n");
 
-    return_frame(size_index);
+    return_frame(size_index, frame_array);
+}
+
+int which_dynamic_block_by_start_addr(unsigned long address) {
+    for (int i = 0; i < MEM_BLOCKS_NUM; i++) {
+        if (address >= dynamic_block[i].start_addr && address < dynamic_block[i].start_addr + dynamic_block[i].size)
+            return i;
+    }
+    return -1;
 }
 
 void allocator() {
     char *actions[2] = {"Allocate", "Free"};
-    welcome();
+    uart_put_str("start allocator.\n");
 
     while (1) {
         uart_put_str("------------------------------------------------------------------\n");
@@ -465,21 +576,23 @@ void allocator() {
         
         if (action == '1') {
             if (size > pool_sizes[POOL_SIZE_LEN - 1])
-                allocate_page(size);
+                page_allocator(size);
             else
                 allocate_small_memory(size);
         }
         else if (action == '2') {
             uart_put_str("address: ");
             unsigned long address = hex_str2long(uart_get_str());
-            if (address < ALLOCATE_START || address > ALLOCATE_END) {
+            int dynamic_block_index = which_dynamic_block_by_start_addr(address);
+            Frame *frame_array = (Frame *)dynamic_block[dynamic_block_index].record_addr;
+            if (dynamic_block_index < 0) {
                 uart_put_str("permission deny.\n");
                 continue;
             }
             if (size > pool_sizes[POOL_SIZE_LEN -1])
-                free_page(address, size);
+                free_page(address, size, frame_array);
             else
-                free_small_memory(address, size);
+                free_small_memory(address, size, frame_array);
         }
         
     }

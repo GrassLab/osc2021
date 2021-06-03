@@ -1,5 +1,5 @@
-#include "dtb.h"
-#include "util.h"
+#include "include/dtb.h"
+#include "include/util.h"
 
 extern unsigned long DTB_HEADER;
 
@@ -11,13 +11,13 @@ unsigned int *find_next_token(unsigned int *token_addr) {
 
         case FDT_BEGIN_NODE: {
             char *name = ((ftd_node_header *)token_addr)->name;
-            while(*name++);
-            return (unsigned int *)align4((unsigned long)name);
+            while (*name++);
+            return (unsigned int *)align((unsigned long)name, 4);
         }
 
         case FDT_PROP: {
             void *value = (fdt_node_prop *)token_addr + 1;
-            return (unsigned int *)align4((unsigned long)value + big_to_little_32(((fdt_node_prop *)token_addr)->len));
+            return (unsigned int *)align((unsigned long)value + big_to_little_32(((fdt_node_prop *)token_addr)->len), 4);
         }
 
         case FDT_END:
@@ -62,7 +62,7 @@ unsigned long find_next_node(fdt_header *header, long node_addr, int *depth) {
         }
     } while(big_to_little_32(*token_addr) != FDT_BEGIN_NODE);
 
-    return((unsigned long)token_addr);
+    return ((unsigned long)token_addr);
 }
 
 int dtb_scan(int (*it)(fdt_header *header, unsigned long node_addr, int depth)) {

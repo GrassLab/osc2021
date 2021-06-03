@@ -32,7 +32,6 @@ void uart_init() {
     *GPPUDCLK0 = 0;
     
     *AUX_MU_CNTL = 3;
-    uart_get_char();
 }
 
 char uart_get_char() {

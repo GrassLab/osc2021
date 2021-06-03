@@ -34,7 +34,6 @@ void uart_init() {
     *GPPUDCLK0 = 0;
     
     *AUX_MU_CNTL = 3;
-    uart_get_char();
 }
 
 char uart_get_char() {
@@ -93,6 +92,12 @@ void uart_put_str(char *s) {
 }
 
 void uart_put_int(int num) {
+    if (num/10)
+		uart_put_int(num/10);
+    uart_send((num%10) + '0');
+}
+
+void uart_put_long(long num) {
     if (num/10)
 		uart_put_int(num/10);
     uart_send((num%10) + '0');

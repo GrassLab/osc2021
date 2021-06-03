@@ -43,19 +43,16 @@ void bootloader() {
         char c = uart_get_char();
         kernel_start_address[i] = c;
     }
-    
-    uart_put_str("kernel received.\n");
 
     uart_put_str("kernel start.\n");
-    /*
     for(int i = 0; i < 115200; i++)
         asm volatile("nop");
-    
+    /*
     char *kernel_start_addr = (char *) OLD_BOOTLOADER_ADDR;
     */
     asm volatile(
         "add x10, %0, #0\n\t"
-        "mov x0, x20\n\t"
+        "mov x0, x22\n\t"
         "br x10" 
         :
         :"r" (kernel_start_address)
