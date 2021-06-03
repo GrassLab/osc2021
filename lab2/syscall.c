@@ -248,6 +248,16 @@ int sys_umount(const char* mountpoint)
     return vfs_umount(mountpoint);
 }
 
+int sys_sync()
+{
+    return vfs_sync();
+}
+
+int sys_mknod(char *pathname, int devnum)
+{
+    return vfs_mknod(pathname, devnum);
+}
+
 // DDI0487C_a_armv8_arm.pdf p.2438
 unsigned long get_syscall_type()
 {
@@ -320,6 +330,12 @@ unsigned long syscall_handler(unsigned long x0, unsigned long x1,
             break;
         case SYS_UMOUNT:
             ret = sys_umount((char*)x0);
+            break;
+        case SYS_SYNC:
+            ret = sys_sync();
+            break;
+        case SYS_MKNOD:
+            ret = sys_mknod((char*)x0, (int)x1);
             break;
         default:
             uart_send_string("Error: Unknown syscall type.");

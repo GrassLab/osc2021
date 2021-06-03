@@ -9,6 +9,8 @@
 #include "include/vfs.h"
 #include "include/tmpfs.h"
 #include "include/procfs.h"
+#include "include/fat32.h"
+#include "include/sdhost.h"
 // #include "include/initramfs.h"
 #include "utils.h"
 #define CMD_SIZE 64
@@ -395,6 +397,7 @@ int ls(char *path) {
         uart_send_int(dent.size);
         uart_send_string("\r\n");
     }
+    close(fd);
     return 0;
 }
 
@@ -515,7 +518,7 @@ void user_logic_2(int argc, char **argv)
 
 void user_logic_3(int argc, char **argv)
 {
-    ls(argv[1]);
+    ls(".");
     exit();
 }
 
@@ -606,6 +609,41 @@ void user_logic_5(int argc, char **argv)
     exit();
 }
 
+void user_logic_6(int argc, char **argv)
+{
+    int fd;
+    char buf[20];// = "This is SUPER COOL!";
+
+    ls(".");
+    // fd = open("/PAYWAY.C", O_CREAT);
+    if ((fd = open("/PAYWAY.C", 0)) < 0) {
+        uart_send_string("Error: fd open fail\r\n");
+        exit();
+    }
+    read(fd, buf, 32);
+    buf[20] = '\0';
+    uart_send_string(buf);
+    // write(fd, buf, 19);
+    // sync();
+    exit();
+}
+
+void user_logic_7(int argc, char **argv)
+{
+    int fd;
+    char buf[8] = "HELLO!";
+
+    mknod("/uartdev", 0);
+    if ((fd = open("/uartdev", 0)) < 0)
+        uart_send_string("Error: open fail\r\n");
+    buf[7] = '\0';
+    // read(fd, buf, 4);
+    write(fd, buf, 8);
+    // uart_send_string(buf);
+
+    exit();
+}
+
 void user_thread()
 {
     char *argv[7];
@@ -637,7 +675,7 @@ void user_thread_2()
     // current->sig.sigpend = 1; // DEMO: raise signal itself
     // current->sig.user_handler[0] = (unsigned long)udh_1;
     // exec((unsigned long)user_logic_2, argv); // DEMO:
-    exec((unsigned long)user_logic_5, argv);
+    exec((unsigned long)user_logic_7, argv);
 
 }
 
@@ -824,7 +862,6 @@ int shell()
 int kernel_main(char *sp)
 {
     // do_dtp(uart_probe);
-    uart_init();
     rd_init();
     dynamic_mem_init();
     timerPool_init();
@@ -834,19 +871,29 @@ int kernel_main(char *sp)
     init_sleepQueue();
     init_uartQueue();
 
+    sd_init();
+
     init_fops_pool();
     init_vops_pool();
     init_mnttab();
     init_oftab();
     init_vnode_pool();
     init_fstab();
-    register_filesystem("tmpfs", (unsigned long)tmpfs_setup_mount);
-    register_filesystem("procfs", (unsigned long)procfs_setup_mount);
+    init_dev_pool();
+
+    uart_init();
+    // register_filesystem("tmpfs", (unsigned long)tmpfs_setup_mount);
+    // register_filesystem("procfs", (unsigned long)procfs_setup_mount);
+    register_filesystem("fat32", (unsigned long)fat32_setup_mount);
+    init_fat32();
     init_root_filesystem(); // must be precede than init_tmpfs()
-    init_tmpfs();
+    // init_tmpfs();
+
 
     uart_send_string("Welcome to RPI3-OS\r\n");
+//
 
+//
     init_ts_pool();
     current = new_ts();
     current->ctx.sp = (unsigned long)kmalloc(4096);
@@ -856,7 +903,7 @@ int kernel_main(char *sp)
     // thread_create((unsigned long)test_thread_2, "DDD\r\n");
     // thread_create((unsigned long)user_thread, 0);
     thread_create((unsigned long)user_thread_2, 0);
-delay(10000000);
+delay(50000000);
 
 
 

@@ -1,45 +1,10 @@
 #include "utils.h"
 #include "include/dtp.h"
+#include "include/vfs.h"
 #include "include/cutils.h"
 #include "include/mini_uart.h"
 
-
-void uart_init ( void )
-{
-    unsigned int selector;
-
-    selector = get32(GPFSEL1);
-    selector &= ~(7<<12);                   // clean gpio14
-    selector |= 2<<12;                      // set alt5 for gpio14
-    selector &= ~(7<<15);                   // clean gpio15
-    selector |= 2<<15;                      // set alt5 for gpio 15
-    put32(GPFSEL1,selector);
-
-    put32(GPPUD,0);
-    delay(150);
-    put32(GPPUDCLK0,(1<<14)|(1<<15));
-    delay(150);
-    put32(GPPUDCLK0,0);
-
-    put32(AUX_ENABLES,1);                   //Enable mini uart (this also enables access to its registers)
-    put32(AUX_MU_CNTL_REG,0);               //Disable auto flow control and disable receiver and transmitter (for now)
-    put32(AUX_MU_IER_REG,1);                //Enable only receive interrupts
-    put32(AUX_MU_LCR_REG,3);                //Enable 8 bit mode
-    put32(AUX_MU_MCR_REG,0);                //Set RTS line to be always high
-    put32(AUX_MU_BAUD_REG,270);             //Set baud rate to 115200
-
-    put32(AUX_MU_CNTL_REG,3);               //Finally, enable transmitter and receiver
-}
-
-// return 0 for match, 1 for not.
-int uart_probe(struct dtn *node)
-{
-    if (strstr(node->compatible, "uart")) {
-        uart_init();
-        return 0;
-    }
-    return 1;
-}
+int uart_device_number;
 
 void uart_send ( char c )
 {
@@ -276,3 +241,75 @@ void uart_send_ulong(unsigned long number) {
 //         }
 //     }
 // }
+
+int uart_dev_read(struct file* file, void* buf, int len)
+{
+    int cnt = 0;
+    char *bufp = (char*)buf;
+    for (int i = 0; i < len; ++i) {
+        bufp[i] = uart_recv();
+        cnt++;
+    }
+
+    return cnt;
+}
+
+int uart_dev_write(struct file* file, const void* buf, int len)
+{
+    int cnt = 0;
+    char *bufp = (char*)buf;
+    for (int i = 0; i < len; i++) {
+        uart_send(bufp[i]);
+        cnt++;
+    }
+
+    return cnt;
+}
+
+struct file_operations uart_fops = {
+        // .owner = THIS_MODULE,
+        // .open = mydevice_open,
+        // .release = mydevice_release,
+        .read = uart_dev_read,
+        .write = uart_dev_write
+};
+
+void uart_init ( void )
+{
+    unsigned int selector;
+
+    selector = get32(GPFSEL1);
+    selector &= ~(7<<12);                   // clean gpio14
+    selector |= 2<<12;                      // set alt5 for gpio14
+    selector &= ~(7<<15);                   // clean gpio15
+    selector |= 2<<15;                      // set alt5 for gpio 15
+    put32(GPFSEL1,selector);
+
+    put32(GPPUD,0);
+    delay(150);
+    put32(GPPUDCLK0,(1<<14)|(1<<15));
+    delay(150);
+    put32(GPPUDCLK0,0);
+
+    put32(AUX_ENABLES,1);                   //Enable mini uart (this also enables access to its registers)
+    put32(AUX_MU_CNTL_REG,0);               //Disable auto flow control and disable receiver and transmitter (for now)
+    put32(AUX_MU_IER_REG,1);                //Enable only receive interrupts
+    put32(AUX_MU_LCR_REG,3);                //Enable 8 bit mode
+    put32(AUX_MU_MCR_REG,0);                //Set RTS line to be always high
+    put32(AUX_MU_BAUD_REG,270);             //Set baud rate to 115200
+
+    put32(AUX_MU_CNTL_REG,3);               //Finally, enable transmitter and receiver
+
+    alloc_devnum(&uart_device_number);
+    dev_init(uart_device_number, &uart_fops);
+}
+
+// return 0 for match, 1 for not.
+int uart_probe(struct dtn *node)
+{
+    if (strstr(node->compatible, "uart")) {
+        uart_init();
+        return 0;
+    }
+    return 1;
+}
