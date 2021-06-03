@@ -74,3 +74,92 @@ char *strstr(const char *s, const char *find) {
   }
   return ((char *)s);
 }
+
+char *strcpy(char *dst, const char *src) {
+  // return if no memory is allocated to the destination
+  if (dst == 0) return 0;
+
+  char *ptr = dst;
+  while (*src != '\0') {
+    *dst = *src;
+    dst++;
+    src++;
+  }
+  *dst = '\0';
+  return ptr;
+}
+
+char *strncpy(char *dst, const char *src, size_t len) {
+  // return if no memory is allocated to the destination
+  if (dst == 0) return 0;
+
+  // take a pointer pointing to the beginning of destination string
+  char *ptr = dst;
+
+  // copy the C-string pointed by source into the array
+  // pointed by destination
+  while (*src != ' ') {
+    *dst = *src;
+    dst++;
+    src++;
+    len--;
+    if (!len) {
+      break;
+    }
+  }
+
+  // include the terminating null character
+  *dst = '\0';
+
+  // destination is returned by standard strcpy()
+  return ptr;
+}
+
+void strcat(char *to, const char *from) {
+  while (*to) {
+    to++;
+  }
+  while (*from) {
+    *to = *from;
+    to++;
+    from++;
+  }
+  *to = '\0';
+}
+
+char *strtok(char *s, const char delim) {
+  static char *pos;
+  char *ret;
+  if (s) pos = s;
+
+  if (*pos == '\0') return 0;
+  // skip leading
+  while (*pos == delim) {
+    pos++;
+  }
+
+  ret = pos;
+  while (*pos != delim && *pos != '\0') {
+    pos++;
+  }
+  if (*pos != '\0') {
+    *pos = '\0';
+    pos++;
+  }
+  return ret;
+}
+
+char *split_last(char *str, char delim) {
+  char *mid = 0;
+  while (*str) {
+    if (*str == delim) {
+      mid = str;
+    }
+    str++;
+  }
+  if (mid) {
+    *mid = '\0';
+    mid++;
+  }
+  return mid;
+}

@@ -1,8 +1,7 @@
 #include "timer.h"
 
 #include "alloc.h"
-#include "io.h"
-#include "utils.h"
+#include "printf.h"
 
 void timeout_event_init() {
   timeout_queue_head = 0;
@@ -28,22 +27,14 @@ void core_timer_disable() {
 }
 
 void core_timer_handler_lowerEL_64() {  // required 2
-  print_s("Time elapsed after booting: ");
-  print_i(get_current_time());
-  print_s("s\n");
+  printf("Time elapsed after booting: %ds\n", get_current_time());
   set_expired_time(2);  // set the next timeout to 2 seconds later
 }
 
 void core_timer_handler_currentEL_ELx() {  // elective 2
-  print_s("Current time: ");
-  print_i(get_current_time());
-  print_s("s, ");
-  print_s("Command executed time: ");
-  print_i(timeout_queue_head->register_time);
-  print_s("s, ");
-  print_s("Duration: ");
-  print_i(timeout_queue_head->duration);
-  print_s("s\n");
+  printf("Current time: %ds, ", get_current_time());
+  printf("Command executed time: %ds, ", timeout_queue_head->register_time);
+  printf("Duration: %ds\n", timeout_queue_head->duration);
 
   timeout_queue_head->callback(timeout_queue_head->args);
   timeout_event *next = timeout_queue_head->next;
@@ -121,8 +112,4 @@ void set_expired_time(uint32_t duration) {  // set expired time to duration(sec)
   asm volatile("msr cntp_tval_el0, %0" : : "r"(cntfrq_el0 * duration));
 }
 
-void timer_callback(char *msg) {
-  print_s("Message: ");
-  print_s(msg);
-  print_s("\n");
-}
+void timer_callback(char *msg) { printf("Message: %s\n", msg); }

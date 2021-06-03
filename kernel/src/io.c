@@ -6,7 +6,7 @@
 char read_b() { return uart_getb(); }
 
 char read_c() {
-  char c = uart_getc();
+  char c = uart_async_getc();
   print_c(c);
   if (c == '\n') print_c('\r');
   return c;

@@ -1,6 +1,6 @@
 #include "dtb.h"
 
-#include "io.h"
+#include "printf.h"
 #include "string.h"
 #include "utils.h"
 
@@ -75,11 +75,11 @@ void dtb_print(int all) {
   if (all) {
     dtb_parse(struct_addr, strings_addr, default_probe);
   } else {
-    print_s("\ndevice for mailbox driver function: \n");
+    printf("\ndevice for mailbox driver function: \n");
     dtb_parse(struct_addr, strings_addr, mailbox_probe);
-    print_s("\ndevice for gpio driver function: \n");
+    printf("\ndevice for gpio driver function: \n");
     dtb_parse(struct_addr, strings_addr, gpio_probe);
-    print_s("\ndevice for rtx3080ti driver function: \n");
+    printf("\ndevice for rtx3080ti driver function: \n");
     dtb_parse(struct_addr, strings_addr, rtx3080ti_probe);
   }
 }
@@ -142,10 +142,8 @@ uint64_t print_node(uint64_t struct_addr, uint64_t strings_addr, int depth) {
   char *name = (char *)(struct_addr);
   struct_addr += strlen(name) + 1;
   struct_addr = align_up(struct_addr, 4);
-  for (int i = 0; i < depth; i++) print_s("    ");
-  print_s("node: ");
-  print_s(name);
-  print_s("\n");
+  for (int i = 0; i < depth; i++) printf("    ");
+  printf("node: %s\n", name);
 
   while (1) {
     uint32_t token = dtb_read_int(struct_addr);
@@ -194,32 +192,29 @@ uint64_t print_property(uint64_t struct_addr, uint64_t strings_addr,
     }
   }
 
-  for (int i = 0; i < depth; i++) print_s("    ");
-  print_s(property);
-  print_s(" = ");
+  for (int i = 0; i < depth; i++) printf("    ");
+  printf("%s = ", property);
 
   // hex, e.g. <0x4600 0x100>
   if (value_type == 0) {
     int count = 0;
-    print_s("<");
+    printf("<");
     for (uint32_t i = 0; i < len; i += 4) {
-      if (count > 0) print_s(" ");
+      if (count > 0) printf(" ");
       count++;
       uint32_t num = dtb_read_int(struct_addr);
       num = be2le(num);
       struct_addr += 4;
-      print_h(num);
+      printf("0x%x", num);
     }
-    print_s(">");
+    printf(">");
   }
   // int, e.g. <1>
   if (value_type == 1) {
     uint32_t num = dtb_read_int(struct_addr);
     num = be2le(num);
     struct_addr += 4;
-    print_s("<");
-    print_i(num);
-    print_s(">");
+    printf("<%d>", num);
   }
   // string or string list, e.g. "fsl,MPC8349EMITX" or "fsl,mpc8641", "ns16550"
   if (value_type == 2) {
@@ -227,16 +222,14 @@ uint64_t print_property(uint64_t struct_addr, uint64_t strings_addr,
     uint64_t end = struct_addr + len;
 
     while (struct_addr < end) {
-      if (count > 0) print_s(", ");
+      if (count > 0) printf(", ");
       count++;
       char *string = (char *)struct_addr;
       struct_addr += strlen(string) + 1;
-      print_s("\"");
-      print_s(string);
-      print_s("\"");
+      printf("\"%s\"", string);
     }
   }
-  print_s("\n");
+  printf("\n");
 
   struct_addr = align_up(struct_addr, 4);
   return struct_addr;

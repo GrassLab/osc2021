@@ -1,6 +1,6 @@
 // save general registers to stack
 .macro save_reg
-    sub sp, sp, 32 * 8
+    sub sp, sp, 32 * 9
     stp x0, x1, [sp, 16 * 0]
     stp x2, x3, [sp, 16 * 1]
     stp x4, x5, [sp, 16 * 2]
@@ -16,7 +16,12 @@
     stp x24, x25, [sp, 16 * 12]
     stp x26, x27, [sp, 16 * 13]
     stp x28, x29, [sp, 16 * 14]
-    str x30, [sp, 16 * 15]
+    //str x30, [sp, 16 * 15]
+    mrs x10, spsr_el1
+	mrs x11, elr_el1
+	mrs x12, sp_el0
+    stp x30, x10, [sp, 16 * 15]
+    stp x11, x12, [sp, 16 * 16]
 .endm
 
 // load general registers from stack
@@ -36,8 +41,13 @@
     ldp x24, x25, [sp, 16 * 12]
     ldp x26, x27, [sp, 16 * 13]
     ldp x28, x29, [sp, 16 * 14]
-    ldr x30, [sp, 16 * 15]
-    add sp, sp, 32 * 8
+    //ldr x30, [sp, 16 * 15]
+    ldp x30, x10, [sp, 16 * 15]
+    ldp x11, x12, [sp, 16 * 16]
+    msr spsr_el1, x10
+	msr elr_el1, x11
+	msr sp_el0, x12
+    add sp, sp, 32 * 9
 .endm
 
 .align 11 // vector table should be aligned to 0x800
@@ -52,7 +62,7 @@ exception_vector_table:
     b _default_handler
     .align 7
 
-    b _sync_handler
+    b _sync_handler_currentEL_ELx
     .align 7
     b _irq_handler_currentEL_ELx
     .align 7
@@ -61,7 +71,7 @@ exception_vector_table:
     b _default_handler
     .align 7
 
-    b _sync_handler
+    b _sync_handler_lowerEL_64
     .align 7
     b _irq_handler_lowerEL_64
     .align 7
@@ -79,9 +89,17 @@ exception_vector_table:
     b _default_handler
     .align 7
 
-_sync_handler:
+_sync_handler_currentEL_ELx:
     save_reg
-    bl sync_handler // exception.c
+    bl sync_handler_currentEL_ELx // exception.c
+    load_reg
+    eret
+
+_sync_handler_lowerEL_64:
+    save_reg
+    //mrs x0, sp_el0
+    mov x0, sp
+    bl sync_handler_lowerEL_64 // exception.c
     load_reg
     eret
 

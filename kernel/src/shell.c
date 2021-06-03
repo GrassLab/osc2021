@@ -3,28 +3,31 @@
 #include "alloc.h"
 #include "cpio.h"
 #include "dtb.h"
-#include "io.h"
+#include "exception.h"
 #include "mini_uart.h"
+#include "printf.h"
 #include "string.h"
+#include "thread.h"
 #include "timer.h"
+#include "vfs.h"
 
 void cmd_help() {
-  print_s("Command\t\tDescription\n");
-  print_s("---------------------------------------------\n");
-  print_s("help\t\tprint all available commands\n");
-  print_s("hello\t\tprint Hello World!\n");
-  print_s("reboot\t\treboot machine\n");
-  print_s("ls\t\tlist files in Cpio archive\n");
-  print_s("cat\t\tprint file content given pathname in Cpio archive\n");
-  print_s("dtb\t\tparse and print the flattened devicetree\n");
-  print_s("buddy\t\ttest buddy system\n");
-  print_s("dma\t\ttest dynamic memory allocator\n");
-  print_s("run\t\tload and run a user program in the initramfs\n");
-  print_s("puts\t\tasynchronous puts\n");
-  print_s("setTimeout [MESSAGE] [SECONDS]\t\tprints MESSAGE after SECONDS\n");
+  printf("Command\t\tDescription\n");
+  printf("---------------------------------------------\n");
+  printf("help\t\tprint all available commands\n");
+  printf("hello\t\tprint Hello World!\n");
+  printf("reboot\t\treboot machine\n");
+  printf("ls\t\tlist files in Cpio archive\n");
+  printf("cat\t\tprint file content given pathname in Cpio archive\n");
+  printf("dtb\t\tparse and print the flattened devicetree\n");
+  printf("buddy\t\ttest buddy system\n");
+  printf("dma\t\ttest dynamic memory allocator\n");
+  printf("run\t\tload and run a user program in the initramfs\n");
+  printf("puts\t\tasynchronous puts\n");
+  printf("setTimeout [MESSAGE] [SECONDS]\t\tprints MESSAGE after SECONDS\n");
 }
 
-void cmd_hello() { print_s("Hello World!\n"); }
+void cmd_hello() { printf("Hello World!\n"); }
 
 void cmd_reboot(int tick) {       // reboot after watchdog timer expire
   *PM_RSTC = PM_PASSWORD | 0x20;  // full reset
@@ -41,7 +44,7 @@ void cmd_buddy_test() { buddy_test(); }
 
 void cmd_dma_test() { dma_test(); }
 
-void cmd_load_user_program(char *program_name) {
+void cmd_load_user_program(const char *program_name) {
   uint64_t spsr_el1 = 0x0;  // EL0t with interrupt enabled
   uint64_t target_addr = 0x30000000;
   uint64_t target_sp = 0x31000000;
@@ -67,6 +70,18 @@ void cmd_set_timeout(char *args) {
   add_timer(timer_callback, args, duration);
 }
 
+void cmd_thread_test1() { thread_test1(); }
+
+void cmd_thread_test2() { thread_test2(); }
+
+void cmd_thread_vfs_test() { thread_vfs_test(); }
+
+void cmd_thread_vfs_ls_test() { thread_vfs_ls_test(); }
+
+void cmd_thread_vfs_hard_test() { thread_vfs_hard_test(); }
+
+void cmd_thread_fatfs_test() { thread_fatfs_test(); }
+
 void clear_buffer() {
   buffer_pos = 0;
   for (int i = 0; i < MAX_BUFFER_SIZE; i++) {
@@ -79,21 +94,29 @@ void receive_cmd() {
     char c = uart_async_getc();
     if (c == '\0') continue;  // to avoid weird character
     if (c == '\n') {          // '\r' is replaced with '\n'
-      print_s("\r\n");
+      printf("\n");
       buffer[buffer_pos] = '\0';
       break;
     }
-    print_c(c);
+    if (c == 127) {
+      if (buffer_pos > 0) {
+        printf("\b \b");
+        buffer[--buffer_pos] = '\0';
+      }
+      continue;
+    }
+    printf("%c", c);
     buffer[buffer_pos++] = c;
   }
 }
 
 void run_shell() {
-  print_s("************************************\n");
-  print_s("** Operating System Capstone 2021 **\n");
-  print_s("************************************\n");
+  printf("************************************\n");
+  printf("** Operating System Capstone 2021 **\n");
+  printf("************************************\n");
   while (1) {
-    print_s("% ");
+    enable_interrupt();  // need uart interrupt when go back to shell
+    printf("%% ");
     clear_buffer();
     receive_cmd();
     if (strcmp(buffer, "help") == 0) {
@@ -121,6 +144,18 @@ void run_shell() {
       uart_async_puts("async puts\n");
     } else if (strncmp(buffer, "setTimeout", 10) == 0) {
       cmd_set_timeout(&buffer[11]);
+    } else if (strcmp(buffer, "thread test 1") == 0) {
+      cmd_thread_test1();
+    } else if (strcmp(buffer, "thread test 2") == 0) {
+      cmd_thread_test2();
+    } else if (strcmp(buffer, "vfs") == 0) {
+      cmd_thread_vfs_test();
+    } else if (strcmp(buffer, "list") == 0) {
+      cmd_thread_vfs_ls_test();
+    } else if (strcmp(buffer, "vfs hard") == 0) {
+      cmd_thread_vfs_hard_test();
+    } else if (strcmp(buffer, "fat") == 0) {
+      cmd_thread_fatfs_test();
     }
   }
 }

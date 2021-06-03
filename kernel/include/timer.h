@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils.h"
+#include <stdint.h>
 
 typedef struct timeout_event {
   uint32_t register_time;

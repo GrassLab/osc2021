@@ -1,9 +1,10 @@
 #include "exception.h"
 
-#include "io.h"
 #include "mini_uart.h"
+#include "printf.h"
+#include "syscall.h"
+#include "thread.h"
 #include "timer.h"
-#include "utils.h"
 
 int count = 0;
 
@@ -11,20 +12,33 @@ void enable_interrupt() { asm volatile("msr DAIFClr, 0xf"); }
 
 void disable_interrupt() { asm volatile("msr DAIFSet, 0xf"); }
 
-void sync_handler() {
+void sync_handler_currentEL_ELx() {
   uint64_t spsr_el1, elr_el1, esr_el1;
   asm volatile("mrs %0, spsr_el1" : "=r"(spsr_el1));
   asm volatile("mrs %0, elr_el1" : "=r"(elr_el1));
   asm volatile("mrs %0, esr_el1" : "=r"(esr_el1));
-  print_s("SPSR_EL1: ");
-  print_h(spsr_el1);
-  print_s("\n");
-  print_s("ELR_EL1: ");
-  print_h(elr_el1);
-  print_s("\n");
-  print_s("ESR_EL1: ");
-  print_h(esr_el1);
-  print_s("\n");
+  printf("SPSR_EL1: 0x%08x\n", spsr_el1);
+  printf("ELR_EL1: 0x%08x\n", elr_el1);
+  printf("ESR_EL1: 0x%08x\n", esr_el1);
+}
+
+void sync_handler_lowerEL_64(uint64_t sp) {
+  uint64_t spsr_el1, elr_el1, esr_el1;
+  asm volatile("mrs %0, spsr_el1" : "=r"(spsr_el1));
+  asm volatile("mrs %0, elr_el1" : "=r"(elr_el1));
+  asm volatile("mrs %0, esr_el1" : "=r"(esr_el1));
+  // printf("sync, SPSR_EL1: 0x%08x\n", spsr_el1);
+  // printf("ELR_EL1: 0x%08x\n", elr_el1);
+  // printf("ESR_EL1: 0x%08x\n", esr_el1);
+
+  uint32_t ec = (esr_el1 >> 26) & 0x3f;
+  // printf("EC: %x\n", ec);
+  if (ec == 0b010101) {  // SVC instruction
+    uint32_t iss = esr_el1 & ((1 << 25) - 1);
+    // printf("syscall number: %d\n", iss);
+    trap_frame_t *trap_frame = (trap_frame_t *)sp;
+    syscall_handler(iss, trap_frame);
+  }
 }
 
 void irq_handler_currentEL_ELx() {
@@ -55,4 +69,4 @@ void irq_handler_lowerEL_64() {
   enable_interrupt();
 }
 
-void default_handler() { print_s("===== default handler =====\n"); }
+void default_handler() { printf("===== default handler =====\n"); }

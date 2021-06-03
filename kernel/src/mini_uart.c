@@ -64,6 +64,19 @@ char uart_getc() {
   return r == '\r' ? '\n' : r;
 }
 
+uint32_t uart_gets(char *buf, uint32_t size) {
+  for (int i = 0; i < size; ++i) {
+    buf[i] = uart_getc();
+    uart_send(buf[i]);
+    if (buf[i] == '\n' || buf[i] == '\r') {
+      uart_send('\r');
+      buf[i] = '\0';
+      return i;
+    }
+  }
+  return size;
+}
+
 void uart_puts(char *s) {
   while (*s) {
     // convert '\n' to carrige '\r' and '\n'
@@ -76,9 +89,9 @@ void enable_uart_interrupt() { *ENABLE_IRQS_1 = AUX_IRQ; }
 
 void disable_uart_interrupt() { *DISABLE_IRQS_1 = AUX_IRQ; }
 
-void assert_transmit_interrupt() { *AUX_MU_IER_REG |= 0x2; }
+void enable_transmit_interrupt() { *AUX_MU_IER_REG |= 0x2; }
 
-void clear_transmit_interrupt() { *AUX_MU_IER_REG &= ~(0x2); }
+void disable_transmit_interrupt() { *AUX_MU_IER_REG &= ~(0x2); }
 
 void uart_handler() {
   disable_uart_interrupt();
@@ -92,7 +105,7 @@ void uart_handler() {
   } else if (is_write) {
     while (*AUX_MU_LSR_REG & 0x20) {
       if (write_buf_start == write_buf_end) {
-        clear_transmit_interrupt();
+        disable_transmit_interrupt();
         break;
       }
       char c = write_buf[write_buf_start++];
@@ -120,5 +133,5 @@ void uart_async_puts(char *str) {
     write_buf[write_buf_end++] = str[i];
     if (write_buf_end == UART_BUFFER_SIZE) write_buf_end = 0;
   }
-  assert_transmit_interrupt();
+  enable_transmit_interrupt();
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 #include "utils.h"
 
 #define PAGE_BASE_ADDR ((uint64_t)0x10000000)

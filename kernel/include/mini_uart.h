@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 #include "gpio.h"
 
 /* Auxilary mini UART registers */
@@ -36,12 +38,13 @@ void uart_init();
 void uart_send(unsigned int c);
 char uart_getb();
 char uart_getc();
+uint32_t uart_gets(char *buf, uint32_t size);
 void uart_puts(char *s);
 
 void enable_uart_interrupt();
 void disable_uart_interrupt();
-void assert_transmit_interrupt();
-void clear_transmit_interrupt();
+void enable_transmit_interrupt();
+void disable_transmit_interrupt();
 void uart_handler();
 char uart_async_getc();
 void uart_async_puts(char *str);
