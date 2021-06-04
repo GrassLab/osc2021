@@ -4,6 +4,7 @@
 #include "dev/mbr.h"
 #include "dev/sd.h"
 
+#include "fatal.h"
 #include "minmax.h"
 #include "mm.h"
 #include "stdint.h"
@@ -111,12 +112,6 @@ struct filesystem fat = {
 
 struct BackingStoreInfo fatConfig;
 
-#define FATAL(msg)                                                             \
-  uart_println(msg);                                                           \
-  while (1) {                                                                  \
-    ;                                                                          \
-  }
-
 static int parse_backing_store_info();
 static int get_fat_config(uint32_t partition_lba_begin,
                           struct BackingStoreInfo *keyInfo);
@@ -183,9 +178,11 @@ int fat_setup_mount(struct filesystem *fs, struct mount *mount) {
     fat_initialized = true;
   }
 
-  // mount root node
+  // The actual name of this vnode is defined in the parent vnode of the
+  // mounting point
+  // The nameing here is for better logging
   struct vnode *root =
-      create_vnode("/", FAT_NODE_TYPE_DIR, fatConfig.root_cluster);
+      create_vnode("#sdcard", FAT_NODE_TYPE_DIR, fatConfig.root_cluster);
   mount->root = root;
   log_println("[FAT] FAT32 filesystem mounted");
   return 0;
@@ -256,7 +253,7 @@ int fat_read(struct file *f, void *buf, unsigned long len) {
     {
       log_println("[FAT][Read] File data not in memory, fetch from SD card");
       uint32_t num_sector =
-          fetch_file(content->start_cluster_id, &content->data);
+          fetch_file(content->start_cluster_id, (void **)&content->data);
       // Capacity in byte (1sector -> 512 bytes)
       log_println(
           "[FAT][Read]  ... fetched `%s`(start_cluster_id:%d, num_sectors:%d)",
@@ -289,8 +286,8 @@ int fat_lookup(struct vnode *dir_node, struct vnode **target,
       log_println("[FAT][Lookup] Cache not exists, fetch data from SD card "
                   "(dir:`%s`, start_cluster_id:%d)",
                   node_name(dir_node), dir_content->start_cluster_id);
-      num_sector =
-          fetch_file(dir_content->start_cluster_id, &dir_content->data);
+      num_sector = fetch_file(dir_content->start_cluster_id,
+                              (void **)&dir_content->data);
       log_println("[FAT][Lookup]   ...pull data finished. num_sector: %d",
                   num_sector);
       dir_content->cur_sd_capacity = num_sector * (512 / sizeof(uint32_t));

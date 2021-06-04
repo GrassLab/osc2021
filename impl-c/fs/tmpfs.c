@@ -10,6 +10,7 @@
 #include <stddef.h>
 
 #include "config.h"
+#include "fatal.h"
 #include "log.h"
 
 #ifdef CFG_LOG_TMPFS
@@ -79,7 +80,10 @@ static const char *node_name(struct vnode *dir) {
 static struct vnode *build_root_find_parent_dir(const char *fullpath,
                                                 struct vnode *root_dir,
                                                 char *ret_name);
+
+#ifdef CFG_LOG_TMPFS_DUMP_TREE
 static void tmpfs_dumpdir(struct vnode *dir_node, int cur_level);
+#endif
 
 // Create & Initialize a empty vnode for TMPFS
 static struct vnode *create_vnode(const char *name, uint8_t node_type);
@@ -151,10 +155,7 @@ static struct vnode *build_root_find_parent_dir(const char *fullpath,
   while (0 == get_component(cur_path, &start_idx, &end_idx)) {
     name_size = end_idx - start_idx + 1;
     if (name_size >= TMPFS_MX_FILE_NAME_LEN) {
-      uart_println("Err: component name too large");
-      while (1) {
-        ;
-      }
+      FATAL("Err: component name too large");
     }
     file_name = kalloc(sizeof(char) * (name_size + 1));
     memcpy(file_name, &cur_path[start_idx], name_size);
@@ -300,6 +301,10 @@ int tmpfs_lookup(struct vnode *dir_node, struct vnode **target,
                component_name, dir_content->name, LOG_DIM_END);
 #endif
 
+  // Check for current directory is neccessary because we would call this
+  // function in root tree building process. In that stage, we couldn't rely on
+  // the vfs for resolving what '.' means.
+
   // "." means the current directory
   if (strcmp(component_name, ".") == 0) {
     *target = dir_node;
@@ -321,6 +326,7 @@ int tmpfs_lookup(struct vnode *dir_node, struct vnode **target,
   return -1;
 }
 
+#ifdef CFG_LOG_TMPFS_DUMP_TREE
 void tmpfs_dumpdir(struct vnode *dir_node, int cur_level) {
   Content *dir_content = content_ptr(dir_node);
   Content *child_content;
@@ -340,6 +346,7 @@ void tmpfs_dumpdir(struct vnode *dir_node, int cur_level) {
     }
   }
 }
+#endif
 
 int tmpfs_create(struct vnode *dir_node, struct vnode **target,
                  const char *component_name) {

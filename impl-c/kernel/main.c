@@ -1,5 +1,6 @@
 #include "config.h"
 #include "dev/sd.h"
+#include "fatal.h"
 #include "fs/fat.h"
 #include "fs/tmpfs.h"
 #include "fs/vfs.h"
@@ -10,14 +11,71 @@
 #include "test.h"
 #include "uart.h"
 
+#include "string.h"
+
 #define ANSI_GREEN(s) ("\033[0;32m" s "\033[0m")
 
 #define MX_CMD_BFRSIZE 64
 extern unsigned char __kernel_start, __kernel_end;
 
 static void init_sys(char *name, void (*func)(void));
-static void run_shell();
+static inline void run_shell();
 static void reserve_startup_area();
+
+static void tmpfs_lab7_demo() {
+  {
+    char *fname = "folder/test.txt";
+    char *h = "Hello";
+    char *w = "      World!";
+    char buf[100] = {0};
+    struct file *f0 = vfs_open(fname, FILE_O_CREAT);
+    struct file *f1 = vfs_open(fname, FILE_O_CREAT);
+    struct file *f2 = vfs_open(fname, FILE_O_CREAT);
+    struct file *f3 = vfs_open(fname, FILE_O_CREAT);
+    vfs_read(f0, buf, 30);
+    uart_println("Original content of `%s`: %s", fname, buf);
+
+    vfs_write(f1, w, strlen(w));
+    vfs_write(f2, h, strlen(h));
+    vfs_read(f3, buf, 30);
+    uart_println("After write: %s", buf);
+    vfs_close(f0), vfs_close(f1), vfs_close(f2), vfs_close(f3);
+  }
+}
+
+static void fat_lab8_demo() {
+  // test read from fatfs
+  {
+    char buf[100] = {0};
+    struct file *f = vfs_open("dev/sdcard/KERNEL8.IMG", 0);
+    vfs_read(f, buf, 100);
+    uart_println("First 100 bytes of /dev/sdcard/KERNEL8.IMG");
+    for (int row = 0; row < 10; row++) {
+      uart_printf("%d-%d", (row * 10), ((row + 1) * 10 - 1));
+      for (int i = 0; i < 10; i++) {
+        uart_printf("\t %x", buf[(row * 10) + i]);
+      }
+      uart_printf("\n");
+    }
+    vfs_close(f);
+  }
+
+  // Hello world
+  {
+    char *fname = "dev/sdcard/hello.txt";
+    char *h = "Hello";
+    char *w = "      World!";
+    char buf[100] = {0};
+    struct file *f1 = vfs_open(fname, FILE_O_CREAT);
+    struct file *f2 = vfs_open(fname, FILE_O_CREAT);
+    struct file *f3 = vfs_open(fname, FILE_O_CREAT);
+    vfs_write(f1, w, strlen(w));
+    vfs_write(f2, h, strlen(h));
+    vfs_read(f3, buf, 30);
+    uart_println("Result 2: %s", buf);
+    vfs_close(f1), vfs_close(f2), vfs_close(f3);
+  }
+}
 
 /**
  * Kernel main function
@@ -44,12 +102,19 @@ void main() {
   vfs_init();
   register_filesystem(&tmpfs);
   register_filesystem(&fat);
-  fat_dev();
-  uart_println("dev finished...");
-  while (1) {
-    ;
+  mount_root_fs("tmpfs");
+
+  // mount SD card to our filesystem tree
+  struct vnode *sdcard_root = NULL;
+  vfs_find_vnode("/dev", true);
+  sdcard_root = vfs_find_vnode("/dev/sdcard", true);
+  if (0 != mount(sdcard_root, "fat32")) {
+    FATAL("Could not mount sd card");
   }
-  // mount_root_fs("tmpfs");
+
+  tmpfs_lab7_demo();
+  fat_lab8_demo();
+  // FATAL("Done");
 
   test_tasks();
   // run_shell();

@@ -20,8 +20,8 @@
 // #define CFG_LOG_PROC_EXEC
 #define CFG_LOG_VFS
 // #define CFG_LOG_TMPFS
-// #define CFG_LOG_TMPFS_LOOKUP
-// #define CFG_LOG_TMPFS_DUMP_TREE
+#define CFG_LOG_TMPFS_LOOKUP
+#define CFG_LOG_TMPFS_DUMP_TREE
 #define CFG_LOG_DEV_MBR
 #define CFG_LOG_FAT
 
