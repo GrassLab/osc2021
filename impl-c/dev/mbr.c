@@ -28,14 +28,17 @@ int mbr_num_partitions(struct MBR *mbr) {
     entry = &mbr->partition_entry[i];
     if (entry->boot_flag == BF_VALID && entry->lba_begin > 0) {
       if (i == 0) {
-        log_println("Parse MBR parition table:");
-        log_println(" ----");
+        log_println("[MBR] Parse MBR parition table:");
+        log_println("[MBR] --------");
       }
-      log_println(" Entry %d: lba_begin:%d, num_sectors:%d", i,
+      log_println("[MBR]  + Entry %d: lba_begin:%d, num_sectors:%d", i,
                   entry->lba_begin, entry->num_sectors);
     } else {
       break;
     }
+  }
+  if (num_valid > 0) {
+    log_println("[MBR] --------(num partition: %d)", num_valid);
   }
   return num_valid;
 }

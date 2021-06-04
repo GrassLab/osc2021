@@ -102,7 +102,7 @@ struct vnode *find_vnode(const char *pathname, int flags, struct vnode *root) {
 
   const char *path;
   char *query_name;
-  int ret, start_idx, end_idx, name_size;
+  int ret, start_idx, end_idx, name_size, lookup_result;
   struct vnode *target_child;
 
   path = pathname;
@@ -121,10 +121,10 @@ struct vnode *find_vnode(const char *pathname, int flags, struct vnode *root) {
     }
 
     // Query file by it's name
-    cwd->v_ops->lookup(cwd, &target_child, query_name);
+    lookup_result = cwd->v_ops->lookup(cwd, &target_child, query_name);
 
     // Child found, go to the next level
-    if (target_child != NULL) {
+    if ((lookup_result == 0) && (target_child != NULL)) {
       path = &path[end_idx + 1];
       cwd = target_child;
       kfree(query_name);

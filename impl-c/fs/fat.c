@@ -4,6 +4,7 @@
 #include "dev/mbr.h"
 #include "dev/sd.h"
 
+#include "minmax.h"
 #include "mm.h"
 #include "stdint.h"
 #include "string.h"
@@ -20,16 +21,22 @@ static const int _DO_LOG = 1;
 static const int _DO_LOG = 0;
 #endif
 
+// TODO use linked list
+#define FAT_DIR_MX_CAPACITY 256
+
 #define FAT_NODE_TYPE_DIR 1
 #define FAT_NODE_TYPE_FILE 2
 typedef struct {
   char *name;
   uint8_t node_type;
-  size_t capacity;
+  size_t capacity; // In memory
   size_t size;
 
-  void *data;                // data in memory (directly copied from SDcard)
+  char *data;                // data in memory (directly copied from SDcard)
   uint32_t start_cluster_id; // Start idx inside the SD card
+
+  // Information in SD card
+  size_t cur_sd_capacity;
 
   // Cached information
   bool cached;
@@ -150,7 +157,7 @@ struct vnode *create_vnode(const char *name, uint8_t node_type,
     cnt->children = NULL;
   }
   node->internal = cnt;
-  log_println("create vnode: `%s`, cluster_id: %d", cnt->name,
+  log_println("[FAT] vnode created: `%s`, cluster_id: %d", cnt->name,
               cnt->start_cluster_id);
   return node;
 }
@@ -176,9 +183,11 @@ int fat_setup_mount(struct filesystem *fs, struct mount *mount) {
     fat_initialized = true;
   }
 
-  // TODO: setup root node
-
-  uart_println("fat setup");
+  // mount root node
+  struct vnode *root =
+      create_vnode("/", FAT_NODE_TYPE_DIR, fatConfig.root_cluster);
+  mount->root = root;
+  log_println("[FAT] FAT32 filesystem mounted");
   return 0;
 }
 
@@ -203,19 +212,63 @@ int fat_init() {
   for (size_t i = 0; i < fatConfig.sec_per_alloc_table; i++) {
     readblock(fatConfig.fat_begin_lba + i, (void *)(addr_table + i * 512));
   }
-
-  uart_println("fat init finished");
+  log_println("[FAT] init finished");
   return 0;
 }
 
 int fat_write(struct file *f, const void *buf, unsigned long len) {
-  // TODO
+  Content *content = content_ptr(f->node);
+  size_t request_end = f->f_pos + len;
+  uart_println("[FAT][Write] Receive write request: f_pos:%d, len:%d", f->f_pos,
+               len);
+  // TODO: support writing to/from SD card
+  // Need to enlarge size
+  if (request_end > content->capacity) {
+    size_t new_size = request_end << 1;
+    log_println("[FAT] Enlarge file capacity from %d to %d", content->capacity,
+                new_size);
+    char *new_data = kalloc(sizeof(char) * new_size);
+    if (content->data != NULL) {
+      memcpy(new_data, content->data, content->size);
+      kfree(content->data);
+    }
+    content->data = new_data;
+    content->capacity = new_size;
+  }
+  memcpy(&content->data[f->f_pos], buf, len);
+  f->f_pos += len;
+  content->size = max(request_end, content->size);
+  log_println("[FAT] write: `%s`, len:%d", node_name(f->node), len);
+  return len;
   return -1;
 }
 
 int fat_read(struct file *f, void *buf, unsigned long len) {
-  // TODO
-  return -1;
+  // TODO: support writing to/from SD card
+  Content *content = content_ptr(f->node);
+  size_t request_end = f->f_pos + len;
+  size_t read_len = min(request_end, content->size) - f->f_pos;
+  log_println("[FAT][Read] Receive read request: f_pos:%d, size:%d", f->f_pos,
+              len);
+
+  // lazy load data from SD card
+  if (content->data == NULL) {
+    {
+      log_println("[FAT][Read] File data not in memory, fetch from SD card");
+      uint32_t num_sector =
+          fetch_file(content->start_cluster_id, &content->data);
+      // Capacity in byte (1sector -> 512 bytes)
+      log_println(
+          "[FAT][Read]  ... fetched `%s`(start_cluster_id:%d, num_sectors:%d)",
+          node_name(f->node), content->start_cluster_id, num_sector);
+      content->capacity = num_sector * 512;
+    }
+  }
+
+  memcpy(buf, &content->data[f->f_pos], read_len);
+  f->f_pos += read_len;
+  log_println("[FAT][Read] read: `%s`, len:%d", node_name(f->node), read_len);
+  return read_len;
 }
 
 int fat_lookup(struct vnode *dir_node, struct vnode **target,
@@ -226,24 +279,30 @@ int fat_lookup(struct vnode *dir_node, struct vnode **target,
     uart_println("Only able to lookup dir");
     return -1;
   }
-  log_println("Lookup `%s` under node:`%s`", component_name,
+  log_println("[FAT][Lookup] Find `%s` under node:`%s`", component_name,
               node_name(dir_node));
 
   if (dir_content->data == NULL) {
     // Pull data from SD card
     {
       uint32_t num_sector;
-      log_println("fetch dir data from SD card");
+      log_println("[FAT][Lookup] Cache not exists, fetch data from SD card "
+                  "(dir:`%s`, start_cluster_id:%d)",
+                  node_name(dir_node), dir_content->start_cluster_id);
       num_sector =
           fetch_file(dir_content->start_cluster_id, &dir_content->data);
-      dir_content->capacity = num_sector * (512 / sizeof(uint32_t));
+      log_println("[FAT][Lookup]   ...pull data finished. num_sector: %d",
+                  num_sector);
+      dir_content->cur_sd_capacity = num_sector * (512 / sizeof(uint32_t));
     }
   }
 
   if (dir_content->cached == false) {
+    log_println("[FAT][Lookup] Build dir cache for `%s`", dir_content->name);
     if (0 != build_dir_cache(dir_node)) {
       FATAL("Could not build cache for dentry");
     }
+    log_println("[FAT][Lookup] Dir cached `%s`", dir_content->name);
   }
 
   dir_content = content_ptr(dir_node);
@@ -257,13 +316,31 @@ int fat_lookup(struct vnode *dir_node, struct vnode **target,
       return 0;
     }
   }
+  if (target != NULL) {
+    *target = NULL;
+  }
   return -1;
 }
 
 int fat_create(struct vnode *dir_node, struct vnode **target,
                const char *component_name) {
-  // TODO
-  return -1;
+  struct vnode *child_node;
+
+  Content *child_content, *parent_content;
+  // TODO: write back to the FAT
+  child_node = create_vnode(component_name, FAT_NODE_TYPE_FILE, -1);
+  child_content = content_ptr(child_node);
+  child_content->size = 0;
+
+  parent_content = content_ptr(dir_node);
+  parent_content->children[parent_content->size++] = child_node;
+  log_println("[FAT] create `%s` under `%s`", node_name(child_node),
+              node_name(dir_node));
+
+  if (target != NULL) {
+    *target = child_node;
+  }
+  return 0;
 }
 
 int parse_backing_store_info() {
@@ -293,10 +370,9 @@ int parse_backing_store_info() {
     goto _fat_parse_end;
   }
 
-  log_println("[FAT] read config: fat lba: %d", fatConfig.fat_begin_lba);
-  log_println("[FAT] read config: cluster lba: %d",
-              fatConfig.cluster_begin_lba);
-  log_println("[FAT] read config: root cluster: %d", fatConfig.root_cluster);
+  log_println("[FAT][Config] fat lba: %d", fatConfig.fat_begin_lba);
+  log_println("[FAT][Config] cluster lba: %d", fatConfig.cluster_begin_lba);
+  log_println("[FAT][Config] root cluster: %d", fatConfig.root_cluster);
 
 _fat_parse_end:
   kfree(buf);
@@ -341,7 +417,7 @@ int get_fat_config(uint32_t partition_lba_begin,
   ret_val = 0;
 
   if (num_alloc_tables != 2 || byts_per_sec != 512) {
-    uart_println("[FAT] numFAT:%d , bytePerSec:%d", num_alloc_tables,
+    uart_println("[FAT][Config] numFAT:%d , bytePerSec:%d", num_alloc_tables,
                  byts_per_sec);
     FATAL("FAT format not supported");
   }
@@ -360,7 +436,7 @@ int get_fat_config(uint32_t partition_lba_begin,
   // Knowing that each sector contains 512 Bytes, we get `entries_per_sec` = 16
   uint32_t num_entries = (byts_per_sec / 32) * sec_per_alloc_table;
   keyInfo->alloc_table_entry_cnt = num_entries;
-  log_println("[FAT] entries in FAT: %d", num_entries);
+  log_println("[FAT][Config] entries in FAT partition: %d", num_entries);
 
 _get_fat_config_end:
   kfree(bfr);
@@ -460,6 +536,8 @@ struct vnode *create_vnode_from_dentry(struct Dentry *dentry) {
       (dentry->first_cluster_high << 16) + dentry->first_cluster_low;
 
   struct vnode *node = create_vnode(name, vnode_type, cluster_id);
+  Content *content = content_ptr(node);
+  content->size = dentry->size;
   return node;
 }
 
@@ -474,7 +552,7 @@ int build_dir_cache(struct vnode *dir_node) {
   {
     uint32_t num_children = 0;
     dentry = (struct Dentry *)dir_content->data;
-    for (int i = 0; i < dir_content->capacity; i++, dentry++) {
+    for (int i = 0; i < dir_content->cur_sd_capacity; i++, dentry++) {
       type = dentry_type(dentry);
       if (type == FAT_DENTRY_UNUSED) {
         continue;
@@ -486,10 +564,11 @@ int build_dir_cache(struct vnode *dir_node) {
     dir_content->size = num_children;
   }
 
-  // Build child vnodes
+  // Build child vnodes (in memory)
   {
     dir_content->children =
-        (struct vnode **)kalloc(sizeof(struct vnode *) * dir_content->size);
+        (struct vnode **)kalloc(sizeof(struct vnode *) * FAT_DIR_MX_CAPACITY);
+    dir_content->capacity = FAT_DIR_MX_CAPACITY;
     dentry = (struct Dentry *)dir_content->data;
     for (int num_built = 0; num_built < dir_content->size; dentry++) {
       type = dentry_type(dentry);
