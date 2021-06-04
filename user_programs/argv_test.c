@@ -10,6 +10,6 @@ int main(int argc, char **argv) {
   char *fork_argv[2];
   fork_argv[0] = "./fork_test.out";
   fork_argv[1] = NULL;
-  exec("./fork_test.out", fork_argv);
+  exec("./fork_test.out", (const char **)fork_argv);
   return 0;
 }
