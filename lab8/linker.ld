@@ -39,7 +39,8 @@ SECTIONS
         *(COMMON)
         __bss_end = .;
     }
-    _end = .;
+    __stk_start = __bss_end + (1<<16);
+    _end = __stk_start;
 
    /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
 }

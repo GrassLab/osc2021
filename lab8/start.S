@@ -21,8 +21,8 @@ _start:
     bl initMMULower
 
     // set stack before our code
-    ldr     x1, =_start
-    mov     sp, #0x400000
+    ldr     x1, =__stk_start
+    mov     sp, x1
 
 
 

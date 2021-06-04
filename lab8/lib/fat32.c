@@ -406,6 +406,7 @@ void parseMBR(){
         uart_printf("Invalid MBR Signature\n");
         while(1);
     }
+    
     uart_printf("2\n");
 
     if(buf[446]!=0x80){
@@ -433,10 +434,11 @@ void parseMBR(){
     metadata.partition_beg = sec_bet_MAP;
 
     uart_printf("6\n");
-    my_free((unsigned long)buf);
+    my_free((void*)buf);
 }
 int fatSetup(filesystem* fs, mount *mnt){
     char *name = (char*)my_alloc(6);
+    uart_printf("name:%x\n",name);
     name[0] = 'f';
     name[1] = 'a';
     name[2] = 't';

@@ -17,9 +17,9 @@ static int used = 0;
 static chunk_info chunk16[CHUNK16_NUM];
 static chunk_info chunk32[CHUNK32_NUM];
 static chunk_info chunk64[CHUNK64_NUM];
-static unsigned long addr16;
-static unsigned long addr32;
-static unsigned long addr64;
+static void* addr16;
+static void* addr32;
+static void* addr64;
 
 // enum chunk_size : long {
 //    cs_16 = 0,
@@ -37,7 +37,7 @@ void list_node_init() {
 
   list_node_push(&pool[used], 16);
   pool[used].buddy_index = -1;
-  pool[used].start_addr = 0x10000000;
+  pool[used].start_addr = MEM_START;
   pool[used].fr_no = 0;
   used++;
 }
@@ -146,6 +146,7 @@ void split_node(int exp) {
   pool[used].buddy_index = fr_no1;
 
   page_no = (addr2 - MEM_START) >> 12;
+
   frame_size = 1 << (exp - 1);
   while (frame_size > 0) {
     page_arr[page_no].corespond_list_node = &pool[used];
@@ -172,14 +173,14 @@ unsigned long find_space(int exp) {
   }
 }
 
-void *my_alloc(int size) {
+void* my_alloc(int size) {
   int dy_allocated = 0;
   if (size <= 96) {
     int exp = 4;
     while ((1 << exp) < size) {
       ++exp;
     }
-    unsigned long dy_addr = (unsigned long)dy_alloc(1 << exp);
+    void* dy_addr = (void*)dy_alloc(1 << exp);
     if (dy_addr != 0) {
      // uart_printf("%x\n", dy_addr);
       dy_allocated = 1;
@@ -216,26 +217,26 @@ void *my_alloc(int size) {
       frame_size--;
     }
     list_node_pop(exp - 12);
-    return (void *)address;
+    return (void*)(MEM_START+address - 0x10000000);
   }
 }
 
 void my_free(unsigned long addr) {
 
-  if (addr >= addr16 && addr < (addr16 + PAGE_SIZE)) {
-    chunk16[(addr - addr16) >> 4].onused = 0;
+  if (addr >= (unsigned long)addr16 && addr < ((unsigned long)addr16 + PAGE_SIZE)) {
+    chunk16[(addr - (unsigned long)addr16) >> 4].onused = 0;
     uart_printf("Size 2^%d at address 0x%x has been freed\n",4, addr);
     return;
   } else if (addr >= addr32 && addr < (addr32 + PAGE_SIZE)) {
-    chunk32[(addr - addr32) >> 5].onused = 0;
+    chunk32[((unsigned long)addr - (unsigned long)addr32) >> 5].onused = 0;
     uart_printf("Size 2^%d at address 0x%x has been freed\n",5, addr);
     return;
   } else if (addr >= addr64 && addr < (addr64 + PAGE_SIZE)) {
     uart_printf("Size 2^%d at address 0x%x has been freed\n",6, addr);
-    chunk64[(addr - addr64) >> 6].onused = 0;
+    chunk64[(addr - (unsigned long)addr64) >> 6].onused = 0;
     return;
   }
-  int page_no = ((int)addr - MEM_START) >> 12;
+  int page_no = ((unsigned long)addr - MEM_START) >> 12;
   int my_head = page_no;
   int exp = page_arr[page_no].exp;
   int frame_size = 1 << exp;
@@ -255,7 +256,6 @@ void my_free(unsigned long addr) {
         free = 0;
       }
     }
-
     if (free == 1) {
       buddy = buddy_head;
       uart_printf("merge 2 size 2^%d\n", exp + 12);
@@ -297,21 +297,21 @@ void *dy_alloc(int size) {
     for (int i = 0; i < CHUNK16_NUM; ++i) {
       if (chunk16[i].onused == 0) {
         chunk16[i].onused = 1;
-        return (void *)(addr16 + (i << 4));
+        return (void *)((unsigned long)addr16 + (i << 4));
       }
     }
   } else if (size == 32) {
     for (int i = 0; i < CHUNK32_NUM; ++i) {
       if (chunk32[i].onused == 0) {
         chunk32[i].onused = 1;
-        return (void *)(addr32 + (i << 5));
+        return (void *)((unsigned long)addr32 + (i << 5));
       }
     }
   } else if (size == 64) {
     for (int i = 0; i < CHUNK64_NUM; ++i) {
       if (chunk64[i].onused == 0) {
         chunk64[i].onused = 1;
-        return (void *)(addr64 + (i << 6));
+        return (void *)((unsigned long)addr64 + (i << 6));
       }
     }
   }
@@ -327,8 +327,11 @@ int mem_init() {
     page_arr[i].exp = -1;
   }
   addr16 = (unsigned long)my_alloc(4096);
+  //addr16+=MEM_START;
   addr32 = (unsigned long)my_alloc(4096);
+  //addr32+=MEM_START;
   addr64 = (unsigned long)my_alloc(4096);
+  //addr64+=MEM_START;
   for (int i = 0; i < CHUNK16_NUM; ++i) {
     chunk16[i].onused = 0;
   }

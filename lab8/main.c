@@ -29,12 +29,12 @@ void main()
         uart_puts("nnono\n");
     }
     */
-    int gg = 10;
-    uart_printf("%x\n",&gg);
+    int* gg = my_alloc(sizeof(int));
+    uart_printf("gg:%x\n",gg);
     uart_puts("Hello World!\n");
     // echo everything back
-    int el = get_el();
-    uart_printf("Exception level: %d\n",el);
+    //int el = get_el();
+    //uart_printf("Exception level: %d\n",el);
     while(1) {
         shell();
     }

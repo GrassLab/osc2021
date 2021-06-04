@@ -8,7 +8,7 @@ typedef int bool;
 typedef struct __list_node{
 
   struct __list_node *prev, *next;
-  unsigned long start_addr;
+  void* start_addr;
   int buddy_index;
   int fr_no;
 }list_node;

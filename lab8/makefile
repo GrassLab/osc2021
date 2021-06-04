@@ -5,8 +5,8 @@ LIB = ./lib
 CPIO:=initramfs.cpio
 all: $(KERNEL).img
 
-$(KERNEL).img:start.o main.o rd.o  lib/uart.o  lib/shell.o lib/stringUtils.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o lib/exception/except.o lib/exception/exception.o lib/interrupt.o lib/irq.o lib/task.o lib/switch.o lib/tmpfs.o lib/vfs.o lib/sd.o lib/fat32.o lib/error.o lib/test.o lib/mmu.o
-	aarch64-linux-gnu-ld  -T $(LINKER) -o $(KERNEL).elf start.o rd.o main.o  lib/uart.o lib/stringUtils.o  lib/shell.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o lib/exception/except.o lib/exception/exception.o lib/interrupt.o lib/irq.o lib/task.o lib/switch.o lib/tmpfs.o lib/vfs.o lib/sd.o lib/fat32.o lib/error.o lib/test.o lib/mmu.o
+$(KERNEL).img:start.o main.o rd.o  lib/uart.o  lib/shell.o lib/stringUtils.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/exception/except.o lib/exception/exception.o lib/interrupt.o lib/irq.o lib/task.o lib/switch.o lib/tmpfs.o lib/vfs.o lib/sd.o lib/fat32.o lib/error.o lib/test.o lib/mmu.o
+	aarch64-linux-gnu-ld  -T $(LINKER) -o $(KERNEL).elf start.o rd.o main.o  lib/uart.o lib/stringUtils.o  lib/shell.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/exception/except.o lib/exception/exception.o lib/interrupt.o lib/irq.o lib/task.o lib/switch.o lib/tmpfs.o lib/vfs.o lib/sd.o lib/fat32.o lib/error.o lib/test.o lib/mmu.o
 	aarch64-linux-gnu-objcopy -O binary $(KERNEL).elf $@
 
 cpio:
@@ -19,7 +19,7 @@ rd.o:$(CPIO)
 	aarch64-linux-gnu-ld -r -b binary -o rd.o $(CPIO)
 %.o:%.c
 	aarch64-linux-gnu-gcc $(CFLAGS) -o $@ -c $<	
-	aarch64-linux-gnu-gcc $(CFLAGS) -S $<
+	#aarch64-linux-gnu-gcc $(CFLAGS) -S $<
 
 %.o:%.s
 	aarch64-linux-gnu-gcc $(CFLAGS) -o $@ -c $<
