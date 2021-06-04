@@ -1,5 +1,5 @@
 #include "../include/gpio.h"
-
+#include "../include/uart.h"
 // mmio
 //#define KVA 0xffff000000000000
 //#define MMIO_BASE (KVA + 0x3f000000)
