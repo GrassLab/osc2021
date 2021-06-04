@@ -1,7 +1,7 @@
 #include "include/uart.h"
 
 
-int main(){
+int test(){
     uart_puts("hello\n");
 return 0;
 }
