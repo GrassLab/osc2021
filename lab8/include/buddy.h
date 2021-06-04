@@ -1,9 +1,12 @@
 # ifndef BUDDY
 # define BUDDY
+
 # include "bitset.h"
+# include "page.h"
+
 # define BUDDY_BASE_ADDR   0x10000000
 # define BUDDY_SIZE        (0x2000000)
-# define BUDDY_PAGE_SIZE   0x1000
+# define BUDDY_PAGE_SIZE   PAGE_SIZE
 # define BUDDY_PAGE_NUM    (BUDDY_SIZE/BUDDY_PAGE_SIZE)
 # define BUDDY_MAX_ORDER   12
 # define BUDDY_LL_MAX_NUM  (BUDDY_PAGE_NUM/2+10)

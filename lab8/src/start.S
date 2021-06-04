@@ -32,8 +32,6 @@ _start:
 
     adr    x1, el1_start
     msr    elr_el2, x1
-    
-    //bl     core_timer_init
 
     eret
 
@@ -46,49 +44,39 @@ el1_start:
     adr     x1, vector_table
     msr     vbar_el1, x1
     
-    // setup TCR, MAIR, mmu
+    
+    // setup TCR, MAIR, kernel page table
     ldr     x0, =TCR_CONFIG_DEFAULT
     msr     tcr_el1, x0
     ldr     x0, =MAIR_EL1_VALUE
     msr     mair_el1, x0
-    bl      mmu_setup
     
-    bl      clean_bss
+    ldr     x2, =kernel_page_setup
+    ldr     x1, =KVA
+    sub     x2, x2, x1
+    blr     x2
+    
+    ldr     x0, =__kernel_page_start
+    ldr     x1, =KVA
+    sub     x0, x0, x1
+    
+    msr     ttbr0_el1, x0
+    msr     ttbr1_el1, x0
     
     ldr     x1, =KVA
     add     sp, sp, x1
     
+    // Enable MMU
+    mrs     x2, sctlr_el1
+    orr     x2, x2, 1
+    msr     sctlr_el1, x2
+    
+    bl      clean_bss
+    
     ldr     x2, =main
-    br      x2
+    blr     x2
     b       1b
 
-mmu_setup:
-    mov     x0, 0x0 // PGD's page frame at 0x0
-    mov     x1, 0x1000 // PUD's page frame at 0x1000
-
-    ldr     x2, = BOOT_PGD_ATTR
-    orr     x2, x1, x2 // combine the physical address of next level page with attribute.
-    str     x2, [x0]
-
-    ldr     x2, = BOOT_PUD_DEV_ATTR
-    mov     x3, 0x00000000
-    orr     x3, x2, x3
-    str     x3, [x1] // 1st 1GB mapped by the 1st entry of PUD
-    
-    ldr     x2, = BOOT_PUD_DEV_ATTR
-    mov     x3, 0x40000000
-    orr     x3, x2, x3
-    str     x3, [x1, #8] // 2nd 1GB mapped by the 2nd entry of PUD
-    
-    msr     ttbr0_el1, x0 // load PGD to the bottom translation based register.
-    msr     ttbr1_el1, x0 // also load PGD to the upper translation based register.
-
-    mrs     x2, sctlr_el1
-    orr     x2 , x2, 1
-    msr     sctlr_el1, x2 // enable MMU, cache remains disabled
-    
-    ret
-    
 clean_bss:
     ldr    x1, =__bss_start
     ldr    w2, =__bss_size

@@ -12,13 +12,14 @@
 # include "sdhost.h"
 # include "fat32.h"
 # include "typedef.h"
+//# include "page.h"
 
 extern unsigned char __kernel_start;
 extern unsigned char __kernel_end;
 
 int main(){
-  core_timer_init();
   uart_init();
+  core_timer_init();
   oneshot_timer_init();
   buddy_init();
   buddy_dma_init();
@@ -27,7 +28,6 @@ int main(){
   sd_init();
   sdload();
   task_init();
-
   
 # ifdef __QEMU__
   uart_puts("[Qemu mode]\n");
@@ -62,7 +62,6 @@ int main(){
   uart_flush();
   IRQ_ENABLE();
 
-  //task_create(task_demo_1, 4);
   schedule();
   return 0;
 }

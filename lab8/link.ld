@@ -20,6 +20,13 @@ SECTIONS
         *(.bss .bss.*)
         __bss_end = .;
     }
+    . = ALIGN(0x1000);
+    __kernel_page_start = .;
+    .data.kpg :
+    {
+      . += (515 * (1 << 12)); /* (PGD * 1) + (PUD * 1) + (PMD * 1) + (PTE * 512) */
+    }
+    . = ALIGN(0x1000);
     .text : {
       *(.exec.app)
     }
