@@ -11,12 +11,44 @@
 #define PD_BLOCK 0b01
 #define PD_PAGE 0b11
 #define PD_ACCESS (1 << 10)
+#define UXN (1 << 6)
 #define BOOT_PGD_ATTR PD_TABLE
 #define BOOT_PUD_ATTR PD_TABLE
 
 #define PD_RAM_ATTR (PD_ACCESS | (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_BLOCK)
 #define PD_PERIPHERAL_ATTR (PD_ACCESS | (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_BLOCK)
+#define PD_RAM (PD_ACCESS | (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_PAGE)
+#define PD_OUTPUT_MASK 0x0000fffffffff000
 
+.global pd_encode_table
+pd_encode_table:
+  ldr x2, =PD_OUTPUT_MASK
+  and x0, x0, x2
+  ldr x1, =PD_TABLE
+  orr x0, x0, x1
+  ret
+
+.global pd_encode_ram
+pd_encode_ram:
+  ldr x2, =PD_OUTPUT_MASK
+  and x0, x0, x2
+  ldr x1, =PD_RAM
+  orr x1, x1, UXN
+  orr x0, x0, x1
+  ret
+
+.global pd_encode_ram_block
+pd_encode_ram_block:
+  ldr x2, =PD_OUTPUT_MASK
+  and x0, x0, x2
+  ldr x1, =PD_RAM_ATTR
+  orr x0, x0, x1
+  ret
+
+.global get_pgd
+get_pgd:
+  mrs x0, ttbr0_el1
+  ret
 
 .global mmu_enable
 mmu_enable:
@@ -46,10 +78,10 @@ mmu_enable:
   
   #ARM local peripheral
   ldr x2, =PD_PERIPHERAL_ATTR
-  mov x3, 0x00000000
+  mov x3, 0x40000000
   orr x3, x2, x3
   str x3, [x1, 8]
-
+  
   #PMD
   #map to kernel
   mov x1, 0x2000
@@ -74,26 +106,36 @@ mmu_enable:
   str x3, [x1, 0x1f9*8]
   
   #cpio address
-
+  ldr x2, =PD_RAM_ATTR
   # 0x08000000 - 0x081fffff
   mov x3, 0x08000000
   orr x3, x2, x3
   str x3, [x1, 0x40*8]
   
   # buddy address
-  
   # 0x10000000 - 0x101fffff
   mov x3, 0x10000000
+  orr x2, x2, UXN
   orr x3, x2, x3
   str x3, [x1, 0x80*8]
+
+  # stack address
+  
+  # 0x11000000 - 0x111fffff
+  mov x3, 0x11000000
+  orr x3, x2, x3
+  str x3, [x1, 0x88*8]
 
   msr ttbr0_el1, x0 // load PGD to the bottom translation based register.
   msr ttbr1_el1, x0
   
   mrs x2, sctlr_el1
-  orr x2 , x2, 1
+  orr x2, x2, 1
   msr sctlr_el1, x2 // enable MMU, cache remains disabled
   
+  dsb ish 
+  isb
+
   #ret
   ldr x2, =boot_rest
   br x2

@@ -6,7 +6,9 @@
 #include <elf.h>
 #include <uart.h>
 #include <vfs.h>
+#include <page.h>
 
+void* ttbr0;
 void sys_exit(int status) {
   do_exit(status);
 }
@@ -161,16 +163,20 @@ int do_exec(const char* name, char* const argv[]) {
   /*asm volatile("mov x0, %0\n" "msr sp_el0, x0\n"
                "mov sp, %1\n" 
                "mov x0, %2\n" "msr elr_el1, x0\n" 
-               "mov x30, %3\n"
-               "mov x0, %4\n"
-               "mov x1, %5\n"
+               "mov x0, %3\n"
+               "mov x1, %4\n"
+               "dsb ish \n" 
+               "mov x0, %5\n" "msr ttbr0_el1, x0\n"
+               "tlbi vmalle1is\n" 
+               "dsb ish\n" 
+               "isb\n" 
                "eret\n"
                ::"r"(stack),
                "r"(get_current()->kstack + TASK_STACK_SIZE),
-               "r"(start),
-               "r"((void* )exit),
+               "r"((0x10031000)),
                "r"(argc),
-               "r"(stack + sizeof(int))
+               "r"(stack + 0x10),
+               "r"((size_t)ttbr0 & 0x0000fffffffffff0)
                 :"x0");*/
 
  
@@ -180,11 +186,18 @@ int do_exec(const char* name, char* const argv[]) {
   current_tf->x0 = argc;
   current_tf->x1 = (size_t)stack + 0x10;
   current_tf->sp_el0 = (size_t)stack;
-  current_tf->elr_el1 = (size_t)start;
-
+  current_tf->elr_el1 = 0x400000 + ((size_t)(start - addr) & 0x0000fffffffff000);
+  //current_tf->elr_el1 = (size_t)start; 
   disable_interrupt();
-
-  asm volatile("mov sp, %0\n" "blr %1\n"::"r"(current_tf), "r"((void* )kernel_exit));
+  
+  //(size_t)ttbr0 & 0x0000fffffffffff0
+  printf("ttbr0: %x\n", ttbr0);
+  asm volatile("mov x0, %0\n" "mov sp, %1\n" "blr %2\n"::
+  "r"((size_t)ttbr0 & 0x0000fffffffffff0), 
+  "r"(current_tf),
+  "r"((void* )exec_exit): "x0");
+  
+  //asm volatile("mov sp, %0\n" "blr %1\n"::"r"(current_tf), "r"((void* )kernel_exit));
   
   enable_interrupt();
   return 0;
@@ -254,7 +267,7 @@ void* load_program(const char* name) {
    if(metadata == null)
     return null;
   
-  size = metadata->file_size + PAGE_SIZE;
+  size = metadata->file_size;
   
   if((size_t)get_current()->start >= BUDDY_START) {
     if(get_current()->size >= metadata->file_size) {
@@ -277,17 +290,12 @@ void* load_program(const char* name) {
     }
   }
 
-  /** use a stupid method to prevent wrong offset, allocate more space in order to
-   * make base address become 0xX000, since binary used here is smaller than 0x1000, the alignment 
-   * only need to be done to 0x1000. 
-   */
   disable_interrupt();
 
-  addr = varied_malloc(size);
+  addr = buddy_malloc(size);
 
   enable_interrupt();
-  addr += PAGE_SIZE - (size_t)addr % PAGE_SIZE;
-
+  
   if(addr == null)
     return null;
   
@@ -297,7 +305,10 @@ void* load_program(const char* name) {
   //store user space info
   get_current()->start = addr;
   get_current()->size = metadata->file_size;
-
+  
+  disable_interrupt();
+  ttbr0 = page_alloc(addr, size);
+  enable_interrupt();
   return addr; 
 }
 

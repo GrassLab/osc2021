@@ -13,7 +13,7 @@
   return 0;
 }*/
 
-/*int main(void) {
+int main(void) {
     printf("Fork Test, pid %d\n", getpid());
     int cnt = 1;
     int ret = 0;
@@ -30,7 +30,7 @@
         printf("parent here, pid %d, child %d\n", getpid(), ret);
     }
   return 0;
-}*/
+}
 
 /*int main() {
   printf("VFS Test\n");
@@ -51,7 +51,7 @@
   return 0;
 }*/
 
-int main(int argc, char** argv) {
+/*int main(int argc, char** argv) {
   int fd = open(argv[1], 0);
   char name[100];
   int size;
@@ -63,4 +63,4 @@ int main(int argc, char** argv) {
     printf("Name: %s Size: %d\n", name, size);
   }
   return 0;
-}
+}*/

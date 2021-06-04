@@ -137,3 +137,15 @@ enable_interrupt:
 disable_interrupt:
   msr DAIFSet, 0xf
   ret
+
+.global exec_exit
+exec_exit:
+  dsb ish 
+  msr ttbr0_el1, x0
+  bl schedule
+  restore_context
+
+  tlbi vmalle1is 
+  dsb ish 
+  isb 
+  eret

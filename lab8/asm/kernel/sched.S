@@ -9,7 +9,9 @@ switch_to:
     stp x27, x28, [x0, 16 * 4]
     stp fp, lr, [x0, 16 * 5]
     mov x9, sp
-    str x9, [x0, 16 * 6]
+    #str x9, [x0, 16 * 6]
+    mrs x10, ttbr0_el1
+    stp x9, x10, [x0, 16 * 6]
 
     ldp x19, x20, [x1, 16 * 0]
     ldp x21, x22, [x1, 16 * 1]
@@ -17,8 +19,15 @@ switch_to:
     ldp x25, x26, [x1, 16 * 3]
     ldp x27, x28, [x1, 16 * 4]
     ldp fp, lr, [x1, 16 * 5]
-    ldr x9, [x1, 16 * 6]
-    mov sp,  x9
+    ldp x9, x10, [x1, 16 * 6]
+    #ldr x9, [x1, 16 * 6]
+    mov sp, x9
+    dsb ish // ensure write has completed
+    msr ttbr0_el1, x10
+    tlbi vmalle1is // invalidate all TLB entries
+    dsb ish // ensure completion of TLB invalidatation
+    isb // clear pipeline
+    
     msr tpidr_el1, x1
     ret
 
