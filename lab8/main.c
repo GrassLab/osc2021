@@ -29,6 +29,8 @@ void main()
         uart_puts("nnono\n");
     }
     */
+    int gg = 10;
+    uart_printf("%x\n",&gg);
     uart_puts("Hello World!\n");
     // echo everything back
     int el = get_el();

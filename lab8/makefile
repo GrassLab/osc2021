@@ -5,8 +5,8 @@ LIB = ./lib
 CPIO:=initramfs.cpio
 all: $(KERNEL).img
 
-$(KERNEL).img:start.o main.o rd.o  lib/uart.o  lib/shell.o lib/stringUtils.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o lib/exception/except.o lib/exception/exception.o lib/interrupt.o lib/irq.o lib/task.o lib/switch.o lib/tmpfs.o lib/vfs.o lib/sd.o lib/fat32.o
-	aarch64-linux-gnu-ld  -T $(LINKER) -o $(KERNEL).elf start.o rd.o main.o  lib/uart.o lib/stringUtils.o  lib/shell.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o lib/exception/except.o lib/exception/exception.o lib/interrupt.o lib/irq.o lib/task.o lib/switch.o lib/tmpfs.o lib/vfs.o lib/sd.o lib/fat32.o
+$(KERNEL).img:start.o main.o rd.o  lib/uart.o  lib/shell.o lib/stringUtils.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o lib/exception/except.o lib/exception/exception.o lib/interrupt.o lib/irq.o lib/task.o lib/switch.o lib/tmpfs.o lib/vfs.o lib/sd.o lib/fat32.o lib/error.o lib/test.o lib/mmu.o
+	aarch64-linux-gnu-ld  -T $(LINKER) -o $(KERNEL).elf start.o rd.o main.o  lib/uart.o lib/stringUtils.o  lib/shell.o lib/initrd.o lib/printf.o lib/memAlloc.o lib/utils.o lib/exception/except.o lib/exception/exception.o lib/interrupt.o lib/irq.o lib/task.o lib/switch.o lib/tmpfs.o lib/vfs.o lib/sd.o lib/fat32.o lib/error.o lib/test.o lib/mmu.o
 	aarch64-linux-gnu-objcopy -O binary $(KERNEL).elf $@
 
 cpio:
@@ -18,7 +18,9 @@ start.o:start.S
 rd.o:$(CPIO)
 	aarch64-linux-gnu-ld -r -b binary -o rd.o $(CPIO)
 %.o:%.c
-	aarch64-linux-gnu-gcc $(CFLAGS) -o $@ -c $<
+	aarch64-linux-gnu-gcc $(CFLAGS) -o $@ -c $<	
+	aarch64-linux-gnu-gcc $(CFLAGS) -S $<
+
 %.o:%.s
 	aarch64-linux-gnu-gcc $(CFLAGS) -o $@ -c $<
 %.o:%.S
@@ -28,7 +30,7 @@ rd.o:$(CPIO)
 
 run:
 #	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio
-	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio -drive if=sd,file=./archive/sfn_nctuos.img,format=raw -initrd ./initramfs.cpio
+	qemu-system-aarch64 -M raspi3 -kernel $(KERNEL).img -display none -serial null -serial stdio -drive if=sd,file=./archive/sfn_nctuos.img,format=raw -initrd ./initramfs.cpio #-d in_asm
 try: clean cpio all run
 
 debug: clean cpio all 
@@ -38,4 +40,4 @@ onboard:
 
 .SILENT:clean
 clean:
-	-@ rm -f *.cpio *.o *.elf *.img $(LIB)/*.o 
+	-@ rm -f *.cpio *.o *.elf *.img $(LIB)/*.o *.s $(LIB)/*.s

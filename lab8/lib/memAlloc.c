@@ -1,9 +1,10 @@
 #include "../include/memAlloc.h"
 #include "../include/uart.h"
+#include "../include/gpio.h"
 
 #define PAGE_SIZE 4096
 #define MEM_SIZE 0x10000000 // 0.25G
-#define MEM_START 0x10000000
+#define MEM_START (KVA+0x10000000)
 #define PAGE_NUM (MEM_SIZE / PAGE_SIZE)
 #define CHUNK16_NUM 4096 / 16
 #define CHUNK32_NUM 4096 / 32

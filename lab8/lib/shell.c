@@ -8,11 +8,12 @@
 #include "../include/switch.h"
 #include "../include/tmpfs.h"
 #include "../include/vfs.h"
+#include "../include/gpio.h"
 
 #define MAX_BUF_SIZE 128
 #define PM_PASSWORD 0x5a000000
-#define PM_RSTC (volatile unsigned int*)0x3F10001c
-#define PM_WDOG (volatile unsigned int*)0x3F100024
+#define PM_RSTC (volatile unsigned int*)(MMIO_BASE+0x10001c)
+#define PM_WDOG (volatile unsigned int*)(MMIO_BASE+0x100024)
 
 
 

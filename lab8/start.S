@@ -1,6 +1,7 @@
 .section ".text.boot"
 
 
+
 _start:
     // read cpu id, stop slave cores
     mrs     x1, mpidr_el1
@@ -10,13 +11,20 @@ _start:
 1:  wfe
     b       1b
 2:  // cpu id == 0
+
     bl  _from_el2_to_el1
 
     ldr x0, =_exception_vector_table
     msr VBAR_EL1, x0
+
+    bl initMMU
+    bl initMMULower
+
     // set stack before our code
     ldr     x1, =_start
     mov     sp, #0x400000
+
+
 
     // clear bss
     ldr     x1, =__bss_start
