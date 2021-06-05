@@ -8,7 +8,6 @@
 #include <vfs.h>
 #include <page.h>
 
-void* ttbr0;
 void sys_exit(int status) {
   do_exit(status);
 }
@@ -152,7 +151,9 @@ int do_exec(const char* name, char* const argv[]) {
   //set pass argument
   stack = exec_set_argv(stack, argc, argv);
   
-  printf("stack: 0x%x\n", stack);
+  printf("stack: 0x%x, 0x%x\n", stack, get_current()->stack);
+  
+  page_map_stack(get_current()->stack + TASK_STACK_SIZE);
 
   /** set user context
    * set kernel stack sp
@@ -184,16 +185,13 @@ int do_exec(const char* name, char* const argv[]) {
   
   printf("current_tf: 0x%x\n", current_tf);
   current_tf->x0 = argc;
-  current_tf->x1 = (size_t)stack + 0x10;
-  current_tf->sp_el0 = (size_t)stack;
+  current_tf->sp_el0 = 0x00007ffffffff000 - ((size_t)(get_current()->stack + TASK_STACK_SIZE - stack) & 0x0000ffffffffffff);
+  current_tf->x1 = current_tf->sp_el0 + 0x10;
   current_tf->elr_el1 = 0x400000 + ((size_t)(start - addr) & 0x0000fffffffff000);
-  //current_tf->elr_el1 = (size_t)start; 
   disable_interrupt();
   
-  //(size_t)ttbr0 & 0x0000fffffffffff0
-  printf("ttbr0: %x\n", ttbr0);
   asm volatile("mov x0, %0\n" "mov sp, %1\n" "blr %2\n"::
-  "r"((size_t)ttbr0 & 0x0000fffffffffff0), 
+  "r"(get_current()->ctx.pgd), 
   "r"(current_tf),
   "r"((void* )exec_exit): "x0");
   
@@ -307,7 +305,7 @@ void* load_program(const char* name) {
   get_current()->size = metadata->file_size;
   
   disable_interrupt();
-  ttbr0 = page_alloc(addr, size);
+  get_current()->ctx.pgd = (size_t)page_map_binary(addr, size) & 0x0000fffffffff000;
   enable_interrupt();
   return addr; 
 }
