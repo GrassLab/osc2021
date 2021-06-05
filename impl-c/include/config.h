@@ -19,9 +19,11 @@
 // #define CFG_LOG_PROC_ARGV
 // #define CFG_LOG_PROC_EXEC
 #define CFG_LOG_VFS
-#define CFG_LOG_TMPFS
+// #define CFG_LOG_TMPFS
 #define CFG_LOG_TMPFS_LOOKUP
 #define CFG_LOG_TMPFS_DUMP_TREE
+#define CFG_LOG_DEV_MBR
+#define CFG_LOG_FAT
 
 /**
  *  TEST
@@ -41,5 +43,10 @@
 // PROC
 // #define CFG_RUN_PROC_ARGV_TEST
 
+// DEV
+#define CFG_RUN_DEV_MBR_TEST
+
 // FS
 #define CFG_RUN_FS_VFS_TEST
+
+#define CFG_RUN_FS_FAT_TEST

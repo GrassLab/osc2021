@@ -3,7 +3,7 @@
 
 #include "bool.h"
 #include "config.h"
-#include "cpio.h"
+#include "dev/cpio.h"
 #include "log.h"
 #include "string.h"
 #include "test.h"

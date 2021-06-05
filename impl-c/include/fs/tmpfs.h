@@ -8,9 +8,6 @@
 
 int tmpfs_init();
 
-// make a node to be initramfs
-int tmpfs_init_node();
-
 // Basic file operations
 int tmpfs_write(struct file *f, const void *buf, unsigned long len);
 int tmpfs_read(struct file *f, void *buf, unsigned long len);

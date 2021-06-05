@@ -54,6 +54,9 @@ extern struct mount *rootfs;
 // Select a specific fs impl as rootfs
 int mount_root_fs(const char *fs_impl);
 
+// mount a node by a file system
+int mount(struct vnode *node, const char *fs_impl);
+
 // register the file system to the kernel.
 int register_filesystem(struct filesystem *fs);
 
@@ -90,3 +93,10 @@ void test_vfs();
  */
 int get_component(const char *path, /* Return*/ int *start_idx,
                   /* Return*/ int *end_idx);
+
+/**
+ * @brief Find a vnode for opening files (from the root vnode of the system)
+ * @param pathname full path of the target
+ * @param creat_last create a vnode for the last component if not found
+ */
+struct vnode *vfs_find_vnode(const char *pathname, bool creat_last);

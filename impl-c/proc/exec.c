@@ -2,7 +2,7 @@
 #include "proc/argv.h"
 #include "proc/task.h"
 
-#include "cpio.h"
+#include "dev/cpio.h"
 #include "mm.h"
 #include "mm/frame.h"
 #include "stddef.h"

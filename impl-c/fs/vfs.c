@@ -37,14 +37,17 @@ struct filesystem registered = {
     .next = NULL,
 };
 
-/**
- * @brief Find a vnode for opening files
- * @param pathname full path of the target
- * @param flags FILE operation flags
- * @param root root vnode of the system
- */
-static struct vnode *find_vnode(const char *pathname, int flags,
-                                struct vnode *root);
+static struct filesystem *find_fs(const char *fs_impl) {
+  struct filesystem *cur;
+  struct filesystem *target = NULL;
+  for (cur = registered.next; cur != NULL; cur = cur->next) {
+    if (strcmp(cur->name, fs_impl) == 0) {
+      target = cur;
+      break;
+    }
+  }
+  return target;
+}
 
 void vfs_init() {
   rootfs = kalloc(sizeof(struct mount));
@@ -57,20 +60,36 @@ void vfs_init() {
 }
 
 int mount_root_fs(const char *fs_impl) {
-  struct filesystem *cur;
-  struct filesystem *rootfs_target;
-  for (cur = registered.next; cur != NULL; cur = cur->next) {
-    if (strcmp(cur->name, fs_impl) == 0) {
-      rootfs_target = cur;
-    }
-  }
-  if (rootfs_target == NULL) {
+  struct filesystem *target = find_fs(fs_impl);
+  if (target == NULL) {
     uart_println("Rootfs mount - Cannot found fs: %s", fs_impl);
     __BUSY_WAIT
   }
-  log_println("rootfs impl found: %s", rootfs_target->name);
-  rootfs_target->setup_mount(rootfs_target, rootfs);
+  log_println("rootfs impl found: %s", target->name);
+  target->setup_mount(target, rootfs);
   log_println("[vfs] rootfs build successfully");
+  return 0;
+}
+
+int mount(struct vnode *node, const char *fs_impl) {
+  struct filesystem *target_fs = find_fs(fs_impl);
+  if (target_fs == NULL) {
+    uart_println("[vfs] Mount - Cannot found fs: %s", fs_impl);
+    return -1;
+  }
+  log_println("[vfs] mount device with fs: `%s`", target_fs->name);
+  if (node->mnt != NULL) {
+    uart_println("vnode already mounted!");
+    while (1) {
+      ;
+    }
+  }
+  struct mount *mnt = (struct mount *)kalloc(sizeof(struct mount));
+  mnt->fs = target_fs;
+  mnt->root = node;
+  node->mnt = mnt;
+  target_fs->setup_mount(target_fs, node->mnt);
+  log_println("[vfs][mount] mount device successfully");
   return 0;
 }
 
@@ -97,12 +116,12 @@ int register_filesystem(struct filesystem *fs) {
   return 0;
 }
 
-struct vnode *find_vnode(const char *pathname, int flags, struct vnode *root) {
-  struct vnode *cwd = root;
+struct vnode *vfs_find_vnode(const char *pathname, bool creat_last) {
+  struct vnode *cwd = rootfs->root;
 
   const char *path;
   char *query_name;
-  int ret, start_idx, end_idx, name_size;
+  int ret, start_idx, end_idx, name_size, lookup_result;
   struct vnode *target_child;
 
   path = pathname;
@@ -120,13 +139,26 @@ struct vnode *find_vnode(const char *pathname, int flags, struct vnode *root) {
       query_name[name_size] = '\0';
     }
 
+    log_println("find `%s`", query_name);
+
     // Query file by it's name
-    cwd->v_ops->lookup(cwd, &target_child, query_name);
+    // "." means the current directory
+    if (strcmp(query_name, ".") == 0) {
+      target_child = cwd;
+      lookup_result = 0;
+    } else {
+      lookup_result = cwd->v_ops->lookup(cwd, &target_child, query_name);
+    }
 
     // Child found, go to the next level
-    if (target_child != NULL) {
+    if ((lookup_result == 0) && (target_child != NULL)) {
       path = &path[end_idx + 1];
-      cwd = target_child;
+      // Effectivly swtich to the mounting child
+      if (target_child->mnt != NULL) {
+        cwd = target_child->mnt->root;
+      } else {
+        cwd = target_child;
+      }
       kfree(query_name);
       continue;
     }
@@ -142,7 +174,7 @@ struct vnode *find_vnode(const char *pathname, int flags, struct vnode *root) {
       kfree(query_name);
       return NULL;
     }
-    if (flags & FILE_O_CREAT) {
+    if (creat_last) {
       ret = cwd->v_ops->create(cwd, &target_child, query_name);
       kfree(query_name);
       return (ret == 0) ? target_child : NULL;
@@ -157,7 +189,11 @@ struct vnode *find_vnode(const char *pathname, int flags, struct vnode *root) {
 struct file *vfs_open(const char *pathname, int flags) {
 
   struct vnode *target;
-  target = find_vnode(pathname, flags, rootfs->root);
+  bool creat_last = false;
+  if (flags & FILE_O_CREAT) {
+    creat_last = true;
+  }
+  target = vfs_find_vnode(pathname, creat_last);
   if (target == NULL) {
     uart_println("[vfs] not found");
     return NULL;
