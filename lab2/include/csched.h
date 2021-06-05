@@ -47,6 +47,7 @@ struct sig_struct {
 #define MAP_SHARED    0x2
 #define MAP_FIXED     0x4
 #define MAP_POPULATE  0x8
+#define MAP_SYS       0x16
 
 #define PROT_NONE  0x1
 #define PROT_READ  0x2
