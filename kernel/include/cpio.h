@@ -2,7 +2,9 @@
 
 #include <stdint.h>
 
-#define RAMFS_ADDR 0x8000000
+#include "mmu.h"
+
+#define RAMFS_ADDR (KVA + 0x8000000)
 #define CPIO_MAGIC "070701"
 #define CPIO_END "TRAILER!!!"
 

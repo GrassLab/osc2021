@@ -20,7 +20,7 @@ $(BUILD_DIR)/%_c.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/%_s.o: $(SRC_DIR)/%.S
-	$(CC) $(ASMFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 C_FILES = $(wildcard $(SRC_DIR)/*.c)
 ASM_FILES = $(wildcard $(SRC_DIR)/*.S)

@@ -1,5 +1,6 @@
 #include "dtb.h"
 
+#include "mmu.h"
 #include "printf.h"
 #include "string.h"
 #include "utils.h"
@@ -67,7 +68,7 @@ int check_compatibility(uint64_t struct_addr, uint64_t strings_addr,
 }
 
 void dtb_print(int all) {
-  uint64_t dtb_addr = *((uint64_t *)0x9000000);
+  uint64_t dtb_addr = *((uint64_t *)(KVA + 0x9000000));
   fdt_header *header = (fdt_header *)dtb_addr;
   uint64_t struct_addr = dtb_addr + be2le(header->off_dt_struct);
   uint64_t strings_addr = dtb_addr + be2le(header->off_dt_strings);
