@@ -73,7 +73,7 @@ int do_fork() {
     //stack has used
     offset = USER_STACK - current_tf->sp_el0;
     
-    //set return value
+    //set return value, not need to set sp_el0, elr_el1, since it's virtual address
     new_tf->x0 = 0;
     
     //copy user stack memory
@@ -84,10 +84,9 @@ int do_fork() {
     memcpy((char* )&new_task->ctx, (char *)&get_current()->ctx, sizeof(struct context));
     
     disable_interrupt();
-    //map binary
+    //map binary, stack
     new_task->ctx.pgd = null;
     page_map_binary(start, new_task->size, &(new_task->ctx.pgd));
-    //map stack
     page_map_stack(new_task->stack + TASK_STACK_SIZE, &(new_task->ctx.pgd));
     
     enable_interrupt();
@@ -161,7 +160,7 @@ int do_exec(const char* name, char* const argv[]) {
   printf("stack: 0x%x, 0x%x\n", stack, get_current()->stack);
   
   disable_interrupt();
-
+  //map binary and stack
   page_map_binary(get_current()->start, get_current()->size, &(get_current()->ctx.pgd));
   page_map_stack(get_current()->stack + TASK_STACK_SIZE, &(get_current()->ctx.pgd));
 
@@ -196,10 +195,12 @@ int do_exec(const char* name, char* const argv[]) {
   
   printf("current_tf: 0x%x\n", current_tf);
   current_tf->x0 = argc;
+  //sp_el0, elr_el1, should be the virtual address
   current_tf->sp_el0 = USER_STACK - pd_encode_offset((size_t)(get_current()->stack + TASK_STACK_SIZE - stack));
   current_tf->x1 = current_tf->sp_el0 + 0x10;
   current_tf->elr_el1 = USER_PROCESS + pd_encode_addr((size_t)(start - addr));
   
+  //jump to exec_exit, which will set the ttbr0_el1 page table
   asm volatile("mov x0, %0\n" "mov sp, %1\n" "blr %2\n"::
   "r"(get_current()->ctx.pgd), 
   "r"(current_tf),

@@ -8,10 +8,14 @@
 #define PD_OUTPUT_OFFSET_MASK 0x0000ffffffffffff
 #define NUM_OF_ENTRY_PER_TABLE_4KB 512
 
+//put physical address to page table, align to 0x1000
 #define pd_encode_addr(addr) (addr & PD_OUTPUT_MASK)
+
+//put physical address to page table with offset
 #define pd_encode_offset(addr) (addr & PD_OUTPUT_OFFSET_MASK)
+
+//read physical address from page table, and translate to 0xffffxxxxxxxxxxxx range
 #define pd_decode_addr(addr) ((addr & PD_OUTPUT_MASK) | PD_INPUT_MASK)
-//#define pd_decode_offset(addr) ( (addr & PD_OUTPUT_OFFSET_MASK) | PD_INPUT_MASK)
 
 void* page_map_binary(void* addr, size_t size, size_t* ctx_pgd);
 void page_map_stack(void* addr, size_t* ctx_pgd);

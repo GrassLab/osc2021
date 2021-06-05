@@ -8,44 +8,40 @@ void* page_map_binary(void* addr, size_t size, size_t* ctx_pgd) {
   size_t* pgd_addr, *pud_addr, *pmd_addr, *pte_addr;
   size_t total_pgd_entry, total_pud_entry, total_pmd_entry, total_pte_entry;  
   size_t num_of_pud_entry, num_of_pmd_entry, num_of_pte_entry;
-
+  
+  //calculate total number of each level entry
   total_pte_entry = page_cal_total_page_entry(size, PAGE_SIZE); 
   total_pmd_entry = page_cal_total_page_entry(total_pte_entry, NUM_OF_ENTRY_PER_TABLE_4KB);
   total_pud_entry = page_cal_total_page_entry(total_pmd_entry, NUM_OF_ENTRY_PER_TABLE_4KB);
   total_pgd_entry = page_cal_total_page_entry(total_pud_entry, NUM_OF_ENTRY_PER_TABLE_4KB);
-  
-  //printf("pgd: %d, pud: %d, pmd: %d, pte: %d\n", total_pgd_entry, total_pud_entry, total_pmd_entry, total_pte_entry);
-  
-  //pgd table
+   
+  //allocate pgd table
   pgd_addr = page_pgd_allocate(ctx_pgd);
   
-  //printf("pgd_addr: %x\n", pgd_addr);
- 
   //tarverse pgd
   for(int i = 0; i < total_pgd_entry; i++) {
     
+    //allocate pud table
     pud_addr = page_allocate(pgd_addr, i);
 
     if(pud_addr == null)
       return pgd_addr;
     
-    //printf("pud_addr: %x\n", pud_addr);
-
+    //get number of entry in this table
     num_of_pud_entry = page_get_num_of_table_entry(&total_pud_entry);
-    //traverse pud table pgd_addr[i]
+    //traverse pud table 
     for(int j = 0; j < num_of_pud_entry; j++) {
       
+      //allocate pmd table
       pmd_addr = page_allocate(pud_addr, j);
       
       if(pmd_addr == null)
         return pgd_addr;
 
-      //printf("pmd_addr: %x\n", pmd_addr);
-      
+      //get number of entry in this table
       num_of_pmd_entry = page_get_num_of_table_entry(&total_pmd_entry);
      
       //traverse pmd table 
-      //should start from 0x2
       for(int k = 0; k < num_of_pmd_entry; k++) {
 
         pte_addr = page_allocate(pmd_addr, k);
@@ -53,11 +49,11 @@ void* page_map_binary(void* addr, size_t size, size_t* ctx_pgd) {
         if(pte_addr == null)
           return pgd_addr;
 
-       //printf("pte_addr: %x\n", pte_addr); 
-        //set pmd entry
-        if(j == 0) {
+        //if is in first pud table and first pmd table, should start from 0x2
+        if(j == 0 && i == 0) {
           //start from 0x400000
           pmd_addr[k+2] = pd_encode_table(pte_addr);
+          //map exception table, cannot be execute
           pmd_addr[0] = pd_encode_ram_block(0x0000);
         }
         
@@ -66,7 +62,6 @@ void* page_map_binary(void* addr, size_t size, size_t* ctx_pgd) {
         for(int l = 0; l < num_of_pte_entry; l++) {
           //set pte entry
           pte_addr[l] = pd_encode_ram(get_physical_addr(addr, i, j, k, l));
-          //printf("i: %d, j: %d, k: %d, l: %d, physical address: %x\n", i, j, k, l, get_physical_addr(addr, i, j, k, l));
         }
       }
     }
@@ -87,9 +82,9 @@ void page_map_stack(void* stack_addr, size_t* ctx_pgd) {
 
   pte_addr[NUM_OF_ENTRY_PER_TABLE_4KB-1] = pd_encode_ram(stack_addr);
   pte_addr[NUM_OF_ENTRY_PER_TABLE_4KB-2] = pd_encode_ram(stack_addr - PAGE_SIZE);
-  //printf("pgd_addr: %x, pud_addr: %x, pmd_addr: %x, pte_addr: %x\n", pgd_addr, pud_addr, pmd_addr, pte_addr);
 }
 
+//calculate total number of entry in each level table
 size_t page_cal_total_page_entry(size_t total_low_level_entry, size_t table_size) {
   size_t total_high_level_entry;
   float temp;
@@ -104,7 +99,7 @@ size_t page_cal_total_page_entry(size_t total_low_level_entry, size_t table_size
   
   return total_high_level_entry;
 }
-
+//get number of entrys in this table
 size_t page_get_num_of_table_entry(size_t *total_low_level_entry) {
   size_t num_of_entry;
   if(*total_low_level_entry >= NUM_OF_ENTRY_PER_TABLE_4KB) {
@@ -115,7 +110,7 @@ size_t page_get_num_of_table_entry(size_t *total_low_level_entry) {
       num_of_entry = *total_low_level_entry;
   return num_of_entry;
 }
-
+//allocate pgd table, if ctx_gpd is null, otherwise reuse it
 void* page_pgd_allocate(size_t* ctx_pgd) {
   void* pgd_addr;
   if(*ctx_pgd == null) {
@@ -133,7 +128,7 @@ void* page_pgd_allocate(size_t* ctx_pgd) {
 
   return pgd_addr;
 }
-
+//allocate pud, pmd, pte table, if null, otherwise reuse it
 void* page_allocate(size_t* par_addr, int idx) {
   void* new_addr;
   if(par_addr[idx] == null) {
@@ -151,7 +146,7 @@ void* page_allocate(size_t* par_addr, int idx) {
 
   return new_addr;
 }
-
+//calculate physicall address from virtual and offset
 void* get_physical_addr(void* addr, int i, int j, int k, int l) {
   return addr + PAGE_SIZE * ( l + NUM_OF_ENTRY_PER_TABLE_4KB * k + NUM_OF_ENTRY_PER_TABLE_4KB * NUM_OF_ENTRY_PER_TABLE_4KB * j +  NUM_OF_ENTRY_PER_TABLE_4KB * NUM_OF_ENTRY_PER_TABLE_4KB * NUM_OF_ENTRY_PER_TABLE_4KB * i); 
 }
