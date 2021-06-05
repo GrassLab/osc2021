@@ -42,6 +42,7 @@ typedef struct {
   // Cached information
   bool cached;
   // Only used in dir node
+  struct vnode *parent;
   struct vnode **children;
 } Content;
 #define content_ptr(vnode) (Content *)((vnode)->internal)
@@ -119,16 +120,18 @@ static uint32_t fetch_file(uint32_t begin_lba, void **ret_file);
 static int follow_cluster_chain(uint32_t cluster_idx,
                                 /* Return */ size_t *ret_len);
 static struct vnode *create_vnode(const char *name, uint8_t node_type,
-                                  uint32_t start_cluster_id);
+                                  uint32_t start_cluster_id,
+                                  struct vnode *parent);
 static inline uint32_t cluster2lba(uint32_t clusterId) {
   return fatConfig.cluster_begin_lba +
          (clusterId - 2) * fatConfig.sec_per_cluster;
 }
 static int build_dir_cache(struct vnode *dir_node);
-static struct vnode *create_vnode_from_dentry(struct Dentry *dentry);
+static struct vnode *create_vnode_from_dentry(struct Dentry *dentry,
+                                              struct vnode *parent);
 
 struct vnode *create_vnode(const char *name, uint8_t node_type,
-                           uint32_t start_cluster_id) {
+                           uint32_t start_cluster_id, struct vnode *parent) {
   struct vnode *node = (struct vnode *)kalloc(sizeof(struct vnode));
 
   // This node is not mounted by other directory
@@ -150,6 +153,7 @@ struct vnode *create_vnode(const char *name, uint8_t node_type,
     cnt->data = NULL;
     cnt->cached = false;
     cnt->children = NULL;
+    cnt->parent = parent;
   }
   node->internal = cnt;
   log_println("[FAT] vnode created: `%s`, cluster_id: %d", cnt->name,
@@ -160,7 +164,7 @@ struct vnode *create_vnode(const char *name, uint8_t node_type,
 void fat_dev() {
   fat_init();
   struct vnode *root_dir =
-      create_vnode("/", FAT_NODE_TYPE_DIR, fatConfig.root_cluster);
+      create_vnode("/", FAT_NODE_TYPE_DIR, fatConfig.root_cluster, NULL);
 
   struct vnode *target;
   int ret;
@@ -182,7 +186,7 @@ int fat_setup_mount(struct filesystem *fs, struct mount *mount) {
   // mounting point
   // The nameing here is for better logging
   struct vnode *root =
-      create_vnode("#sdcard", FAT_NODE_TYPE_DIR, fatConfig.root_cluster);
+      create_vnode("#sdcard", FAT_NODE_TYPE_DIR, fatConfig.root_cluster, NULL);
   mount->root = root;
   log_println("[FAT] FAT32 filesystem mounted");
   return 0;
@@ -325,7 +329,7 @@ int fat_create(struct vnode *dir_node, struct vnode **target,
 
   Content *child_content, *parent_content;
   // TODO: write back to the FAT
-  child_node = create_vnode(component_name, FAT_NODE_TYPE_FILE, -1);
+  child_node = create_vnode(component_name, FAT_NODE_TYPE_FILE, -1, dir_node);
   child_content = content_ptr(child_node);
   child_content->size = 0;
 
@@ -502,7 +506,8 @@ static enum FAT_DentryType dentry_type(struct Dentry *dentry) {
   return FAT_DENTRY_SFN;
 }
 
-struct vnode *create_vnode_from_dentry(struct Dentry *dentry) {
+struct vnode *create_vnode_from_dentry(struct Dentry *dentry,
+                                       struct vnode *parent) {
   // SFN
   char name[13]; // 8(name) + 1('.') + 3(extension) + 1('\')
   {
@@ -532,7 +537,7 @@ struct vnode *create_vnode_from_dentry(struct Dentry *dentry) {
   uint32_t cluster_id =
       (dentry->first_cluster_high << 16) + dentry->first_cluster_low;
 
-  struct vnode *node = create_vnode(name, vnode_type, cluster_id);
+  struct vnode *node = create_vnode(name, vnode_type, cluster_id, parent);
   Content *content = content_ptr(node);
   content->size = dentry->size;
   return node;
@@ -572,7 +577,8 @@ int build_dir_cache(struct vnode *dir_node) {
       if (type == FAT_DENTRY_UNUSED) {
         continue;
       }
-      dir_content->children[num_built] = create_vnode_from_dentry(dentry);
+      dir_content->children[num_built] =
+          create_vnode_from_dentry(dentry, dir_node);
       num_built++;
     }
   }
