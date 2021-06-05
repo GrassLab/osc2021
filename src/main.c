@@ -204,14 +204,14 @@ int main()
     printf(init_logo);
     
     // Initialize root file system
-    rootfs_init();
+    // rootfs_init();
 
     // sd card device init
-    sd_init();
-    sd_mount();
+    // sd_init();
+    // sd_mount();
     
     /* Lab7 Test cases */
-    Lab7_fat32_test();
+    // Lab7_fat32_test();
 
     // Lab6 - vfs test cases
     // Lab6_vfs_test_demo();
