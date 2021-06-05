@@ -1,0 +1,358 @@
+#include <stddef.h>
+#include <fs/vfs.h>
+#include <mm.h>
+#include <string.h>
+#include <list.h>
+#include <stat.h>
+#include <file.h>
+#include <asm/errno.h>
+#include <sdcard.h>
+#include <fs/fat32.h>
+#include <printf.h>
+
+static int mount_sdcard(struct mount **mountpoint);
+
+static int fat32_lookup(struct vnode* dir_node, struct vnode **target, const char *component_name);
+// static int fat32_create(struct vnode* dir_node, const char *component_name);
+// static int fat32_unlink(struct vnode* dir_node, const char *component_name);
+// static int fat32_mkdir(struct vnode* dir_node, const char *component_name);
+// static int fat32_rmdir(struct vnode* dir_node, const char *component_name);
+
+static ssize_t fat32_read(struct file *file, void *buf, size_t len);
+static ssize_t fat32_write(struct file *file, const void *buf, size_t len);
+static int fat32_fsync(struct file *);
+
+struct filesystem fat32 = {
+  .name = "fat32",
+  .vnode_mount = &mount_sdcard
+};
+
+/*
+ * placed in vnode.internal
+ * for now we only support 512/32 = 16 entry in a directory
+ * a vnode is "cached" means
+ * folder: all vnodes children of that node has been constructed
+ *   file: the file contents has been loaded into memory
+ */
+struct fat32_cache {
+    unsigned int *FAT;
+    unsigned int FAT_index;
+    unsigned int FAT_size; /* in bytes */
+    unsigned int root_index; /* block index in image */
+    void *metadata;
+    unsigned int metadata_cluster_index; /* block index offset to root index */
+    void *data;
+    unsigned int data_cluster_index; /* block index offset to root index */
+    unsigned char dirty : 1;
+    unsigned char cached : 1;
+};
+
+static struct vnode_operations fat32_v_ops = {
+   .lookup = &fat32_lookup,
+//   .create = &fat32_create,
+//   .unlink = &fat32_unlink,
+//   .mkdir = &fat32_mkdir,
+//   .rmdir = &fat32_rmdir
+};
+
+static struct file_operations fat32_f_ops = {
+  .read = &fat32_read,
+  .write = &fat32_write,
+  .fsync = &fat32_fsync
+};
+
+static struct MBR mbrblock;
+static struct FAT32_Bootsector bootsector;
+
+static int find_free_block(struct fat32_cache *cache, int start) {
+    int mx = cache->FAT_size / sizeof(int);
+    for (int i = start; i < mx; i++) {
+        if (cache->FAT[i] == 0)
+            return i;
+    }
+
+    return 0;
+}
+
+static int end_of_chain(int n) {
+    if (n >= END_OF_CHAIN_THRESHOLD)
+        return 1;
+
+    return 0;
+}
+
+/* only file can be dirty, folder will be synced while doing mkdir */
+static int fat32_fsync(struct file *file) {
+    struct fat32_cache *cache = file->vnode->internal;
+
+    if (cache->dirty) {
+        struct FAT32_ShortEntry *entry = cache->metadata;
+
+        /* TODO: lock ALL */
+        if (file->vnode->size != entry->size) {
+            /* update metadata */
+            entry->size = file->vnode->size;
+
+            /* metadata write back */
+            void *metadata_block = (void *)((uintptr_t)entry & ~(size_t)(SECTOR_SIZE - 1));
+            writeblock(cache->root_index + cache->metadata_cluster_index, metadata_block);
+
+            /* file write back */
+            int idx = cache->data_cluster_index;
+            int remained_size = entry->size;
+            int next = 0;
+
+            for (int i = 0; remained_size > 0; i++) {
+                writeblock(cache->root_index + idx, (char *)cache->data + i * SECTOR_SIZE);
+                remained_size -= SECTOR_SIZE;
+
+                if (end_of_chain(cache->FAT[idx]) && remained_size > 0) {
+                    int new_idx = find_free_block(cache, next);
+                    if (!new_idx) {
+                        return -ENOSPC;
+                    }
+                    next = new_idx + 1;
+                    cache->FAT[idx] = new_idx;
+                    cache->FAT[new_idx] = END_OF_CHAIN;
+                }
+                idx = cache->FAT[idx];
+            }
+
+            /* FAT table write back */
+            int sectors = (next * sizeof(int) / SECTOR_SIZE) + !!((next * sizeof(int)) % SECTOR_SIZE);
+            for (int i = 0; i < sectors; i++) {
+                writeblock(cache->FAT_index + i, (char *)cache->FAT + i * SECTOR_SIZE);
+            }
+        }
+    }
+
+    return 0;
+}
+
+static ssize_t fat32_read(struct file *file, void *buf, size_t len) {
+    struct fat32_cache *cache = file->vnode->internal;
+    ssize_t size = len;
+    ssize_t mx = file->vnode->size - file->f_pos;
+    if (len > mx) {
+        size = mx;
+    }
+
+    if (size < 0) {
+        return -1;
+    }
+
+    memcpy(buf, (char *)cache->data + file->f_pos, size);
+    file->f_pos += size;
+
+    return size;
+}
+
+static ssize_t fat32_write(struct file *file, const void *buf, size_t len) {
+    struct fat32_cache *cache = file->vnode->internal;
+    ssize_t size = len;
+
+    if (size < 0) {
+        return -1;
+    }
+
+    /* TODO: since kmalloc can allocate more memory space than user requested,
+     * we should use that size as capacity to reduce reallocation */
+    size_t total_size = file->f_pos + len;
+
+    if (total_size > file->vnode->size) {
+        void *content = kmalloc(total_size);
+        memcpy(content, cache->data, file->f_pos);
+        memcpy((char *)content + file->f_pos, buf, len);
+        kfree(cache->data);
+
+        cache->data = content;
+        file->vnode->size = total_size;
+        file->f_pos += len;
+    } else {
+        memcpy((char *)cache->data + file->f_pos, buf, len);
+    }
+
+    cache->dirty = 1;
+
+    return size;
+}
+
+static void build_file_cache(struct vnode *node) {
+    struct fat32_cache *cache = node->internal;
+    cache->data = kmalloc(node->size);
+
+    void *tmpbuf = kmalloc(SECTOR_SIZE);
+    int index = cache->data_cluster_index;
+    unsigned remain_size = node->size;
+    char *cpyptr = cache->data;
+
+    while (index != -1) {
+        readblock(cache->root_index + index, tmpbuf);
+        unsigned int copy_size = remain_size > SECTOR_SIZE ? SECTOR_SIZE : remain_size;
+        memcpy(cpyptr, tmpbuf, copy_size);
+
+        index = cache->FAT[index];
+        remain_size -= SECTOR_SIZE;
+        cpyptr += SECTOR_SIZE;
+    }
+
+    kfree(tmpbuf);
+}
+
+static void build_dir_cache(struct vnode *dir_node) {
+    struct fat32_cache *parent_cache = dir_node->internal;
+    struct FAT32_ShortEntry *entry = parent_cache->data;
+
+    for (unsigned i = 0; entry[i].name[0]; i++) {
+        /* deleted entry */
+        if (entry[i].name[0] == 0xE5) {
+            continue;
+        }
+
+        char *name = kmalloc(0x10);
+        int cnt = 0;
+        for (int j = 0; j < 8; j++) {
+            if (entry[i].name[j] == ' ')
+                break;
+
+            name[cnt++] = entry[i].name[j];
+        }
+        if (entry[i].ext[0] != ' ') {
+            name[cnt++] = '.';
+            for (int j = 0; j < 3; j++) {
+                if (entry[i].ext[j] == ' ')
+                    break;
+
+                name[cnt++] = entry[i].ext[j];
+            }
+        }
+
+        /* won't cache next layer */
+        struct fat32_cache *cache = kcalloc(sizeof(struct fat32_cache));
+        cache->cached = 0;
+
+        if (entry[i].attr & ATTR_ARCHIVE) {
+            cache->metadata = &entry[i];
+            cache->metadata_cluster_index = 0; /* ??? */
+            cache->data_cluster_index = entry[i].start;
+            cache->FAT = parent_cache->FAT;
+            cache->FAT_size = parent_cache->FAT_size;
+            cache->root_index = parent_cache->root_index;
+        } else {
+            cache->metadata = &entry[i];
+            cache->metadata_cluster_index = 0; /* ??? */
+            cache->data = kmalloc(SECTOR_SIZE);
+            cache->data_cluster_index = entry[i].start;
+            cache->FAT = parent_cache->FAT;
+            cache->FAT_size = parent_cache->FAT_size;
+            cache->root_index = parent_cache->root_index;
+            readblock(cache->root_index + cache->data_cluster_index, cache->data);
+        }
+
+        struct vnode *node = kmalloc(sizeof(struct vnode));
+        node->mnt = dir_node->mnt;
+        node->name = name;
+        node->parent = dir_node;
+        node->subnodes = LIST_HEAD_INIT(node->subnodes);
+        node->f_mode = entry[i].attr & ATTR_ARCHIVE ? S_IFREG : S_IFDIR;
+        node->v_ops = &fat32_v_ops;
+        node->f_ops = &fat32_f_ops;
+        node->size = entry[i].attr & ATTR_ARCHIVE ? entry[i].size : 0;
+        node->internal = cache;
+        insert_head(&dir_node->subnodes, &node->nodes);
+    }
+
+    parent_cache->cached = 1;
+}
+
+static int fat32_lookup(struct vnode* dir_node, struct vnode **target, const char *component_name) {
+    struct fat32_cache *dir_cache = dir_node->internal;
+    if (!dir_cache->cached) {
+        build_dir_cache(dir_node);
+    }
+
+    struct list_head *p;
+    struct vnode *v;
+
+    *target = NULL;
+
+    list_for_each(p, &dir_node->subnodes) {
+        v = list_entry(p, struct vnode, nodes);
+        if (!strcasecmp(v->name, component_name)) {
+            struct fat32_cache *cache = v->internal;
+            if (!cache->cached) {
+                build_file_cache(v);
+            }
+            *target = v;
+        }
+    }
+
+    return 0;
+}
+
+static void setup_root_cache(struct fat32_cache *cache) {
+    readblock(0, &mbrblock);
+
+    unsigned bootsector_idx = mbrblock.partition[0].sector_start;
+    readblock(bootsector_idx, &bootsector);
+
+    unsigned FAT_idx = bootsector_idx + bootsector.ReservedSectors;
+    cache->FAT_size = bootsector.SectorsPerFat32 * SECTOR_SIZE;
+    cache->FAT_index = FAT_idx;
+
+    void *FAT = kmalloc(cache->FAT_size);
+
+    for (int i = 0; i < bootsector.SectorsPerFat32; i++) {
+        readblock(FAT_idx + i, (char *)FAT + i * SECTOR_SIZE);
+    }
+
+    unsigned rootdir_idx = FAT_idx + bootsector.NumberOfFatTables * bootsector.SectorsPerFat32;
+    cache->root_index = rootdir_idx;
+    cache->data_cluster_index = 0;
+    cache->data = kmalloc(SECTOR_SIZE);
+    readblock(rootdir_idx, cache->data);
+
+    cache->cached = 0;
+    cache->dirty = 0;
+    cache->metadata = NULL;
+    cache->metadata_cluster_index = 0;
+}
+
+static int mount_sdcard(struct mount **mountpoint) {
+    struct mount *mnt = kmalloc(sizeof(struct mount));
+    if (!mnt) {
+        return -ENOSPC;
+    }
+
+    struct vnode *root = kcalloc(sizeof(struct vnode));
+    if (!root) {
+        kfree(mnt);
+        return -ENOSPC;
+    }
+
+    root->name = "/";
+    root->parent = root;
+    root->nodes = LIST_HEAD_INIT(root->nodes);
+    root->subnodes = LIST_HEAD_INIT(root->subnodes);
+    root->f_mode = S_IFDIR;
+    root->mnt = mnt;
+    root->v_ops = &fat32_v_ops;
+    root->f_ops = &fat32_f_ops;
+    root->internal = kmalloc(sizeof(struct fat32_cache));
+
+    setup_root_cache(root->internal);
+    build_dir_cache(root);
+
+    mnt->root = root;
+    mnt->fs = &fat32;
+
+    *mountpoint = mnt;
+    return 0;
+}
+
+void init_fat32() {
+  int ret = register_filesystem(&fat32);
+  if (ret) {
+    panic("failed to register fat32");
+  }
+}
