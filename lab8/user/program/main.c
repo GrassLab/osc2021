@@ -13,7 +13,7 @@
   return 0;
 }*/
 
-int main(void) {
+/*int main(void) {
     printf("Fork Test, pid %d\n", getpid());
     int cnt = 1;
     int ret = 0;
@@ -30,7 +30,7 @@ int main(void) {
         printf("parent here, pid %d, child %d\n", getpid(), ret);
     }
   return 0;
-}
+}*/
 
 /*int main() {
   printf("VFS Test\n");
@@ -64,3 +64,20 @@ int main(void) {
   }
   return 0;
 }*/
+
+int main(void) {
+  int cnt = 0;
+  if(fork() == 0) {
+    fork();
+    fork();
+    while(cnt < 10) {
+      printf("pid: %d, sp: 0x%x cnt: %d\n", getpid(), &cnt, cnt++); // address should be the same, but the cnt should be increased indepndently
+      delay(1);
+    }
+  } else {
+    int* a = 0x0; // a non-mapped address.
+    printf("%d\n", *a); // trigger simple page fault.
+    printf("Should not be printed\n");
+  }
+  return 0;
+}

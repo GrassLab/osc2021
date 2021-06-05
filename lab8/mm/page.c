@@ -4,7 +4,7 @@
 #include <printf.h>
 #include <sched.h>
 
-void* page_map_binary(void* addr, size_t size) {
+void* page_map_binary(void* addr, size_t size, size_t* ctx_pgd) {
   size_t* pgd_addr, *pud_addr, *pmd_addr, *pte_addr;
   size_t total_pgd_entry, total_pud_entry, total_pmd_entry, total_pte_entry;  
   size_t num_of_pud_entry, num_of_pmd_entry, num_of_pte_entry;
@@ -14,12 +14,12 @@ void* page_map_binary(void* addr, size_t size) {
   total_pud_entry = page_cal_total_page_entry(total_pmd_entry, NUM_OF_ENTRY_PER_TABLE_4KB);
   total_pgd_entry = page_cal_total_page_entry(total_pud_entry, NUM_OF_ENTRY_PER_TABLE_4KB);
   
-  printf("pgd: %d, pud: %d, pmd: %d, pte: %d\n", total_pgd_entry, total_pud_entry, total_pmd_entry, total_pte_entry);
+  //printf("pgd: %d, pud: %d, pmd: %d, pte: %d\n", total_pgd_entry, total_pud_entry, total_pmd_entry, total_pte_entry);
   
   //pgd table
-  pgd_addr = page_pgd_allocate();
+  pgd_addr = page_pgd_allocate(ctx_pgd);
   
-  printf("pgd_addr: %x\n", pgd_addr);
+  //printf("pgd_addr: %x\n", pgd_addr);
  
   //tarverse pgd
   for(int i = 0; i < total_pgd_entry; i++) {
@@ -29,7 +29,7 @@ void* page_map_binary(void* addr, size_t size) {
     if(pud_addr == null)
       return pgd_addr;
     
-    printf("pud_addr: %x\n", pud_addr);
+    //printf("pud_addr: %x\n", pud_addr);
 
     num_of_pud_entry = page_get_num_of_table_entry(&total_pud_entry);
     //traverse pud table pgd_addr[i]
@@ -40,7 +40,7 @@ void* page_map_binary(void* addr, size_t size) {
       if(pmd_addr == null)
         return pgd_addr;
 
-      printf("pmd_addr: %x\n", pmd_addr);
+      //printf("pmd_addr: %x\n", pmd_addr);
       
       num_of_pmd_entry = page_get_num_of_table_entry(&total_pmd_entry);
      
@@ -53,7 +53,7 @@ void* page_map_binary(void* addr, size_t size) {
         if(pte_addr == null)
           return pgd_addr;
 
-        printf("pte_addr: %x\n", pte_addr); 
+       //printf("pte_addr: %x\n", pte_addr); 
         //set pmd entry
         if(j == 0) {
           //start from 0x400000
@@ -66,7 +66,7 @@ void* page_map_binary(void* addr, size_t size) {
         for(int l = 0; l < num_of_pte_entry; l++) {
           //set pte entry
           pte_addr[l] = pd_encode_ram(get_physical_addr(addr, i, j, k, l));
-          printf("i: %d, j: %d, k: %d, l: %d, physical address: %x\n", i, j, k, l, get_physical_addr(addr, i, j, k, l));
+          //printf("i: %d, j: %d, k: %d, l: %d, physical address: %x\n", i, j, k, l, get_physical_addr(addr, i, j, k, l));
         }
       }
     }
@@ -75,19 +75,19 @@ void* page_map_binary(void* addr, size_t size) {
   return pgd_addr;
 }
 
-void page_map_stack(void* stack_addr) {
+void page_map_stack(void* stack_addr, size_t* ctx_pgd) {
   size_t* pgd_addr, *pud_addr, *pmd_addr, *pte_addr;
   
   //map stack to 0x00007ffffffff000
   //last pud
-  pgd_addr = page_pgd_allocate();
+  pgd_addr = page_pgd_allocate(ctx_pgd);
   pud_addr = page_allocate(pgd_addr, 255);
   pmd_addr = page_allocate(pud_addr, NUM_OF_ENTRY_PER_TABLE_4KB-1);
   pte_addr = page_allocate(pmd_addr, NUM_OF_ENTRY_PER_TABLE_4KB-1);
 
   pte_addr[NUM_OF_ENTRY_PER_TABLE_4KB-1] = pd_encode_ram(stack_addr);
   pte_addr[NUM_OF_ENTRY_PER_TABLE_4KB-2] = pd_encode_ram(stack_addr - PAGE_SIZE);
-  printf("pgd_addr: %x, pud_addr: %x, pmd_addr: %x, pte_addr: %x\n", pgd_addr, pud_addr, pmd_addr, pte_addr);
+  //printf("pgd_addr: %x, pud_addr: %x, pmd_addr: %x, pte_addr: %x\n", pgd_addr, pud_addr, pmd_addr, pte_addr);
 }
 
 size_t page_cal_total_page_entry(size_t total_low_level_entry, size_t table_size) {
@@ -116,19 +116,19 @@ size_t page_get_num_of_table_entry(size_t *total_low_level_entry) {
   return num_of_entry;
 }
 
-void* page_pgd_allocate() {
+void* page_pgd_allocate(size_t* ctx_pgd) {
   void* pgd_addr;
-  if((void* )get_current()->ctx.pgd == null) {
+  if(*ctx_pgd == null) {
     
     pgd_addr = varied_malloc(PAGE_SIZE);
   
     if(pgd_addr == null)
       return pgd_addr;
 
-    get_current()->ctx.pgd = (size_t)pgd_addr;
+    *ctx_pgd = pd_encode_addr((size_t)pgd_addr);
   }
   else {
-    pgd_addr = (void* )pd_decode_addr(get_current()->ctx.pgd);
+    pgd_addr = (void* )pd_decode_addr(*ctx_pgd);
   }
 
   return pgd_addr;

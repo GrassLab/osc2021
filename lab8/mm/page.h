@@ -3,16 +3,20 @@
 #include <types.h>
 
 #define PD_INPUT_MASK 0xffff000000000000
-#define PD_OUTPUT_MASK 0xfffffffffffff000
+#define PD_INPUT_OFFSET_MASK 0xffffffffffffffff
+#define PD_OUTPUT_MASK 0x0000fffffffff000
+#define PD_OUTPUT_OFFSET_MASK 0x0000ffffffffffff
 #define NUM_OF_ENTRY_PER_TABLE_4KB 512
 
 #define pd_encode_addr(addr) (addr & PD_OUTPUT_MASK)
-#define pd_decode_addr(addr) ( (addr & PD_OUTPUT_MASK) | PD_INPUT_MASK)
+#define pd_encode_offset(addr) (addr & PD_OUTPUT_OFFSET_MASK)
+#define pd_decode_addr(addr) ((addr & PD_OUTPUT_MASK) | PD_INPUT_MASK)
+//#define pd_decode_offset(addr) ( (addr & PD_OUTPUT_OFFSET_MASK) | PD_INPUT_MASK)
 
-void* page_map_binary(void* addr, size_t size);
-void page_map_stack(void* addr);
+void* page_map_binary(void* addr, size_t size, size_t* ctx_pgd);
+void page_map_stack(void* addr, size_t* ctx_pgd);
 void* page_allocate(size_t* par_addr, int idx);
-void* page_pgd_allocate();
+void* page_pgd_allocate(size_t* ctx_pgd);
 void* get_physical_addr(void* addr, int i, int j, int k, int l);
 size_t page_cal_total_page_entry(size_t total_low_level_entry, size_t table_size);
 size_t page_get_num_of_table_entry(size_t *total_low_level_entry);

@@ -11,7 +11,8 @@
 #define TASK_STACK_SIZE 0x1000
 #define KERNEL_STACK_ADDR 0xffff000011000000
 #define USER_STACK_ADDR (0xffff000011000000 + TASK_STACK_SIZE * TASK_POOL_SIZE)
-
+#define USER_STACK 0x00007ffffffff000
+#define USER_PROCESS 0x400000 
 #define TASK_STATUS_DEAD 0
 #define TASK_STATUS_READY 1
 #define FD_TABLE_SIZE 64
@@ -75,4 +76,6 @@ extern int exit();
 extern size_t get_pgd();
 
 extern void exec_exit(size_t pgd);
+
+void task_virtual_init();
 #endif

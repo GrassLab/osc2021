@@ -46,6 +46,7 @@ int do_fork() {
   //fork a new user task
   struct task_struct *new_task; 
   struct trapframe* current_tf, *new_tf;
+  size_t offset;
   void* start;
   
  
@@ -63,23 +64,33 @@ int do_fork() {
     if(start == null) {
       return -1;
     }
-
+    
     //copy trapframe in kernel stack
     current_tf = get_trapframe(get_current());
     new_tf = get_trapframe(new_task);
     memcpy((char* )new_tf, (char* )current_tf, sizeof(struct trapframe));
     
-    //set return value, elr_el1, sp_el0
+    //stack has used
+    offset = USER_STACK - current_tf->sp_el0;
+    
+    //set return value
     new_tf->x0 = 0;
-    new_tf->elr_el1 = (size_t)new_task->start + (current_tf->elr_el1 - (size_t)get_current()->start);
-    new_tf->sp_el0 = ((size_t)new_task->stack + TASK_STACK_SIZE) + (current_tf->sp_el0 - ((size_t)get_current()->stack + TASK_STACK_SIZE));  
     
     //copy user stack memory
-    memcpy((char *)new_tf->sp_el0, (char* )current_tf->sp_el0, (size_t)get_current()->stack + TASK_STACK_SIZE - current_tf->sp_el0);
+    memcpy((char *)new_task->stack + TASK_STACK_SIZE - offset, (char *)get_current()->stack + TASK_STACK_SIZE - offset, offset);
     //copy heap (?)
     
     //copy context
     memcpy((char* )&new_task->ctx, (char *)&get_current()->ctx, sizeof(struct context));
+    
+    disable_interrupt();
+    //map binary
+    new_task->ctx.pgd = null;
+    page_map_binary(start, new_task->size, &(new_task->ctx.pgd));
+    //map stack
+    page_map_stack(new_task->stack + TASK_STACK_SIZE, &(new_task->ctx.pgd));
+    
+    enable_interrupt();
     
     //set lr, sp
     new_task->ctx.lr = (size_t)kernel_exit;
@@ -95,18 +106,14 @@ int do_fork() {
 
 void* fork_memcpy(struct task_struct *t, void* start, size_t size) {
   void* addr;
-  int allocated_size;
 
-  allocated_size = size + PAGE_SIZE;
   //allocate memory for new user program
   disable_interrupt();
   
-  addr = varied_malloc(allocated_size);
+  addr = buddy_malloc(size);
   
   enable_interrupt();
   
-  addr += PAGE_SIZE - (size_t)addr % PAGE_SIZE;
-
   if(addr == null)
     return null;
   
@@ -153,8 +160,12 @@ int do_exec(const char* name, char* const argv[]) {
   
   printf("stack: 0x%x, 0x%x\n", stack, get_current()->stack);
   
-  page_map_stack(get_current()->stack + TASK_STACK_SIZE);
+  disable_interrupt();
 
+  page_map_binary(get_current()->start, get_current()->size, &(get_current()->ctx.pgd));
+  page_map_stack(get_current()->stack + TASK_STACK_SIZE, &(get_current()->ctx.pgd));
+
+  enable_interrupt();
   /** set user context
    * set kernel stack sp
    * set user stack sp_el0
@@ -185,19 +196,15 @@ int do_exec(const char* name, char* const argv[]) {
   
   printf("current_tf: 0x%x\n", current_tf);
   current_tf->x0 = argc;
-  current_tf->sp_el0 = 0x00007ffffffff000 - ((size_t)(get_current()->stack + TASK_STACK_SIZE - stack) & 0x0000ffffffffffff);
+  current_tf->sp_el0 = USER_STACK - pd_encode_offset((size_t)(get_current()->stack + TASK_STACK_SIZE - stack));
   current_tf->x1 = current_tf->sp_el0 + 0x10;
-  current_tf->elr_el1 = 0x400000 + ((size_t)(start - addr) & 0x0000fffffffff000);
-  disable_interrupt();
+  current_tf->elr_el1 = USER_PROCESS + pd_encode_addr((size_t)(start - addr));
   
   asm volatile("mov x0, %0\n" "mov sp, %1\n" "blr %2\n"::
   "r"(get_current()->ctx.pgd), 
   "r"(current_tf),
   "r"((void* )exec_exit): "x0");
   
-  //asm volatile("mov sp, %0\n" "blr %1\n"::"r"(current_tf), "r"((void* )kernel_exit));
-  
-  enable_interrupt();
   return 0;
 }
 
@@ -304,9 +311,6 @@ void* load_program(const char* name) {
   get_current()->start = addr;
   get_current()->size = metadata->file_size;
   
-  disable_interrupt();
-  get_current()->ctx.pgd = (size_t)page_map_binary(addr, size) & 0x0000fffffffff000;
-  enable_interrupt();
   return addr; 
 }
 

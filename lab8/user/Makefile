@@ -8,7 +8,7 @@ BUILD_DIR=.
 HEADER := $(wildcard */*.h)
 SRC := $(wildcard */*.c)
 ASM := $(wildcard */*.S) $(wildcard */*/*.S)
-ELF = fork_test
+ELF = virtual_test
 OBJ := $(patsubst %.S, %.o, $(ASM)) $(patsubst %.c, %.o, $(SRC))
 .PHONY: all clean rootfs 
 
