@@ -83,7 +83,7 @@ void mem_add_new_node(int mbytes, int page_need, unsigned long long r){
   ll_push_elm(&mem_inuse, new_node, target);
 }
 
-void* malloc(int mbytes){
+void* malloc(int mbytes, int ifclear){
   void *r = 0;
   int page_need;
   if (mbytes == 0){
@@ -121,6 +121,12 @@ void* malloc(int mbytes){
   //add r in mem table
   if(r) mem_add_new_node(mbytes, page_need, (unsigned long long)r);
   else log_puts("[Severe] malloc fail.\n", SEVERE);
+  if (ifclear){
+    char *clear_base = (char*) r;
+    for (int i=0; i<mbytes; i++){
+      clear_base[i] = '\0';
+    }
+  }
   return r;
 }
 
@@ -141,11 +147,11 @@ void free(void* addr){
     ll_push_front<struct mem_node>(&mem_unuse, target);
   }
   else{
-    mem_uart_puts((char *) "Memory addr <");
+    log_puts((char *) "Memory addr <", WARNING);
     char ct[20];
     int_to_hex((unsigned long long)addr, ct);
-    mem_uart_puts(ct);
-    mem_uart_puts((char *) "> not found\n");
+    log_puts(ct, WARNING);
+    log_puts((char *) "> not found\n", WARNING);
   }
 }
 

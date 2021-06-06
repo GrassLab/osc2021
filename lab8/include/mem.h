@@ -18,6 +18,6 @@ struct mem_node{
 struct mem_node* get_mem_inuse();
 void mem_init();
 void mem_ll_show();
-void*  malloc(int mbytes);
+void*  malloc(int mbytes, int ifclear = 0);
 void free(void* addr);
 void memcpy(void *src, void *target, uint64_t size);

@@ -54,6 +54,8 @@ int main(){
   uart_puts(ct);
   uart_puts("\n");
   
+  page_test();
+  
   uart_puts(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
   uart_puts("Hi!\n");
   uart_puts("Welcome to Eric's system ~\n");

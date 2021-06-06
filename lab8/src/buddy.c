@@ -540,8 +540,8 @@ void buddy_table_show_init(){
 
 void buddy_table_show(){
   buddy_table_show_init();
-  uart_puts((char *) "           0   1   2   3 | 4   5   6   7 | 8   9   a   b | c   d   e   f | 10 11  12  13 |14  15  16  17 |18  19  1a  1b |1c  1d  1e  1f |\n");
-  uart_puts((char *) "===========================================================================================================================================\n");
+  uart_puts((char *) "                     0   1   2   3 | 4   5   6   7 | 8   9   a   b | c   d   e   f | 10 11  12  13 |14  15  16  17 |18  19  1a  1b |1c  1d  1e  1f |\n");
+  uart_puts((char *) "====================================================================================================================================================\n");
   int row_offset = (BUDDY_PAGE_NUM%BUDDY_TABLE_COLS) ? 0 : -1;
   for (int i=0; i<BUDDY_TABLE_ROWS+row_offset; i++){
     uart_puts(buddy_table[i]);

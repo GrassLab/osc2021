@@ -57,7 +57,7 @@ void int_to_hex_align(unsigned long long n, char *s, int len){
   }
 }
 
-void int_to_hex(unsigned long n, char *s){
+void int_to_hex(unsigned long long n, char *s){
   char tmp[100];
   int idx = 0;
   do{

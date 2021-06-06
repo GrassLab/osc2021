@@ -3,9 +3,10 @@
 
 # include "bitset.h"
 # include "page.h"
+# include "mem_addr.h"
 
-# define BUDDY_BASE_ADDR   0x10000000
-# define BUDDY_SIZE        (0x2000000)
+# define BUDDY_BASE_ADDR   (0x10000000 + KVA)
+# define BUDDY_SIZE        (0x400000)
 # define BUDDY_PAGE_SIZE   PAGE_SIZE
 # define BUDDY_PAGE_NUM    (BUDDY_SIZE/BUDDY_PAGE_SIZE)
 # define BUDDY_MAX_ORDER   12
@@ -13,7 +14,7 @@
 
 # define BUDDY_TABLE_COLS   32
 # define BUDDY_TABLE_TIMES  4
-# define BUDDY_TABLE_OFFSET 9
+# define BUDDY_TABLE_OFFSET 19
 # define BUDDY_TABLE_ROWS   (BUDDY_PAGE_NUM/BUDDY_TABLE_COLS+1)
 
 # define BUDDY_DMA_UNIT_SIZE    16
