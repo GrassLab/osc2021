@@ -219,6 +219,7 @@ static int fat32_create(struct vnode* dir_node, const char *component_name) {
     node->v_ops = &fat32_v_ops;
     node->f_ops = &fat32_f_ops;
     node->size = 0;
+    node->capacity = 0;
     node->internal = cache;
     insert_head(&dir_node->subnodes, &node->nodes);
 
@@ -244,6 +245,10 @@ static ssize_t fat32_read(struct file *file, void *buf, size_t len) {
     return size;
 }
 
+static uint32_t align_up(uint32_t size, int alignment) {
+  return (size + alignment - 1) & -alignment;
+}
+
 static ssize_t fat32_write(struct file *file, const void *buf, size_t len) {
     struct fat32_cache *cache = file->vnode->internal;
     ssize_t size = len;
@@ -256,20 +261,25 @@ static ssize_t fat32_write(struct file *file, const void *buf, size_t len) {
      * we should use that size as capacity to reduce reallocation */
     size_t total_size = file->f_pos + len;
 
-    if (total_size > file->vnode->size) {
-        void *content = kmalloc(total_size);
+    if (total_size > file->vnode->capacity) {
+        unsigned aligned_size = align_up(total_size, SECTOR_SIZE);
+        void *content = kcalloc(aligned_size);
+        file->vnode->capacity = aligned_size;
+
         memcpy(content, cache->data, file->f_pos);
         memcpy((char *)content + file->f_pos, buf, len);
         kfree(cache->data);
 
         cache->data = content;
-        file->vnode->size = total_size;
-        file->f_pos += len;
     } else {
         memcpy((char *)cache->data + file->f_pos, buf, len);
-        file->f_pos += len;
     }
 
+    if (total_size > file->vnode->size) {
+        file->vnode->size = total_size;
+    }
+
+    file->f_pos += len;
     cache->dirty = 1;
 
     return size;
@@ -277,7 +287,9 @@ static ssize_t fat32_write(struct file *file, const void *buf, size_t len) {
 
 static void build_file_cache(struct vnode *node) {
     struct fat32_cache *cache = node->internal;
-    cache->data = kmalloc(node->size);
+    unsigned aligned_size = align_up(node->size, SECTOR_SIZE);
+    node->capacity = aligned_size;
+    cache->data = kcalloc(aligned_size);
 
     void *tmpbuf = kmalloc(SECTOR_SIZE);
     int index = cache->data_cluster_index;
@@ -358,6 +370,7 @@ static void build_dir_cache(struct vnode *dir_node) {
         node->v_ops = &fat32_v_ops;
         node->f_ops = &fat32_f_ops;
         node->size = entry[i].attr & ATTR_ARCHIVE ? entry[i].size : 0;
+        node->capacity = 0; /* since we haven't allocate memory */
         node->internal = cache;
         insert_head(&dir_node->subnodes, &node->nodes);
     }

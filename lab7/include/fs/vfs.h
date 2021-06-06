@@ -21,6 +21,7 @@ struct vnode {
     struct file_operations *f_ops;
     struct vnode_operations *v_ops;
     size_t size;
+    size_t capacity;
     void *internal; /* internal data structure impl by each fs */
 };
 

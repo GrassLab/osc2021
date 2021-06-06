@@ -27,6 +27,7 @@
 #define CACHE_BINS 7
 #define CACHE_MIN_SIZE 32
 #define CACHE_MAX_ORDER (CACHE_BINS - 1)
+#define CACHE_ORDER2SIZE(ord) (CACHE_MIN_SIZE * (1 << (ord)))
 
 /*
    The implementation philosophy is always take down any node from linked list
@@ -148,6 +149,7 @@ static int pages_to_frame_order(unsigned count) {
     count = align_up_exp(count);
     return __builtin_ctz(count);
 }
+
 static int size_to_cache_order(unsigned size) {
     size = align_up_exp(size);
     size /= CACHE_MIN_SIZE;
@@ -373,6 +375,23 @@ void *kcalloc(unsigned int size) {
     memset(p, 0, size);
 
     return p;
+}
+
+size_t get_alloc_size(void *ptr) {
+    if (!ptr) {
+        return 0;
+    }
+
+    int idx = addr2idx(ptr);
+    if (idx >= FRAME_ARRAY_SIZE) {
+        return 0;
+    }
+
+    if (IS_MEM_CACHE(frame_array[idx])) {
+        return CACHE_ORDER2SIZE(frame_array[idx].cache->order);
+    } else {
+        return ORDER2SIZE(frame_array[idx].order);
+    }
 }
 
 void kfree(void *ptr) {

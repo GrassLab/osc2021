@@ -45,13 +45,14 @@ static struct file_operations tmpfs_f_ops = {
 
 static ssize_t tmpfs_read(struct file *file, void *buf, size_t len) {
     ssize_t size = len;
+
+    if (size < 0) {
+        return -EOVERFLOW;
+    }
+
     ssize_t mx = file->vnode->size - file->f_pos;
     if (len > mx) {
         size = mx;
-    }
-
-    if (size < 0) {
-        return -1;
     }
 
     memcpy(buf, (char *)file->vnode->internal + file->f_pos, size);
@@ -64,26 +65,31 @@ static ssize_t tmpfs_write(struct file *file, const void *buf, size_t len) {
     ssize_t size = len;
 
     if (size < 0) {
-        return -1;
+        return -EOVERFLOW;
     }
 
     /* TODO: since kmalloc can allocate more memory space than user requested,
      * we should use that size as capacity to reduce reallocation */
     size_t total_size = file->f_pos + len;
 
-    if (total_size > file->vnode->size) {
+    if (total_size > file->vnode->capacity) {
         void *content = kmalloc(total_size);
+        file->vnode->capacity = get_alloc_size(content);
+
         memcpy(content, file->vnode->internal, file->f_pos);
         memcpy((char *)content + file->f_pos, buf, len);
         kfree(file->vnode->internal);
 
         file->vnode->internal = content;
-        file->vnode->size = total_size;
-        file->f_pos += len;
     } else {
         memcpy((char *)file->vnode->internal + file->f_pos, buf, len);
-        file->f_pos += len;
     }
+
+    if (total_size > file->vnode->size) {
+        file->vnode->size = total_size;
+    }
+
+    file->f_pos += len;
 
     return size;
 }
@@ -127,6 +133,7 @@ static int tmpfs_create(struct vnode* dir_node, const char *component_name) {
     node->v_ops = &tmpfs_v_ops;
     node->f_ops = &tmpfs_f_ops;
     node->size = 0;
+    node->capacity = 0;
     node->internal = NULL;
     insert_head(&dir_node->subnodes, &node->nodes);
 
