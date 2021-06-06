@@ -289,7 +289,9 @@ ssize_t vfs_write(struct file *file, const void *buf, size_t len) {
 
 int vfs_close(struct file *file) {
   /* sync contents to hardware storage */
-  file->vnode->f_ops->fsync(file);
+  if (S_ISREG(file->vnode->f_mode)) {
+    file->vnode->f_ops->fsync(file);
+  }
 
   disable_preempt();
   file->refcnt -= 1;
@@ -303,7 +305,11 @@ int vfs_close(struct file *file) {
 }
 
 int vfs_fsync(struct file *file) {
-  return file->vnode->f_ops->fsync(file);
+  if (S_ISREG(file->vnode->f_mode)) {
+    return file->vnode->f_ops->fsync(file);
+  }
+
+  return -EINVAL;
 }
 
 struct vnode *vfs_lookup(struct vnode* dir_node, const char *component_name) {

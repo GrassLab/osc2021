@@ -26,7 +26,7 @@ enum {
     SYS_MOUNT,
     SYS_UMOUNT,
     SYS_SLEEP,
-    // SYS_OPENDIR,
+    SYS_FSYNC,
     NR_syscalls
 };
 

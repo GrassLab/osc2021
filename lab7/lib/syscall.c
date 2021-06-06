@@ -29,7 +29,7 @@ SYSCALL_METADATA(rmdir);
 SYSCALL_METADATA(mount);
 SYSCALL_METADATA(umount);
 SYSCALL_METADATA(sleep);
-// SYSCALL_METADATA(opendir);
+SYSCALL_METADATA(fsync);
 
 long not_implemented(const struct pt_regs *regs) {
     return -ENOSYS;
@@ -54,5 +54,5 @@ syscall syscall_table[NR_syscalls] = {
     SYSCALL(SYS_MOUNT, mount),
     SYSCALL(SYS_UMOUNT, umount),
     SYSCALL(SYS_SLEEP, sleep),
-    // SYSCALL(SYS_OPENDIR, opendir)
+    SYSCALL(SYS_FSYNC, fsync)
 };

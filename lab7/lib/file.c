@@ -144,3 +144,31 @@ SYSCALL_DEFINE3(write, int, fd, const void *, buf, size_t, count) {
 SYSCALL_DEFINE1(close, int, fd) {
     return do_close(fd);
 }
+
+SYSCALL_DEFINE1(fsync, int, fd) {
+    if (fd < 0 || fd >= NR_OPEN_DEFAULT) {
+        return -1;
+    }
+
+    disable_preempt();
+
+    struct task_struct *ts = current;
+    int ret;
+
+    /* CHECK: or should we allocate every time ? */
+    if (!ts->files) {
+        ret = -1;
+        goto failed;
+    }
+
+    if (ts->files->unused_bits & (1 << fd)) {
+        ret = -1;
+        goto failed;
+    }
+
+    ret = vfs_fsync(ts->files->fd_array[fd]);
+
+failed:
+    enable_preempt();
+    return ret;
+}
