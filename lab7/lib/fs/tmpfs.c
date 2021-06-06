@@ -82,6 +82,7 @@ static ssize_t tmpfs_write(struct file *file, const void *buf, size_t len) {
         file->f_pos += len;
     } else {
         memcpy((char *)file->vnode->internal + file->f_pos, buf, len);
+        file->f_pos += len;
     }
 
     return size;

@@ -267,6 +267,7 @@ static ssize_t fat32_write(struct file *file, const void *buf, size_t len) {
         file->f_pos += len;
     } else {
         memcpy((char *)cache->data + file->f_pos, buf, len);
+        file->f_pos += len;
     }
 
     cache->dirty = 1;
