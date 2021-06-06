@@ -23,9 +23,9 @@
 #define IS_INUSE(flag) ((flag).flags & FRAME_INUSE)
 #define IS_MEM_CACHE(flag) ((flag).flags & FRAME_MEM_CACHE)
 
-/* cache start from 32 bytes to 2048 bytes */
-#define CACHE_BINS 7
-#define CACHE_MIN_SIZE 32
+/* cache start from 8 bytes to 2048 bytes (less than pagesize) */
+#define CACHE_BINS 9
+#define CACHE_MIN_SIZE 8
 #define CACHE_MAX_ORDER (CACHE_BINS - 1)
 #define CACHE_ORDER2SIZE(ord) (CACHE_MIN_SIZE * (1 << (ord)))
 
