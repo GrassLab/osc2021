@@ -57,6 +57,7 @@ struct file* vfs_open(const char *pathname, int flags);
 ssize_t vfs_read(struct file *file, void *buf, size_t len);
 ssize_t vfs_write(struct file *file, const void *buf, size_t len);
 int vfs_close(struct file *file);
+int vfs_fsync(struct file *file);
 
 struct vnode *vfs_lookup(struct vnode *dir_node, const char *component_name);
 int vfs_mkdir(struct vnode *dir_node, const char *component_name);

@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
         if (ret <= 0) {
             break;
         }
-        printf("%crwxrwxrwx root root %lu %s\r\n", S_ISDIR(stat.f_mode) ? 'd' : '-', stat.size, stat.name);
+        printf("%crwxrwxrwx root root %6lu %s\r\n", S_ISDIR(stat.f_mode) ? 'd' : '-', stat.size, stat.name);
     }
 
     write(fd, NULL, 0);

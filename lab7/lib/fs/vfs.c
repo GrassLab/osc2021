@@ -288,6 +288,9 @@ ssize_t vfs_write(struct file *file, const void *buf, size_t len) {
 }
 
 int vfs_close(struct file *file) {
+  /* sync contents to hardware storage */
+  file->vnode->f_ops->fsync(file);
+
   disable_preempt();
   file->refcnt -= 1;
   enable_preempt();
@@ -297,6 +300,10 @@ int vfs_close(struct file *file) {
   }
 
   return 0;
+}
+
+int vfs_fsync(struct file *file) {
+  return file->vnode->f_ops->fsync(file);
 }
 
 struct vnode *vfs_lookup(struct vnode* dir_node, const char *component_name) {
@@ -405,37 +412,31 @@ SYSCALL_DEFINE2(getcwd, char *, buf, size_t, size) {
 
   struct vnode *root = current->fs.root.node;
   struct vnode *cur = current->fs.pwd.node;
-  struct vnode *prev = cur->parent;
-
-  *buf = '/';
-  buf++;
 
   if (cur == rootfs->root) {
-    *buf = '\0';
+    buf[0] = '/';
+    buf[1] = '\0';
     return 0;
   }
 
   int ret = 0;
-  struct vnode_path *list = kmalloc(sizeof(struct vnode_path));
-  list->next = NULL;
-  list->node = cur;
+  struct vnode_path *list = NULL;
 
-  while (prev != root) {
-    if (prev->mnt->root == prev) {
-      prev = prev->mnt->mountpoint;
+  while (cur != root) {
+    if (cur->mnt->root == cur) {
+      cur = cur->mnt->mountpoint;
     }
 
     struct vnode_path *p = kmalloc(sizeof(struct vnode_path));
-    p->node = prev;
+    p->node = cur;
     p->next = list;
-
     list = p;
-    cur = prev;
-    prev = cur->parent;
+
+    cur = cur->parent;
   }
 
-  /* root + terminating null byte */
-  size_t rsize = size - 2;
+  /* terminating null byte */
+  size_t rsize = size - 1;
 
   for (struct vnode_path *p = list; p != NULL; p = p->next) {
     if (rsize == 0) {
@@ -443,9 +444,10 @@ SYSCALL_DEFINE2(getcwd, char *, buf, size_t, size) {
       break;
     }
 
-    size_t sl = strlen(p->node->name);
+    size_t sl = strlen(p->node->name) + 1;
     size_t ml = rsize > sl ? sl : rsize;
-    memcpy(buf, p->node->name, ml);
+    *buf = '/';
+    memcpy(buf + 1, p->node->name, ml - 1);
     buf += ml;
     rsize -= ml;
   }

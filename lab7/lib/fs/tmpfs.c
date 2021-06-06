@@ -20,6 +20,7 @@ static int tmpfs_rmdir(struct vnode* dir_node, const char *component_name);
 
 static ssize_t tmpfs_read(struct file *file, void *buf, size_t len);
 static ssize_t tmpfs_write(struct file *file, const void *buf, size_t len);
+static int tmpfs_fsync(struct file *file);
 
 struct filesystem tmpfs = {
   .name = "tmpfs",
@@ -36,7 +37,8 @@ static struct vnode_operations tmpfs_v_ops = {
 
 static struct file_operations tmpfs_f_ops = {
   .read = &tmpfs_read,
-  .write = &tmpfs_write
+  .write = &tmpfs_write,
+  .fsync = &tmpfs_fsync
 };
 
 /* TODO: add enum for return value */
@@ -83,6 +85,10 @@ static ssize_t tmpfs_write(struct file *file, const void *buf, size_t len) {
     }
 
     return size;
+}
+
+static int tmpfs_fsync(struct file *file) {
+    return 0;
 }
 
 static int tmpfs_lookup(struct vnode* dir_node, struct vnode **target, const char *component_name) {

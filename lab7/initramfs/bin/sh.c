@@ -8,16 +8,24 @@
         return;                                                \
     }                                                          \
 
-void test1(void) {
+void test(void) {
     char buf[100];
-    int a = open("/././hello", O_CREAT);
-    int b = open("/../.././world", O_CREAT);
+    char path[20];
+    getcwd(path, sizeof(path));
+    chdir("/sdcard");
+
+    int a = open("/sdcard/hello.txt", O_CREAT);
+    int b = open("world.txt", O_CREAT);
     write(a, "Hello ", 6);
     write(b, "World!", 6);
     close(a);
     close(b);
-    b = open("/hello", 0);
-    a = open("/world", 0);
+    b = open("./world.txt", 0);
+    write(b, "New World!", 10);
+    close(b);
+
+    b = open("./hello.txt", 0);
+    a = open("/sdcard/world.txt", 0);
     int sz;
     sz = read(b, buf, 100);
     sz += read(a, buf + sz, 100);
@@ -25,30 +33,43 @@ void test1(void) {
     printf("size: %d, s: %s\r\n", sz, buf);
     close(a);
     close(b);
+
+    chdir(path);
 }
 
+char big_txt[1234];
 void test2() {
-  char buf[8];
-  mkdir("mnt");
-  int fd = open("/mnt/a.txt", O_CREAT);
-  write(fd, "Hi", 2);
-  close(fd);
-  chdir("mnt");
-  fd = open("./a.txt", 0);
-  assert(fd >= 0);
-  read(fd, buf, 2);
-  assert(strncmp(buf, "Hi", 2) == 0);
+    memset(big_txt, 'A', sizeof(big_txt));
+    int a = open("/sdcard/big.txt", O_CREAT);
+    write(a, big_txt, 1234);
+    close(a);
+}
 
-  chdir("..");
-  mount("tmpfs", "mnt", "tmpfs");
-  fd = open("mnt/a.txt", 0);
-  assert(fd < 0);
+void cat(const char *name) {
+    char buf[0x50];
+    int fd = open(name, 0);
+    assert(fd >= 0);
 
-  umount("/mnt");
-  fd = open("/mnt/a.txt", 0);
-  assert(fd >= 0);
-  read(fd, buf, 2);
-  assert(strncmp(buf, "Hi", 2) == 0);
+    read(fd, buf, 0x50);
+    close(fd);
+
+    puts(buf);
+}
+
+void edit(const char *name, const char *text) {
+    int fd = open(name, 0);
+    assert(fd >= 0);
+
+    write(fd, text, strlen(text));
+    close(fd);
+}
+
+void save(const char *name, const char *text) {
+    int fd = open(name, O_CREAT);
+    assert(fd >= 0);
+
+    write(fd, text, strlen(text));
+    close(fd);
 }
 
 int split(char *buf, char *outbuf[], int n) {
@@ -143,8 +164,23 @@ int main() {
                 umount(args[1]);
             }
         }
-        else if (!strcmp(buf, "test1")) {
-            test1();
+        else if (!strncmp(buf, "cat", 3)) {
+            if (split(buf, args, 2) == 2) {
+                cat(args[1]);
+            }
+        }
+        else if (!strncmp(buf, "save", 3)) {
+            if (split(buf, args, 3) == 3) {
+                save(args[1], args[2]);
+            }
+        }
+        else if (!strncmp(buf, "edit", 3)) {
+            if (split(buf, args, 3) == 3) {
+                edit(args[1], args[2]);
+            }
+        }
+        else if (!strcmp(buf, "test")) {
+            test();
         }
         else if (!strcmp(buf, "test2")) {
             test2();

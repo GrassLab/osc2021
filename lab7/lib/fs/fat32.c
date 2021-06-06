@@ -13,7 +13,7 @@
 static int mount_sdcard(struct mount **mountpoint);
 
 static int fat32_lookup(struct vnode* dir_node, struct vnode **target, const char *component_name);
-// static int fat32_create(struct vnode* dir_node, const char *component_name);
+static int fat32_create(struct vnode* dir_node, const char *component_name);
 // static int fat32_unlink(struct vnode* dir_node, const char *component_name);
 // static int fat32_mkdir(struct vnode* dir_node, const char *component_name);
 // static int fat32_rmdir(struct vnode* dir_node, const char *component_name);
@@ -49,7 +49,7 @@ struct fat32_cache {
 
 static struct vnode_operations fat32_v_ops = {
    .lookup = &fat32_lookup,
-//   .create = &fat32_create,
+   .create = &fat32_create,
 //   .unlink = &fat32_unlink,
 //   .mkdir = &fat32_mkdir,
 //   .rmdir = &fat32_rmdir
@@ -67,7 +67,7 @@ static struct FAT32_Bootsector bootsector;
 static int find_free_block(struct fat32_cache *cache, int start) {
     int mx = cache->FAT_size / sizeof(int);
     for (int i = start; i < mx; i++) {
-        if (cache->FAT[i] == 0)
+        if (cache->FAT[i] == FREE_CLUSTER)
             return i;
     }
 
@@ -95,7 +95,7 @@ static int fat32_fsync(struct file *file) {
 
             /* metadata write back */
             void *metadata_block = (void *)((uintptr_t)entry & ~(size_t)(SECTOR_SIZE - 1));
-            writeblock(cache->root_index + cache->metadata_cluster_index, metadata_block);
+            writeblock(cache->root_index + cache->metadata_cluster_index - 2, metadata_block);
 
             /* file write back */
             int idx = cache->data_cluster_index;
@@ -103,7 +103,7 @@ static int fat32_fsync(struct file *file) {
             int next = 0;
 
             for (int i = 0; remained_size > 0; i++) {
-                writeblock(cache->root_index + idx, (char *)cache->data + i * SECTOR_SIZE);
+                writeblock(cache->root_index + idx - 2, (char *)cache->data + i * SECTOR_SIZE);
                 remained_size -= SECTOR_SIZE;
 
                 if (end_of_chain(cache->FAT[idx]) && remained_size > 0) {
@@ -123,8 +123,104 @@ static int fat32_fsync(struct file *file) {
             for (int i = 0; i < sectors; i++) {
                 writeblock(cache->FAT_index + i, (char *)cache->FAT + i * SECTOR_SIZE);
             }
+        } else {
+            /* file write back */
+            int idx = cache->data_cluster_index;
+
+            for (int i = 0; !end_of_chain(idx); i++) {
+                writeblock(cache->root_index + idx - 2, (char *)cache->data + i * SECTOR_SIZE);
+                idx = cache->FAT[idx];
+            }
         }
     }
+
+    return 0;
+}
+
+static inline int block_to_sector_idx(int block_idx) {
+    int size = block_idx * sizeof(int);
+    return (size / SECTOR_SIZE) - 1 + !!(size % SECTOR_SIZE);
+}
+
+static int fat32_create(struct vnode* dir_node, const char *component_name) {
+    struct vnode *v;
+    fat32_lookup(dir_node, &v, component_name);
+
+    if (v) {
+        return -ENOENT;
+    }
+
+    struct fat32_cache *dir_cache = dir_node->internal;
+    struct FAT32_ShortEntry *subdir = dir_cache->data;
+    struct FAT32_ShortEntry *targetdir = NULL;
+
+    for (int i = 0; i < SECTOR_SIZE / sizeof(struct FAT32_ShortEntry); i++) {
+        unsigned char flag = subdir[i].name[0];
+        if (flag == 0xE5 || flag == 0) {
+            targetdir = &subdir[i];
+            int block_idx = find_free_block(dir_cache, 0);
+            if (!block_idx) {
+                return -ENOSPC;
+            }
+            targetdir->start = block_idx;
+            dir_cache->FAT[block_idx] = END_OF_CHAIN;
+
+            memset(targetdir->name, ' ', 11);
+            const char *p = component_name;
+            int j;
+            for (j = 0; j < 8; j++) {
+                if (!p[j] || p[j] == '.') {
+                    break;
+                }
+                targetdir->name[j] = p[j] & 0xdf;
+            }
+            if (p[j]) {
+                j++;
+                for (int k = 0; k < 3 && p[j]; k++,j++) {
+                    targetdir->ext[k] = p[j] & 0xdf;
+                }
+            }
+
+            targetdir->size = 0;
+            targetdir->attr = ATTR_ARCHIVE;
+
+            /* update FAT table */
+            int offset = block_to_sector_idx(block_idx);
+            writeblock(dir_cache->FAT_index + offset, (char *)dir_cache->FAT + offset * SECTOR_SIZE);
+
+            /* update subdir data */
+            writeblock(dir_cache->root_index + dir_cache->data_cluster_index - 2, subdir);
+
+            break;
+        }
+    }
+
+    if (!targetdir) {
+        return -ENOSPC;
+    }
+
+    struct fat32_cache *cache = kcalloc(sizeof(struct fat32_cache));
+    cache->cached = 1;
+    cache->dirty = 0;
+    cache->metadata = targetdir;
+    cache->metadata_cluster_index = dir_cache->data_cluster_index; /* since we only permit storing metadata in one sector */
+    cache->data_cluster_index = targetdir->start;
+    cache->FAT = dir_cache->FAT;
+    cache->FAT_size = dir_cache->FAT_size;
+    cache->FAT_index = dir_cache->FAT_index;
+    cache->root_index = dir_cache->root_index;
+
+    struct vnode *node = kmalloc(sizeof(struct vnode));
+    node->mnt = dir_node->mnt;
+    node->name = strdup(component_name);
+    node->parent = dir_node;
+    node->subnodes = LIST_HEAD_INIT(node->subnodes);
+    node->f_mode = S_IFREG;
+    node->v_ops = &fat32_v_ops;
+    node->f_ops = &fat32_f_ops;
+    node->size = 0;
+    node->internal = cache;
+    insert_head(&dir_node->subnodes, &node->nodes);
 
     return 0;
 }
@@ -132,13 +228,14 @@ static int fat32_fsync(struct file *file) {
 static ssize_t fat32_read(struct file *file, void *buf, size_t len) {
     struct fat32_cache *cache = file->vnode->internal;
     ssize_t size = len;
-    ssize_t mx = file->vnode->size - file->f_pos;
-    if (len > mx) {
-        size = mx;
-    }
 
     if (size < 0) {
-        return -1;
+        return -EOVERFLOW;
+    }
+
+    ssize_t mx = file->vnode->size - file->f_pos;
+    if (size > mx) {
+        size = mx;
     }
 
     memcpy(buf, (char *)cache->data + file->f_pos, size);
@@ -152,7 +249,7 @@ static ssize_t fat32_write(struct file *file, const void *buf, size_t len) {
     ssize_t size = len;
 
     if (size < 0) {
-        return -1;
+        return -EOVERFLOW;
     }
 
     /* TODO: since kmalloc can allocate more memory space than user requested,
@@ -186,8 +283,8 @@ static void build_file_cache(struct vnode *node) {
     unsigned remain_size = node->size;
     char *cpyptr = cache->data;
 
-    while (index != -1) {
-        readblock(cache->root_index + index, tmpbuf);
+    while (!end_of_chain(index)) {
+        readblock(cache->root_index + index - 2, tmpbuf);
         unsigned int copy_size = remain_size > SECTOR_SIZE ? SECTOR_SIZE : remain_size;
         memcpy(cpyptr, tmpbuf, copy_size);
 
@@ -209,6 +306,11 @@ static void build_dir_cache(struct vnode *dir_node) {
             continue;
         }
 
+        /* TODO: handle LFN */
+        if (entry[i].attr & ATTR_LONG_NAME == ATTR_LONG_NAME) {
+            continue;
+        }
+
         char *name = kmalloc(0x10);
         int cnt = 0;
         for (int j = 0; j < 8; j++) {
@@ -227,26 +329,23 @@ static void build_dir_cache(struct vnode *dir_node) {
             }
         }
 
+        name[cnt] = '\0';
+
         /* won't cache next layer */
         struct fat32_cache *cache = kcalloc(sizeof(struct fat32_cache));
+        cache->metadata = &entry[i];
+        cache->metadata_cluster_index = parent_cache->data_cluster_index; /* since we only permit storing metadata in one sector */
+        cache->data_cluster_index = entry[i].start;
+        cache->FAT = parent_cache->FAT;
+        cache->FAT_size = parent_cache->FAT_size;
+        cache->FAT_index = parent_cache->FAT_index;
+        cache->root_index = parent_cache->root_index;
         cache->cached = 0;
 
-        if (entry[i].attr & ATTR_ARCHIVE) {
-            cache->metadata = &entry[i];
-            cache->metadata_cluster_index = 0; /* ??? */
-            cache->data_cluster_index = entry[i].start;
-            cache->FAT = parent_cache->FAT;
-            cache->FAT_size = parent_cache->FAT_size;
-            cache->root_index = parent_cache->root_index;
-        } else {
-            cache->metadata = &entry[i];
-            cache->metadata_cluster_index = 0; /* ??? */
+        /* load directory data */
+        if (entry[i].attr & ATTR_DIRECTORY) {
             cache->data = kmalloc(SECTOR_SIZE);
-            cache->data_cluster_index = entry[i].start;
-            cache->FAT = parent_cache->FAT;
-            cache->FAT_size = parent_cache->FAT_size;
-            cache->root_index = parent_cache->root_index;
-            readblock(cache->root_index + cache->data_cluster_index, cache->data);
+            readblock(cache->root_index + cache->data_cluster_index - 2, cache->data);
         }
 
         struct vnode *node = kmalloc(sizeof(struct vnode));
@@ -281,7 +380,11 @@ static int fat32_lookup(struct vnode* dir_node, struct vnode **target, const cha
         if (!strcasecmp(v->name, component_name)) {
             struct fat32_cache *cache = v->internal;
             if (!cache->cached) {
-                build_file_cache(v);
+                if (S_ISDIR(v->f_mode)) {
+                    build_dir_cache(v);
+                } else {
+                    build_file_cache(v);
+                }
             }
             *target = v;
         }
@@ -300,15 +403,15 @@ static void setup_root_cache(struct fat32_cache *cache) {
     cache->FAT_size = bootsector.SectorsPerFat32 * SECTOR_SIZE;
     cache->FAT_index = FAT_idx;
 
-    void *FAT = kmalloc(cache->FAT_size);
+    cache->FAT = kmalloc(cache->FAT_size);
 
     for (int i = 0; i < bootsector.SectorsPerFat32; i++) {
-        readblock(FAT_idx + i, (char *)FAT + i * SECTOR_SIZE);
+        readblock(FAT_idx + i, (char *)cache->FAT + i * SECTOR_SIZE);
     }
 
     unsigned rootdir_idx = FAT_idx + bootsector.NumberOfFatTables * bootsector.SectorsPerFat32;
     cache->root_index = rootdir_idx;
-    cache->data_cluster_index = 0;
+    cache->data_cluster_index = 2;
     cache->data = kmalloc(SECTOR_SIZE);
     readblock(rootdir_idx, cache->data);
 
