@@ -96,6 +96,7 @@ void lab7() {
     if(vfs_write(a, "add hello", 10) == 0) {
         uart_puts("write Hello error!\n");
     }
+    
     int sz = 0;
     char buf[100];
     sz = vfs_read(a, buf, 20);

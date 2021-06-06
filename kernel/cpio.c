@@ -4,8 +4,9 @@
 #include "allocator.h"
 #include "xcpt_func.h"
 #include "cpio.h"
+#include "base.h"
 
-volatile unsigned char *cpio_address_base = (unsigned char *) 0x20000000;
+volatile unsigned char *cpio_address_base = (unsigned char *) CPIO_BASE;
 // on qemu
 // volatile unsigned char *cpio_address_base = (unsigned char *) 0x08000000;
 

@@ -1,7 +1,6 @@
 #ifndef ALLOCATOR_H
 #define ALLOCATOR_H
 
-#define BASE_MEM 0x01000000
 /* max allocation size is 8 GB */
 #define MAX_ALLOC_LOG2 20
 #define MAX_ALLOC_SIZE (1 << MAX_ALLOC_LOG2)

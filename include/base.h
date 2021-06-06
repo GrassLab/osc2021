@@ -1,0 +1,9 @@
+#ifndef BASE_H
+#define BASE_H
+
+#define KERNEL_VA_BASE 0xffff000000000000
+#define MMIO_BASE (KERNEL_VA_BASE + 0x3F000000)
+#define CPIO_BASE (KERNEL_VA_BASE + 0x08000000) 
+#define BASE_MEM (KERNEL_VA_BASE + 0x01000000)
+
+#endif
