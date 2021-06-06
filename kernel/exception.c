@@ -70,6 +70,22 @@ void handle_exception(struct Trap_Frame * tf)
         case 6: // fork
             do_fork(tf);
         return;
+        case 7: // open
+            ret = do_open(tf->regs[0], tf->regs[1]);
+            tf->regs[0] = ret;
+        return;
+        case 8: // close
+            ret = do_close(tf->regs[0]);
+            tf->regs[0] = ret;
+        return;
+        case 9: // write
+            ret = do_write(tf->regs[0], tf->regs[1], tf->regs[2]);
+            tf->regs[0] = ret;
+        return;
+        case 10:// read
+            ret = do_read(tf->regs[0], tf->regs[1], tf->regs[2]);
+            tf->regs[0] = ret;
+        return;
         default:
         break;
     }

@@ -15,8 +15,6 @@ void ShellStart()
 	CommandInit();
 
     uart_puts("# ");
-	// thread test by default
-	//CommandThreadTest(1);
 
     while(1)
     {
@@ -93,6 +91,7 @@ void CommandController(enum SPECIAL_CHARACTER input_parse, char c, char buffer[]
 		else if (!strcmp(command, "threadtest")) CommandThreadTest(atoi(arg));
 	    else if (!strcmp(command, "cat"       )) CommandCpiocat(arg);
 		else if (!strcmp(command, "exe"       )) CommandCpioexe(arg);
+		else if (!strcmp(command, "vfstest"   )) CommandVfsTest(atoi(arg));
 	    else                                     CommandNotFound(buffer);
 	}
 

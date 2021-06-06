@@ -24,6 +24,16 @@ void strset (char * s1, int c, int size )
         s1[i] = c;
 }
 
+void strcpy(char * src, char * dst)
+{
+    for (int i = 0; i < strlen(src); ++i)
+    {
+        dst[i] = src[i];
+    }
+
+    dst[strlen(src)] = '\0';
+}
+
 int strlen ( char * s )
 {
     int i = 0;
@@ -146,4 +156,24 @@ void reverse ( char * s )
         s[strlen(s) - i - 1] = s[i];
         s[i] = temp;
     }
+}
+
+void split(char * s, char * res, char digit)
+{
+    int i = 0, j = 0, k = 0;
+    for (i = 0;i < strlen(s); ++i)
+    {
+        if(s[i] == digit)
+        {
+            break;
+        }
+    }
+
+    for (j = i + 1, k = 0; j < strlen(s); ++j, ++k)
+    {
+        res[k] = s[j];
+    }
+
+    res[k] = '\0';
+    s[i] = '\0';
 }

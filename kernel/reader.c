@@ -2,6 +2,8 @@
 #include "process.h"
 #include "allocator.h"
 #include "thread.h"
+#include "vfs.h"
+#include "tmpfs.h"
 #include "../lib/uart.h"
 #include "../lib/string.h"
 

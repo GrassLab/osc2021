@@ -9,4 +9,6 @@
 #define false 0
 #define true 1
 
+#define O_CRET 2
+
 #endif
