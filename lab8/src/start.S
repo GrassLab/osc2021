@@ -41,7 +41,7 @@ el1_start:
     mov     sp, x1
     
     // load exception_table to VBAR_EL1
-    adr     x1, vector_table
+    ldr     x1, =vector_table
     msr     vbar_el1, x1
     
     

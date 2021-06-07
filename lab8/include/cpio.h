@@ -25,7 +25,7 @@ typedef struct {
 inline unsigned long align4(unsigned long n);
 void cpio_list();
 void cpio_show_file(char *file_name);
-void exec_app(char *file_name);
+//void exec_app(char *file_name);
 
 int cpio_get_argc();
 void cpio_get_argv(char **argv);

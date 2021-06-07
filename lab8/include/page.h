@@ -30,6 +30,7 @@
 # define PME_USER_ATTR   PD_TABLE
 # define PXE_USER_ATTR   PD_TABLE
 # define PTE_USER_ATTR   PTE_NORMAL_ATTR | PD_USER
+//# define PTE_USER_ATTR   PTE_NORMAL_ATTR
 
 # ifndef __ASM_S__
 
@@ -37,6 +38,7 @@
 # include "list.h"
 
 # define PG_R_CREAT     1
+
 enum page_act{
   VtoP = 0,
   VtoP_CREAT = 1,
@@ -56,6 +58,11 @@ struct pg_t{
 };
 
 void page_test();
+
+int64_t create_user_page(uint64_t v_addr, uint64_t ttbr0);
+int64_t rmall_user_page(uint64_t ttbr0);
+uint64_t get_kernel_ttbr0();
+void user_pt_show(void* ttbr);
 
 extern "C" void kernel_page_setup();
 # endif

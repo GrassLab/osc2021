@@ -34,11 +34,11 @@ $(DEBUG_DIR)/%.o: $(SRC_DIR)/%.c $(DEBUG_DIR)
 	$(CC) $(CFLAGS) -D __QEMU__ -c $< -o $@
 
 kernel8_qemu.img: $(OBJS_Q) $(OBJS_ASM_Q)
-	$(LD) -nostdlib -nostartfiles $(OBJS_Q) $(OBJS_ASM_Q) -T link.ld -o kernel8_qemu.elf
+	$(LD) -nostdlib -nostartfiles $(OBJS_Q) $(OBJS_ASM_Q) -M -T link.ld -o kernel8_qemu.elf
 	$(OBJCPY) -O binary kernel8_qemu.elf kernel8_qemu.img
 
 clean:
-	rm  kernel8.elf kernel8_qemu.elf $(BUILD_DIR)/*.o *.cpio $(DEBUG_DIR)/*.o
+	rm -f kernel8.elf kernel8_qemu.elf $(BUILD_DIR)/*.o *.cpio $(DEBUG_DIR)/*.o
 
 run: kernel8_qemu.img initramfs.cpio
 	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -serial null -serial stdio -initrd initramfs.cpio
@@ -46,11 +46,11 @@ run: kernel8_qemu.img initramfs.cpio
 sd: kernel8_qemu.img initramfs.cpio
 	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -serial null -serial stdio -initrd initramfs.cpio -drive if=sd,file=../../img/sdb_part.img,format=raw
 
-asm: kernel8_qemu.img
-	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -display none -d in_asm -serial null -serial pty
+asm: kernel8_qemu.img initramfs.cpio
+	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -display none -d in_asm -serial null -serial pty -initrd initramfs.cpio -drive if=sd,file=../../img/sdb_part.img,format=raw
 
-pty: kernel8.img initramfs.cpio
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial pty -initrd initramfs.cpio
+pty: kernel8_qemu.img initramfs.cpio
+	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -serial null -serial pty -initrd initramfs.cpio -drive if=sd,file=../../img/sdb_part.img,format=raw
 
 initramfs.cpio:
 	cd rootfs; \

@@ -43,6 +43,11 @@ void kernel_page_setup(){
   }
 }
 
+uint64_t get_kernel_ttbr0(){
+  uint64_t kernel_page_start = (uint64_t) (&__kernel_page_start) & (0xffffffffffff);
+  return kernel_page_start;
+}
+
 static inline int64_t page_action_pte(uint64_t v_addr, struct pg_t *pte, list_head *head, int flag){
   uint16_t pa_offset = v_addr & (PAGE_SIZE-1);
   uint16_t pte_offset = (v_addr >> PAGE_SIZE_BITS) & (PD_LEN-1);
@@ -142,6 +147,14 @@ static int64_t page_action_rec(uint64_t v_addr, struct pg_t *pxe, list_head *hea
     default:
       return -1;
   }
+}
+
+int64_t create_user_page(uint64_t v_addr, uint64_t ttbr0){
+  return page_action_rec(v_addr, (struct pg_t*)ttbr0, 0, VtoP_CREAT);
+}
+
+int64_t rmall_user_page(uint64_t ttbr0){
+  return page_action_rec(0x0, (struct pg_t*) ttbr0, 0, RM_ALL);
 }
 
 void user_pt_show(void* ttbr){

@@ -45,6 +45,15 @@ void general_exception_handler(struct trapframe *arg, unsigned long type, unsign
   schedule();
 }
 
+void page_fault_handler() {
+    register uint64_t fault_addr;
+    asm volatile("mrs %0, FAR_EL1": "=r"(fault_addr));
+    uart_puts("[Error] Page fault, Address @ ");
+    char ct[20];
+    int_to_hex(fault_addr, ct);
+    uart_puts(ct);
+    uart_puts("\n");
+}
 
 void sync_handler(struct trapframe *arg, unsigned long type, unsigned long esr, unsigned long elr){
   int ec = (esr >> 26) & 0b111111;
@@ -67,24 +76,24 @@ void sync_handler(struct trapframe *arg, unsigned long type, unsigned long esr, 
   uart_puts((char *) "\n[EXCEPTION] ESR = ");
   int_to_hex(esr, ct);
   uart_puts(ct);
-  uart_puts((char *) "\t");
-  uart_puts((char *) "ELR = ");
+  uart_puts((char *) "\tELR = ");
   int_to_hex(elr, ct);
   uart_puts(ct);
-  uart_puts((char *) "\n");
-  uart_puts((char *) "[SYNC] EC = ");
+  uart_puts((char *) ", EC = ");
   int_to_hex(ec, ct);
   uart_puts(ct);
   uart_puts((char *) ", ISS = ");
   int_to_hex(iss, ct);
   uart_puts(ct);
   uart_puts((char *) "\n");
-  while(1){
-    continue;
+  if (ec == ESR_EC_PAGE_F1 || ec == ESR_EC_PAGE_F2 || ec == ESR_EC_PAGE_F3 || ec == ESR_EC_PAGE_F4){
+    page_fault_handler();
   }
-  
+  else{
+    uart_puts((char *) "[Error] Unknown Sync Exception.\n");
+  }
+  task_exit();
 }
-
 
 void svc_handler(struct trapframe *arg, unsigned long type, int iss){
   char ct[20];

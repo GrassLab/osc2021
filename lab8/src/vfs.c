@@ -19,11 +19,9 @@ void vfs_init(){
   struct dentry *new_d = vfs_create_dentry(0, (char *)"/", DIR);
   log_puts((char *) "[INFO] Mount tmpfs on / \n", INFO);
   struct filesystem *tmpfs= tmpfs_get_fs();
-  //register_filesystem(&rootmount, tmpfs, 0, (char *) "/");
   register_filesystem(&rootmount, tmpfs, new_d->vnode);
+  
   log_puts((char *) "[INFO] tmpfs mount DONE\n", INFO);
-  //struct filesystem *cpiofs= cpiofs_get_fs();
-  //register_filesystem(&cpiomount, cpiofs, rootmount.root->dentry, (char *) "cpio");
   log_puts((char *) "[INFO] VFS Init DONE\n", INFO);
 }
 

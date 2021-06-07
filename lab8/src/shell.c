@@ -123,11 +123,13 @@ void invoke_cmd(char *cmd){
     if (str_cmp(argv[1], (char *) "status")) buddy_dma_ll_show();
     else uart_puts((char *) "Use \"dma status\"");
   }
+  
   else if (str_cmp(argv[0], (char *) "exec") == 1){
-    exec_app(argv[1]);
+    user_task_create(argv[1], 3);
+    yield();
   }
   else if (str_cmp(argv[0], (char *) "svc") == 1){
-    asm volatile("svc #10");
+    asm volatile("svc #0");
   }
   else if (str_cmp(argv[0], (char *) "setTimeout") == 1){
     if (argc == 3){
@@ -155,6 +157,7 @@ void invoke_cmd(char *cmd){
       asm volatile("svc #4");
     }
   }
+  /*
   else if (str_cmp(argv[0], (char *) "demo") == 1){
     if (str_cmp(argv[1], (char *) "task1")){
       privilege_task_create(task_demo_1, 3);
@@ -197,6 +200,7 @@ void invoke_cmd(char *cmd){
       yield();
     }
   }
+  */
   else if (str_cmp(argv[0], (char *) "logger") == 1){
     if (str_cmp(argv[1], (char *) "status")){
       switch(get_log_level()){
@@ -292,6 +296,8 @@ void invoke_cmd(char *cmd){
 }
 
 void shell(){
+  do_mkdir("cpio", get_root_vnode());
+  do_mount("cpio", "cpiofs");
   char cmd[1000];
   char pwd[128];
   cmd[0] = '\0';

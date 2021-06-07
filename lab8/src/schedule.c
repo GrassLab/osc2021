@@ -4,11 +4,16 @@
 # include "uart.h"
 # include "my_math.h"
 # include "my_string.h"
+# include "page.h"
 # include "start.h"
 # include "vfs.h"
 # include "mem.h"
 # include "log.h"
+# include "mem_addr.h"
 # include "linklist.c"
+# include "fat32fs.h"
+# include "flags.h"
+
 
 struct task task_pool[TASK_MAX_NUM];
 struct task *task_queue_head[PRIORITY_MAX+1];
@@ -46,10 +51,31 @@ void task_exit(){
   schedule();
 }
 
+int load_app(int fd, uint64_t ttbr0){
+  uint64_t v_addr = USER_PRO_LR_START;
+  int readbytes;
+  do{
+    uint64_t read_addr = create_user_page(v_addr, ttbr0);
+    char *readbuf = (char*) (read_addr | KVA);
+    readbytes = do_read(fd, readbuf, SECTOR_SIZE);
+    char ct[20];
+    int_to_str(readbytes, ct);
+    log_puts("[INFO] Load ", FINE);
+    log_puts(ct, FINE);
+    log_puts(" bytes to ", FINE);
+    int_to_hex( ((uint64_t)readbuf) & (~KVA), ct);
+    log_puts(ct, FINE);
+    log_puts("\n", FINE);
+    v_addr += SECTOR_SIZE;
+  } while(readbytes == SECTOR_SIZE);
+  log_puts("\n", FINE);
+  create_user_page(USER_PRO_SP_START, ttbr0);
+  return 0;
+}
+
 void user_task_start(){
-  struct task *current = get_current();
-  asm volatile("msr sp_el0, %0" : : "r"(&ustack_pool[current->pid][STACK_TOP_IDX]));
-  asm volatile("msr elr_el1, %0": : "r"(current->invoke_func));
+  asm volatile("msr sp_el0, %0" : : "r"(USER_PRO_SP_START));
+  asm volatile("msr elr_el1, %0": : "r"(USER_PRO_LR_START));
   asm volatile("msr spsr_el1, %0" : : "r"(SPSR_EL1_VALUE));
   asm volatile("eret");
 }
@@ -61,7 +87,7 @@ int task_create(void (*func)(), int priority, enum task_el mode){
   new_node->priority = priority;
   new_node->counter = TASK_EPOCH;
   new_node->resched_flag = 0;
-  new_node->invoke_func = func;
+  //new_node->invoke_func = func;
   new_node->mode = mode;
   new_node->pwd_vnode = get_root_vnode();
   for (int i=0; i<FD_MAX_NUM; i++){
@@ -69,10 +95,12 @@ int task_create(void (*func)(), int priority, enum task_el mode){
   }
   if (mode == KERNEL){
     new_node->lr = (unsigned long long)func;
+    new_node->ttbr0 = get_kernel_ttbr0();
   }
   else{
     void (*func_lr)() = user_task_start;
     new_node->lr = (unsigned long long)func_lr;
+    new_node->ttbr0 = (unsigned long long) malloc(PAGE_SIZE, 1);
   }
   new_node->fp = (unsigned long long)(&kstack_pool[pid][STACK_TOP_IDX]);
   new_node->sp = (unsigned long long)(&kstack_pool[pid][STACK_TOP_IDX]);
@@ -84,8 +112,18 @@ int privilege_task_create(void (*func)(), int priority){
   return task_create(func, priority, KERNEL);
 }
 
-int user_task_create(void (*func)(), int priority){
-  return task_create(func, priority, USER);
+int user_task_create(char *pathname, int priority){
+  int fd = do_open(pathname, O_RD);
+  if (fd < 0) {
+    uart_puts((char *) "Path <");
+    uart_puts(pathname);
+    uart_puts((char *) "> not found.\n");
+    return -1;
+  }
+  int pid = task_create(0, priority, USER);
+  load_app(fd, task_pool[pid].ttbr0);
+  //user_pt_show((void*) task_pool[pid].ttbr0);
+  return pid;
 }
 
 void zombie_reaper(){
@@ -105,6 +143,10 @@ void zombie_reaper(){
             if (n->fd[i]){
               do_close(i);
             }
+          }
+          if (n->ttbr0) {
+            rmall_user_page(n->ttbr0);
+            free((void*) n->ttbr0);
           }
           n = n->next;
           ll_rm_elm<struct task>(&task_queue_head[i], rm_task);
@@ -145,6 +187,7 @@ void schedule(){
     ll_push_back<struct task>(&task_queue_head[priority], current_task);
     next_task = task_queue_head[priority];
   }
+  update_pgd(next_task->ttbr0 & (~KVA));
   switch_to(current_task, next_task);
 }
 
@@ -217,9 +260,10 @@ void sys_fork(struct trapframe* trapframe){
   struct trapframe* child_trapframe = (struct trapframe*) child_task->sp;
   child_trapframe->sp_el0 = (unsigned long long)child_ustack - ustack_offset;
 
-  /*
+  
   child_trapframe->x[0] = 0;
   trapframe->x[0] = child_task->pid;
+  /*
   int_to_hex((unsigned long long) trapframe->sp_el0, ct);
   uart_puts(ct);
   uart_puts(", ");
@@ -233,7 +277,7 @@ void sys_fork(struct trapframe* trapframe){
   uart_puts(ct);
   uart_puts("\n");
   */
-  //IRQ_ENABLE();
+  IRQ_ENABLE();
 }
 
 void sys_exec(struct trapframe *arg){

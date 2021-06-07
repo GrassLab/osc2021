@@ -87,6 +87,7 @@ void cpio_show_file(char *file_name){
   return;
 }
 
+/*
 void exec_app(char *file_name){
   cpio_newc_header *blk = INITRAMFS_ADDR;
 
@@ -115,6 +116,7 @@ void exec_app(char *file_name){
   uart_puts(file_name);
   uart_puts((char *) "\" not found.\n");
 }
+*/
 
 int cpio_get_argc(){
   int i = 0;

@@ -1,6 +1,10 @@
 # include "typedef.h"
 
-# define ESR_EC_SVC 0b010101
+# define ESR_EC_SVC      0b010101
+# define ESR_EC_PAGE_F1  0b100000
+# define ESR_EC_PAGE_F2  0b100001
+# define ESR_EC_PAGE_F3  0b100100
+# define ESR_EC_PAGE_F4  0b100101
 
 # define SVC_ISS_NOPE 0
 # define SVC_ISS_GET_TIMER_VALUE 1

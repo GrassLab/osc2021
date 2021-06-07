@@ -179,7 +179,8 @@ int cpiofs_read(struct file* file, void* buf, size_t len){
     return -1;
   }
   for (size_t i = 0; i<len; i++){
-    if (file->f_pos < internal->size && internal->content[file->f_pos] != '\0'){
+    //if (file->f_pos < internal->size && internal->content[file->f_pos] != '\0'){
+    if (file->f_pos < internal->size){
       ((char*)buf)[i] = internal->content[file->f_pos];
       file->f_pos++;
       r++;
