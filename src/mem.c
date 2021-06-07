@@ -316,25 +316,25 @@ void *kmalloc(unsigned long size) {
   size = pad(size, MEM_PAD);
   void *chunk;
   disable_interrupt();
-  if (size > SLAB_SIZE * MEM_PAD) {
+  // if (size > SLAB_SIZE * MEM_PAD) {
     chunk = alloc_page(size);
-  } else {
-    chunk = alloc_slab(size);
-  }
+  // } else {
+  //   chunk = alloc_slab(size);
+  // }
   enable_interrupt();
   return chunk;
 }
 
 void kfree(void *ptr) {
   disable_interrupt();
-  int flag = get_page_flag(bs.page_stat[ptr_to_pn(ptr)]);
-  if (flag == BUDDY_USE) {
+  // int flag = get_page_flag(bs.page_stat[ptr_to_pn(ptr)]);
+  // if (flag == BUDDY_USE) {
     free_page(ptr);
-  } else if (flag == RESRVE_USE) {
-    free_reserve(ptr);
-  } else if (flag == SLAB_USE) {
-    free_slab(ptr);
-  }
+  // } else if (flag == RESRVE_USE) {
+  //   free_reserve(ptr);
+  // } else if (flag == SLAB_USE) {
+  //   free_slab(ptr);
+  // }
   enable_interrupt();
 }
 

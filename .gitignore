@@ -10,3 +10,4 @@ initramfs.cpio
 *.asmo
 *.o
 kernel.s
+test

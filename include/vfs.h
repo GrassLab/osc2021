@@ -5,13 +5,6 @@
 
 #include "util.h"
 
-// file system type
-typedef struct file_system_t {
-  cdl_list fs_list;
-  const char *name;
-  cdl_list sb_list;
-} file_system_t;
-
 // super block for a file system
 typedef struct super_block {
   cdl_list sb_list;      // sb list of fs
@@ -40,6 +33,16 @@ typedef struct dentry {
   void *d_data;
   unsigned long ref_cnt;
 } dentry;
+
+typedef struct file_system_t file_system_t;
+
+// file system type
+struct file_system_t {
+  cdl_list fs_list;
+  const char *name;
+  int (*mount)(file_system_t *, dentry *, const char *);
+  cdl_list sb_list;
+};
 
 typedef struct file {
   struct dentry *path;
@@ -103,17 +106,27 @@ typedef struct file_discriptor {
 #define METHOD_NOT_IMP -1
 #define INVALID_PATH -2
 #define INVALID_FD -3
+#define INVALID_FS -4
+#define INVALID_DEV -5
+#define TARGET_EXIST -6
+#define TARGET_NO_EXIST -7
 
 #define TYPE_DIR 1
 #define TYPE_FILE 2
 
 #define get_struct_head(stc, com, addr) \
-  ((stc *)((void *)addr + offsetof(stc, com)))
+  ((stc *)((void *)addr - offsetof(stc, com)))
 
 void init_vfs();
 
 int vfs_mount(const char *dev, const char *mp, const char *fs);
+int vfs_umount(const char *path);
 int vfs_chdir(const char *path);
 dentry *get_vfs_root();
+void register_fs(file_system_t *fs);
+
+#define O_CREATE 1 << 0
+
+#define barrier() asm volatile ("":::"memory")
 
 #endif

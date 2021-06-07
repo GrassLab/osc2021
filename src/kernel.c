@@ -3,7 +3,7 @@
 #include "gpio.h"
 #include "io.h"
 #include "mem.h"
-#include "ramfs.h"
+#include "tmpfs.h"
 #include "reset.h"
 #include "sched.h"
 #include "timer.h"
@@ -41,28 +41,6 @@ void shell() {
   }
 }
 
-void test_vfs() {
-  clone();
-  asm volatile("":::"memory");
-  // log_hex("ts", (unsigned long)(get_taskstruct()), LOG_PRINT);
-  log_hex("wd", (unsigned long)(get_taskstruct()->pwd), LOG_PRINT);
-  dentry *od;
-  if(vfs_opendent(&od, "") < 0) {
-    log("error vfs", LOG_ERROR);
-  }
-  dentry *gr = get_vfs_root();
-  log_hex("od", (unsigned long)od, LOG_PRINT);
-  log_hex("gr", (unsigned long)gr, LOG_PRINT);
-  vfs_closedent(od);
-  vfs_closedent(gr);
-
-  if(vfs_opendent(&od, "") < 0) {
-    log("error vfs2", LOG_ERROR);
-  }
-  log_hex("od2", (unsigned long)od, LOG_PRINT);
-  vfs_closedent(od);
-}
-
 void kernel() {
   // void *dtb_addr = *(void **)(0x20000);
 
@@ -89,8 +67,30 @@ void kernel() {
   tick_rate = 0.001;
   tick();
 
-  thread_create(&test_vfs);
-  thread_create(&test_vfs);
+  setup_tmpfs();
+  vfs_mount("tmpfs", "/", "tmpfs");
+  // vfs_create("fuck");
+  int fd = vfs_open("fuck", O_CREATE);
+  // log_hex("fd", fd, LOG_PRINT);
+  if(vfs_write(fd, "hello", 5) != 5) {
+    log("we", LOG_ERROR);
+  }
+  vfs_close(fd);
+  asm volatile ("":::"memory");
+  char b[6];
+  fd = vfs_open("fuck", O_CREATE);
+  log_hex("rc", ((file *)(get_taskstruct()->fd_list.bk))->path->ref_cnt, LOG_PRINT);
+  // log_hex("fd", fd, LOG_PRINT);
+  int a = vfs_read(fd, b, 5);
+  if(a != 5) {
+    log_hex("re", a, LOG_ERROR);
+  }
+  vfs_close(fd);
+  b[5] = 0;
+  if(strcmp(b, "hello") != 0){
+    log("fuck", LOG_ERROR);
+  }
+
   thread_create(&shell);
   idle();
 }
