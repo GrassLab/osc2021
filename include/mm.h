@@ -1,24 +1,38 @@
 #ifndef _MM_H
 #define _MM_H
-#include "list.h"
-#include "types.h"
 
+#include "base.h"
+
+#define VA_START                   0xFFFF000000000000       // Virtual Memory Start
+#define PHYS_MEMORY_SIZE 		   0x40000000               // 1G
+
+#define PAGE_MASK                  0xFFFFFFFFFFFFF000
 #define PAGE_SHIFT                 12
-#define PAGE_SIZE                  (1 << PAGE_SHIFT) // 4KB per page frame
+#define TABLE_SHIFT                9
+#define SECTION_SHIFT              (PAGE_SHIFT + TABLE_SHIFT)
 
+#define PAGE_SIZE                  (1 << PAGE_SHIFT)        // 4KB per page frame
+#define SECTION_SIZE               (1 << SECTION_SHIFT)	
 #define PAGE_FRMAME_NUM            4096
 
 #define MAX_ORDER                  9 
 #define MAX_ORDER_SIZE             (1 << MAX_ORDER)
 
-#define LOW_MEMORY                 0x200000
+#define LOW_MEMORY                 SECTION_SIZE             // 2MB
+#define HIGH_MEMORY                DEVICE_BASE
+
+#define PTRS_PER_TABLE			    (1 << TABLE_SHIFT)
+#define PGD_SHIFT			        PAGE_SHIFT + 3*TABLE_SHIFT
+#define PUD_SHIFT			        PAGE_SHIFT + 2*TABLE_SHIFT
+#define PMD_SHIFT			        PAGE_SHIFT + TABLE_SHIFT
+#define PG_DIR_SIZE                 (3 * PAGE_SIZE)         // Page dir size (PGD, PUD, PMD) 
 
 #define FIND_BUDDY_PFN(pfn, order) ((pfn) ^ (1<<(order)))
 #define FIND_LBUDDY_PFN(pfn, order)((pfn) & (~(1<<(order))))
 
 #define MAX_OBJ_ALLOCTOR_NUM        16
-#define MIN_ALLOCATAED_OBJ_SIZE     8 // At least 8 bytes to store adress(address of next free object )
-#define MAX_ALLOCATAED_OBJ_SIZE     2048 // At most 2048 bytes (half of a page frame)
+#define MIN_ALLOCATAED_OBJ_SIZE     8                       // At least 8 bytes to store adress(address of next free object )
+#define MAX_ALLOCATAED_OBJ_SIZE     2048                    // At most 2048 bytes (half of a page frame)
 
 #define MIN_KMALLOC_ORDER           3
 #define MAX_KMALLOC_ORDER           11
@@ -26,6 +40,11 @@
 #define PFN_MASK                    0x0000FFFFFFFFF000
 #define PHY_ADDR_TO_PFN(addr)       (((((unsigned long)(addr)) - LOW_MEMORY) & PFN_MASK) >> PAGE_SHIFT)
 
+
+#ifndef __ASSEMBLER__
+
+#include "list.h"
+#include "types.h"
 
 /**
  * "used" property of struct of page 
@@ -141,12 +160,11 @@ void kfree(void *addr) ;
 void mm_init();
 
 
-#ifndef __ASSEMBLER__
 
 void memcpy(unsigned long dst, unsigned long src, unsigned long n);
 void memzero(unsigned long src, unsigned long n);
 
-#endif
+#endif /* __ASSEMBLER__ */
 
 #endif /* _MM_H */
 
