@@ -150,3 +150,10 @@ void* page_allocate(size_t* par_addr, int idx) {
 void* get_physical_addr(void* addr, int i, int j, int k, int l) {
   return addr + PAGE_SIZE * ( l + NUM_OF_ENTRY_PER_TABLE_4KB * k + NUM_OF_ENTRY_PER_TABLE_4KB * NUM_OF_ENTRY_PER_TABLE_4KB * j +  NUM_OF_ENTRY_PER_TABLE_4KB * NUM_OF_ENTRY_PER_TABLE_4KB * NUM_OF_ENTRY_PER_TABLE_4KB * i); 
 }
+
+//when user process exit, free page table
+void page_free(size_t* ctx_pgd, size_t size) {
+  /**
+   * should free page table
+   */
+}

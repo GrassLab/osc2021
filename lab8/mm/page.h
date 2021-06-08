@@ -27,5 +27,5 @@ size_t page_get_num_of_table_entry(size_t *total_low_level_entry);
 extern size_t pd_encode_table(void* addr);
 extern size_t pd_encode_ram(void* addr);
 extern size_t pd_encode_ram_block(void* addr);
-
+void page_free(size_t* ctx_pgd, size_t size);
 #endif

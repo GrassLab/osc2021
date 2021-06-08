@@ -75,7 +75,7 @@ int main(void) {
       delay(1);
     }
   } else {
-    int* a = 0x0; // a non-mapped address.
+    int* a = 0x12; // a non-mapped address.
     printf("%d\n", *a); // trigger simple page fault.
     printf("Should not be printed\n");
   }

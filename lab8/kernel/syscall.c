@@ -26,7 +26,8 @@ void do_exit(int status) {
   //remove from run queue
   task_queue_remove(current_task, &run_queue);
   //should free user space memory
-  //varied_free(current_task->start);
+  //should free user space page table
+  
   //get next task
   next_task = task_queue_pop(&run_queue);
   
