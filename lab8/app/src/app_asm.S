@@ -1,6 +1,6 @@
 .section ".text"
-.global _start
-_start:
+.global main
+main:
     mov x0, 0
 1:
     add x0, x0, 1

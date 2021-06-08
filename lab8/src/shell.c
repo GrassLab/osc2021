@@ -296,7 +296,7 @@ void invoke_cmd(char *cmd){
 }
 
 void shell(){
-  do_mkdir("cpio", get_root_vnode());
+  do_mkdir((char*) "cpio", get_root_vnode());
   do_mount("cpio", "cpiofs");
   char cmd[1000];
   char pwd[128];

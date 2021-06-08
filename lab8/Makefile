@@ -6,6 +6,7 @@ OBJCPY = $(TOOLCHAIN_PREFIX)objcopy
 BUILD_DIR = build
 DEBUG_DIR = debug
 SRC_DIR = src
+APP_DIR = app
 
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
@@ -34,7 +35,7 @@ $(DEBUG_DIR)/%.o: $(SRC_DIR)/%.c $(DEBUG_DIR)
 	$(CC) $(CFLAGS) -D __QEMU__ -c $< -o $@
 
 kernel8_qemu.img: $(OBJS_Q) $(OBJS_ASM_Q)
-	$(LD) -nostdlib -nostartfiles $(OBJS_Q) $(OBJS_ASM_Q) -M -T link.ld -o kernel8_qemu.elf
+	$(LD) -nostdlib -nostartfiles $(OBJS_Q) $(OBJS_ASM_Q) -T link.ld -o kernel8_qemu.elf
 	$(OBJCPY) -O binary kernel8_qemu.elf kernel8_qemu.img
 
 clean:
@@ -53,6 +54,7 @@ pty: kernel8_qemu.img initramfs.cpio
 	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -serial null -serial pty -initrd initramfs.cpio -drive if=sd,file=../../img/sdb_part.img,format=raw
 
 initramfs.cpio:
+	$(MAKE) -C $(APP_DIR) all
 	cd rootfs; \
 	find . | cpio -o -H newc > ../initramfs.cpio
 

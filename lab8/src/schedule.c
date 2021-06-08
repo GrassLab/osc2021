@@ -80,7 +80,7 @@ void user_task_start(){
   asm volatile("eret");
 }
 
-int task_create(void (*func)(), int priority, enum task_el mode){
+int task_create(void (*func)(), int priority, enum task_el mode, int ifttbr0){
   struct task *new_node = ll_pop_front<struct task>(&task_unuse);
   int pid = new_node->pid;
   new_node->state = RUNNING;
@@ -93,15 +93,8 @@ int task_create(void (*func)(), int priority, enum task_el mode){
   for (int i=0; i<FD_MAX_NUM; i++){
     new_node->fd[i] = 0;
   }
-  if (mode == KERNEL){
-    new_node->lr = (unsigned long long)func;
-    new_node->ttbr0 = get_kernel_ttbr0();
-  }
-  else{
-    void (*func_lr)() = user_task_start;
-    new_node->lr = (unsigned long long)func_lr;
-    new_node->ttbr0 = (unsigned long long) malloc(PAGE_SIZE, 1);
-  }
+  new_node->lr = (unsigned long long)func;
+  new_node->ttbr0 = (ifttbr0) ? ((unsigned long long) malloc(PAGE_SIZE, 1)) : 0;
   new_node->fp = (unsigned long long)(&kstack_pool[pid][STACK_TOP_IDX]);
   new_node->sp = (unsigned long long)(&kstack_pool[pid][STACK_TOP_IDX]);
   ll_push_back<struct task>(&task_queue_head[priority], new_node);
@@ -109,7 +102,7 @@ int task_create(void (*func)(), int priority, enum task_el mode){
 }
 
 int privilege_task_create(void (*func)(), int priority){
-  return task_create(func, priority, KERNEL);
+  return task_create(func, priority, KERNEL, 0);
 }
 
 int user_task_create(char *pathname, int priority){
@@ -120,10 +113,14 @@ int user_task_create(char *pathname, int priority){
     uart_puts((char *) "> not found.\n");
     return -1;
   }
-  int pid = task_create(0, priority, USER);
+  int pid = task_create(user_task_start, priority, USER, 1);
   load_app(fd, task_pool[pid].ttbr0);
-  //user_pt_show((void*) task_pool[pid].ttbr0);
+  LOG(FINE) user_pt_show((void*) task_pool[pid].ttbr0);
   return pid;
+}
+
+int fork_task_create(int priority){
+  return task_create(return_from_fork, priority, USER, 1);
 }
 
 void zombie_reaper(){
@@ -136,7 +133,7 @@ void zombie_reaper(){
           int_to_str(n->pid, ct);
           log_puts((char * ) "\n[INFO] Reaper PID : ", INFO);
           log_puts(ct, INFO);
-          log_puts((char * ) "\n", INFO);
+          log_puts((char * ) "\n\n", INFO);
           struct task *rm_task = n;
           n->state = EXIT;
           for (int i=0; i<FD_MAX_NUM; i++){
@@ -219,73 +216,91 @@ void remove_fd(int fd){
 }
 
 void sys_fork(struct trapframe* trapframe){
-  //char ct[20];
   IRQ_DISABLE();
   struct task* parent_task = get_current();
 
-  int child_id = privilege_task_create(return_from_fork, parent_task->priority);
-  //int child_id = privilege_task_create(0, parent_task->priority);
+  int child_id = fork_task_create(parent_task->priority);
   struct task* child_task = &task_pool[child_id];
 
   char* child_kstack = &kstack_pool[child_task->pid][STACK_TOP_IDX];
   char* parent_kstack = &kstack_pool[parent_task->pid][STACK_TOP_IDX];
-  char* child_ustack = &ustack_pool[child_task->pid][STACK_TOP_IDX];
-  char* parent_ustack = &ustack_pool[parent_task->pid][STACK_TOP_IDX];
+  //char* child_ustack = &ustack_pool[child_task->pid][STACK_TOP_IDX];
+  //char* parent_ustack = &ustack_pool[parent_task->pid][STACK_TOP_IDX];
 
   unsigned long long kstack_offset = parent_kstack - (char*)trapframe;
-  unsigned long long ustack_offset = parent_ustack - (char*)trapframe->sp_el0;
-
+  //unsigned long long ustack_offset = parent_ustack - (char*)trapframe->sp_el0;
+  
+  
   for (unsigned long long i = 0; i < kstack_offset; i++) {
     *(child_kstack - i) = *(parent_kstack - i);
   }
+  /*
   for (unsigned long long i = 0; i < ustack_offset; i++) {
     *(child_ustack - i) = *(parent_ustack - i);
   }
+  */
 
-  // place child's kernel stack to right place
   child_task->sp = (unsigned long long)child_kstack - kstack_offset;
 
   child_task->pwd_vnode = parent_task->pwd_vnode;
-
-  /*
-  int_to_hex((unsigned long long) parent_ustack, ct);
-  uart_puts(ct);
-  uart_puts(", ");
-  int_to_hex((unsigned long long) child_ustack, ct);
-  uart_puts(ct);
-  uart_puts("\n");
-  */
-
+  child_task->mode = parent_task->mode;
+  
   // place child's user stack to right place
   struct trapframe* child_trapframe = (struct trapframe*) child_task->sp;
-  child_trapframe->sp_el0 = (unsigned long long)child_ustack - ustack_offset;
-
+  //child_trapframe->sp_el0 = (unsigned long long)child_ustack - ustack_offset;
+  child_trapframe->sp_el0 = trapframe->sp_el0;
   
+  if (parent_task->ttbr0){
+    list_head parent_ttbr_head;
+    list_head_init(&parent_ttbr_head);
+    getall_user_page((void*) (parent_task->ttbr0 | KVA), &parent_ttbr_head);
+    list_head *pos;
+    list_for_each(pos, &parent_ttbr_head){
+      struct pg_list *t = container_of(pos, struct pg_list, head);
+      int64_t child_pa = create_user_page(t->va, child_task->ttbr0);
+      memcpy((void*)(t->pa | KVA), (void*)(child_pa | KVA), PAGE_SIZE);
+    }
+    LOG(FINE){
+      user_pt_show((void*) parent_task->ttbr0);
+      user_pt_show((void*) child_task->ttbr0);
+    }
+  }
+
   child_trapframe->x[0] = 0;
   trapframe->x[0] = child_task->pid;
-  /*
-  int_to_hex((unsigned long long) trapframe->sp_el0, ct);
-  uart_puts(ct);
-  uart_puts(", ");
-  int_to_hex((unsigned long long) child_trapframe->sp_el0, ct);
-  uart_puts(ct);
-  uart_puts("\n");
-  int_to_hex((unsigned long long) parent_task->sp, ct);
-  uart_puts(ct);
-  uart_puts(", ");
-  int_to_hex((unsigned long long) child_task->sp, ct);
-  uart_puts(ct);
-  uart_puts("\n");
-  */
   IRQ_ENABLE();
 }
 
-void sys_exec(struct trapframe *arg){
-  void (*exec_func)() = (void(*)()) arg->x[0];
-  char **input_argv = (char **) arg->x[1];
-  int pid = get_pid();
-  char* ustack = &ustack_pool[pid][STACK_TOP_IDX];
+static void* exec_pa_to_va(void* pa, void* pa_base, void* va_base){
+  uint64_t offset = ((uint64_t)pa_base)-((uint64_t)va_base);
+  return (void*)(pa-offset);
+}
 
+void sys_exec(struct trapframe *arg){
+  char *exec_file = (char*) arg->x[0];
+  char **input_argv = (char **) arg->x[1];
+  
+  int fd = do_open(exec_file, O_RD);
+  if (fd < 0) {
+    uart_puts((char *) "[Error] Exec's  path <");
+    uart_puts(exec_file);
+    uart_puts((char *) "> not found.\n");
+    arg->x[0] = -1;
+    return ;
+  }
+  int pid = get_pid();
+  //rmall_user_page(task_pool[pid].ttbr0);
+  uint64_t new_ttbr0 = (uint64_t) malloc(PAGE_SIZE, 1);
+  load_app(fd, new_ttbr0);
+  LOG(FINE) user_pt_show((void*) new_ttbr0);
+  for (int i=0; i<FD_MAX_NUM; i++){
+    task_pool[pid].fd[i] = 0;
+  }
+  
+  //char* ustack = &ustack_pool[pid][STACK_TOP_IDX];
+  char* new_ustack_top = (char*) (va_to_pa( USER_PRO_SP_START, (void*)new_ttbr0) | KVA);
+  char* ustack = new_ustack_top;
+  
   int argc = 0;
   int argv_total_len = 0;
   while(input_argv[argc]){
@@ -295,27 +310,36 @@ void sys_exec(struct trapframe *arg){
   char **argv = (char**)((unsigned long long)(ustack-argv_total_len) & (~15));
   argv--;
   *argv = 0;
-
+  
   for (int i = argc-1; i>=0; i--){
     int strlen = str_len(input_argv[i]);
     ustack -= (strlen+1);
     argv--;
-    *argv = ustack;
+    *argv = (char*) exec_pa_to_va(ustack, new_ustack_top, (void*)USER_PRO_SP_START);
     str_copy(input_argv[i], ustack);
   }
+  
   int ustack_offset = (unsigned long long) ustack%16;
   ustack -= ustack_offset;
   for (int i = 0; i<ustack_offset; i++){
     ustack[i] = '\0';
   }
-  unsigned long long *argv_addr = (unsigned long long *)(argv-1);
-  *argv_addr = (unsigned long long)argv;
-  unsigned long long *argc_addr = (unsigned long long *)(argv-2);
-  *argc_addr = argc;
-  arg->sp_el0 = (unsigned long long)(argv-4);
-  arg->elr_el1 = (unsigned long long) exec_func;
+  //unsigned long long *argv_addr = (unsigned long long *)(argv-1);
+  //*argv_addr = (unsigned long long)argv;
+  //unsigned long long *argc_addr = (unsigned long long *)(argv-2);
+  //*argc_addr = argc;
+  
+  //uint64_t offset = ((uint64_t)new_ustack_top)-((uint64_t)argv);
+  //argv = (char**)(USER_PRO_SP_START-offset);
+  
+  arg->sp_el0 = (unsigned long long) exec_pa_to_va(argv-2, new_ustack_top, (void*)USER_PRO_SP_START);
+  arg->elr_el1 = (unsigned long long) USER_PRO_LR_START;
   arg->spsr_el1 = SPSR_EL1_VALUE;
-  arg->x[1] = (unsigned long long) argv;
+  arg->x[1] = (unsigned long long) exec_pa_to_va(argv, new_ustack_top, (void*)USER_PRO_SP_START);
   arg->x[0] = argc;
-
+  
+  rmall_user_page(task_pool[pid].ttbr0);
+  free((void*)task_pool[pid].ttbr0);
+  task_pool[pid].ttbr0 = new_ttbr0;
+  update_pgd(new_ttbr0);
 }

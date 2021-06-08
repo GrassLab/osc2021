@@ -25,7 +25,7 @@ extern "C" void set_timeout_svccall(struct one_shot_timer *n);
 extern "C" int getpid();
 extern "C" int uart_read(char *buf, int size);
 extern "C" int uart_write(const char *buf, int size);
-extern "C" int exec(void (*func)(int, char**), char **argv);
+extern "C" int exec(const char *func, char **argv);
 extern "C" int fork();
 extern "C" void exit();
 extern "C" int open(const char *pathname, int flags);
@@ -38,7 +38,6 @@ extern "C" int mount(const char* device, const char* mountpoint, const char* fil
 extern "C" int umount(const char* mountpoint);
 
 // my_math.h
-/*
 void int_to_str(int n, char *s);
 void int_to_hex(unsigned long long n, char *s);
 void ptr_to_hex(void *p, char *s);
@@ -47,7 +46,6 @@ unsigned long hex_to_uint(char *s, int l);
 int str_to_int(char *c);
 int round_up(int n, int a);
 int align_up(int n, int a);
-*/
 
 // utli.h
 void delay(int p);
@@ -57,13 +55,5 @@ int str_cmp(const char *s1, const char *s2);
 int str_len(const char *s);
 void str_copy(const char *src, char *target);
 
-static void assert(bool t, const char *c){
-  if (!t){
-    uart_write((char *) "[ASSERT] ", 9);
-    uart_write(c, str_len(c));
-    uart_write((char *) "\n", 1);
-    exit();
-  }
-}
-
+void assert(bool t, const char *c);
 # endif

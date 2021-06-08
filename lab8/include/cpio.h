@@ -1,8 +1,9 @@
+# include "mem_addr.h"
 # include "uart.h"
 # ifdef __QEMU__
-  #define INITRAMFS_ADDR (cpio_newc_header *)0x8000000
+  #define INITRAMFS_ADDR  ((cpio_newc_header *) (0x8000000 | KVA))
 # else
-  #define INITRAMFS_ADDR (cpio_newc_header *)0x20000000
+  #define INITRAMFS_ADDR  ((cpio_newc_header *) (0x20000000 | KVA))
 # endif
 
 typedef struct {

@@ -157,6 +157,14 @@ int64_t rmall_user_page(uint64_t ttbr0){
   return page_action_rec(0x0, (struct pg_t*) ttbr0, 0, RM_ALL);
 }
 
+int64_t getall_user_page(void* ttbr0, list_head *head){
+  return page_action_rec(0, (struct pg_t*)ttbr0, head, GET_ALL);
+}
+
+int64_t va_to_pa(uint64_t va, void* ttbr0){
+  return page_action_rec(va, (struct pg_t*)ttbr0, 0, VtoP);
+}
+
 void user_pt_show(void* ttbr){
   list_head head;
   list_head_init(&head);

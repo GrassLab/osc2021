@@ -130,3 +130,12 @@ void str_copy(const char *src, char *target){
     }
   }
 }
+
+void assert(bool t, const char *c){
+  if (!t){
+    uart_write((char *) "[ASSERT] ", 9);
+    uart_write(c, str_len(c));
+    uart_write((char *) "\n", 1);
+    exit();
+  }
+}

@@ -40,7 +40,7 @@ struct task{
   int priority;
   int counter;
   int resched_flag;
-  void (*invoke_func)();
+  //void (*invoke_func)();
   enum task_el mode;
   struct vnode *pwd_vnode;
   struct file *fd[FD_MAX_NUM];
@@ -50,7 +50,7 @@ struct task{
 
 void task_init();
 void task_exit();
-int task_create(void (*func)(), int priority, enum task_el mode);
+int task_create(void (*func)(), int priority, enum task_el mode, int ifttbr0);
 int privilege_task_create(void (*func)(), int priority);
 int user_task_create(char *pathname, int priority);
 void yield();
