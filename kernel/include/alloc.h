@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#include "mmu.h"
+#include "mmu_values.h"
 #include "utils.h"
 
 #define PAGE_BASE_ADDR ((uint64_t)(KVA + 0x10000000))

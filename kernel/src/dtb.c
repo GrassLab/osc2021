@@ -1,6 +1,6 @@
 #include "dtb.h"
 
-#include "mmu.h"
+#include "mmu_values.h"
 #include "printf.h"
 #include "string.h"
 #include "utils.h"

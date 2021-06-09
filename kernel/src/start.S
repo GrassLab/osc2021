@@ -1,4 +1,4 @@
-#include "mmu.h"
+#include "mmu_values.h"
 
 .section ".text.boot"
 
@@ -120,7 +120,8 @@ from_el2_to_el1:
     eret                    // return to EL1
 
 set_exception_vector_table:
-    adr x0, exception_vector_table
+    // adr x0, exception_vector_table
+    ldr x0, =exception_vector_table
     msr vbar_el1, x0
     ret
 

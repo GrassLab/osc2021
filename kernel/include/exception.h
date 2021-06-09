@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #include "gpio.h"
-#include "mmu.h"
+#include "mmu_values.h"
 
 #define CORE0_IRQ_SOURCE ((volatile unsigned int *)(KVA + 0x40000060))
 

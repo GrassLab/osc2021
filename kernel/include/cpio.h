@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#include "mmu.h"
+#include "mmu_values.h"
 
 #define RAMFS_ADDR (KVA + 0x8000000)
 #define CPIO_MAGIC "070701"

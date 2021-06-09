@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mmu.h"
+#include "mmu_values.h"
 
 #define MMIO_BASE (KVA + 0x3F000000)
 
