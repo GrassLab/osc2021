@@ -12,7 +12,7 @@
 # include "sdhost.h"
 # include "fat32.h"
 # include "typedef.h"
-//# include "page.h"
+# include "utli.h"
 
 extern unsigned char __kernel_start;
 extern unsigned char __kernel_end;
@@ -28,12 +28,6 @@ int main(){
   sd_init();
   sdload();
   task_init();
-  
-# ifdef __QEMU__
-  uart_puts("[Qemu mode]\n");
-# else
-  uart_puts("[Rpi mode]\n");
-# endif
   
   char ct[20];
   uart_puts("[ADDRESSES] :\n");
@@ -54,16 +48,14 @@ int main(){
   uart_puts(ct);
   uart_puts("\n");
   
-  //page_test();
-  
-  uart_puts(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
-  uart_puts("Hi!\n");
-  uart_puts("Welcome to Eric's system ~\n");
-  uart_puts("(Lab8)\n");
-  uart_puts(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
   uart_flush();
   IRQ_ENABLE();
 
   schedule();
+  uart_puts("[Error]\nOops\nShell Dead\nPress R to auto reboot...\n");
+  while (1){
+    char c = uart_read();
+    if (c == 'r' || c == 'R') reset();
+  }
   return 0;
 }

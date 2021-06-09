@@ -36,6 +36,7 @@ char* break_char(char *c){
   return r;
 }
 int cal_argc(char *cmd){
+  for (int i=0; i<SHELL_MAX_ARGC; i++) argv[i] = 0;
   int r = 0;
   if(*cmd == '\0'){
     argv[0] = 0;
@@ -79,12 +80,8 @@ void invoke_cmd(char *cmd){
     while(1);
   }
   else if (str_cmp(argv[0], (char *) "cpio") == 1){
-    if (str_cmp(argv[1], (char *) "ls")){
-      cpio_list();
-    }
-    else if (str_cmp(argv[1], (char *) "cat")){
-      cpio_show_file(argv[2]);
-    }
+    if (str_cmp(argv[1], (char *) "ls")) cpio_list();
+    else if (str_cmp(argv[1], (char *) "cat") && argv[2]) cpio_show_file(argv[2]);
   }
   else if (str_cmp(argv[0], (char *) "buddy") == 1){
     if (str_cmp(argv[1], (char *) "table")) buddy_table_show();
@@ -106,27 +103,40 @@ void invoke_cmd(char *cmd){
     }
   }
   else if (str_cmp(cmd, (char *) "free") == 1){
-    if(argv[1]){
-      char *addr_c = argv[1];
-      if(addr_c[0] == '0' && (addr_c[1] == 'x' || addr_c[1] == 'X')){
-        addr_c = addr_c+2;
-      }
-      unsigned long long addr = hex_to_uint(addr_c, str_len(addr_c));
-      free((void *)addr);
+    if (!argv[1]) return ;
+    char *addr_c = argv[1];
+    if(addr_c[0] == '0' && (addr_c[1] == 'x' || addr_c[1] == 'X')){
+      addr_c = addr_c+2;
     }
+    unsigned long long addr = hex_to_uint(addr_c, str_len(addr_c));
+    free((void *)addr);
   }
   else if (str_cmp(cmd, (char *) "mem") == 1){
-    if (str_cmp(argv[1], (char *) "status")) mem_ll_show();
-    else uart_puts((char *) "Use \"mem status\"");
+    if (argv[1]){
+      if (str_cmp(argv[1], (char *) "status")){
+        mem_ll_show();
+        return ;
+      }
+    }
+    uart_puts((char *) "Use \"mem status\"\n");
   }
   else if (str_cmp(cmd, (char *) "dma") == 1){
-    if (str_cmp(argv[1], (char *) "status")) buddy_dma_ll_show();
-    else uart_puts((char *) "Use \"dma status\"");
+    if (argv[1]){
+      if (str_cmp(argv[1], (char *) "status")){
+        buddy_dma_ll_show();
+        return ;
+      }
+    }
+    uart_puts((char *) "Use \"dma status\"\n");
   }
   
   else if (str_cmp(argv[0], (char *) "exec") == 1){
-    user_task_create(argv[1], 3);
-    yield();
+    if (argv[1]){
+      user_task_create(argv[1], 3);
+      yield();
+      return ;
+    }
+    uart_puts((char *) "Use \"exec img-file-path\"\n");
   }
   else if (str_cmp(argv[0], (char *) "svc") == 1){
     asm volatile("svc #0");
@@ -138,6 +148,7 @@ void invoke_cmd(char *cmd){
     }
   }
   else if (str_cmp(argv[0], (char *) "timer") == 1){
+    if (!argv[1]) return ;
     if (str_cmp(argv[1], (char *) "value")){
       unsigned long long pct = svc_get_core_timer_value();
       char ct[0];
@@ -157,8 +168,8 @@ void invoke_cmd(char *cmd){
       asm volatile("svc #4");
     }
   }
-  /*
   else if (str_cmp(argv[0], (char *) "demo") == 1){
+    if (!argv[1]) return ;
     if (str_cmp(argv[1], (char *) "task1")){
       privilege_task_create(task_demo_1, 3);
       yield();
@@ -167,41 +178,9 @@ void invoke_cmd(char *cmd){
       privilege_task_create(task_demo_2, 3);
       yield();
     }
-    else if (str_cmp(argv[1], (char *) "user1")){
-      user_task_create(user_demo_test, 3);
-      yield();
-    }
-    else if (str_cmp(argv[1], (char *) "file1")){
-      user_task_create(file_demo_1, 3);
-      yield();
-    }
-    else if (str_cmp(argv[1], (char *) "file2")){
-      user_task_create(file_demo_2, 3);
-      yield();
-    }
-    else if (str_cmp(argv[1], (char *) "file3")){
-      user_task_create(file_demo_3, 3);
-      yield();
-    }
-    else if (str_cmp(argv[1], (char *) "file4")){
-      user_task_create(file_demo_4, 3);
-      yield();
-    }
-    else if (str_cmp(argv[1], (char *) "fat32.1")){
-      user_task_create(fat32_demo_1, 3);
-      yield();
-    }
-    else if (str_cmp(argv[1], (char *) "fat32.2")){
-      user_task_create(fat32_demo_2, 3);
-      yield();
-    }
-    else if (str_cmp(argv[1], (char *) "fat32.3")){
-      user_task_create(fat32_demo_3, 3);
-      yield();
-    }
   }
-  */
   else if (str_cmp(argv[0], (char *) "logger") == 1){
+    if (!argv[1]) return ;
     if (str_cmp(argv[1], (char *) "status")){
       switch(get_log_level()){
         case SEVERE : uart_puts((char *)"Logger level = SEVERE\n"); break;
@@ -286,7 +265,6 @@ void invoke_cmd(char *cmd){
     else{
       sdlistblock(str_to_int(argv[1]));
     }
-    
   }
   else{
     uart_puts((char *) "Command [");
@@ -295,9 +273,34 @@ void invoke_cmd(char *cmd){
   }
 }
 
-void shell(){
+void shell_init_meg(){
+  log_puts("[INFO] Mounting cpiofs and FAT32fs.\n", INFO);
   do_mkdir((char*) "cpio", get_root_vnode());
   do_mount("cpio", "cpiofs");
+  do_mkdir((char*) "sd", get_root_vnode());
+  do_mount("sd", "fat32fs");
+  log_puts("[INFO] Mounting cpiofs and FAT32fs Done.\n", INFO);
+# ifdef __QEMU__
+  uart_puts("[Qemu mode]\n");
+# else
+  uart_puts("[Rpi mode]\n");
+# endif
+  switch(get_log_level()){
+    case SEVERE : uart_puts((char *)"[Logger level] : SEVERE\n"); break;
+    case WARNING: uart_puts((char *)"[Logger level] : WARNING\n");break;
+    case INFO:    uart_puts((char *)"[Logger level] : INFO\n");   break;
+    case FINE:    uart_puts((char *)"[Logger level] : FINE\n");   break;
+  }
+  
+  uart_puts(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+  uart_puts("Hi!\n");
+  uart_puts("Welcome to Eric's system ~\n");
+  uart_puts("(Lab8)\n");
+  uart_puts(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+}
+
+void shell(){
+  shell_init_meg();
   char cmd[1000];
   char pwd[128];
   cmd[0] = '\0';

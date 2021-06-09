@@ -1,6 +1,7 @@
+# include "mem_addr.h"
 #define PM_PASSWORD     0x5a000000
-#define PM_RSTC         ((volatile unsigned int*)0x3F10001c)
-#define PM_WDOG         ((volatile unsigned int*)0x3F100024)
+#define PM_RSTC         ((volatile unsigned int*)(0x3F10001c | KVA))
+#define PM_WDOG         ((volatile unsigned int*)(0x3F100024 | KVA))
 
 float get_timestamp() {
     register unsigned long long f, c;

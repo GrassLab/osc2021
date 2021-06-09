@@ -113,9 +113,11 @@ int user_task_create(char *pathname, int priority){
     uart_puts((char *) "> not found.\n");
     return -1;
   }
+  IRQ_DISABLE();
   int pid = task_create(user_task_start, priority, USER, 1);
   load_app(fd, task_pool[pid].ttbr0);
   LOG(FINE) user_pt_show((void*) task_pool[pid].ttbr0);
+  IRQ_ENABLE();
   return pid;
 }
 
@@ -273,7 +275,7 @@ void sys_fork(struct trapframe* trapframe){
 
 static void* exec_pa_to_va(void* pa, void* pa_base, void* va_base){
   uint64_t offset = ((uint64_t)pa_base)-((uint64_t)va_base);
-  return (void*)(pa-offset);
+  return (void*)((uint64_t)pa-offset);
 }
 
 void sys_exec(struct trapframe *arg){

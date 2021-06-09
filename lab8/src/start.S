@@ -75,7 +75,9 @@ el1_start:
     
     ldr     x2, =main
     blr     x2
-    b       1b
+10:
+    wfe
+    bl      10b
 
 clean_bss:
     ldr    x1, =__bss_start

@@ -164,11 +164,22 @@ void sdload(){
     log_puts("[Partition ", INFO);
     log_puts(ct, INFO);
     log_puts("]", INFO);
-    if(pt.boot_flag == 0){
+    if(pt.type_code == EMPTY_PARTITION_TYPE){
       log_puts(" : Empty\n", INFO);
       continue;
     }
-    else{
+    else if (pt.type_code == FAT32_PARTITION_TYPE1){
+      log_puts(" : FAT32 with CHS addressing", INFO);
+      log_puts("\n\t[First sector] : ", INFO);
+      int_to_str((int) pt.LBA_begin, ct);
+      log_puts(ct, INFO);
+      log_puts("\n\t[Number of sector] : ", INFO);
+      int_to_str((int) pt.n_sector, ct);
+      log_puts(ct, INFO);
+      log_puts("\n", INFO);
+    }
+    else if (pt.type_code == FAT32_PARTITION_TYPE2){
+      log_puts(" : FAT32 with LBA", INFO);
       log_puts("\n\t[First sector] : ", INFO);
       int_to_str((int) pt.LBA_begin, ct);
       log_puts(ct, INFO);
@@ -303,6 +314,7 @@ void get_fat32_dir_list(uint32_t _cluster, list_head *r_list, struct cluster_dat
           if (ucs == 0) break;
         }
       }
+      if (name[name_p-1] != '\0') name[name_p] = '\0';
       
       data = get_dir_t(idx, *fat_argv);
       struct fat32_file_info *t = MALLOC(struct fat32_file_info, 1);

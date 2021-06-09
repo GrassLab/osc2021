@@ -544,6 +544,8 @@ void sys_open(struct trapframe *arg){
 void sys_close(struct trapframe *arg){
   int fd = (int) arg->x[0];
   int r = do_close(fd);
+  struct task *cur = get_current();
+  cur->fd[fd] = 0;
   arg->x[0] = (uint64_t)r;
 }
 

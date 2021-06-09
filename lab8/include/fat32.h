@@ -22,6 +22,10 @@
 
 # define FAT_END_CLUSTER  0x0FFFFFF8
 
+# define FAT32_PARTITION_TYPE1  0x0B
+# define FAT32_PARTITION_TYPE2  0x0C
+# define EMPTY_PARTITION_TYPE   0x00
+
 struct partition{
   uint8_t boot_flag;
   uint8_t CHS_begin[3];
