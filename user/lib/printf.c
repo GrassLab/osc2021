@@ -1,163 +1,165 @@
+/*
+ * Copyright (C) 2018 bzt (bztsrc@github)
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies
+ * of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ *
+ */
+
 #include "printf.h"
 
-static char printf_buffer[PRINTF_BUF_SIZE];
-static size_t printf_buf_len;
-static size_t printf_nwrite;
+#include "syscall.h"
 
-uint32_t printf_append_C(char c){
-    printf_buffer[printf_buf_len++] = c;
-    if(printf_buf_len == PRINTF_BUF_SIZE - 1){
-        printf_buffer[printf_buf_len] = '\0';
-        printf_nwrite += uart_write(printf_buffer, printf_buf_len);
-        printf_buf_len = 0;
+/**
+ * minimal sprintf implementation
+ */
+unsigned int vsprintf(char *dst, char* fmt, __builtin_va_list args)
+{
+    long int arg;
+    int len, sign, i;
+    char *p, *orig=dst, tmpstr[19];
+
+    // failsafes
+    if(dst==(void*)0 || fmt==(void*)0) {
+        return 0;
     }
-    return 1;
-}
 
-uint32_t printf_append_S(const char *s){
-    uint32_t n = 0;
-    while(*s){
-        printf_append_C(*s++);
-        n++;
-    }
-    return n;
-}
-
-uint32_t printf_number(uint64_t num, uint8_t base){
-    uint32_t len = 1;
-    if(num >= base){
-        len += printf_number(num / base, base);
-    }
-    uint64_t rem = num % base;
-    printf_append_C(((rem > 9)? (rem - 10) + 'a' : rem + '0'));
-    return len;
-}
-
-uint32_t printf_d(const char *fmt, va_list args, uint32_t len){
-    int32_t num = va_arg(args, int32_t);
-    if(num < 0){
-        len += printf_append_C('-');
-        num *= -1;
-    }
-    len += printf_number(num, 10);
-    return vprintf(fmt, args, len);
-}
-
-uint32_t printf_ld(const char *fmt, va_list args, uint32_t len){
-    int64_t num = va_arg(args, int64_t);
-    if(num < 0){
-        len += printf_append_C('-');
-        num *= -1;
-    }
-    len += printf_number(num, 10);
-    return vprintf(fmt, args, len);
-}
-
-uint32_t printf_u(const char *fmt, va_list args, uint32_t len){
-    uint32_t num = va_arg(args, uint32_t);
-    len += printf_number(num, 10);
-    return vprintf(fmt, args, len);
-}
-
-uint32_t printf_lu(const char *fmt, va_list args, uint32_t len){
-    uint64_t num = va_arg(args, uint64_t);
-    len += printf_number(num, 10);
-    return vprintf(fmt, args, len);
-}
-
-uint32_t printf_x(const char *fmt, va_list args, uint32_t len){
-    uint32_t num = va_arg(args, uint32_t);
-    len += printf_append_S("0x");
-    len += printf_number(num, 16);
-    return vprintf(fmt, args, len);
-}
-
-uint32_t printf_lx(const char *fmt, va_list args, uint32_t len){
-    uint64_t num = va_arg(args, uint64_t);
-    len += printf_append_S("0x");
-    len += printf_number(num, 16);
-    return vprintf(fmt, args, len);
-}
-
-uint32_t printf_c(const char *fmt, va_list args, uint32_t len){
-    int32_t c = va_arg(args, int32_t);
-    len += printf_append_C(c);
-    return vprintf(fmt, args, len);
-}
-
-uint32_t printf_s(const char *fmt, va_list args, uint32_t len){
-    const char *str = va_arg(args, const char *);
-    len += printf_append_S(str);
-    return vprintf(fmt, args, len);
-}
-
-uint32_t vprintf(const char *fmt, va_list args, uint32_t len){
-    char c, cc;
-    while(*fmt){
-        c = *fmt++;
-        if(c != '%'){
-            len += printf_append_C(c);
-        }else{
-            c = *fmt++;
-            switch(c){
-            case 'd':
-                return printf_d(fmt, args, len);
-            case 'u':
-                return printf_u(fmt, args, len);
-            case 'x':
-                return printf_x(fmt, args, len);
-            case 'c':
-                return printf_c(fmt, args, len);
-            case 's':
-                return printf_s(fmt, args, len);
-            case 'p':
-                return printf_lx(fmt, args, len);
-            case 'l':
-                cc = *fmt++;
-                switch(cc){
-                case 'd':
-                    return printf_ld(fmt, args, len);
-                case 'u':
-                    return printf_lu(fmt, args, len);
-                case 'x':
-                    return printf_lx(fmt, args, len);
-                default:
-                    va_arg(args, int32_t);
-                    len += printf_append_C('%');
-                    len += printf_append_C(c);
-                    len += printf_append_C(cc);
-                    continue;
-                }
-            default:
-                va_arg(args, int32_t);
-                len += printf_append_C('%');
-                len += printf_append_C(c);
-                break;
+    // main loop
+    arg = 0;
+    while(*fmt) {
+        // argument access
+        if(*fmt=='%') {
+            fmt++;
+            // literal %
+            if(*fmt=='%') {
+                goto put;
             }
+            len=0;
+            // size modifier
+            while(*fmt>='0' && *fmt<='9') {
+                len *= 10;
+                len += *fmt-'0';
+                fmt++;
+            }
+            // skip long modifier
+            if(*fmt=='l') {
+                fmt++;
+            }
+            // character
+            if(*fmt=='c') {
+                arg = __builtin_va_arg(args, int);
+                *dst++ = (char)arg;
+                fmt++;
+                continue;
+            } else
+            // decimal number
+            if(*fmt=='d') {
+                arg = __builtin_va_arg(args, int);
+                // check input
+                sign=0;
+                if((int)arg<0) {
+                    arg*=-1;
+                    sign++;
+                }
+                if(arg>99999999999999999L) {
+                    arg=99999999999999999L;
+                }
+                // convert to string
+                i=18;
+                tmpstr[i]=0;
+                do {
+                    tmpstr[--i]='0'+(arg%10);
+                    arg/=10;
+                } while(arg!=0 && i>0);
+                if(sign) {
+                    tmpstr[--i]='-';
+                }
+                // padding, only space
+                if(len>0 && len<18) {
+                    while(i>18-len) {
+                        tmpstr[--i]=' ';
+                    }
+                }
+                p=&tmpstr[i];
+                goto copystring;
+            } else
+            // hex number
+            if(*fmt=='x') {
+                arg = __builtin_va_arg(args, long int);
+                // convert to string
+                i=16;
+                tmpstr[i]=0;
+                do {
+                    char n=arg & 0xf;
+                    // 0-9 => '0'-'9', 10-15 => 'A'-'F'
+                    tmpstr[--i]=n+(n>9?0x37:0x30);
+                    arg>>=4;
+                } while(arg!=0 && i>0);
+                // padding, only leading zeros
+                if(len>0 && len<=16) {
+                    while(i>16-len) {
+                        tmpstr[--i]='0';
+                    }
+                }
+                p=&tmpstr[i];
+                goto copystring;
+            } else
+            // string
+            if(*fmt=='s') {
+                p = __builtin_va_arg(args, char*);
+copystring:     if(p==(void*)0) {
+                    p="(null)";
+                }
+                while(*p) {
+                    *dst++ = *p++;
+                }
+            }
+        } else {
+put:        *dst++ = *fmt;
         }
+        fmt++;
     }
-    return len;
+    *dst=0;
+    // number of bytes written
+    return dst-orig;
 }
 
-size_t printf(const char *fmt, ...){
-    printf_buf_len = 0;
-    printf_nwrite = 0;
-
-    va_list args;
-    va_start(args, fmt);
-    vprintf(fmt, args, 0);
-    va_end(args);
-
-    printf_buffer[printf_buf_len] = '\0';
-    printf_nwrite += uart_write(printf_buffer, printf_buf_len);
-
-    return printf_nwrite;
+/**
+ * Variable length arguments
+ */
+unsigned int sprintf(char *dst, char* fmt, ...)
+{
+    //__builtin_va_start(args, fmt): "..." is pointed by args
+    //__builtin_va_arg(args,int): ret=(int)*args;args++;return ret;
+    __builtin_va_list args;
+    __builtin_va_start(args, fmt);
+    return vsprintf(dst,fmt,args);
 }
 
-size_t puts(const char *str){
-    printf_buf_len = 0;
-    printf_append_S(str);
-    printf_append_S("\r\n");
-    printf_buffer[printf_buf_len] = '\0';
-    return uart_write(printf_buffer, printf_buf_len);
+unsigned int printf(char* fmt,...){
+	char dst[100];
+    //__builtin_va_start(args, fmt): "..." is pointed by args
+    //__builtin_va_arg(args,int): ret=(int)*args;args++;return ret;
+    __builtin_va_list args;
+    __builtin_va_start(args,fmt);
+    unsigned int ret=vsprintf(dst,fmt,args);
+    uart_write(dst,ret);
+    return ret;
 }
