@@ -65,6 +65,18 @@ void thread_fatfs_test() {
   idle();
 }
 
+void mmu_test() {
+  const char *argv[] = {"mmu_test", 0};
+  exec("mmu_test", argv);
+}
+
+void thread_mmu_test() {
+  thread_info *idle_t = thread_create(0);
+  asm volatile("msr tpidr_el1, %0\n" ::"r"((uint64_t)idle_t));
+  thread_create(mmu_test);
+  idle();
+}
+
 void thread_init() {
   run_queue.head = 0;
   run_queue.tail = 0;
@@ -165,7 +177,7 @@ void exec(const char *program_name, const char **argv) {
   if (cur->user_program_base == 0) {
     cur->user_program_base = thread_allocate_page(cur, USER_PROGRAM_SIZE);
     cur->user_stack_base = thread_allocate_page(cur, STACK_SIZE);
-    init_page_table(&(cur->pgd));
+    init_page_table(cur, &(cur->pgd));
     // printf("cur_pgd: 0x%llx\n", (uint64_t)(cur->pgd));
     // printf("user program base: 0x%llx\n", cur->user_program_base);
     // printf("user stack base: 0x%llx\n", cur->user_stack_base);
@@ -176,11 +188,11 @@ void exec(const char *program_name, const char **argv) {
   for (uint64_t size = 0; size < cur->user_program_size; size += PAGE_SIZE) {
     uint64_t virtual_addr = USER_PROGRAM_BASE + size;
     uint64_t physical_addr = VA2PA(cur->user_program_base + size);
-    update_page_table(cur->pgd, virtual_addr, physical_addr, 0b101);
+    update_page_table(cur, virtual_addr, physical_addr, 0b101);
   }
   uint64_t virtual_addr = USER_STACK_BASE;
   uint64_t physical_addr = VA2PA(cur->user_stack_base);
-  update_page_table(cur->pgd, virtual_addr, physical_addr, 0b110);
+  update_page_table(cur, virtual_addr, physical_addr, 0b110);
 
   uint64_t next_pgd = (uint64_t)cur->pgd;
   switch_pgd(next_pgd);
@@ -256,10 +268,21 @@ void handle_fork() {
 }
 
 void create_child(thread_info *parent, thread_info *child) {
-  child->user_stack_base = (uint64_t)malloc(STACK_SIZE);
+  child->user_stack_base = thread_allocate_page(child, STACK_SIZE);
+  child->user_program_base = thread_allocate_page(child, USER_PROGRAM_SIZE);
   child->user_program_size = parent->user_program_size;
   parent->child_pid = child->pid;
   child->child_pid = 0;
+
+  init_page_table(child, &(child->pgd));
+  for (uint64_t size = 0; size < child->user_program_size; size += PAGE_SIZE) {
+    uint64_t virtual_addr = USER_PROGRAM_BASE + size;
+    uint64_t physical_addr = VA2PA(child->user_program_base + size);
+    update_page_table(child, virtual_addr, physical_addr, 0b101);
+  }
+  uint64_t virtual_addr = USER_STACK_BASE;
+  uint64_t physical_addr = VA2PA(child->user_stack_base);
+  update_page_table(child, virtual_addr, physical_addr, 0b110);
 
   char *src, *dst;
   // copy saved context in thread info
@@ -290,18 +313,20 @@ void create_child(thread_info *parent, thread_info *child) {
   // set correct address for child
   uint64_t kernel_stack_base_dist =
       child->kernel_stack_base - parent->kernel_stack_base;
-  uint64_t user_stack_base_dist =
-      child->user_stack_base - parent->user_stack_base;
-  uint64_t user_program_base_dist =
-      child->user_program_base - parent->user_program_base;
   child->context.fp += kernel_stack_base_dist;
   child->context.sp += kernel_stack_base_dist;
   child->trap_frame_addr = parent->trap_frame_addr + kernel_stack_base_dist;
-  trap_frame_t *trap_frame = (trap_frame_t *)(child->trap_frame_addr);
-  trap_frame->x[29] += user_stack_base_dist;    // fp (x29)
-  trap_frame->x[30] += user_program_base_dist;  // lr (x30)
-  trap_frame->x[32] += user_program_base_dist;  // elr_el1
-  trap_frame->x[33] += user_stack_base_dist;    // sp_el0
+
+  // with MMU, we do not need to separate user program and stack address
+  // uint64_t user_stack_base_dist =
+  //     child->user_stack_base - parent->user_stack_base;
+  // uint64_t user_program_base_dist =
+  //     child->user_program_base - parent->user_program_base;
+  // trap_frame_t *trap_frame = (trap_frame_t *)(child->trap_frame_addr);
+  // trap_frame->x[29] += user_stack_base_dist;    // fp (x29)
+  // trap_frame->x[30] += user_program_base_dist;  // lr (x30)
+  // trap_frame->x[32] += user_program_base_dist;  // elr_el1
+  // trap_frame->x[33] += user_stack_base_dist;    // sp_el0
 }
 
 struct file *thread_get_file(int fd) {

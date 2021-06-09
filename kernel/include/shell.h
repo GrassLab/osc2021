@@ -26,6 +26,7 @@ void cmd_thread_vfs_test();
 void cmd_thread_vfs_ls_test();
 void cmd_thread_vfs_hard_test();
 void cmd_thread_fatfs_test();
+void cmd_thread_mmu_test();
 
 void clear_buffer();
 void receive_cmd();
