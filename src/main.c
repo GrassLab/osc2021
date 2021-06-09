@@ -13,6 +13,7 @@
 #include "utility.h"
 #include "sched.h"
 #include "lib.h"
+#include "vfs.h"
 
 void foo () {
     for (int i = 0; i < 10; i++) {
@@ -52,8 +53,26 @@ void initd2 () {
     }
 }
 
+void initd_lab6 () {
+    char buf[256];
+    int a = open("hello", O_CREAT);
+    int b = open("world", O_CREAT);
+    write(a, "Hello ", 6);
+    write(b, "World!", 6);
+    close(a);
+    close(b);
+    b = open("hello", O_READ);
+    a = open("world", O_READ);
+    int sz;
+    sz = read(b, buf, 100);
+    sz += read(a, buf + sz, 100);
+    buf[sz] = '\0';
+    kprintf("%s\n", buf); // should be Hello World!
+    while (1);
+}
+
 void create_initd (void (* init_func)(void)) {
-    struct task_struct *t = task_queue_pop_head(&unready_queue);
+    struct task_struct *t = init_task_struct();
     t->kstack_top = bs_malloc(STACK_SIZE);
     t->stack_top = bs_malloc(STACK_SIZE);
     current_task = t;
@@ -115,8 +134,16 @@ void parse_command (char *b) {
         else
             kprintf("fail\n");
     }
-    else if (!strcmp(b, "ls")) {
-        cpio_show_files();
+    else if (!strcmp(token, "ls")) {
+        vfs_ls(&b[i + 1]);
+        //cpio_show_files();
+    }
+    else if (!strcmp(token, "mkdir")) {
+        //kprintf("%s\n", &b[i + 1]);
+        vfs_mkdir(&b[i + 1]);
+    }
+    else if (!strcmp(token, "touch")) {
+        vfs_touch(&b[i + 1]);
     }
     else if (!strcmp(token, "cat")) {
         cpio_cat_interface(b);
@@ -137,8 +164,12 @@ void parse_command (char *b) {
     else if (!strcmp(b, "lab5-demo2")) {
         create_initd(initd2);
     }
+    else if (!strcmp(b, "lab6-demo")) {
+        create_initd(initd_lab6);
+    }
 
     else if (!strcmp(b, "test")) {
+        create_initd(initd_lab6);
     }
     else if (!strcmp(b, "malloc_bins")) {
         show_malloc_bins();
@@ -183,6 +214,8 @@ int main () {
     char buffer[BUFFER_SIZE];
 
     init_sched();
+
+    init_vfs();
 
     kprintf("\n");
     kprintf("+========================+\n");

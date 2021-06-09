@@ -5,6 +5,8 @@ void raise_int (int num);
 
 int read (int fd, char *source, unsigned long size);
 int write (int fd, char *source, unsigned long size);
+int open (char *path, int flag);
+void close (int fd);
 void nanosleep (unsigned long time);
 int get_pid ();
 int fork ();

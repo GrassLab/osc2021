@@ -694,3 +694,10 @@ void m_malloc_interface (char *buffer) {
 void m_free_interface (char *buffer) {
     m_free((void *)atoui(&buffer[7]));
 }
+#include "string.h"
+char *strdup(char *str) {
+    u64 size = strlen(str) + 1;
+    char *ret = m_malloc(size);
+    strncopy(ret, str, size);
+    return ret;
+}

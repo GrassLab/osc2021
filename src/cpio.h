@@ -63,5 +63,6 @@ void cpio_cat_file (char *path);
 void cpio_cat_interface (char *buffer);
 int cpio_load_file_interface (char *buffer);
 void *cpio_load_file (char *path);
+void cpio_vfs_mount ();
 
 #endif

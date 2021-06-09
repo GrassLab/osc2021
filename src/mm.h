@@ -32,4 +32,6 @@ void bs_malloc_interface (char *buffer);
 
 void m_free_interface (char *buffer);
 void m_malloc_interface (char *buffer);
+
+char *strdup(char *str);
 #endif

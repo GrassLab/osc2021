@@ -84,6 +84,14 @@ struct task_struct *init_task_struct () {
     t->kcontext.sp = (u64)(t->kstack_top + STACK_SIZE - context_switch_size);
     t->kcontext.lr = get_new_task_entry();
 
+    /* reset file descriptor table */
+    for (int i = 3; i < task_fd_num; i++) {
+        t->fdt[i] = (struct fd_entry) {
+            .flag = FD_CLOSE,
+            .f = NULL
+        };
+    }
+
     return t;
 }
 
@@ -229,7 +237,6 @@ void _get_pid (struct trap_frame *tf) {
     tf->x0 = current_task->id;
 }
 
-
 void release_children_thread (struct trap_frame *tf) {
     struct task_struct *t= task_queue_pop_head(&suspend_queue);
     if (!t) {
@@ -241,4 +248,27 @@ void release_children_thread (struct trap_frame *tf) {
     bs_free((void *)(t->stack_top));
     bs_free((void *)(t->kstack_top));
     task_queue_add_task(&unready_queue, t);
+}
+
+/* get unused fd number from current task struct */
+int get_empty_fd () {
+    for (int i = 3; i < task_fd_num; i++) {
+        if (current_task->fdt[i].flag == FD_CLOSE) {
+            current_task->fdt[i].flag = FD_OPEN;
+            return i;
+        }
+    }
+    return -1;
+}
+
+
+/* get fd entry from current task struct */
+struct fd_entry *get_fd_entry (int fd) {
+    if (fd >= task_fd_num)
+        return NULL;
+
+    if (current_task->fdt[fd].flag == FD_OPEN)
+            return &current_task->fdt[fd];
+
+    return NULL;
 }

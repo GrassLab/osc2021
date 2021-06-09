@@ -9,15 +9,35 @@ raise_int:
  */
 .global read
 read:
-    mov x3, x0
+    mov x3, x2
+    mov x2, x1
+    mov x1, x0
     mov x0, #0
     svc 0x80
     ret
 
 .global write
 write:
-    mov x3, x0
+    mov x3, x2
+    mov x2, x1
+    mov x1, x0
     mov x0, #1
+    svc 0x80
+    ret
+
+.global open
+open:
+    mov x2, x1
+    mov x1, x0
+    mov x0, #2
+    svc 0x80
+    ret
+
+.global close
+close:
+    mov x2, x1
+    mov x1, x0
+    mov x0, #3
     svc 0x80
     ret
 

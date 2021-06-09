@@ -39,13 +39,13 @@ void strip_newline (char *buffer) {
     }
 }
 
-int strlen (char *str) {
+int strlen (const char *str) {
     int num = 0;
     while (str[num]) num++;
     return num;
 }
 
-int strcmp (char *str1, char *str2) {
+int strcmp (const char *str1, const char *str2) {
     for (; *str1 && *str2; str1++, str2++) {
         if (*str1 > *str2)
             return -1;
@@ -58,7 +58,7 @@ int strcmp (char *str1, char *str2) {
     return 0;
 }
 
-void strncopy (char *d, char *r, unsigned int len) {
+void strncopy (char *d, const char *r, unsigned int len) {
     unsigned long i;
     for (i = 0; i < len - 1 && r[i] != '\0' ; i++)
         d[i] = r[i];
@@ -121,10 +121,11 @@ long atoi (char *b) {
     return -num;
 }
 
-long strfind (char *buffer, char *token) {
-    long ptr = 0;
-
-    return ptr;
+long strfind (const char *buffer, char token) {
+    for (long i = 0; i < strlen(buffer); i++)
+        if (buffer[i] == token)
+            return i;
+    return -1;
 }
 
 void memcpy (unsigned char *dest, unsigned char *source, unsigned int size) {

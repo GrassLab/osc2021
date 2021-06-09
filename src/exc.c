@@ -4,6 +4,7 @@
 #include "mmio.h"
 #include "sched.h"
 #include "uart.h"
+#include "vfs.h"
 
 void print_el1_exc () {
     kprintf("spsr_el1: %x\n", get_spsr_el1());
@@ -65,6 +66,63 @@ void sp_elx_irq_handler () {
     while (1); /* trap */
 }
 
+int sys_read (int fd, char *buffer, int size) {
+    if (fd == 0) {
+        kprintf("%s", buffer);
+        return size;
+    }
+    struct fd_entry *entry = get_fd_entry(fd);
+    if (!entry)
+        return 0;
+
+    int len = vfs_read(entry->f, buffer, size);
+    return len;
+}
+
+int sys_write (int fd, char *buffer, int size) {
+    struct fd_entry *entry = get_fd_entry(fd);
+    if (!entry)
+        return 0;
+    vfs_write(entry->f, buffer, size);
+    return size;
+}
+
+int sys_file_open (char *file, int flag) {
+    int fd = get_empty_fd();
+    if (fd < 0)
+        return -1;
+
+    struct fd_entry *entry = get_fd_entry(fd);
+    struct file *f = vfs_open((const char *)file, flag);
+
+    if (!f) {
+        entry->flag = FD_CLOSE;
+        return -1;
+    }
+
+    entry->f = f;
+
+    return fd;
+}
+
+void sys_file_close (int fd) {
+    struct fd_entry *entry = get_fd_entry(fd);
+    if (!entry)
+        return;
+    if (entry->flag == FD_CLOSE)
+        return;
+
+    *(entry->f) = (struct file) {
+        .vnode = NULL,
+        .f_pos = 0,
+        .f_ops = NULL,
+        .flags = F_CLOSE,
+    };
+
+    entry->f = NULL;
+    entry->flag = FD_CLOSE;
+}
+
 int sys_call_handler (struct trap_frame *tf) {
     u64 sys_num = tf->x0;
     switch (sys_num) {
@@ -96,12 +154,31 @@ int sys_call_handler (struct trap_frame *tf) {
 
         /* read */
         case 0:
-            read_line((char *)(tf->x1), tf->x2);
+        {
+            long *ret = (long *)&(tf->x0);
+            *ret = sys_read((int)tf->x1, (char *)tf->x2, (int)tf->x3);
             return 0;
+        }
 
         /* write */
         case 1:
-            kprintf("%s", (char *)(tf->x1));
+        {
+            long *ret = (long *)&(tf->x0);
+            *ret = sys_write((int)tf->x1, (char *)tf->x2, (int)tf->x3);
+            return 0;
+        }
+
+        /* open */
+        case 2:
+        {
+            long *ptr = (long *)&(tf->x0);
+            *ptr = sys_file_open((char *)tf->x1, (int)tf->x2);
+            return 0;
+        }
+
+        /* close */
+        case 3:
+            sys_file_close(tf->x1);
             return 0;
 
         /* sleep */

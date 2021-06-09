@@ -229,3 +229,27 @@ int cpio_load_file_interface (char *buffer) {
         return 1;
     return 0;
 }
+
+
+void cpio_vfs_mount () {
+    char *mount_folder = "tmpfs";
+    CPIO_HEADER *cpioh = cpio_base_address;
+    CPIO_INFO cpio_info;
+    vfs_mkdir(mount_folder);
+
+
+    while (1) {
+        char buffer[256] = {0};
+        header2info(cpioh, &cpio_info);
+        if (cpio_info.magic != CPIO_MAGIC)
+            break;
+
+        cpioh = cpio_info.next_header;
+        snprintf(buffer, 256, "%s/%s", mount_folder, cpio_info.name);
+
+        if (is_cpio_file(cpio_info))
+            vfs_touch(buffer);
+        if (is_cpio_dir(cpio_info))
+            vfs_mkdir(buffer);
+    }
+}
