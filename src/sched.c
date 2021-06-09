@@ -2,6 +2,7 @@
 #include "entry.h"
 #include "printf.h"
 #include "mm.h"
+#include "utils.h"
 
 static struct task_struct init_task = INIT_TASK;
 struct task_struct *current = &(init_task);
@@ -70,6 +71,7 @@ void switch_to(struct task_struct *next, int index)
 
     struct task_struct *prev = current;
     current = next;
+    set_pgd(next->mm.pgd); /* Switch page table for user space */
     cpu_switch_to(prev, next);
 }
 
@@ -97,13 +99,20 @@ void task_preemption()
 }
 
 void exit_process(void) {
+    printf("[exit_process] Process exit, pid = %d\n", current->pid);
     preempt_disable();
     current->state = TASK_ZOMBIE;
 
-    // if user stack allocated, free stack.
-    if (current->stack) { 
-        kfree((void *)current->stack);
+    // free all alloacted user page
+    for (int i = 0;i < current->mm.user_pages_count;i++) {
+        #ifdef __DEBUG_MM
+        printf("[exit_process] Free page: current->mm.user_pages[%d].phys_addr = 0x%x\n", i, current->mm.user_pages[i].phys_addr);
+        #endif
+        free_page((void *)current->mm.user_pages[i].phys_addr);
     }
+    #ifdef __DEBUG_MM
+    dump_buddy(); // dump boddy system
+    #endif
 
     preempt_enable();
     schedule();
@@ -111,9 +120,10 @@ void exit_process(void) {
 
 void kill_zombies(void) {
     // reclaim threads marked as DEAD
-    //
     for (int i = 0;i < NR_TASKS;i++) {
         if (task[i]->state == TASK_ZOMBIE) {
+            // TODO:
+            // free all allocated kernel page
             // kfree(task[i]);
             // task[i] = NULL;
         }

@@ -98,7 +98,7 @@ void command_getCpioFile(void *initramfs_addr, char *buf)
 void command_cpio_svc() 
 {
     unsigned long fileSize;
-    char *result = cpio_get_file((void *) INITRAMFS_ADDR, "test_svc.elf", &fileSize);
+    char *result = cpio_get_file(INITRAMFS_ADDR, "test_svc.elf", &fileSize);
 
     char *program_address = result + 120;
     printf("cpio starting addres0x{%x}\n", result);

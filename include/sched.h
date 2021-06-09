@@ -48,6 +48,23 @@ struct cpu_context {
     unsigned long pc;
 };
 
+// map physical and virtual address
+struct user_page {
+    unsigned long phys_addr;
+    unsigned long virt_addr;
+};
+
+#define MAX_PROCESS_PAGES           16
+#define MAX_PROCESS_ADDRESS_SPACE   (MAX_PROCESS_PAGES * PAGE_SIZE)
+struct mm_struct {
+    unsigned long pgd;
+    int user_pages_count;
+    struct user_page user_pages[MAX_PROCESS_PAGES]; // phys and virt address mapping, used for fork syscall
+    int kernel_pages_count;
+    unsigned long kernel_pages[MAX_PROCESS_PAGES]; // page table
+};
+
+
 /**
  * @stack: User stack
  * @flags: Some flags such as Kernel/User thread 
@@ -58,12 +75,17 @@ struct task_struct {
     long counter;
     long priority;
     long preempt_count;
-    unsigned long stack; 
+    unsigned long stack;
     unsigned long flags;
     long pid;
-    struct list_head run_list; // TODO
+    struct list_head run_list; // TODO: runnable processes 
+
+    /* Virtual File system */
     struct files_struct files; // file descriptor table for each process
     struct dentry *cwd; // Current Working Directory
+
+    /* Memory Management */
+    struct mm_struct mm;
 };
 
 extern void schedule(void);
@@ -81,7 +103,10 @@ extern void dumpTasksState(void);
 #define INIT_TASK \
 /*cpu_context*/	{ {0,0,0,0,0,0,0,0,0,0,0,0,0}, \
 /* state etc */	0, 0, 1, 0, 0, PF_KTHREAD, \
-/* task id */	0 \
+/* task id */	0, \
+/* run_list */  {0, 0}, \
+/* VFS */       {0, 0, {0}}, 0, \
+/* mm */        {0, 0, {{0}}, 0, {0}} \
 }
 
 #endif /* __ASSEMBLER__ */

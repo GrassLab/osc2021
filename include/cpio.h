@@ -12,12 +12,14 @@
 #ifndef _LIB_CPIO_H_
 #define _LIB_CPIO_H_
 
+#include "base.h"
+
 /* Magic identifiers for the "cpio" file format. */
 #define CPIO_HEADER_MAGIC "070701"
 #define CPIO_FOOTER_MAGIC "TRAILER!!!"
 #define CPIO_ALIGNMENT 4
 
-#define INITRAMFS_ADDR 0x8000000
+#define INITRAMFS_ADDR (void *)0x8000000 + VA_START
 
 #ifndef NULL
 #define NULL ((void *)0)
@@ -71,9 +73,9 @@ struct cpio_info {
  *
  * @param[in] archive     The location of the CPIO archive
  * @param[out] filename   ###The name of the file in question.
- * @param[out] _filesize  ###The name of the file in question.
- * @param[out] data       ###The name of the file in question.
- * @param[out] next       ####The name of the file in question.
+ * @param[out] filesize  ###The filesize of the file in question.
+ * @param[out] data       ###The data of the file in question.
+ * @param[out] next       ####The next file in question.
  */
 int cpio_parse_header(struct cpio_header *archive,
         const char **filename, unsigned long *_filesize, void **data,

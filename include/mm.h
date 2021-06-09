@@ -45,7 +45,7 @@
 
 #include "list.h"
 #include "types.h"
-
+#include "sched.h"
 /**
  * "used" property of struct of page 
  */
@@ -152,15 +152,40 @@ void dump_obj_alloc(obj_allocator_t *);
  */
 void __init_kmalloc();
 void *kmalloc(int size);
-void kfree(void *addr) ;
+void kfree(void *addr);
 
 /**
  *  mm_init - Initialize system of memory management 
  */
 void mm_init();
 
+/* Functions after MMU enable*/
+void *get_free_page();
+void free_page(void *p);
+void *alloacte_kernel_page();
+void *alloacte_user_page(struct task_struct *task, unsigned long va);
+void map_table_entry(unsigned long *pte, unsigned long va, unsigned long page);
+unsigned long map_table (unsigned long *table, unsigned long shift, unsigned long va, int *new_table);
+void map_page(struct task_struct *task, unsigned long va, unsigned long page);
 
+int copy_virt_memory(struct task_struct *dst);
 
+/**
+ * page fault exception (or, which is the same, data access exception)
+ * @param[in] addr  The memory address which we tried to access. This address is taken from far_el1 register (Fault address register)
+ * @param[in] esr   The content of the esr_el1 (Exception syndrome register)
+ * @return          0 if success, otherwise return non zero value
+ * 
+ * 
+ * esr register - 
+ * Bits [32:26] of this register are called "Exception Class".
+ * We check those bits in the el0_sync handler to determine whether it is a syscall, or a data abort exception or potentially something else.
+ * Exception class determines the meaning of bits [24:0] - those bits are usually used to provide additional information about the exception. 
+ * The meaning of [24:0] bits in case of the data abort exception is described on the page 2460 of the AArch64-Reference-Manual
+ */
+int do_mem_abort(unsigned long addr, unsigned long esr);
+
+/* mm.S */
 void memcpy(unsigned long dst, unsigned long src, unsigned long n);
 void memzero(unsigned long src, unsigned long n);
 

@@ -9,4 +9,10 @@ static inline void delay(unsigned long tick) {
     }
 }
 
+extern void set_pgd(unsigned long pgd);
+
+// Because printf.c in our printf source code not support 64bit,
+// we design a special function to print 64bit value
+void print_0x_64bit(void *p);
+
 #endif  /*_BOOT_H */

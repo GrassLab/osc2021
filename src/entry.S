@@ -158,62 +158,76 @@ error_invalid_el0_32:
 /* Synchronous and IRQ handler */
 el1_sync_exc_handler: 
     kernel_entry 1
-    mrs    x25, esr_el1                // read the syndrome register
-    lsr    x24, x25, #ESR_ELx_EC_SHIFT // exception class
-    cmp    x24, #ESR_ELx_EC_SVC64   // SVC in 64-bit state
+    mrs    x25, esr_el1                 // read the syndrome register
+    lsr    x24, x25, #ESR_ELx_EC_SHIFT  // exception class
+    cmp    x24, #ESR_ELx_EC_SVC64       // SVC in 64-bit state
     b.eq   el1_svc
     handle_invalid_entry 1, SYNC_ERROR
 
-sc_nr   .req    x25                  // number of system calls
-scno    .req    x26                  // syscall number
-stbl    .req    x27                  // syscall table pointer
+sc_nr   .req    x25                     // number of system calls
+scno    .req    x26                     // syscall number
+stbl    .req    x27                     // syscall table pointer
 
 el1_svc:
-    adr    stbl, sys_call_table      // load syscall table pointer
-    uxtw   scno, w8                  // syscall number in w8
+    adr    stbl, sys_call_table         // load syscall table pointer
+    uxtw   scno, w8                      // syscall number in w8
     mov    sc_nr, #__NR_syscalls
     bl     enable_irq
-    cmp    scno, sc_nr               // check upper syscall limit
+    cmp    scno, sc_nr                   // check upper syscall limit
     b.hs   ni_sys
 
-    ldr    x16, [stbl, scno, lsl #3] // address in the syscall table
-    blr    x16                       // call sys_* routine
+    ldr    x16, [stbl, scno, lsl #3]    // address in the syscall table
+    blr    x16                          // call sys_* routine
     b      el1_ret_from_syscall
 el1_ni_sys: // non-existent syscall
     handle_invalid_entry 1, SYSCALL_ERROR 
 el1_ret_from_syscall:
     bl    disable_irq
-    str   x0, [sp, #S_X0]            // save returned x0
+    str   x0, [sp, #S_X0]               // save returned x0
     kernel_exit 1
 
 el0_sync_exc_handler:
     kernel_entry 0
-    mrs    x25, esr_el1                // read the syndrome register
-    lsr    x24, x25, #ESR_ELx_EC_SHIFT // exception class
-    cmp    x24, #ESR_ELx_EC_SVC64   // SVC in 64-bit state
+    mrs    x25, esr_el1                 // read the syndrome register
+    lsr    x24, x25, #ESR_ELx_EC_SHIFT  // exception class
+    cmp    x24, #ESR_ELx_EC_SVC64       // SVC in 64-bit state
     b.eq   el0_svc
+    cmp    x24, #ESR_ELx_EC_DABT_LOW    // page fault exception (or, which is the same, data access exception)
+    b.eq   el0_da
     handle_invalid_entry 0, SYNC_ERROR
-
-sc_nr   .req    x25                  // number of system calls
-scno    .req    x26                  // syscall number
-stbl    .req    x27                  // syscall table pointer
+    
+sc_nr   .req    x25                     // number of system calls
+scno    .req    x26                     // syscall number
+stbl    .req    x27                      // syscall table pointer
 
 el0_svc:
-    adr    stbl, sys_call_table      // load syscall table pointer
-    uxtw   scno, w8                  // syscall number in w8
+    adr    stbl, sys_call_table         // load syscall table pointer
+    uxtw   scno, w8                     // syscall number in w8
     mov    sc_nr, #__NR_syscalls
     bl     enable_irq
-    cmp    scno, sc_nr               // check upper syscall limit
+    cmp    scno, sc_nr                  // check upper syscall limit
     b.hs   ni_sys
 
-    ldr    x16, [stbl, scno, lsl #3] // address in the syscall table
-    blr    x16                       // call sys_* routine
+    ldr    x16, [stbl, scno, lsl #3]    // address in the syscall table
+    blr    x16                          // call sys_* routine
     b      ret_from_syscall
 ni_sys: // non-existent syscall
     handle_invalid_entry 0, SYSCALL_ERROR 
 ret_from_syscall:
     bl    disable_irq
-    str   x0, [sp, #S_X0]            // save returned x0
+    str   x0, [sp, #S_X0]               // save returned x0
+    kernel_exit 0
+
+el0_da:
+    bl    enable_irq
+    mrs   x0, far_el1
+    mrs   x1, esr_el1
+    bl    do_mem_abort
+    cmp   x0, 0
+    b.eq  1f
+    handle_invalid_entry 0, DATA_ABORT_ERROR
+1:
+    bl    disable_irq
     kernel_exit 0
 
 irq_exc_handler:
@@ -224,8 +238,8 @@ irq_exc_handler:
 
 .globl ret_from_fork
 ret_from_fork:
-    bl	schedule_tail                // enabled preemption
-    cbz x19, ret_to_user             // not a kernel thread
+    bl	schedule_tail                   // enabled preemption
+    cbz x19, ret_to_user                // not a kernel thread
     mov	x0, x20
     blr	x19 		
 ret_to_user:
@@ -234,31 +248,31 @@ ret_to_user:
 
 .globl enable_irq_persist
 enable_irq_persist:
-    mov x2, x30	                     // store return address
+    mov x2, x30	                        // store return address
     bl enable_irq
     mov x30, x2
 
     mrs x0, spsr_el1
     mov x1, 0b01111111
     and x0, x0, x1
-    msr spsr_el1, x0                 // set irq bit enable
+    msr spsr_el1, x0                    // set irq bit enable
     ret
 
 .globl disable_irq_persist
 disable_irq_persist:
-    mov x2, x30	                     // store return address
+    mov x2, x30	                        // store return address
     bl disable_irq
     mov x30, x2
 
     mrs x0, spsr_el1
     mov x1, 0b10000000
     orr x0, x0, x1
-    msr spsr_el1, x0                 // set irq bit disable
+    msr spsr_el1, x0                    // set irq bit disable
     ret
 
 .globl enable_irq
 enable_irq:
-    msr daifclr, #2                  // enable irq to current processor state
+    msr daifclr, #2                     // enable irq to current processor state
     ret
 
 .globl disable_irq

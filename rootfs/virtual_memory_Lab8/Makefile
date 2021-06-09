@@ -2,7 +2,7 @@
 # https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/Makefile
 ARMGNU ?= aarch64-linux-gnu
 
-COPS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude -ggdb  #-D__FS_DEBUG #-D__DEBUG #-D__DEBUG_MM #-D__DEBUG_MM_ALLOC #-D__DEBUG_MM_SCHED
+COPS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude #-ggdb #-D__FS_DEBUG #-D__DEBUG 
 ASMOPS = -Iinclude 
 
 BUILD_DIR = build
@@ -30,7 +30,7 @@ DEP_FILES = $(OBJ_FILES:%.o=%.d)
 
 kernel8.img: linker.ld $(OBJ_FILES)
 	$(ARMGNU)-ld -T linker.ld -o $(BUILD_DIR)/kernel8.elf  $(OBJ_FILES)
-	$(ARMGNU)-objcopy $(BUILD_DIR)/kernel8.elf -O binary kernel8.img
+	$(ARMGNU)-objcopy $(BUILD_DIR)/kernel8.elf -O binary Lab8.img
 
 run:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio
