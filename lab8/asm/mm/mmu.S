@@ -115,7 +115,6 @@ mmu_enable:
   # buddy address
   # 0x10000000 - 0x101fffff
   mov x3, 0x10000000
-  orr x2, x2, UXN
   orr x3, x2, x3
   str x3, [x1, 0x80*8]
 
