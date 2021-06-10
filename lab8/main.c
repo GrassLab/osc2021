@@ -30,7 +30,8 @@ void main()
     }
     */
     int* gg = my_alloc(sizeof(int));
-    uart_printf("gg:%x\n",gg);
+    *gg = 10;
+    uart_printf("gg:%x\n",*gg);
     uart_puts("Hello World!\n");
     // echo everything back
     //int el = get_el();

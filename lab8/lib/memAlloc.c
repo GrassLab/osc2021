@@ -116,8 +116,8 @@ void mem_status_dump() {
 
 void split_node(int exp) {
 
-  uart_printf("split from size 2^%d to 2^%d\n", exp + 12, exp + 11);
-  int addr1, addr2;
+  //uart_printf("split from size 2^%d to 2^%d\n", exp + 12, exp + 11);
+  unsigned long addr1, addr2;
   addr1 = list_node_arr[exp].next->start_addr;
   addr2 = (addr1 + (1 << (exp + 11)));
 
@@ -163,7 +163,7 @@ unsigned long find_space(int exp) {
 
   unsigned long address = check_list(exp - 12);
   if (address == 0) {
-    uart_printf("Currently no desired size frame, need to split\n");
+    //uart_printf("Currently no desired size frame, need to split\n");
     return NULL;
   } else {
     //uart_printf("found contiguous space of 2^%d at address:0x%x\n", exp,
@@ -225,14 +225,14 @@ void my_free(unsigned long addr) {
 
   if (addr >= (unsigned long)addr16 && addr < ((unsigned long)addr16 + PAGE_SIZE)) {
     chunk16[(addr - (unsigned long)addr16) >> 4].onused = 0;
-    uart_printf("Size 2^%d at address 0x%x has been freed\n",4, addr);
+    //uart_printf("Size 2^%d at address 0x%x has been freed\n",4, addr);
     return;
   } else if (addr >= addr32 && addr < (addr32 + PAGE_SIZE)) {
     chunk32[((unsigned long)addr - (unsigned long)addr32) >> 5].onused = 0;
-    uart_printf("Size 2^%d at address 0x%x has been freed\n",5, addr);
+    //uart_printf("Size 2^%d at address 0x%x has been freed\n",5, addr);
     return;
   } else if (addr >= addr64 && addr < (addr64 + PAGE_SIZE)) {
-    uart_printf("Size 2^%d at address 0x%x has been freed\n",6, addr);
+    //uart_printf("Size 2^%d at address 0x%x has been freed\n",6, addr);
     chunk64[(addr - (unsigned long)addr64) >> 6].onused = 0;
     return;
   }
@@ -243,7 +243,7 @@ void my_free(unsigned long addr) {
   int buddy = page_no ^ (1 << (exp)); // page_arr[page_no].buddy;
   int buddy_head = buddy;
   list_node *freed = page_arr[page_no].corespond_list_node;
-    uart_printf("Size 2^%d at address 0x%x has been freed\n",exp+12, addr);
+    //uart_printf("Size 2^%d at address 0x%x has been freed\n",exp+12, addr);
   list_node_push(freed, exp);
   int free;
   for (int i = 0; i < frame_size; ++i) {
@@ -258,7 +258,7 @@ void my_free(unsigned long addr) {
     }
     if (free == 1) {
       buddy = buddy_head;
-      uart_printf("merge 2 size 2^%d\n", exp + 12);
+      //uart_printf("merge 2 size 2^%d\n", exp + 12);
 
       pool[used].fr_no = page_no < buddy ? page_no : buddy;
       pool[used].start_addr = (pool[used].fr_no << 12) + MEM_START;

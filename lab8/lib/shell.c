@@ -125,7 +125,9 @@ static void parse_input(char *buffer){
         test2();
     }else if(compString("lab6-1",buffer) == 0){
         tmpfsDump(my_mount.root,0);
-    }else if(compString("lab6-2",buffer) == 0){
+    }else if(compString("lab7",buffer) == 0){
+        test4();
+    }else if(compString("lab8",buffer) == 0){
         test3();
     }else{
         uart_puts("No Such Command\n");

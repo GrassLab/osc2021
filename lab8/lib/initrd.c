@@ -144,10 +144,11 @@ unsigned long argvPut(char** argv,unsigned long ret){
 		}
 	}
     uart_printf("after argvput:%x\n",ret);
+    while(1);
 	return ret;
 }
 unsigned long loadprogWithArgv(char *path, unsigned long a_addr, char **argv){
-    cpio_t *file_addr = findFile((cpio_t*)0x8000000, path);
+    cpio_t *file_addr = findFile((cpio_t*)(0x8000000), path);
     if(!file_addr){
         uart_puts("Prog not found\n");
         return 0;
@@ -160,14 +161,13 @@ unsigned long loadprogWithArgv(char *path, unsigned long a_addr, char **argv){
 // uart_printf("dsize:%d\n",dsize);
     unsigned char *data = (unsigned char*)((unsigned char*)file_addr + HPP);
     //*task_addr = a_addr;
-    unsigned char* tar = (unsigned char*)a_addr;
+    unsigned char* tar = (unsigned char*)(a_addr);
     while(dsize--){
         *tar = *data;
         tar++;
         data++;
     }
-
-    unsigned long sp_addr = argvPut(argv, a_addr);
+    unsigned long sp_addr = argvPut(argv,a_addr);
 
     asm volatile("mov x0, 0x340   \n"::);
     asm volatile("msr spsr_el1, x0   \n"::);
@@ -221,7 +221,7 @@ cpio_t* nextfile(cpio_t* cpio_addr){
 void cpio()
 {
     uart_puts("Size\t\tFilename\n");
-    cpio_t* addr = (cpio_t*)0x8000000;
+    cpio_t* addr = (cpio_t*)(KVA+0x8000000);
     // iterate on archive's contents
     // if it's a cpio archive. Cpio also has a trailer entry
     while(compString((char*)(addr+1),"TRAILER!!!")!=0) {
@@ -241,7 +241,7 @@ void cpio()
         addr=(cpio_t*)(data+dsize);
     }
 
-    addr = (cpio_t*)0x8000000;
+    addr = (cpio_t*)(KVA+0x8000000);
     char target[100];
     getName(target);
     cpio_t* entry = findFile(addr,target);

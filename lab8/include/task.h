@@ -31,7 +31,9 @@ typedef struct _task_struct{
   int id;
   int state;
   unsigned long stack_addr;
+  unsigned long a_addr;
   file* fd_table[5];
+  void* page_table;
 }task_struct;
 
 

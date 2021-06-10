@@ -18,6 +18,7 @@ int main(int argc,char** argv){
     uart_printf("\nwrite somthing to %s(fd %d):\n",argv[1],fd);
     int len=uart_read(buffer,100);
     write(fd,buffer,len);
+    uart_printf("write finished\n");
 
     cur_exit();
 }

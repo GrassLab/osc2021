@@ -68,8 +68,8 @@ void _except_handler(trap_frame *tf){
                 }
             case 5:
                 {
-                task_struct *cur = get_current();
-                int pid = cur->id;
+                //task_struct *cur = get_current();
+                int pid = gettid();
                 tf->regs[0] = pid;
                 return ;
                 }
@@ -106,7 +106,12 @@ void _except_handler(trap_frame *tf){
         }
 
 
-    }
+    }else if(((esr>>26)&0x3f)==0x24){
+		unsigned long far;
+		asm volatile("mrs %0, far_el1\n":"=r"(far):);
+		uart_printf("[Data Abort] pid: %d, far_el1: %x\n",gettid(),far);
+		cur_exit();
+	}
 }
 
 

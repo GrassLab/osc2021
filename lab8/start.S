@@ -48,6 +48,9 @@ _from_el2_to_el1:
 
     mov     x0, #(3 << 20)
     msr     cpacr_el1, x0
+
+    bl core_timer_enable
+
     eret // return to EL1
 
 
