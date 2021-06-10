@@ -6,7 +6,7 @@
 # include "mem_addr.h"
 
 # define BUDDY_BASE_ADDR   (0x10000000 + KVA)
-# define BUDDY_SIZE        (0x400000)
+# define BUDDY_SIZE        (0x800000)
 # define BUDDY_PAGE_SIZE   PAGE_SIZE
 # define BUDDY_PAGE_NUM    (BUDDY_SIZE/BUDDY_PAGE_SIZE)
 # define BUDDY_MAX_ORDER   12

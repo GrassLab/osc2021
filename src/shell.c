@@ -291,11 +291,10 @@ void shell_init_meg(){
     case FINE:    uart_puts((char *)"[Logger level] : FINE\n");   break;
   }
   
-  uart_puts(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+  uart_puts("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n");
   uart_puts("Hi!\n");
-  uart_puts("Welcome to Eric's system ~\n");
-  uart_puts("(Lab8)\n");
-  uart_puts(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+  uart_puts("Welcome to Eric's rpi3 system ~\n");
+  uart_puts("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n");
 }
 
 void shell(){
