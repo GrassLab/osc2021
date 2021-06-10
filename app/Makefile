@@ -20,6 +20,8 @@ OBJS_LIB_ASM = $(SRCS_LIB_ASM:$(LIB_DIR)/%.S=$(BUILD_DIR)/%.o)
 
 CFLAGS = -Wall -O1 -ffreestanding -nostdinc -nostdlib -nostartfiles -Iinclude
 
+.PHONY: all clean build_dir debug_dir
+
 all: $(IMGS) $(IMGS_ASM)
 	cp -v img/* ../rootfs/demo/
 	echo "The user program img save under dir:img and dir:../rootfs/demo/"
@@ -40,8 +42,8 @@ $(BUILD_DIR)/%.o: $(LIB_DIR)/%.c $(BUILD_DIR)
 $(BUILD_DIR)/%.o: $(LIB_DIR)/%.S $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-	
-
+clean:
+	rm -f $(BUILD_DIR)/*.o
 
 build_dir: $(BUILD_DIR)
 
