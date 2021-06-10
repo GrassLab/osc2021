@@ -1,8 +1,7 @@
 #ifndef ALLOCATOR_H
 #define ALLOCATOR_H
 
-/* max allocation size is 8 GB */
-#define MAX_ALLOC_LOG2 20
+#define MAX_ALLOC_LOG2 28
 #define MAX_ALLOC_SIZE (1 << MAX_ALLOC_LOG2)
 /* each page is 16 bytes */
 #define PAGE_SIZE_LOG2 4

@@ -1,5 +1,4 @@
 #include "scheduler.h"
-#include "sched.h"
 #include "allocator.h"
 #include "utils.h"
 #include "uart.h"
@@ -9,136 +8,111 @@
 #define CREATE_SUCCESS 0
 #define CREATE_FAIL    1
 
-//static thread init_thread = INIT_THREAD;
-
-thread *run_queue[MAX_THREAD_COUNT] = {NULL};
-thread *current = NULL; // point to current thread
-int curr_index = -1; // current thread index in queue
-int thread_count = 0; // There is no thread at the begining
+static struct task_struct init_task = INIT_TASK;
+struct task_struct *current = &(init_task);
+struct task_struct * task[NR_TASKS] = {&(init_task), };
+int nr_tasks = 1;
 
 static void preempt_disable(void) {
-    if(current) current->preempt_flag++;
+    if(current) current->preempt_count++;
 }
 
 static void preempt_enable(void) {
-	if(current) current->preempt_flag--;
+	if(current) current->preempt_count--;
 }
 
 void delay(unsigned long count) {
-    while(--count);
+    while(count--){};
 }
 
-void switch_to(thread *next) {
-    //if(current == next) return;
-    thread *prev = current;
-    current = next;
-    cpu_switch_to(prev, next);
+struct pt_regs * task_pt_regs(struct task_struct *tsk)
+{
+	unsigned long p = (unsigned long)tsk + THREAD_SIZE - sizeof(struct pt_regs);
+	return (struct pt_regs *)p;
 }
 
-pt_regs* task_pt_regs(thread *tsk){
-	unsigned long p = (unsigned long)tsk + THREAD_SIZE - sizeof(pt_regs);
-	return (pt_regs *)p;
-}
+int create_thread(unsigned long clone_flags, unsigned long fn, unsigned long arg)
+{
+	preempt_disable();
+	struct task_struct *p;
 
+	unsigned long page = kmalloc(1<<12);
+	p = (struct task_struct *) page;
+	struct pt_regs *childregs = task_pt_regs(p);
 
-int create_thread(unsigned long clone_flags, unsigned long func, unsigned long arg, unsigned long stack) {
-    preempt_disable();
-    thread *p;
-    
-    // allocate 1 page(4KB) for each thread
-    p = (thread*) kmalloc(THREAD_SIZE);
-    if(!p) return CREATE_FAIL;
+	if (!p)
+		return -1;
 
 	if (clone_flags & PF_KTHREAD) {
+		p->cpu_context.x19 = fn;
 		p->cpu_context.x20 = arg;
-        p->cpu_context.sp = (unsigned long)p + 4096;
-        p->cpu_context.fp = (unsigned long)p + 4096;
-        p->cpu_context.lr = func;
-        for(int i = 0; i < FD_MAX_SIZE; i++) {
-            p->fd_table[i] = 0;
-        }
-        p->child = 0;
-	} 
-    else {
-        // clone
-        /*
-        unsigned char *dest = (unsigned char *)p;
-        unsigned char *src = (unsigned char *)current;
-        for(int i = 0; i < 4096; i++) {
-            dest[i] = src[i];    
-        }
-        */
-        memcpy(p, current, 4096);
-        for(int i = 0; i < FD_MAX_SIZE; i++) {
-            p->fd_table[i] = current->fd_table[i];
-        }
+	} else {
+		struct pt_regs * cur_regs = task_pt_regs(current);
+		*childregs = *cur_regs;
+		childregs->regs[0] = 0;
+		copy_virt_memory(p);
+	}
+	p->flags = clone_flags;
+	p->priority = current->priority;
+	p->state = RUNNING;
+	p->counter = p->priority;
+	p->preempt_count = 1; //disable preemtion until schedule_tail
 
-        unsigned long k_delta = (unsigned long)p - (unsigned long)current;
-        p->cpu_context.ux0 = 0;
-        p->cpu_context.fp += k_delta;
-        p->cpu_context.sp += k_delta;
-        p->cpu_context.elr += (unsigned long)0x100000;
-        p->cpu_context.usp += (unsigned long)0x100000;
-        p->cpu_context.ufp += (unsigned long)0x100000;
-        p->cpu_context.ulr += (unsigned long)0x100000;
-        //p->cpu_context.lr = p->cpu_context.ulr;
+	p->cpu_context.pc = (unsigned long)ret_from_fork;
+	p->cpu_context.sp = (unsigned long)childregs;
+	int pid = nr_tasks++;
+    p->id = pid;
+	task[pid] = p;	    
 
-        /*
-        char *src_stack = (char *)current->cpu_context.usp;
-        char *dest_stack = (char *)p->cpu_context.usp;
-        for(int i = 0; i < 4096; i++) {
-            dest_stack[i] = src_stack[i];
-        }
-        */
-        memcpy(0x300000, 0x200000, 0x100000);
-    }
-
-    p->id = thread_count++;
-    p->state = READY;
-    p->priority = 2;
-    p->counter = p->priority;
-    current->child = 1;
-    
-    run_queue[p->id] = p;
-    preempt_enable();
-    
-    // parent
-    return p->id;
+	preempt_enable();
+	return pid;
 }
 
 
-void scheduler() {
-    preempt_disable();
-    int next_index;
-    thread *p = NULL;
-    int find_next_thread = 0;
-    if(current && current->state != DEAD) {
-        current->state = READY;
-        current->counter = 0;
-    }
 
-    // Find next available thread (state=READY and its counter > 0), searching from current index + 1
-    for(int i = 0; i < thread_count; i++) {
-        next_index = (curr_index+1) % thread_count;
-        p = run_queue[next_index];
-        if(p && p->state == READY && p->counter > 0) {
-            find_next_thread = 1;
-            break;
-        }
-    }
-    // When all thread has no time or no available thread can run, dispatch time for each thread then start from thread 0
-    if(!find_next_thread) {
-        for(int i = 0; i < thread_count; i++) {
-            p = run_queue[i];
-            p->counter = (p->counter >> 1) + p->priority;
-        }
-        next_index = 0;
-    }
-    
-    run_queue[next_index]->state = RUNNING;
-    curr_index = next_index;
-    switch_to(run_queue[next_index]);
-    preempt_enable();
+void _schedule(void)
+{
+	preempt_disable();
+	int next,c;
+	struct task_struct * p;
+	while (1) {
+		c = -1;
+		next = 0;
+		for (int i = 0; i < NR_TASKS; i++){
+			p = task[i];
+			if (p && p->state == RUNNING && p->counter > c) {
+				c = p->counter;
+				next = i;
+			}
+		}
+		if (c) {
+			break;
+		}
+		for (int i = 0; i < NR_TASKS; i++) {
+			p = task[i];
+			if (p) {
+				p->counter = (p->counter >> 1) + p->priority;
+			}
+		}
+	}
+	switch_to(task[next]);
+	preempt_enable();
+}
+
+void scheduler(void)
+{
+	current->counter = 0;
+	_schedule();
+}
+
+void switch_to(struct task_struct * next) 
+{
+	if (current == next)
+		return;
+	struct task_struct * prev = current;
+	current = next;
+	set_pgd(next->mm.pgd);
+	cpu_switch_to(prev, next);
 }
 
 void schedule_tail(void) {
@@ -147,7 +121,7 @@ void schedule_tail(void) {
 
 void timer_tick() {
     --current->counter;
-    if(current->counter > 0) return;
+    if(current->counter > 0 || current->preempt_count >0) return;
     current->counter = 0;
     uart_puts("timer tick\n");
     scheduler();
@@ -155,60 +129,37 @@ void timer_tick() {
 
 void _exit() {
     preempt_disable();
-    current->state = DEAD;
-    uart_puts("thread ");
-    uart_puts_int(current->id);
-    uart_puts(" is dead\n");
+    for (int i = 0; i < NR_TASKS; i++){
+		if (task[i] == current) {
+			task[i]->state = ZOMBIE;
+			break;
+		}
+	}
+    uart_printf("thread %d is zombie\n", current->id);
     preempt_enable();
     scheduler();
-}
-
-// remove the DEAD thread from queue and relocate the rest thread
-static void relocate_queue() {
-    for(int i = 0; i < thread_count; i++) {
-        thread *dest = run_queue[i];
-        if(dest->state == DEAD) {
-            uart_puts("relocate...\n");
-            for(int j = i+1; j < MAX_THREAD_COUNT; j++) {
-                thread *src = run_queue[j];
-                if(src && src->state != DEAD) {
-                    run_queue[i] = src;
-                    run_queue[j] = NULL;
-                }
-            }
-        }
-    }
-    for(int i = 0; i < MAX_THREAD_COUNT; i++) {
-        thread *p = run_queue[i];
-        if(p && p->state==DEAD) run_queue[i] = NULL;
-    }
 }
 
 void idle() {
     // kill zombies
     while(1) {
         preempt_disable();
-        for(int i = 0; i < MAX_THREAD_COUNT; i++) {
-            thread *p = run_queue[i];
-            if(p && p->state == DEAD) {
+        for(int i = 0; i < NR_TASKS; i++) {
+            struct task_struct *p = task[i];
+            if(p && p->state == ZOMBIE) {
                 for(int i = 0; i < FD_MAX_SIZE; i++) {
                     if(p->fd_table[i]) {
                         vfs_close(p->fd_table[i]);
                     }
                 }
                 free_page((unsigned long)p, THREAD_SIZE);
-                thread_count--;
+                nr_tasks--;
             }
         }
-        relocate_queue();
+        
         preempt_enable();
-        uart_puts("I am zombie killer, remain ");
-        uart_puts_int(thread_count);
-        uart_puts(" threads\n");
+        uart_printf("I am zombie killer, remain %d threads\n", nr_tasks);
         delay(1000000);
-        if(current->child != 0) {
-            create_thread(0, 0, 0, 0);
-        }
         scheduler();
     }
 }
@@ -223,7 +174,4 @@ void _exec(char *name, char **argv) {
     else {
         uart_puts("load user program success...\n");
     }
-    //run_queue[current->id]->cpu_context.pc = ret;
-    
-    //_exit();
 }

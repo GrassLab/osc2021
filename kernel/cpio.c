@@ -5,6 +5,7 @@
 #include "xcpt_func.h"
 #include "cpio.h"
 #include "base.h"
+#include "scheduler.h"
 
 volatile unsigned char *cpio_address_base = (unsigned char *) CPIO_BASE;
 // on qemu
@@ -196,9 +197,11 @@ unsigned long argv_puts(char **argv, unsigned long stack_top) {
 }
 
 unsigned long load_user_program_withArgv(char *name, char **argv) {
-    uart_puts("Please enter app load address (Hex): ");
-    unsigned long *prog_addr = (unsigned long *)uart_getX(1);
-    unsigned long stack_top = (unsigned long)prog_addr + PROCESS_SIZE;
+    //uart_printf("Please enter app load address (Hex): ");
+    //unsigned long *prog_addr = (unsigned long *)uart_getX(1);
+    unsigned long *prog_addr = allocate_user_page(current, 0x70000) | 0xffff000000000000;
+    //unsigned long stack_top = (unsigned long)prog_addr + PROCESS_SIZE;
+    unsigned long stack_top = allocate_user_page(current, 0x71000) | 0xffff000000000000;
     volatile unsigned char *cpio_address = cpio_address_base;
     unsigned long * file_data = NULL;
     int file_size = 0;
@@ -225,9 +228,7 @@ unsigned long load_user_program_withArgv(char *name, char **argv) {
         cpio_address += name_size;
         file_data = (unsigned long *)cpio_address;
         if(!strcmp(path_name, name)) {
-            uart_puts("find ");
-            uart_puts(path_name);
-            uart_puts("\n");
+            uart_printf("find %s\n", path_name);
             break;
         }
         cpio_address += file_size;
@@ -236,9 +237,10 @@ unsigned long load_user_program_withArgv(char *name, char **argv) {
     for(int i = 0; i < file_size; i++) {
         prog_addr[i] = file_data[i];
     }
-    uart_puts("loading user file with argv...\n");
-    stack_top = argv_puts(argv, stack_top);
-    run_user_program((unsigned long)prog_addr, stack_top);
+    uart_printf("loading user file with argv...\n");
+    //stack_top = argv_puts(argv, stack_top);
+    set_pgd(current->mm.pgd);
+    run_user_program(0x70000, 0x71000);
     return 1;
 }
 
