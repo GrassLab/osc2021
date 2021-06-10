@@ -192,7 +192,7 @@ int tmpfs_nodeInit(mount* mnt,vnode* root){
 	Content* content=(Content*)(root->internal);
 	content->name=0;
 	content->type=DIR_TYPE;
-	content->capacity=DIR_CAP;
+	content->capacity=DIR_CAP+10;
 	content->size=0;
 	content->data=(void*)alloc_page(DIR_CAP*8);
 

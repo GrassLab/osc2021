@@ -108,7 +108,7 @@ void* updatePT(void* page_table0,void* va){//all address in table are physical a
 		}
 		tmp=table[index[i]];
 		tmp=tmp-(tmp&0xfff);
-		table=(unsigned long*)PA2VA(tmp);
+		table=(unsigned long*)PA2VA(tmp);//goto next level page table
 	}
 	if(table[index[3]]!=0)ERROR("invalid va!");
 	void* frame=falloc(4096);

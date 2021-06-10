@@ -16,7 +16,7 @@ SECTIONS
     }
     . = ALIGN(16);
     __heap_start = .;
-    __stk_start = __bss_end + (1<<16);
+    __stk_start = . + (1<<16);
     __prog_end = __stk_start;
 }
 __bss_size = (__bss_end - __bss_start)>>3;

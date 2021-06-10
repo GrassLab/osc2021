@@ -30,7 +30,7 @@ typedef struct{
 
 static RQ rq;
 static int task_cnter;
-
+//new
 void threadSchedule(){
 	if(!rq.beg){
 		uart_printf("rq is empty!!\n");
@@ -106,7 +106,7 @@ void zombiesKill(){//called by idle()
 		}
 	}
 }
-
+//new
 void taskUpdate(Task* p,Task* c){
 	p->status^=TASKFORK;
 	p->child=c->id;
@@ -195,7 +195,7 @@ unsigned long putArgv(char** argv,unsigned long ret){
 	}
 	return ret;
 }
-
+//new
 void loadFSApp(char* path,unsigned long a_addr,char** argv,Task* task){
 	task->a_addr=a_addr;
 	//task->a_size=?;//TODO
@@ -208,8 +208,8 @@ void loadFSApp(char* path,unsigned long a_addr,char** argv,Task* task){
 	//load program
 	file* f=vfs_open(path,0);
 	for(unsigned long va=a_addr;;va+=4096){
-		updatePT(task->page_table,(void*)va);
-		int cnt=vfs_read(f,(void*)va,4096);
+		updatePT(task->page_table,(void*)va);//build page table
+		int cnt=vfs_read(f,(void*)va,4096);//copy process
 		if(cnt<4096)break;
 	}
 	vfs_close(f);

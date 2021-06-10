@@ -151,7 +151,7 @@ void syncFAT(file* f){
 		int pos=-1;
 		vnode** childs=(vnode**)(((Content*)(parent->internal))->cache);
 		int child_num=((Content*)(parent->internal))->len;
-		for(int i=0;i<child_num;++i){
+		for(int i=0;i<child_num;++i){//find child position
 			vnode* child=childs[i];
 			Content* child_content=(Content*)(child->internal);
 			if(strcmp(content->name,child_content->name)==0){
@@ -160,14 +160,14 @@ void syncFAT(file* f){
 			}
 		}
 		if(pos==-1)ERROR("sync a unknown file!");
-		int dirsize=512/32;
+		int dirsize=512/32;//max file size per sector
 		int cur=((Content*)(parent->internal))->id;
-		for(int i=0;i<pos/dirsize;++i)cur=metadata.table[cur];
+		for(int i=0;i<pos/dirsize;++i)cur=metadata.table[cur];//find file f sector
 		char* buf=(char*)alloc_page(512);
-		readblock(metadata.data_beg+cur,buf);
-		Dentry* dentry=(Dentry*)(buf+(pos%dirsize)*32);
+		readblock(metadata.data_beg+cur,buf);//read parent fat table
+		Dentry* dentry=(Dentry*)(buf+(pos%dirsize)*32);//write file length into fat table
 		dentry->len=content->len;
-		writeblock(metadata.data_beg+cur,buf);
+		writeblock(metadata.data_beg+cur,buf);//write back fat table
 		free_page((unsigned long)buf, 512);
 	}
 }
