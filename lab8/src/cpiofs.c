@@ -60,21 +60,12 @@ static void set_dir_vnode(struct mount *mount, struct dentry *new_d){
   vnode->v_ops = &cpiofs_dir_v_ops;
   vnode->f_ops = &cpiofs_f_ops;
   vnode->internal = 0;
-  //vnode->dentry = new_d;
   vnode->file = 0;
 }
 
 int cpiofs_setup_mount(struct filesystem* fs, struct mount* mount){
-  //struct dentry *new_d = vfs_create_dentry(0, (char *)"/", DIR);
-  /*
-  struct dentry *new_d = vfs_create_dentry(mount->parent, mount->name, DIR);
-  if (new_d == 0){
-    return -1;
-  }
-  */
   struct dentry *new_d = mount->root->dentry;
   set_dir_vnode(mount, new_d);
-  //mount->root = new_d->vnode;
   int argc = cpio_get_argc();
   char *argv[argc+1];
   cpio_get_argv(argv);
@@ -179,7 +170,6 @@ int cpiofs_read(struct file* file, void* buf, size_t len){
     return -1;
   }
   for (size_t i = 0; i<len; i++){
-    //if (file->f_pos < internal->size && internal->content[file->f_pos] != '\0'){
     if (file->f_pos < internal->size){
       ((char*)buf)[i] = internal->content[file->f_pos];
       file->f_pos++;
@@ -193,7 +183,6 @@ int cpiofs_read(struct file* file, void* buf, size_t len){
 }
 
 int cpiofs_write(struct file* file, const void* buf, size_t len){
-  //log_puts("Enter Write\n", INFO);
   log_puts((char *) "[Error] Write permission denied\n", WARNING);
   return -2;
 }

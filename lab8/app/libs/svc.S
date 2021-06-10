@@ -1,4 +1,3 @@
-
 .global svc_get_core_timer_value
 svc_get_core_timer_value:
   svc #1

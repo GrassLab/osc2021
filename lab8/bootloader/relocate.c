@@ -1,13 +1,11 @@
-extern unsigned char _begin, _end, __relocate_point, main;
 # include "uart.h"
 # include "my_math.h"
 # include "my_string.h"
 # include "relocate.h"
 
+extern unsigned char _begin, _end, __relocate_point, main;
+
 void relocate() {
-    //uart_init();
-    //uart_puts("relocate\n");
-    
     unsigned long kernel_size = (&_end - &_begin);
     unsigned char *new_bl = (unsigned char *)&__relocate_point;
     unsigned char *bl = (unsigned char *)&_begin;
@@ -15,23 +13,11 @@ void relocate() {
     while (kernel_size--) {
             *new_bl++ = *bl;
             bl++;
-            //*bl++ = 0;
         }
         
-    //char hex_c[20];
-    void (*func_p)(void) = &main;
-    //int_to_hex(func_p, hex_c);
-    //uart_puts(hex_c);
-    //uart_puts("\n");
+    void (*func_p)(void) = (void (*)(void) ) &main;
     func_p -= 0x10000;
-    //int_to_hex(func_p, hex_c);
-    //uart_puts(hex_c);
-    //uart_puts("\n");
     func_p();
-    /*
-    void (*start)(void) = (void *)&__relocate_point;
-    start();
-    */
 }
 
 void loadimg() {

@@ -87,7 +87,6 @@ int task_create(void (*func)(), int priority, enum task_el mode, int ifttbr0){
   new_node->priority = priority;
   new_node->counter = TASK_EPOCH;
   new_node->resched_flag = 0;
-  //new_node->invoke_func = func;
   new_node->mode = mode;
   new_node->pwd_vnode = get_root_vnode();
   for (int i=0; i<FD_MAX_NUM; i++){
@@ -226,21 +225,13 @@ void sys_fork(struct trapframe* trapframe){
 
   char* child_kstack = &kstack_pool[child_task->pid][STACK_TOP_IDX];
   char* parent_kstack = &kstack_pool[parent_task->pid][STACK_TOP_IDX];
-  //char* child_ustack = &ustack_pool[child_task->pid][STACK_TOP_IDX];
-  //char* parent_ustack = &ustack_pool[parent_task->pid][STACK_TOP_IDX];
 
   unsigned long long kstack_offset = parent_kstack - (char*)trapframe;
-  //unsigned long long ustack_offset = parent_ustack - (char*)trapframe->sp_el0;
   
   
   for (unsigned long long i = 0; i < kstack_offset; i++) {
     *(child_kstack - i) = *(parent_kstack - i);
   }
-  /*
-  for (unsigned long long i = 0; i < ustack_offset; i++) {
-    *(child_ustack - i) = *(parent_ustack - i);
-  }
-  */
 
   child_task->sp = (unsigned long long)child_kstack - kstack_offset;
 
@@ -249,7 +240,6 @@ void sys_fork(struct trapframe* trapframe){
   
   // place child's user stack to right place
   struct trapframe* child_trapframe = (struct trapframe*) child_task->sp;
-  //child_trapframe->sp_el0 = (unsigned long long)child_ustack - ustack_offset;
   child_trapframe->sp_el0 = trapframe->sp_el0;
   
   if (parent_task->ttbr0){
@@ -291,7 +281,6 @@ void sys_exec(struct trapframe *arg){
     return ;
   }
   int pid = get_pid();
-  //rmall_user_page(task_pool[pid].ttbr0);
   uint64_t new_ttbr0 = (uint64_t) malloc(PAGE_SIZE, 1);
   load_app(fd, new_ttbr0);
   LOG(FINE) user_pt_show((void*) new_ttbr0);
@@ -299,7 +288,6 @@ void sys_exec(struct trapframe *arg){
     task_pool[pid].fd[i] = 0;
   }
   
-  //char* ustack = &ustack_pool[pid][STACK_TOP_IDX];
   char* new_ustack_top = (char*) (va_to_pa( USER_PRO_SP_START, (void*)new_ttbr0) | KVA);
   char* ustack = new_ustack_top;
   
@@ -326,13 +314,6 @@ void sys_exec(struct trapframe *arg){
   for (int i = 0; i<ustack_offset; i++){
     ustack[i] = '\0';
   }
-  //unsigned long long *argv_addr = (unsigned long long *)(argv-1);
-  //*argv_addr = (unsigned long long)argv;
-  //unsigned long long *argc_addr = (unsigned long long *)(argv-2);
-  //*argc_addr = argc;
-  
-  //uint64_t offset = ((uint64_t)new_ustack_top)-((uint64_t)argv);
-  //argv = (char**)(USER_PRO_SP_START-offset);
   
   arg->sp_el0 = (unsigned long long) exec_pa_to_va(argv-2, new_ustack_top, (void*)USER_PRO_SP_START);
   arg->elr_el1 = (unsigned long long) USER_PRO_LR_START;

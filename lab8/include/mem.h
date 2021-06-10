@@ -13,8 +13,6 @@ struct mem_node{
   mem_node *next;
 };
 
-//struct mem_node *mem_inuse;
-
 struct mem_node* get_mem_inuse();
 void mem_init();
 void mem_ll_show();

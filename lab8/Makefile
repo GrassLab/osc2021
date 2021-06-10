@@ -7,6 +7,9 @@ BUILD_DIR = build
 DEBUG_DIR = debug
 SRC_DIR = src
 APP_DIR = app
+BOOTLOADER_DIR = bootloader
+
+SD_IMG_PATH = ./sd.img
 
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
@@ -16,7 +19,9 @@ OBJS_ASM = $(SRCS_ASM:$(SRC_DIR)/%.S=$(BUILD_DIR)/%.o)
 OBJS_ASM_Q = $(SRCS_ASM:$(SRC_DIR)/%.S=$(DEBUG_DIR)/%.o)
 CFLAGS = -Wall -O1 -ffreestanding -nostdinc -nostdlib -nostartfiles -Iinclude 
 
-all: clean kernel8.img
+.PHONY: all clean run sd asm bootloader build_dir debug_dir
+
+all: clean kernel8.img bootloader initramfs
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.S $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -41,22 +46,25 @@ kernel8_qemu.img: $(OBJS_Q) $(OBJS_ASM_Q)
 clean:
 	rm -f kernel8.elf kernel8_qemu.elf $(BUILD_DIR)/*.o *.cpio $(DEBUG_DIR)/*.o
 
-run: kernel8_qemu.img initramfs.cpio
+run: kernel8_qemu.img
 	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -serial null -serial stdio -initrd initramfs.cpio
 
-sd: kernel8_qemu.img initramfs.cpio
-	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -serial null -serial stdio -initrd initramfs.cpio -drive if=sd,file=../../img/sdb_demo.img,format=raw
+sd: kernel8_qemu.img
+	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -serial null -serial stdio -initrd initramfs.cpio -drive if=sd,file=$(SD_IMG_PATH),format=raw
 
-asm: kernel8_qemu.img initramfs.cpio
-	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -display none -d in_asm -serial null -serial pty -initrd initramfs.cpio -drive if=sd,file=../../img/sdb_part.img,format=raw
+asm: kernel8_qemu.img
+	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -display none -d in_asm -serial null -serial pty -initrd initramfs.cpio -drive if=sd,file=$(SD_IMG_PATH),format=raw
 
-pty: kernel8_qemu.img initramfs.cpio
-	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -serial null -serial pty -initrd initramfs.cpio -drive if=sd,file=../../img/sdb_part.img,format=raw
+pty: kernel8_qemu.img
+	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -serial null -serial pty -initrd initramfs.cpio -drive if=sd,file=$(SD_IMG_PATH),format=raw
 
-initramfs.cpio:
+initramfs:
 	$(MAKE) -C $(APP_DIR) all
 	cd rootfs; \
 	find . | cpio -o -H newc > ../initramfs.cpio
+
+bootloader:
+	$(MAKE) -C $(BOOTLOADER_DIR) all
 
 build_dir: $(BUILD_DIR)
 

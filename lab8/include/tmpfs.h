@@ -8,7 +8,6 @@ struct tmpfs_internal{
   char content[TMPFS_MAX_SIZE+1];
 };
 
-//void tmpfs_get_mount_fs(struct mount* mount_point);
 struct filesystem* tmpfs_get_fs();
 int tmpfs_setup_mount(struct filesystem* fs, struct mount* mount);
 int tmpfs_unmount(struct mount *mount);

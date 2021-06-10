@@ -7,7 +7,7 @@
 # include "vfs.h"
 
 
-char vector_table_desc[16][30] = {
+const char vector_table_desc[16][30] = {
   "0x000, Synchronous-SP_EL0",
   "0x080, IRQ-SP_EL0",
   "0x100, FIQ-SP_EL0",
@@ -60,37 +60,36 @@ void sync_handler(struct trapframe *arg, unsigned long type, unsigned long esr, 
   int iss = esr & 0x1FFFFFF;
   // check if SVC
   if (ec == ESR_EC_SVC){
-    //uart_puts((char *) "[SYNC] Call SVC handler\n");
     svc_handler(arg, type, iss);
     return ;
   }
   char ct[20];
-  uart_puts((char *) "Enter SYNC handler\n");
-  uart_puts((char *) "[EXCEPTION] TYPE = ");
+  uart_puts("Enter SYNC handler\n");
+  uart_puts("[EXCEPTION] TYPE = ");
   int_to_str(type, ct);
   uart_puts(ct);
-  uart_puts((char *) "\t");
-  uart_puts((char *) "Desc : ");
+  uart_puts("\t");
+  uart_puts("Desc : ");
   uart_puts(vector_table_desc[type]);
 
-  uart_puts((char *) "\n[EXCEPTION] ESR = ");
+  uart_puts("\n[EXCEPTION] ESR = ");
   int_to_hex(esr, ct);
   uart_puts(ct);
-  uart_puts((char *) "\tELR = ");
+  uart_puts("\tELR = ");
   int_to_hex(elr, ct);
   uart_puts(ct);
-  uart_puts((char *) ", EC = ");
+  uart_puts(", EC = ");
   int_to_hex(ec, ct);
   uart_puts(ct);
-  uart_puts((char *) ", ISS = ");
+  uart_puts(", ISS = ");
   int_to_hex(iss, ct);
   uart_puts(ct);
-  uart_puts((char *) "\n");
+  uart_puts("\n");
   if (ec == ESR_EC_PAGE_F1 || ec == ESR_EC_PAGE_F2 || ec == ESR_EC_PAGE_F3 || ec == ESR_EC_PAGE_F4){
     page_fault_handler();
   }
   else{
-    uart_puts((char *) "[Error] Unknown Sync Exception.\n");
+    uart_puts("[Error] Unknown Sync Exception.\n");
   }
   task_exit();
 }
@@ -98,10 +97,9 @@ void sync_handler(struct trapframe *arg, unsigned long type, unsigned long esr, 
 void svc_handler(struct trapframe *arg, unsigned long type, int iss){
   char ct[20];
   unsigned long long ans_ull;
-  //int ans_int;
   switch(iss){
     case SVC_ISS_NOPE:
-      uart_puts((char *) "[SVC] inside SVC handler\n");
+      uart_puts("[SVC] inside SVC handler\n");
       break;
     case SVC_ISS_GET_TIMER_VALUE:
       ans_ull = get_core_timer_value();
@@ -163,17 +161,15 @@ void svc_handler(struct trapframe *arg, unsigned long type, int iss){
       sys_unmount(arg);
       break;
     default:
-      uart_puts((char *) "[SVC] unknown SVC number : ");
+      uart_puts("[SVC] unknown SVC number : ");
       int_to_hex(iss, ct);
       uart_puts(ct);
-      uart_puts((char *) "\n");
+      uart_puts("\n");
       break;
   }
-  //uart_puts((char *) "return\n");
 }
 
 void irq_handler(){
-  //unsigned int irq_basic_pending = *((unsigned int *) IRQ_BASIC_PENDING);
   unsigned int core0_intr_src = *((unsigned int *) CORE0_INTR_SRC);
   if (core0_intr_src & (1 << 1)){
     core_timer_interrupt_handler();

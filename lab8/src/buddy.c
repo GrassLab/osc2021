@@ -23,13 +23,13 @@ inline unsigned long long buddy_pn_to_addr(int pn){
   return (unsigned long long)pn*BUDDY_PAGE_SIZE+BUDDY_BASE_ADDR;
 }
 
-void buddy_uart_puts(char *c, int it){
+void buddy_uart_puts(const char *c, int it){
   if (it == -1){
     log_puts(c, FINE);
     return ;
   }
   for (int i=0; i<it; i++){
-    log_puts((char *) "  ", FINE);
+    log_puts("  ", FINE);
   }
   log_puts(c, FINE);
 }
@@ -56,40 +56,40 @@ int dma_get_chunk_size(int slot_no){
 }
 
 void buddy_dma_init(){
-  log_puts((char *) "[INFO] DMA Init.\n", INFO);
-  uart_puts((char *) "");
+  log_puts("[INFO] DMA Init.\n", INFO);
+  uart_puts("");
   dma_ll[0].idx = 0;
-  uart_puts((char *) "");
+  uart_puts("");
   dma_ll[0].chunk_size = -1;
-  uart_puts((char *) "");
+  uart_puts("");
   for(int t=0; t<BUDDY_DMA_BITSET_LEN; t++) dma_ll[0].bitset[t] = 0;
-  uart_puts((char *) "");
+  uart_puts("");
   dma_ll[0].free_chunk_num = -1;
-  uart_puts((char *) "");
+  uart_puts("");
   dma_ll[0].max_chunk_num = -1;
-  uart_puts((char *) "");
+  uart_puts("");
   dma_ll[0].addr = 0;
-  uart_puts((char *) "");
+  uart_puts("");
   dma_ll[0].next = &dma_ll[1];
-  uart_puts((char *) "");
+  uart_puts("");
   dma_ll[0].pre = 0;
-  uart_puts((char *) "");
+  uart_puts("");
   dma_ll[BUDDY_DMA_LL_MAX_SIZE-1].idx = 0;
-  uart_puts((char *) "");
+  uart_puts("");
   dma_ll[BUDDY_DMA_LL_MAX_SIZE-1].chunk_size = -1;
-  uart_puts((char *) "");
+  uart_puts("");
   for(int t=0; t<BUDDY_DMA_BITSET_LEN; t++) dma_ll[BUDDY_DMA_LL_MAX_SIZE-1].bitset[t] = 0;
-  uart_puts((char *) "");
+  uart_puts("");
   dma_ll[BUDDY_DMA_LL_MAX_SIZE-1].free_chunk_num = -1;
-  uart_puts((char *) "");
+  uart_puts("");
   dma_ll[BUDDY_DMA_LL_MAX_SIZE-1].max_chunk_num = -1;
-  uart_puts((char *) "");
+  uart_puts("");
   dma_ll[BUDDY_DMA_LL_MAX_SIZE-1].addr = 0;
-  uart_puts((char *) "");
+  uart_puts("");
   dma_ll[BUDDY_DMA_LL_MAX_SIZE-1].next = 0;
-  uart_puts((char *) "");
+  uart_puts("");
   dma_ll[BUDDY_DMA_LL_MAX_SIZE-1].pre = &dma_ll[BUDDY_DMA_LL_MAX_SIZE-2];
-  uart_puts((char *) "");
+  uart_puts("");
   for (int i=0; i<BUDDY_DMA_LL_MAX_SIZE; i++){
     dma_ll[i].idx = i;
     dma_ll[i].chunk_size = -1;
@@ -104,11 +104,11 @@ void buddy_dma_init(){
     dma_head[i] = 0;
   }
   dma_unuse = &dma_ll[0];
-  log_puts((char *) "[INFO] DMA Init DONE.\n", INFO);
+  log_puts("[INFO] DMA Init DONE.\n", INFO);
 }
 
 void dma_register_node(int slot_no, int itrn){
-  buddy_uart_puts((char *) "Register free page from buddy system\n", itrn);
+  buddy_uart_puts("Register free page from buddy system\n", itrn);
   struct dma_node *new_node = ll_pop_front<struct dma_node>(&dma_unuse);
   new_node->chunk_size = dma_get_chunk_size(slot_no);
   new_node->free_chunk_num = BUDDY_PAGE_SIZE/(new_node->chunk_size);
@@ -117,44 +117,44 @@ void dma_register_node(int slot_no, int itrn){
   unsigned long long addr = buddy_alloc(4095, 0, itrn);
   new_node->addr = addr;
   ll_push_back<struct dma_node>(&dma_head[slot_no], new_node);
-  buddy_uart_puts((char *) "return\n", itrn);
+  buddy_uart_puts("return\n", itrn);
 }
 
 unsigned long long buddy_dma_alloc(int mbytes, int itrn){
   char ct[20];
   int slot_no = dma_get_slot_no(mbytes);
   int chunk_size = dma_get_chunk_size(slot_no);
-  buddy_uart_puts((char *) "Dynamic alloc, assign ", itrn);
+  buddy_uart_puts("Dynamic alloc, assign ", itrn);
   int_to_str(mbytes, ct);
   buddy_uart_puts(ct, -1);
-  buddy_uart_puts((char *) " bytes to slot ", -1);
+  buddy_uart_puts(" bytes to slot ", -1);
   int_to_str(slot_no, ct);
   buddy_uart_puts(ct, -1);
-  buddy_uart_puts((char *) " ( chunk size = ", -1);
+  buddy_uart_puts(" ( chunk size = ", -1);
   int_to_str(chunk_size, ct);
   buddy_uart_puts(ct, -1);
-  buddy_uart_puts((char *) " ).\n", -1);
+  buddy_uart_puts(" ).\n", -1);
   struct dma_node *target = dma_head[slot_no];
   while(target && target->free_chunk_num == 0){
     target = target->next;
   }
   if(!target){
-    buddy_uart_puts((char *) "Slot ", itrn+1);
+    buddy_uart_puts("Slot ", itrn+1);
     int_to_str(slot_no, ct);
     buddy_uart_puts(ct, -1);
-    buddy_uart_puts((char *) " don't have free chunk.\n", -1);
+    buddy_uart_puts(" don't have free chunk.\n", -1);
     dma_register_node(slot_no, itrn+1);
     target = dma_head[slot_no];
     while(target && target->free_chunk_num == 0){
       target = target->next;
     }
   }
-  buddy_uart_puts((char *) "Find free chunk, base addr <", itrn+1);
+  buddy_uart_puts("Find free chunk, base addr <", itrn+1);
   int_to_hex(target->addr, ct);
   buddy_uart_puts(ct, -1);
-  buddy_uart_puts((char *) ">.\n", -1);
+  buddy_uart_puts(">.\n", -1);
   int chunk_no = bitset_get_first_zero(target->bitset, target->max_chunk_num);
-  buddy_uart_puts((char *) "Assign chunk number ", itrn+1);
+  buddy_uart_puts("Assign chunk number ", itrn+1);
   int_to_str(chunk_no, ct);
   buddy_uart_puts(ct, -1);
   unsigned long long r = 0;
@@ -162,12 +162,12 @@ unsigned long long buddy_dma_alloc(int mbytes, int itrn){
     target->free_chunk_num--;
     bitset_set(target->bitset, chunk_no, target->max_chunk_num);
     r = target->addr+chunk_size*chunk_no;
-    buddy_uart_puts((char *) ", addr <", -1);
+    buddy_uart_puts(", addr <", -1);
     int_to_hex(r, ct);
     buddy_uart_puts(ct, -1);
-    buddy_uart_puts((char *) ">.\n", -1);
+    buddy_uart_puts(">.\n", -1);
   }
-  buddy_uart_puts((char *) "return\n", itrn);
+  buddy_uart_puts("return\n", itrn);
   return r;
 }
 
@@ -176,24 +176,24 @@ void buddy_dma_free(unsigned long long addr, int mbytes, int itrn){
   int slot_no = dma_get_slot_no(mbytes);
   int chunk_size = dma_get_chunk_size(slot_no);
   int chunk_no = (addr%BUDDY_PAGE_SIZE)/chunk_size;
-  buddy_uart_puts((char *) "Dynamic memory, free ", itrn);
+  buddy_uart_puts("Dynamic memory, free ", itrn);
   int_to_str(mbytes, ct);
   buddy_uart_puts(ct, -1);
-  buddy_uart_puts((char *) " bytes from addr <", -1);
+  buddy_uart_puts(" bytes from addr <", -1);
   int_to_hex(addr, ct);
   buddy_uart_puts(ct, -1);
-  buddy_uart_puts((char *) ">, base addr <", -1);
+  buddy_uart_puts(">, base addr <", -1);
   unsigned long long base_addr = addr-(addr%BUDDY_PAGE_SIZE);
   int_to_hex(base_addr, ct);
   buddy_uart_puts(ct, -1);
-  buddy_uart_puts((char *) ">\n", -1);
-  buddy_uart_puts((char *) "Chunk size = ", itrn+1);
+  buddy_uart_puts(">\n", -1);
+  buddy_uart_puts("Chunk size = ", itrn+1);
   int_to_str(chunk_size, ct);
   buddy_uart_puts(ct, -1);
-  buddy_uart_puts((char *) ", number = ", -1);
+  buddy_uart_puts(", number = ", -1);
   int_to_str(chunk_no, ct);
   buddy_uart_puts(ct, -1);
-  buddy_uart_puts((char *) "\n", -1);
+  buddy_uart_puts("\n", -1);
   struct dma_node *target = dma_head[slot_no];
   while(target && target->addr != base_addr){
     target = target->next;
@@ -203,67 +203,67 @@ void buddy_dma_free(unsigned long long addr, int mbytes, int itrn){
     bitset_clr(target->bitset, chunk_no, target->max_chunk_num);
     target->free_chunk_num++;
     if (target->free_chunk_num == target->max_chunk_num){
-      buddy_uart_puts((char *) "This slot is all free, release page <", itrn+1);
+      buddy_uart_puts("This slot is all free, release page <", itrn+1);
       int_to_hex(target->addr, ct);
       buddy_uart_puts(ct, -1);
-      buddy_uart_puts((char *) ">\n", -1);
+      buddy_uart_puts(">\n", -1);
       buddy_free(target->addr, 4095, itrn+1);
       ll_rm_elm<struct dma_node>(&dma_head[slot_no], target);
-      uart_puts((char *) "");
+      uart_puts("");
       target->chunk_size = -1;
-      uart_puts((char *) "");
+      uart_puts("");
       target->free_chunk_num = -1;
-      uart_puts((char *) "");
+      uart_puts("");
       target->max_chunk_num = -1;
-      uart_puts((char *) "");
+      uart_puts("");
       target->addr = 0;
       ll_push_front<struct dma_node>(&dma_unuse, target);
     }
   }
-  buddy_uart_puts((char *) "return\n", itrn);
+  buddy_uart_puts("return\n", itrn);
 }
 
 void buddy_dma_ll_show(){
   char tt[20];
   for (int i=0; i<BUDDY_DMA_SLOT_NUM; i++){
     int_to_str(i, tt);
-    uart_puts((char *) "Slot ");
+    uart_puts("Slot ");
     uart_puts(tt);
-    uart_puts((char *) ", chunk size ");
+    uart_puts(", chunk size ");
     int_to_str(dma_get_chunk_size(i), tt);
     uart_puts(tt);
     if (dma_head[i]){
-      uart_puts((char *) "\n");
+      uart_puts("\n");
       struct dma_node *t = dma_head[i];
       while(t){
-        uart_puts((char *) "  ");
+        uart_puts("  ");
         int it = 0;
         int used_chunk = t->max_chunk_num-t->free_chunk_num;
         int_to_str(used_chunk, tt);
         uart_puts(tt);
-        uart_puts((char *) "/");
+        uart_puts("/");
         int_to_str(t->max_chunk_num, tt);
         uart_puts(tt);
         for (int j = used_chunk; j>0;it++){
           if (bitset_get(t->bitset, it, t->max_chunk_num) == 1){
             int_to_hex(t->addr+it*t->chunk_size, tt);
-            uart_puts((char *) "   ");
+            uart_puts("   ");
             uart_puts(tt);
             j--;
           }
         }
         t = t->next;
-        uart_puts((char *) "\n");
+        uart_puts("\n");
       }
     }
     else{
-      uart_puts((char *) ": is null\n");
+      uart_puts(": is null\n");
     }
   }
 }
 
 void buddy_init(){
-  log_puts((char *) "[INFO] Buddy system Init.\n", INFO);
+  log_puts("[INFO] Buddy system Init.\n", INFO);
   buddy_ll[0].idx = 0;
   buddy_ll[0].order = -1;
   buddy_ll[0].addr = 0;
@@ -287,25 +287,25 @@ void buddy_init(){
   buddy_unuse_head = &buddy_ll[0];
 
   buddy_free(BUDDY_BASE_ADDR, BUDDY_SIZE, 0);
-  log_puts((char *) "[INFO] Buddy system Init DONE.\n", INFO);
+  log_puts("[INFO] Buddy system Init DONE.\n", INFO);
 }
 
 void buddy_push_free_page(struct buddy_node **head, struct buddy_node *node, int itrn){
   char ct[20];
-  buddy_uart_puts((char *) "Push free page, addr <", itrn);
+  buddy_uart_puts("Push free page, addr <", itrn);
   int_to_hex(node->addr, ct);
   buddy_uart_puts(ct, -1);
-  buddy_uart_puts((char *) "> into order ", -1);
+  buddy_uart_puts("> into order ", -1);
   int_to_str(node->order, ct);
   buddy_uart_puts(ct, -1);
-  buddy_uart_puts((char *) ".\n", -1);
+  buddy_uart_puts(".\n", -1);
   struct buddy_node *head_t = *head;
   //empty. just insert
   if (!head_t){
     *head = node;
     node->next = 0;
     node->pre = 0;
-    buddy_uart_puts((char *) "return\n", itrn);
+    buddy_uart_puts("return\n", itrn);
     return ;
   }
   //find insert position head_t = 0 -> insert at head
@@ -349,13 +349,13 @@ void buddy_push_free_page(struct buddy_node **head, struct buddy_node *node, int
     }
     //del this order's linklist and add to upper order
     if(del_node){
-      buddy_uart_puts((char *) "Find addr<", itrn+1);
+      buddy_uart_puts("Find addr<", itrn+1);
       int_to_hex(del_node->addr, ct);
       buddy_uart_puts(ct, -1);
-      buddy_uart_puts((char *) ">, <", -1);
+      buddy_uart_puts(">, <", -1);
       int_to_hex(node->addr, ct);
       buddy_uart_puts(ct, -1);
-      buddy_uart_puts((char *) "> can be coalesced.\n", -1);
+      buddy_uart_puts("> can be coalesced.\n", -1);
       ll_rm_elm<struct buddy_node>(&buddy_head[order], del_node);
       ll_push_front<struct buddy_node>(&buddy_unuse_head, del_node);
       buddy_push_free_page(&buddy_head[order+1], node, itrn+1);
@@ -367,41 +367,41 @@ void buddy_push_free_page(struct buddy_node **head, struct buddy_node *node, int
   else{
     ll_push_elm<struct buddy_node>(&buddy_head[order], node, head_t);
   }
-  buddy_uart_puts((char *) "return\n", itrn);
+  buddy_uart_puts("return\n", itrn);
 }
 
 unsigned long long buddy_alloc(int mbytes, int order, int itrn){
   char ct[20];
-  buddy_uart_puts((char *) "Find free page in order ", itrn);
+  buddy_uart_puts("Find free page in order ", itrn);
   int_to_str(order, ct);
   buddy_uart_puts(ct, -1);
-  buddy_uart_puts((char *) "\n", -1);
+  buddy_uart_puts("\n", -1);
   if(!buddy_head[order]){
-    buddy_uart_puts((char *) "This order is null\n", itrn+1);
+    buddy_uart_puts("This order is null\n", itrn+1);
     unsigned long long r;
     if (order >= BUDDY_MAX_ORDER) r = 0;
     else r = buddy_alloc(mbytes, order+1, itrn+1);
-    buddy_uart_puts((char *) "return\n", itrn);
+    buddy_uart_puts("return\n", itrn);
     return r;
   }
-  buddy_uart_puts((char *) "Find free page <", itrn+1);
+  buddy_uart_puts("Find free page <", itrn+1);
   struct buddy_node *alloc_node= ll_pop_front<struct buddy_node>(&buddy_head[order]);
   unsigned long long r = alloc_node->addr;
   int_to_hex(r, ct);
   buddy_uart_puts(ct, -1);
-  buddy_uart_puts((char *) ">\n", -1);
+  buddy_uart_puts(">\n", -1);
 
   int page_need = mbytes/BUDDY_PAGE_SIZE;
   page_need = (mbytes%BUDDY_PAGE_SIZE == 0) ? page_need : page_need+1;
 
-  buddy_uart_puts((char *) "Page need = ", itrn+1);
+  buddy_uart_puts("Page need = ", itrn+1);
   int_to_str(page_need, ct);
   buddy_uart_puts(ct, -1);
   int page_redundant = (1 << order) - page_need;
-  buddy_uart_puts((char *) ", Redundant page = ", -1);
+  buddy_uart_puts(", Redundant page = ", -1);
   int_to_str(page_redundant, ct);
   buddy_uart_puts(ct, -1);
-  buddy_uart_puts((char *) "\n", -1);
+  buddy_uart_puts("\n", -1);
 
   //handle redundant page
   int prnp = buddy_addr_to_pn(r)+page_need; //page redundant, next page
@@ -417,10 +417,9 @@ unsigned long long buddy_alloc(int mbytes, int order, int itrn){
     page_redundant /= 2;
     prl_order++;
   }
-  //
   alloc_node->order = -1;
   ll_push_front(&buddy_unuse_head, alloc_node);
-  buddy_uart_puts((char *) "return\n", itrn);
+  buddy_uart_puts("return\n", itrn);
   return r;
 }
 
@@ -428,13 +427,13 @@ void buddy_free(unsigned long long base_addr, int mbytes, int itrn){
   char ct[20];
   int page_need = mbytes/BUDDY_PAGE_SIZE;
   page_need =  (mbytes%BUDDY_PAGE_SIZE) ? page_need+1 : page_need;
-  buddy_uart_puts((char *) "Free memory, ", itrn);
+  buddy_uart_puts("Free memory, ", itrn);
   int_to_str(page_need, ct);
   buddy_uart_puts(ct, -1);
-  buddy_uart_puts((char *) " page from addr <", -1);
+  buddy_uart_puts(" page from addr <", -1);
   int_to_hex(base_addr, ct);
   buddy_uart_puts(ct, -1);
-  buddy_uart_puts((char *) ">\n", -1);
+  buddy_uart_puts(">\n", -1);
   int base_page = buddy_addr_to_pn(base_addr);
   int page_left = page_need;
   int order = 0;
@@ -448,29 +447,29 @@ void buddy_free(unsigned long long base_addr, int mbytes, int itrn){
     }
     if (order < BUDDY_MAX_ORDER) order++;
   }
-  buddy_uart_puts((char *) "return\n", itrn);
+  buddy_uart_puts("return\n", itrn);
 }
 
 void buddy_ll_show(){
   char tt[20];
   for (int i=0; i<BUDDY_MAX_ORDER+1; i++){
     int_to_str(i, tt);
-    uart_puts((char *) "Order ");
+    uart_puts("Order ");
     uart_puts(tt);
-    uart_puts((char *) ":\n");
+    uart_puts(":\n");
     if (buddy_head[i]){
       struct buddy_node *t = buddy_head[i];
       while(t){
         char ttt[20];
         int_to_hex(t->addr, ttt);
-        uart_puts((char *) "   ");
+        uart_puts("   ");
         uart_puts(ttt);
         t = t->next;
       }
-      uart_puts((char *) "\n");
+      uart_puts("\n");
     }
     else{
-      uart_puts((char *) "  null\n");
+      uart_puts("  null\n");
     }
   }
 }
@@ -540,14 +539,14 @@ void buddy_table_show_init(){
 
 void buddy_table_show(){
   buddy_table_show_init();
-  uart_puts((char *) "                     0   1   2   3 | 4   5   6   7 | 8   9   a   b | c   d   e   f | 10 11  12  13 |14  15  16  17 |18  19  1a  1b |1c  1d  1e  1f |\n");
-  uart_puts((char *) "====================================================================================================================================================\n");
+  uart_puts("                     0   1   2   3 | 4   5   6   7 | 8   9   a   b | c   d   e   f | 10 11  12  13 |14  15  16  17 |18  19  1a  1b |1c  1d  1e  1f |\n");
+  uart_puts("====================================================================================================================================================\n");
   int row_offset = (BUDDY_PAGE_NUM%BUDDY_TABLE_COLS) ? 0 : -1;
   for (int i=0; i<BUDDY_TABLE_ROWS+row_offset; i++){
     uart_puts(buddy_table[i]);
-    uart_puts((char *) "\n");
+    uart_puts("\n");
     if((i+1)%4 == 0){
-  uart_puts((char *) "-------------------------------------------------------------------------------------------------------------------------------------------\n");
+  uart_puts("-------------------------------------------------------------------------------------------------------------------------------------------\n");
     }
   }
 }

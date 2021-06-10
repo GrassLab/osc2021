@@ -2,7 +2,9 @@ SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
 CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
 
-all: clean kernel8.img
+.PHONY: all clean run asm pty
+
+all: kernel8.img clean
 
 start_bl.o: start_bl.S
 	aarch64-linux-gnu-gcc $(CFLAGS) -c $< -o $@
@@ -15,7 +17,7 @@ kernel8.img: start_bl.o link_bl.ld $(OBJS)
 	aarch64-linux-gnu-objcopy -O binary kernel8.elf kernel8.img
 
 clean:
-	rm kernel8.elf *.o
+	rm -f kernel8.elf *.o
 
 run: kernel8.img
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial stdio
@@ -24,4 +26,4 @@ asm: kernel8.img
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -d in_asm -serial null -serial pty
 
 pty: kernel8.img
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial pty -initrd ../lab2/initramfs.cpio
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -serial null -serial pty -initrd ../initramfs.cpio

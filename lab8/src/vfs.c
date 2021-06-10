@@ -12,17 +12,16 @@
 # include "fat32fs.h"
 
 struct mount rootmount;
-//struct mount cpiomount;
 
 void vfs_init(){
-  log_puts((char *) "[INFO] VFS Init.\n", INFO);
+  log_puts("[INFO] VFS Init.\n", INFO);
   struct dentry *new_d = vfs_create_dentry(0, (char *)"/", DIR);
-  log_puts((char *) "[INFO] Mount tmpfs on / \n", INFO);
+  log_puts("[INFO] Mount tmpfs on / \n", INFO);
   struct filesystem *tmpfs= tmpfs_get_fs();
   register_filesystem(&rootmount, tmpfs, new_d->vnode);
   
-  log_puts((char *) "[INFO] tmpfs mount DONE\n", INFO);
-  log_puts((char *) "[INFO] VFS Init DONE\n", INFO);
+  log_puts("[INFO] tmpfs mount DONE\n", INFO);
+  log_puts("[INFO] VFS Init DONE\n", INFO);
 }
 
 
@@ -30,23 +29,22 @@ int register_filesystem(struct mount *mount, struct filesystem* fs, struct vnode
   mount->fs = fs;
   mount->root = vnode;
   if (vnode->dentry->type != DIR){
-    log_puts((char *) "[Error] Mount point should be dir.\n", WARNING);
+    log_puts("[Error] Mount point should be dir.\n", WARNING);
     return -1;
   }
   if (vnode->v_ops){
     if(vnode->v_ops->size(vnode) != 2){
-      log_puts((char *) "[Error] Mount point is not empty.\n", WARNING);
+      log_puts("[Error] Mount point is not empty.\n", WARNING);
       return -1;
     }
   }
-  //str_copy(name, mount->name);
   return fs->setup_mount(fs, mount);
   // register the file system to the kernel.
 }
 
 void vfs_uart_puts(char *c, int iter){
   for (int i=0; i<iter; i++){
-    uart_puts((char *) "  ");
+    uart_puts("  ");
   }
   uart_puts(c);
 }
@@ -55,9 +53,9 @@ void vfs_list_dentry(struct dentry *d, int iter, int rev){
   struct list_head *head_t;
   list_for_each(head_t, &d->childs){
     struct dentry *dt = container_of(head_t, struct dentry, list);
-    if (dt->type == DIR) uart_puts((char *) " d");
-    else if (dt->type == SDIR) uart_puts((char *) " d");
-    else if (dt->type == FILE) uart_puts((char *) " -");
+    if (dt->type == DIR) uart_puts(" d");
+    else if (dt->type == SDIR) uart_puts(" d");
+    else if (dt->type == FILE) uart_puts(" -");
     if (dt->vnode->mode & F_RD) uart_puts((char *)"r");
     else uart_puts((char *)"-");
     if (dt->vnode->mode & F_WR) uart_puts((char *)"w");
@@ -69,12 +67,12 @@ void vfs_list_dentry(struct dentry *d, int iter, int rev){
     char ct[20];
     int_to_str(size, ct);
     uart_puts(ct);
-    if (dt->type == DIR) uart_puts((char *) "  items");
-    else if (dt->type == SDIR) uart_puts((char *) "  items");
-    else if (dt->type == FILE) uart_puts((char *) "  bytes");
+    if (dt->type == DIR) uart_puts("  items");
+    else if (dt->type == SDIR) uart_puts("  items");
+    else if (dt->type == FILE) uart_puts("  bytes");
     uart_puts((char *)"\t");
     vfs_uart_puts(dt->name, iter);
-    uart_puts((char *) "\n");
+    uart_puts("\n");
     if (rev == 1 && dt->type == DIR){
       vfs_list_dentry(dt, iter+1, 1);
     }
@@ -121,7 +119,7 @@ struct dentry* vfs_create_dentry(struct dentry* parent, const char* name, enum d
   new_d->vnode = vfs_create_vnode();
   new_d->vnode->dentry = new_d;
   new_d->parent = parent;
-  str_copy((char *) name, new_d->name);
+  str_copy(name, new_d->name);
   new_d->type = type;
   if (type == DIR){
     struct dentry *new_d1 = MALLOC(struct dentry, 1);
@@ -220,9 +218,9 @@ int get_vnode_by_path(struct vnode *dir_node, struct vnode **target, const char 
     target_t = dir_node;
   }
   for (int i = 0; i<vnode_argc; i++){
-    log_puts((char *) "Get vnode by path, get ", FINE);
+    log_puts("Get vnode by path, get ", FINE);
     log_puts(vnode_argv[i], FINE);
-    log_puts((char *) "\n", FINE);
+    log_puts("\n", FINE);
     int rt = dir_node->v_ops->lookup(dir_node, &target_t, vnode_argv[i]);
     if (rt != 0){
       free(new_path);
@@ -256,17 +254,17 @@ void do_ls(char *path){
   if (path){
     int r = get_vnode_by_path(ls_vnode, &target, path);
     if (r != 0){
-      uart_puts((char *) "Path ");
+      uart_puts("Path ");
       uart_puts(path);
-      uart_puts((char *) " not found.\n");
+      uart_puts(" not found.\n");
       return ;
     }
     ls_vnode = target;
   }
   if (ls_vnode->dentry->type != DIR){
-    log_puts((char *) "[Error] < ", WARNING);
+    log_puts("[Error] < ", WARNING);
     log_puts(path, WARNING);
-    log_puts((char *) " > is not a directory.\n", WARNING);
+    log_puts(" > is not a directory.\n", WARNING);
     return ;
   }
   vfs_list_dentry(ls_vnode->dentry, 0, 0);
@@ -279,18 +277,18 @@ void do_cat(char *path){
   if (path){
     int r = get_vnode_by_path(cat_vnode, &target, path);
     if (r != 0){
-      uart_puts((char *) "Path < ");
+      uart_puts("Path < ");
       uart_puts(path);
-      uart_puts((char *) " > not found.\n");
+      uart_puts(" > not found.\n");
       return ;
     }
     cat_vnode = target;
   }
   int cr = cat_vnode->v_ops->cat(cat_vnode);
   if (cr == -1){
-    uart_puts((char *) "Can't  cat file < ");
+    uart_puts("Can't  cat file < ");
     uart_puts(path);
-    uart_puts((char *) " > .\n");
+    uart_puts(" > .\n");
   }
 }
 
@@ -301,7 +299,6 @@ struct file* vfs_open(const char* pathname, int flags, int *errno) {
     return 0;
   }
   char dirname[pathname_len+1];
-  //char *dirname = MALLOC(char, pathname_len+1);
   str_copy(pathname, dirname);
   // Split Dir name and File name
   char *filename = 0;
@@ -332,25 +329,13 @@ struct file* vfs_open(const char* pathname, int flags, int *errno) {
     return 0;
   }
   // Get dir vnode
-  //log_puts((char *) "Open file ", INFO);
-  //log_puts(dirname, INFO);
-  //log_puts((char *) "\t", INFO);
-  //log_puts(filename, INFO);
-  //log_puts((char *) "\n", INFO);
-  //char ct[20];
   struct vnode *target;
   int lpr = dvnode->v_ops->lookup(dvnode, &target, filename);
-  //int_to_str(lpr, ct);
-  //log_puts(ct, INFO);
-  //log_puts((char *) "\n", INFO);
 
   // Create file
   if (lpr){
-    //int_to_str(flags, ct);
-    //log_puts(ct, INFO);
-    //log_puts((char *) "\n", INFO);
     if ((flags & O_CREAT) == 0){
-      log_puts((char *) "[Error] No Create flag\n", WARNING);
+      log_puts("[Error] No Create flag\n", WARNING);
       *errno = -1;
       return 0;
     }
@@ -378,10 +363,8 @@ struct file* vfs_open(const char* pathname, int flags, int *errno) {
   new_file->f_pos = 0;
   new_file->flag = flags;
   return new_file;
-  // 1. Lookup pathname from the root vnode.
-  // 2. Create a new file descriptor for this vnode if found.
-  // 3. Create a new file if O_CREAT is specified in flags.
 }
+
 int vfs_close(struct file* file) {
   file->vnode->file = 0;
   free(file);
@@ -423,9 +406,8 @@ int do_write(int fd, const void* buf, size_t len) {
     return -2;
   }
   return file->vnode->f_ops->write(file, buf, len);
-  // 1. write len byte from buf to the opened file.
-  // 2. return written size or error code if an error occurs.
 }
+
 int do_read(int fd, void* buf, size_t len) {
   struct file *file = get_file_by_fd(fd);
   if (file == 0){
@@ -435,8 +417,6 @@ int do_read(int fd, void* buf, size_t len) {
     return -2;
   }
   return file->vnode->f_ops->read(file, buf, len);
-  // 1. read min(len, readable file data size) byte to buf from the opened file.
-  // 2. return read size or error code if an error occurs.
 }
 
 void do_rm(char *path){
@@ -446,18 +426,18 @@ void do_rm(char *path){
   if (path){
     int r = get_vnode_by_path(rm_vnode, &target, path);
     if (r != 0){
-      uart_puts((char *) "Path < ");
+      uart_puts("Path < ");
       uart_puts(path);
-      uart_puts((char *) " > not found.\n");
+      uart_puts(" > not found.\n");
       return ;
     }
     rm_vnode = target;
   }
   int cr = rm_vnode->v_ops->rm(rm_vnode);
   if (cr == -1){
-    uart_puts((char *) "Can't rm file < ");
+    uart_puts("Can't rm file < ");
     uart_puts(path);
-    uart_puts((char *) " > .\n");
+    uart_puts(" > .\n");
   }
 }
 
@@ -493,24 +473,24 @@ int do_unmount(char *path){
   if (path){
     int r = get_vnode_by_path(um_vnode, &target, path);
     if (r != 0){
-      uart_puts((char *) "Path < ");
+      uart_puts("Path < ");
       uart_puts(path);
-      uart_puts((char *) " > not found.\n");
+      uart_puts(" > not found.\n");
       return -1;
     }
     um_vnode = target;
   }
   if (um_vnode != um_vnode->mount->root){
-    uart_puts((char *) "Path < ");
+    uart_puts("Path < ");
     uart_puts(path);
-    uart_puts((char *) " > is not the mountpoint.\n");
+    uart_puts(" > is not the mountpoint.\n");
     return -1;
   }
   if (um_vnode != um_vnode->mount->root){
   }
   int cr = um_vnode->mount->fs->unmount(um_vnode->mount);
   if (cr == -1){
-    uart_puts((char *) "Unmout fs ERROR \n");
+    uart_puts("Unmout fs ERROR \n");
   }
   if (um_vnode->dentry->parent){
     um_vnode->mount = um_vnode->dentry->parent->vnode->mount;
@@ -519,21 +499,7 @@ int do_unmount(char *path){
   }
   return 0;
 }
-/*  //////////////////
-void sys_open(struct trapframe *arg){
-  const char *pathname = (const char *) arg->x[0];
-  int flags = (int) arg->x[1];
-  int r = do_open(pathname, flags);
-  arg->x[0] = (uint64_t)r;
-}
 
-  }
-  int cr = rm_vnode->mount->fs->unmount(rm_vnode->mount);
-  if (cr == -1){
-    uart_puts((char *) "Unmout fs ERROR \n");
-  }
-}
-*/
 void sys_open(struct trapframe *arg){
   const char *pathname = (const char *) arg->x[0];
   int flags = (int) arg->x[1];
@@ -559,7 +525,7 @@ void sys_write(struct trapframe *arg){
 
 void sys_read(struct trapframe *arg){
   int fd = (int) arg->x[0];
-  char *buf = (char *) arg->x[1];
+  char *buf = (char*) arg->x[1];
   int count = (int) arg->x[2];
   int r = do_read(fd, buf, count);
   arg->x[0] = (uint64_t)r;
@@ -579,14 +545,14 @@ void sys_chdir(struct trapframe *arg){
 }
 
 void sys_mount(struct trapframe *arg){
-  char *mountpoint = (char *) arg->x[1];
-  char *fsname = (char *) arg->x[2];
+  char *mountpoint = (char*) arg->x[1];
+  char *fsname = (char*) arg->x[2];
   int r = do_mount(mountpoint, fsname);
   arg->x[0] = (unsigned long long)r;
 }
 
 void sys_unmount(struct trapframe *arg){
-  char *path = (char *) arg->x[0];
+  char *path = (char*) arg->x[0];
   int r = do_unmount(path);
   arg->x[0] = (unsigned long long)r;
 }

@@ -7,7 +7,6 @@ struct cpiofs_internal{
   char *content;
 };
 
-//void tmpfs_get_mount_fs(struct mount* mount_point);
 struct filesystem* cpiofs_get_fs();
 int cpiofs_setup_mount(struct filesystem* fs, struct mount* mount);
 int cpiofs_unmount(struct mount *mount);

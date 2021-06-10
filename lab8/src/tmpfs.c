@@ -35,28 +35,16 @@ struct file_operations tmpfs_f_ops{
 
 struct filesystem* tmpfs_get_fs(){
   return &tmpfs;
-  //mount_point->fs = &tmpfs;
-  //mount_point->parent = parent;
-  //str_copy(name, mount_point->name);
 }
 
 int tmpfs_setup_mount(struct filesystem* fs, struct mount* mount){
-  //struct dentry *new_d = vfs_create_dentry(0, (char *)"/", DIR);
-  /*
-  struct dentry *new_d = vfs_create_dentry(mount->parent, mount->name, DIR);
-  if (new_d == 0){
-    return -1;
-  }
-  */
   struct vnode *vnode = mount->root;
   vnode->mount = mount;
   vnode->mode = TMPFS_DEFAULT_MODE;
   vnode->v_ops = &tmpfs_dir_v_ops;
   vnode->f_ops = &tmpfs_f_ops;
   vnode->internal = 0;
-  //vnode->dentry = new_d;
   vnode->file = 0;
-  //mount->root = vnode;
   return 0;
 }
 
@@ -156,7 +144,6 @@ int tmpfs_read(struct file* file, void* buf, size_t len){
 }
 
 int tmpfs_write(struct file* file, const void* buf, size_t len){
-  //log_puts("Enter Write\n", INFO);
   if ((file->vnode->mode & F_WR) == 0){
     log_puts((char *) "[Error] Write permission denied\n", WARNING);
     return -2;
@@ -171,7 +158,6 @@ int tmpfs_write(struct file* file, const void* buf, size_t len){
     if (internal->size < TMPFS_MAX_SIZE){
       internal->content[file->f_pos] = ((char *)buf)[i];
       file->f_pos++;
-      //internal->size++;
       r++;
     }
     else{

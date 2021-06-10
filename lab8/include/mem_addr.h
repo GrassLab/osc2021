@@ -1,7 +1,8 @@
+# ifndef __MEM_ADDR_H__
+# define __MEM_ADDR_H__
+
 #define KVA      0xffff000000000000
 #define MMIO_BASE (KVA + 0x3f000000)
-
-//# define MMIO_BASE       0x3F000000
 
 # define CORE0_TIMER_IRQ_CTRL  (KVA + 0x40000040)
 # define CORE1_TIMER_IRQ_CTRL  (KVA + 0x40000044)
@@ -16,3 +17,5 @@
 # define CORE1_INTR_SRC        (KVA + 0x40000064)
 # define CORE2_INTR_SRC        (KVA + 0x40000068)
 # define CORE3_INTR_SRC        (KVA + 0x4000006C)
+
+# endif

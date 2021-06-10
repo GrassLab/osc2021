@@ -140,15 +140,7 @@ void sdload(){
   readblock(0, buf);
   showblock(0, buf);
   struct MBR *MBR = (struct MBR*) buf;
-  /*
-  int_to_str(MBR->sanity_check, ct);
-  uart_puts((char *) &MBR->sanity_check );
-  int_to_str(sizeof(struct partition), ct);
-  uart_puts(ct);
-  uart_puts("\n");
-  uart_puts(ct);
-  uart_puts("\n");
-  */
+
   if (MBR->sanity_check != SANITY_CHECK){
     log_puts("[Error] Sanity Check error. \n", WARNING);
     return ;
@@ -196,7 +188,7 @@ void sdload(){
     log_puts("[Error] Sanity Check error. \n", WARNING);
     return ;
   }
-  //sd_meta.BPB_BytsPerSec = P_LBA.BPB_BytsPerSec;
+  
   sd_meta.BPB_BytsPerSec = 512;
   sd_meta.BPB_SecPerClus = P_LBA.BPB_SecPerClus;
   sd_meta.BPB_RsvdSecCnt = P_LBA.BPB_RsvdSecCnt;
@@ -213,7 +205,6 @@ void sdload(){
   list_head list;
   list_head_init(&list);
   log_puts("[INFO] Loading SD card Done.\n", INFO);
-  //get_fat32_dir_list(2, &list);
 }
 
 int get_fat_list_argc(uint32_t cluster){
@@ -246,24 +237,6 @@ union directory_t* get_dir_t(int n, struct cluster_data *argv){
   return 0;
 }
 
-/*
-static uint16_t get_LFN_word(union directory_t *data, int n){
-  uint16_t r = 0;
-  if (n<5){
-    uint16_t *t = (uint16_t*) &(data->LFN.name1[n*2]);
-    r = *t;
-  }
-  else if(n<11){
-    uint16_t *t = (uint16_t*) &(data->LFN.name2[n*2-10]);
-    r = *t;
-  }
-  else if(n<13){
-    uint16_t *t = (uint16_t*) &(data->LFN.name3[n*2-22]);
-    r = *t;
-  }
-  return r;
-}
-*/
 static void get_LFN_word(union directory_t *data, uint16_t *list){
   memcpy(data->LFN.name1, list, 10);
   memcpy(data->LFN.name2, list+5, 12);
@@ -271,14 +244,12 @@ static void get_LFN_word(union directory_t *data, uint16_t *list){
 }
 
 void get_fat32_dir_list(uint32_t _cluster, list_head *r_list, struct cluster_data **fat_argv){
-  //char buf[SECTOR_SIZE];
-  //uint32_t cluster = _cluster;
   int fat_argc = get_fat_list_argc(_cluster);
-  log_puts("qq2\n", FINE);
+  log_puts("debug2\n", FINE);
   *fat_argv = MALLOC(struct cluster_data, fat_argc+1);
-  log_puts("qq3\n", FINE);
+  log_puts("debug3\n", FINE);
   get_fat_list_argv(_cluster, *fat_argv);
-  log_puts("qq4\n", FINE);
+  log_puts("debug4\n", FINE);
   int idx = 0;
   list_head_init(r_list);
   while(1){

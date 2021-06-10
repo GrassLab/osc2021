@@ -1,8 +1,5 @@
-// mmio
-//#define KVA 0xffff000000000000
-//#define KVA 0x0
-//#define MMIO_BASE (KVA + 0x3f000000)
 # include "mem_addr.h"
+# include "gpio.h"
 
 // SD card command
 #define GO_IDLE_STATE 0
@@ -23,11 +20,10 @@
 #define APP_CMD 55
 
 // gpio
-#define GPIO_BASE (MMIO_BASE + 0x200000)
-#define GPIO_GPFSEL4 (GPIO_BASE + 0x10)
-#define GPIO_GPFSEL5 (GPIO_BASE + 0x14)
-#define GPIO_GPPUD (GPIO_BASE + 0x94)
-#define GPIO_GPPUDCLK1 (GPIO_BASE + 0x9c)
+#define GPIO_GPFSEL4   GPFSEL4
+#define GPIO_GPFSEL5   GPFSEL5
+#define GPIO_GPPUD     GPPUD
+#define GPIO_GPPUDCLK1 GPPUDCLK1
 
 // sdhost
 #define SDHOST_BASE (MMIO_BASE + 0x202000)

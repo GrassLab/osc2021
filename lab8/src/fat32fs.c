@@ -154,8 +154,6 @@ static int rm_vnode_recv(struct vnode *vnode){
 }
 
 int fat32fs_unmount(struct mount *mount){
-  //log_puts("[Oops] Not implement yet.\n", WARNING);
-  //return -1;
   struct vnode *root = mount->root;
   return rm_vnode_recv(root);
 }

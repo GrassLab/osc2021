@@ -1,9 +1,5 @@
 # include "my_math.h"
 
-template <class T> T template_test(T a, T b){
-  return a+b;
-}
-
 //itoa
 void int_to_str(int n, char *s){
   int nt = (n < 0) ? -n : n;
@@ -23,21 +19,6 @@ void int_to_str(int n, char *s){
   }
   s[idx] = '\0';
 }
-/*
-void int_to_str(unsigned long n, char *s){
-  char tmp[100];
-  int idx = 0;
-  do{
-    tmp[idx] = (char)((n%10) + 48);
-    idx++;
-    n /= 10;
-  } while(n > 0);
-  for (int i=0; i<idx; i++){
-    s[i] = tmp[idx-i-1];
-  }
-  s[idx] = '\0';
-}
-*/
 
 void int_to_hex_align(unsigned long long n, char *s, int len){
   int idx = len;

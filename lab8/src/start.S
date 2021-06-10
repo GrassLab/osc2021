@@ -36,7 +36,7 @@ _start:
     eret
 
 el1_start:
-// set stack pointer
+    // set stack pointer
     ldr     x1, =0x60000
     mov     sp, x1
     

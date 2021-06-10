@@ -1,7 +1,6 @@
 # include "log.h"
 # include "uart.h"
 
-//enum log_type global_log_state = WARNING;
 enum log_type global_log_state = INFO;
 
 void log_puts(const char *s, enum log_type level){

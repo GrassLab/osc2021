@@ -117,8 +117,6 @@ void uart_flush(){
 int svc_uart_read(char *buf, int size){
   int r = 0;
   while(r < size){
-    //uart_puts((char *) "\r> ");
-    //uart_puts(cmd);
     char c = uart_read();
 
     if (c == '\n'){

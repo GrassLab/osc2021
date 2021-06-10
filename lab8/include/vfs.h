@@ -42,9 +42,6 @@ struct file{
 struct mount{
   struct vnode* root;
   struct filesystem* fs;
-  //struct vnode *vnode;
-  //struct dentry *parent;
-  //char name[100];
 };
 
 struct filesystem{

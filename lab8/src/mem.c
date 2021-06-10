@@ -7,19 +7,19 @@
 # include "log.h"
 
 struct mem_node mem_ll[MEM_TABLE_MAX_SIZE];
-struct mem_node *mem_inuse;  //already define in mem.h
+struct mem_node *mem_inuse;
 struct mem_node *mem_unuse;
 
 struct mem_node* get_mem_inuse(){
   return mem_inuse;
 }
 
-inline void mem_uart_puts(char *c){
+inline void mem_uart_puts(const char *c){
   log_puts(c, FINE);
 }
 
 void mem_init(){
-  log_puts((char *) "[INFO] Mem system Init.\n", INFO);
+  log_puts("[INFO] Mem system Init.\n", INFO);
   mem_ll[0].idx = 0;
   mem_ll[0].addr = 0;
   mem_ll[0].bytes = 0;
@@ -42,25 +42,25 @@ void mem_init(){
   mem_ll[MEM_TABLE_MAX_SIZE-1].next = 0;
   mem_inuse = 0;
   mem_unuse = &mem_ll[0];
-  log_puts((char *) "[INFO] Mem system Init DONE.\n", INFO);
+  log_puts("[INFO] Mem system Init DONE.\n", INFO);
 }
 
 void mem_ll_show(){
-  uart_puts((char *) "Memory Status\n");
-  uart_puts((char *) "address          bytes  pages\n");
-  uart_puts((char *) "===============================\n");
+  uart_puts("Memory Status\n");
+  uart_puts("address          bytes  pages\n");
+  uart_puts("===============================\n");
   struct mem_node *ite = mem_inuse;
   while(ite){
     char ct[30];
     int_to_hex(ite->addr, ct);
     uart_puts(ct);
-    uart_puts((char *) " \t ");
+    uart_puts(" \t ");
     int_to_str(ite->bytes, ct);
     uart_puts(ct);
-    uart_puts((char *) " \t ");
+    uart_puts(" \t ");
     int_to_str(ite->page_need, ct);
     uart_puts(ct);
-    uart_puts((char *) "\n");
+    uart_puts("\n");
     ite = ite->next;
   }
 }
@@ -95,12 +95,12 @@ void* malloc(int mbytes, int ifclear){
     page_need = mbytes/BUDDY_PAGE_SIZE;
     page_need = (mbytes%BUDDY_PAGE_SIZE) ? page_need+1 : page_need ;
     int_to_str(mbytes, ct);
-    mem_uart_puts((char *) "Alloc memory size ");
+    mem_uart_puts("Alloc memory size ");
     mem_uart_puts(ct);
-    mem_uart_puts((char *) ", need page ");
+    mem_uart_puts(", need page ");
     int_to_str(page_need, ct);
     mem_uart_puts(ct);
-    mem_uart_puts((char *) ", at order ");
+    mem_uart_puts(", at order ");
     int page_need_o = page_need-1;
     //cal order
     int order = 0;
@@ -110,7 +110,7 @@ void* malloc(int mbytes, int ifclear){
     }
     int_to_str(order, ct);
     mem_uart_puts(ct);
-    mem_uart_puts((char *) "\n");
+    mem_uart_puts("\n");
     //call buddy
     r = (void *)buddy_alloc(mbytes, order, 0);
   }
@@ -147,11 +147,11 @@ void free(void* addr){
     ll_push_front<struct mem_node>(&mem_unuse, target);
   }
   else{
-    log_puts((char *) "Memory addr <", WARNING);
+    log_puts("Memory addr <", WARNING);
     char ct[20];
     int_to_hex((unsigned long long)addr, ct);
     log_puts(ct, WARNING);
-    log_puts((char *) "> not found\n", WARNING);
+    log_puts("> not found\n", WARNING);
   }
 }
 

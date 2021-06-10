@@ -42,7 +42,6 @@ void print_timer(unsigned long long ms, char *comment){
 }
 
 void watchingdog_cb(int token){
-  //uart_puts((char *) "Wating dog\n");
   struct task *c = get_current();
   c->counter--;
   if(c->counter <= 0){
@@ -115,15 +114,13 @@ void set_cval_register(){
 
 
 inline void core_timer_enable(){
-  // enable timer iinterrupt
+  // enable timer interrupt
   *((unsigned int *)CORE0_TIMER_IRQ_CTRL) |= 1 << 1;
-  //asm volatile("msr DAIFClr, 0x2");
 }
 
 inline void core_timer_disable(){
   // disable timer interrupt
   *((unsigned int *)CORE0_TIMER_IRQ_CTRL) &= ~(1 << 1);
-  //asm volatile("msr DAIFSet, 0x2");
 }
 
 void print_system_time_enable(){
@@ -155,15 +152,12 @@ void core_timer_interrupt_handler(){
 }
 
 unsigned long long get_core_timer_value(){
-  //unsigned long long *r = (unsigned long long *)arg->x[0];
   register unsigned long long pct;
   asm volatile("mrs %0, cntpct_el0" : "=r"(pct));
   return pct;
-  //*r = pct;
 }
 
 unsigned long long get_core_timer_ms(){
-  //unsigned long long *r = (unsigned long long *)arg->x[0];
   register unsigned long long pct;
   register unsigned long long freq;
   asm volatile("mrs %0, cntfrq_el0" : "=r"(freq));
@@ -188,7 +182,6 @@ void set_next_pst_tval(){
 }
 
 void set_one_shot_timer(struct one_shot_timer *n){
-  //struct one_shot_timer *n = (struct one_shot_timer *)arg->x[0];
   register unsigned long long tval = core_timer_freq*(n->ms)/1000;
   timer_queue_insert(tval, n->token, n->func);
 }

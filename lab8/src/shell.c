@@ -10,7 +10,6 @@
 # include "oneshot_timer.h"
 # include "schedule.h"
 # include "demo.h"
-# include "user_demo.h"
 # include "log.h"
 # include "vfs.h"
 # include "fat32.h"
@@ -306,8 +305,6 @@ void shell(){
   cmd[0] = '\0';
   int cmd_end = 0;
 
-  //char get_c[10];
-
   while(1){
     struct task *curr = get_current();
     get_pwd_string(curr->pwd_vnode, pwd);
@@ -316,11 +313,6 @@ void shell(){
     uart_puts((char *) " > ");
     uart_puts(cmd);
     char c = uart_read();
-
-    // for debug
-    //int_to_str((int)c, get_c);
-    //uart_puts(get_c);
-    //uart_puts("\n");
 
     if (c == '\n'){
       uart_puts((char *) "\n");

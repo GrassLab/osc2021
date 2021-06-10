@@ -30,7 +30,6 @@
 # define PME_USER_ATTR   PD_TABLE
 # define PXE_USER_ATTR   PD_TABLE
 # define PTE_USER_ATTR   PTE_NORMAL_ATTR | PD_USER
-//# define PTE_USER_ATTR   PTE_NORMAL_ATTR
 
 # ifndef __ASM_S__
 

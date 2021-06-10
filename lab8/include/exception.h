@@ -28,8 +28,7 @@
 # define SVC_ISS_UNMOUNT  19
 
 # define IRQ_ENABLE()    asm volatile("msr DAIFClr, 0x2");
-# define IRQ_DISABLE()   asm volatile("msr DAIFSet, 0x2");
-//# define uint64_t unsigned long long 
+# define IRQ_DISABLE()   asm volatile("msr DAIFSet, 0x2"); 
 
 struct trapframe {
     uint64_t x[31]; // general register from x0 ~ x30
