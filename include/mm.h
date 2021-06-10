@@ -168,7 +168,32 @@ void map_table_entry(unsigned long *pte, unsigned long va, unsigned long page);
 unsigned long map_table (unsigned long *table, unsigned long shift, unsigned long va, int *new_table);
 void map_page(struct task_struct *task, unsigned long va, unsigned long page);
 
+/**
+ * copy_virt_memory. It iterates over user_pages array, which contains all pages, allocated by the current process. 
+ * Note, that in user_pages array we store only pages that are actually available to the process and contain its source code or data;
+ * we don't include here page table pages, which are stored in kernel_pages array.
+ * Next, for each page, we allocate another empty page and copy the original page content there
+ * We also map the new page using the same virtual address, that is used by the original one. 
+ * This is how we get the exact copy of the original process address space.
+ * 
+ * With virtual memory, each task has its address space and can refer to different physical address with the same virtual address. 
+ * Therefore, each user task can use the same virtual address to their own user stack.
+ * 
+ */
 int copy_virt_memory(struct task_struct *dst);
+
+/**
+ * mem_map is kernel function used to support of mmap syscall
+ * It's a Simplified version of mmap in linux
+ * @param[in] addr          // The starting address for the new mapping is specified in addr.
+ * @param[in] len           // The length argument specifies the length of the mapping (which must be greater than 0).
+ * @param[in] prot          // prot is the region’s access protection
+ * @param[in] flags         // MAP_FIXED, MAP_ANONYMOUS and MAP_POPULATE are acceptable    
+ * @param[in] fd            // not used
+ * @param[in] file_offset   // not used 
+ * @return    The address of the new mapping is returned as the result of the call.
+ */
+void *mem_map(void *addr, size_t len, int prot, int flags, int fd, int file_offset);
 
 /**
  * page fault exception (or, which is the same, data access exception)
@@ -176,6 +201,13 @@ int copy_virt_memory(struct task_struct *dst);
  * @param[in] esr   The content of the esr_el1 (Exception syndrome register)
  * @return          0 if success, otherwise return non zero value
  * 
+ * 
+ * data abort (or Page fault) exception, 
+ * I. segmentation fault 
+ *      If the fault address is not part of any region in the process’s address space,
+ *      a segmentation fault is generated, and the kernel terminates the process.
+ * II. damand paging
+ *       Map one page frame for the fault address.
  * 
  * esr register - 
  * Bits [32:26] of this register are called "Exception Class".
@@ -185,6 +217,8 @@ int copy_virt_memory(struct task_struct *dst);
  */
 int do_mem_abort(unsigned long addr, unsigned long esr);
 
+
+void *mem_map(void *addr, size_t len, int prot, int flags, int fd, int file_offset);
 /* mm.S */
 void memcpy(unsigned long dst, unsigned long src, unsigned long n);
 void memzero(unsigned long src, unsigned long n);

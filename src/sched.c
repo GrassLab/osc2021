@@ -130,6 +130,11 @@ void kill_zombies(void) {
     }
 }
 
+void sched_init()
+{
+    task[0]->mm.pgd = pg_dir;
+}
+
 void dumpTasksState() {
     printf("=========Tasks state=========\n");
     for (int i = 0;i < nr_tasks;i++) {

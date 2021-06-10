@@ -93,6 +93,7 @@ int move_to_user_mode(unsigned long pc)
 
 // virtual memory version
 int copy_process_virt(unsigned long clone_flags, unsigned long fn, unsigned long arg) {
+    
     preempt_disable();
     struct task_struct *p;
     p = (struct task_struct *) alloacte_kernel_page(); // get a free and clean(init zero val) page 
@@ -101,7 +102,6 @@ int copy_process_virt(unsigned long clone_flags, unsigned long fn, unsigned long
         return -1;
     }
     struct pt_regs *childregs = task_pt_regs(p);
-    
     if (clone_flags & PF_KTHREAD) {
         // Kernel thread
         p->cpu_context.x19 = fn;
@@ -116,7 +116,7 @@ int copy_process_virt(unsigned long clone_flags, unsigned long fn, unsigned long
         childregs->regs[0] = 0; // To distinguish it as new child process
         copy_virt_memory(p);
     }
-    
+
     p->flags = clone_flags;
     p->priority = current->priority;
     p->state = TASK_RUNNING;
@@ -125,7 +125,6 @@ int copy_process_virt(unsigned long clone_flags, unsigned long fn, unsigned long
     // meaning that after the task is executed it should not be rescheduled
     // until it completes some initialization work.
     p->preempt_count = 1; 
-    
     // Init file descriptor table(file struct)
     _init_files_struct(p);
     // process current working directory for filesystem
@@ -133,12 +132,13 @@ int copy_process_virt(unsigned long clone_flags, unsigned long fn, unsigned long
 
     p->cpu_context.pc = (unsigned long)ret_from_fork;
     p->cpu_context.sp = (unsigned long)childregs;
-    
+
     int pid = assignPID();
     task[pid] = p;	
     task[pid]->pid = pid;
 
     preempt_enable();
+
     return pid;
 }
 

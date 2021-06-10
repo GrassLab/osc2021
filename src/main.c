@@ -11,6 +11,7 @@
 #include "cpio.h"
 #include "vfs.h"
 #include "sdhost.h"
+#include "mmu.h"
 /* Initial Logo */
 //   ___  ____  ____ ___   ____   ___ ____  _  __   __                 
 //  / _ \/ ___||  _ \_ _| |___ \ / _ \___ \/ | \ \ / /   _ _ __   __ _ 
@@ -184,18 +185,51 @@ void Lab6_vfs_eletive2_demo()
 void Lab8_virtual_memory_requirement_demo()
 {
     // Find starting address of user program in cpio
-    unsigned long redundent = 0;
-    void *addr = cpio_get_file(INITRAMFS_ADDR, "Lab8.img", &redundent);
+    unsigned long file_size = 0;
+    void *addr = cpio_get_file(INITRAMFS_ADDR, "Lab8.img", &file_size);
     int err = move_to_user_mode_virt((unsigned long) addr, (unsigned long) addr);
     if (err < 0){
         printf("Error while moving process to user mode\n\r");
     } 
     #ifdef __DEBUG_MM
-    printf("Size: %d\n", redundent);
+    printf("Size: %d\n", file_size);
     printf("Addr: ");
     print_0x_64bit(addr);
     #endif // __DEBUG_MM
-    
+}
+
+void Lab8_virtual_memory_elective1_demo()
+{
+    // [mmap - illegal_write]
+    // Find starting address of user program in cpio
+    unsigned long file_size = 0;
+    void *addr = cpio_get_file(INITRAMFS_ADDR, "Lab8_mmap.img", &file_size);
+    int err = move_to_user_mode_virt((unsigned long) addr, (unsigned long) addr);
+    if (err < 0){
+        printf("Error while moving process to user mode\n\r");
+    } 
+    #ifdef __DEBUG_MM
+    printf("Size: %d\n", file_size);
+    printf("Addr: ");
+    print_0x_64bit(addr);
+    #endif // __DEBUG_MM
+}
+
+void Lab8_virtual_memory_elective1_demo_2()
+{
+    // [mmap - illegal_read]
+    // Find starting address of user program in cpio
+    unsigned long file_size = 0;
+    void *addr = cpio_get_file(INITRAMFS_ADDR, "Lab8_mmap_2.img", &file_size);
+    int err = move_to_user_mode_virt((unsigned long) addr, (unsigned long) addr);
+    if (err < 0){
+        printf("Error while moving process to user mode\n\r");
+    } 
+    #ifdef __DEBUG_MM
+    printf("Size: %d\n", file_size);
+    printf("Addr: ");
+    print_0x_64bit(addr);
+    #endif // __DEBUG_MM
 }
 
 int main()
@@ -205,6 +239,9 @@ int main()
     
     // Initialize printf
     init_printf(0, putc);
+
+    // sched init
+    sched_init();
 
     // Initialize memory allcoator
     mm_init();
@@ -221,13 +258,25 @@ int main()
     printf(init_logo);
 
 
-    // Lab8 - Virtual Memory Test cases
-    // Create new process
+    // Lab8 - Virtual Memory Test cases, requirment and elective3
     int res = copy_process_virt(PF_KTHREAD, (unsigned long)&Lab8_virtual_memory_requirement_demo, 0);
     if (res < 0) {
         printf("error while starting kernel process");
     }
-    
+    schedule();
+
+    // Lab8 - Elective1
+    res = copy_process_virt(PF_KTHREAD, (unsigned long)&Lab8_virtual_memory_elective1_demo, 0);
+    if (res < 0) {
+        printf("error while starting kernel process");
+    }
+    schedule();
+
+    res = copy_process_virt(PF_KTHREAD, (unsigned long)&Lab8_virtual_memory_elective1_demo_2, 0);
+    if (res < 0) {
+        printf("error while starting kernel process");
+    }
+
     // Initialize root file system
     // rootfs_init();
 

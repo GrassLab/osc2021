@@ -4,6 +4,9 @@
 #include "sched.h"
 #include "mmu.h"
 #include "utils.h"
+#include "types.h"
+#include "sys.h"
+
 page_t bookkeep[PAGE_FRMAME_NUM];
 free_area_t free_area[MAX_ORDER + 1];
 
@@ -562,18 +565,6 @@ void map_page(struct task_struct *task, unsigned long va, unsigned long page)
     task->mm.user_pages[task->mm.user_pages_count++] = p;
 }
 
-/**
- * It iterates over user_pages array, which contains all pages, allocated by the current process. 
- * Note, that in user_pages array we store only pages that are actually available to the process and contain its source code or data;
- * we don't include here page table pages, which are stored in kernel_pages array.
- * Next, for each page, we allocate another empty page and copy the original page content there
- * We also map the new page using the same virtual address, that is used by the original one. 
- * This is how we get the exact copy of the original process address space.
- * 
- * With virtual memory, each task has its address space and can refer to different physical address with the same virtual address. 
- * Therefore, each user task can use the same virtual address to their own user stack.
- * 
- */
 int copy_virt_memory(struct task_struct *dst)
 {
     #ifdef __DEBUG_MM
@@ -604,6 +595,111 @@ int copy_virt_memory(struct task_struct *dst)
     return 0;
 }
 
+unsigned long _find_pte(struct task_struct *task, unsigned long va)
+{
+    unsigned long pgd;
+    if (!task->mm.pgd) {
+        task->mm.pgd = (unsigned long) get_free_page();
+        task->mm.kernel_pages[++task->mm.kernel_pages_count] = task->mm.pgd;
+    }
+    pgd = task->mm.pgd;
+    int new_table;
+    unsigned long pud = map_table((unsigned long *)(pgd + VA_START), PGD_SHIFT, va, &new_table);
+    if (new_table) {
+        task->mm.kernel_pages[++task->mm.kernel_pages_count] = pud;
+    }
+    unsigned long pmd = map_table((unsigned long *)(pud + VA_START), PUD_SHIFT, va, &new_table);
+    if (new_table) {
+		task->mm.kernel_pages[++task->mm.kernel_pages_count] = pmd;
+	}
+    unsigned long pte = map_table((unsigned long *)(pmd + VA_START), PMD_SHIFT, va, &new_table);
+	if (new_table) {
+		task->mm.kernel_pages[++task->mm.kernel_pages_count] = pte;
+	}
+
+    return pte;
+}
+
+void _map_table_entry_with_prot(unsigned long *pte, unsigned long va, unsigned long page, uint64_t entry_prot)
+{
+    unsigned long index = va >> PAGE_SHIFT;
+    index = index & (PTRS_PER_TABLE - 1);
+    unsigned long entry = page | entry_prot;
+    pte[index] = entry;
+
+    printf("[mem_map] entry: ");
+    print_0x_64bit((void *)entry);
+
+}
+
+/** mmap kernel function 
+ *  For simplicity, we always allocate one page regardless of "len" value and "fd", "file_offset" not used 
+ **/
+void *mem_map(void *addr, size_t len, int prot, int flags, int fd, int file_offset)
+{
+    if (len <= 0) { // requested size must be greater than 0
+        printf("[mem_map] Requested size must be greater than 0\n");
+    }
+
+    // region’s access protection
+    uint64_t pte_entry_prot = MMAP_PTE_DEFAULT;
+    if ((prot & PROT_NONE) == PROT_NONE)   pte_entry_prot = pte_entry_prot & (~MM_ACCESS);
+    if ((prot & PROT_READ) == PROT_READ)   pte_entry_prot = pte_entry_prot | MM_READ_ONLY;
+    if ((prot & PROT_WRITE) == PROT_WRITE) pte_entry_prot = pte_entry_prot & (~MM_READ_ONLY); // PROT_WRITE implies PROT_READ.
+    if ((prot & PROT_EXEC) == PROT_EXEC)   pte_entry_prot = pte_entry_prot & (~MM_EXEC_NONE);
+    
+    unsigned long new_region_addr = 0;
+    int idx_unused_pte_entry = 0;
+    printf("[mem_map] current->mm.kernel_pages_count = %d\n", current->mm.kernel_pages_count);
+    if (addr == NULL) { // Allocate a new page,  
+        // find the first unused page descriptor in pte.
+        unsigned long *pte;
+        for (int i = 0;i < MAX_PROCESS_PAGES;i++) {
+            pte = (unsigned long *) _find_pte(current, i * PAGE_SIZE);
+            pte = (unsigned long *)((unsigned long)pte + VA_START);
+            printf("[mem_map] pte[%d]: ", i);
+            print_0x_64bit((void *)pte[i]);
+            if (pte[i] == 0) { // unused page entry
+                if (pte[i] == 0) {
+                    printf("[mem_map] Find first unused virtual memory of the process. index = %d\n", i);
+                    idx_unused_pte_entry = i;
+                    break;
+                }
+            }
+        }
+        if (pte == 0) {
+            printf("[mem_map] No avaliable memory for the process.\n");
+            return NULL;
+        }
+
+        // fill in new page entry
+        new_region_addr = (unsigned long)(PAGE_SIZE * idx_unused_pte_entry);
+        unsigned long page = (unsigned long) get_free_page();
+        _map_table_entry_with_prot(pte, new_region_addr, page, pte_entry_prot);
+    }
+    else { // if addr is specified 
+        int isPageAligned = ((unsigned long)addr & 0x0FFF) > 0;
+        printf("[mem_map] isPageAligned = %d\n", isPageAligned);
+        if (flags == MAP_FIXED && isPageAligned) {
+            printf("[mem_map] MAP_FIXED is set but addr is not page-aligned, mmap() failed.\n");
+            return NULL;
+        }
+
+        new_region_addr = (unsigned long)addr & ~(0x0FFF); // The memory region created by mmap() should be page-aligned,
+        unsigned long *pte;
+        pte = (unsigned long *) _find_pte(current, new_region_addr);
+        pte = (unsigned long *)((unsigned long)pte + VA_START);
+        // fill in new page entry
+        unsigned long page = (unsigned long) get_free_page();
+        _map_table_entry_with_prot(pte, new_region_addr, page, pte_entry_prot);
+        printf("[mem_map] pte: ");
+        print_0x_64bit((void *)pte);
+        printf("[mem_map] new_region_addr: ", new_region_addr);
+        print_0x_64bit((void *)new_region_addr);
+    }
+
+    return (void *)new_region_addr;
+}
 
 int do_mem_abort(unsigned long addr, unsigned long esr) 
 {
@@ -613,7 +709,7 @@ int do_mem_abort(unsigned long addr, unsigned long esr)
     print_0x_64bit((void *)addr);
 
     unsigned long dfs = (esr & 0b111111);
-    if ((dfs & 0b111100) == 0b100) { // Translation fault, at EL0 
+    if ((dfs & 0b111100) == 0b100) { // Translation fault
         printf("[do_mem_abort] Is translation fault!\n");
         if (addr >= MAX_PROCESS_ADDRESS_SPACE) {
             printf("[do_mem_abort] *segmentation fault*  Addrss exceed process’s address space, terminate process!\n");
@@ -629,6 +725,18 @@ int do_mem_abort(unsigned long addr, unsigned long esr)
         map_page(current, addr & PAGE_MASK, (unsigned long)page);
 
         return 0;
+    }
+
+    if ((dfs & 0b111100) == 0b1100) { // Permission fault
+        printf("[do_mem_abort] Is Permission fault!\n");
+        printf("[do_mem_abort] *segmentation fault*,  terminate process!\n");
+        exit_process(); // terminate current process
+    }
+
+    if ((dfs & 0b111100) == 0b1000) { // Access flag fault
+        printf("[do_mem_abort] Is Access flag fault!\n");
+        printf("[do_mem_abort] *segmentation fault*,  terminate process!\n");
+        exit_process(); // terminate current process
     }
     return -1;
 }

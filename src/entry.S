@@ -162,6 +162,8 @@ el1_sync_exc_handler:
     lsr    x24, x25, #ESR_ELx_EC_SHIFT  // exception class
     cmp    x24, #ESR_ELx_EC_SVC64       // SVC in 64-bit state
     b.eq   el1_svc
+    cmp    x24, #ESR_ELx_EC_DABT_SAME_LEVEL    // Data Abort taken without a change in Exception level. (or page fault exception in our OS want to handle)
+    b.eq   el1_da
     handle_invalid_entry 1, SYNC_ERROR
 
 sc_nr   .req    x25                     // number of system calls
@@ -170,10 +172,10 @@ stbl    .req    x27                     // syscall table pointer
 
 el1_svc:
     adr    stbl, sys_call_table         // load syscall table pointer
-    uxtw   scno, w8                      // syscall number in w8
+    uxtw   scno, w8                     // syscall number in w8
     mov    sc_nr, #__NR_syscalls
     bl     enable_irq
-    cmp    scno, sc_nr                   // check upper syscall limit
+    cmp    scno, sc_nr                  // check upper syscall limit
     b.hs   ni_sys
 
     ldr    x16, [stbl, scno, lsl #3]    // address in the syscall table
@@ -186,19 +188,31 @@ el1_ret_from_syscall:
     str   x0, [sp, #S_X0]               // save returned x0
     kernel_exit 1
 
+el1_da:
+    bl    enable_irq
+    mrs   x0, far_el1
+    mrs   x1, esr_el1
+    bl    do_mem_abort
+    cmp   x0, 0
+    b.eq  1f
+    handle_invalid_entry 1, DATA_ABORT_ERROR
+1:
+    bl    disable_irq
+    kernel_exit 1
+
 el0_sync_exc_handler:
     kernel_entry 0
     mrs    x25, esr_el1                 // read the syndrome register
     lsr    x24, x25, #ESR_ELx_EC_SHIFT  // exception class
     cmp    x24, #ESR_ELx_EC_SVC64       // SVC in 64-bit state
     b.eq   el0_svc
-    cmp    x24, #ESR_ELx_EC_DABT_LOW    // page fault exception (or, which is the same, data access exception)
+    cmp    x24, #ESR_ELx_EC_DABT_LOW    // Data Abort from a lower Exception level. (or page fault exception in our OS want to handle)
     b.eq   el0_da
     handle_invalid_entry 0, SYNC_ERROR
     
 sc_nr   .req    x25                     // number of system calls
 scno    .req    x26                     // syscall number
-stbl    .req    x27                      // syscall table pointer
+stbl    .req    x27                     // syscall table pointer
 
 el0_svc:
     adr    stbl, sys_call_table         // load syscall table pointer

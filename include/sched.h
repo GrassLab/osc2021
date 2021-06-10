@@ -27,6 +27,7 @@ extern struct task_struct *current;         // current executing task
 extern struct task_struct *task[NR_TASKS]; 
 extern int nr_tasks;
 
+extern unsigned long pg_dir;
 // Each runqueue have corresponding prority(array number)
 // The lower number is more significant than higher one
 // TODO:
@@ -97,6 +98,7 @@ extern void cpu_switch_to(struct task_struct* prev, struct task_struct* next);
 extern void task_preemption();
 extern void exit_process(void);
 extern void kill_zombies(void);
+extern void sched_init();
 
 extern void dumpTasksState(void);
 

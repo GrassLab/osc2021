@@ -1,12 +1,18 @@
 #ifndef _MMU_H
 #define _MMU_H
 
+/* Page descriptor attributes */
 #define MM_TYPE_PAGE_TABLE      0b11
 #define MM_TYPE_PAGE            0b11
 #define MM_TYPE_BLOCK           0b01
 #define MM_ACCESS               (0x1 << 10)
 #define MM_ACCESS_PERMISSION    (0x01 << 6) 
+#define MM_UESR_KERNEL_ACCESS   (0x01 << 6)          // same as MM_ACCESS_PERMISSION
+/* mmap */
+#define MM_READ_ONLY            (0x1 << 7)           // readable (readonly)
+#define MM_EXEC_NONE            (0x1L << 54)         // non-executable
 
+#define MMAP_PTE_DEFAULT        (MM_TYPE_PAGE | MM_READ_ONLY | MM_ACCESS | MM_EXEC_NONE | MM_UESR_KERNEL_ACCESS) // Page, Readonly, accessible and non-executable
 /*
  * Memory region attributes:
  *

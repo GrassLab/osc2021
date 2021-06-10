@@ -279,6 +279,10 @@ int sys_unmount(const char* mountpoint)
     return vfs_unmount(mountpoint);
 }
 
+void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd, int file_offset)
+{
+    return mem_map(addr, len, prot, flags, fd, file_offset);
+}   
 
 void * const sys_call_table[] = 
     {sys_print, sys_uart_write, sys_uart_read, 
@@ -287,4 +291,5 @@ void * const sys_call_table[] =
      sys_coreTimer_on, sys_coreTimer_off,
      sys_open, sys_close, sys_write, 
      sys_read, sys_read_directory, sys_mkdir, 
-     sys_chdir, sys_mount, sys_unmount};
+     sys_chdir, sys_mount, sys_unmount,
+     sys_mmap};

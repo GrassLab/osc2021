@@ -18,7 +18,7 @@ SECTIONS
     . = ALIGN(0x00001000);  /* Page table should be align */ 
     pg_dir = .;             /* Page table starting address */
     .data.pgd : { . += (3 * (1 << 12)); }   /* Add Size of 3 Page table (PGD, PUD, PMD)  */ 
-   /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
-
-   __kernel_end = .;
+    /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
+    __kernel_end = .;
+    . = ALIGN(0x00001000);
 }
