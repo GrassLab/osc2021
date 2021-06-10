@@ -1,7 +1,7 @@
 #include "exception.h"
-#include "process.h"
 #include "time.h"
-#include "../lib/uart.h"
+#include "../process/process.h"
+#include "../../lib/uart.h"
 
 void log_state()
 {

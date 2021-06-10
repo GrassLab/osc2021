@@ -1,8 +1,8 @@
 #include "thread.h"
-#include "allocator.h"
-#include "reader.h"
 #include "process.h"
-#include "../lib/uart.h"
+#include "../mm/allocator.h"
+#include "../mm/cpio.h"
+#include "../../lib/uart.h"
 
 #define THREAD_MAX 5
 

@@ -1,7 +1,7 @@
 #include "tmpfs.h"
-#include "allocator.h"
-#include "../lib/string.h"
-#include "../lib/uart.h"
+#include "../mm/allocator.h"
+#include "../../lib/string.h"
+#include "../../lib/uart.h"
 
 struct filesystem tmpfs = {
     .name = "tmpfs",

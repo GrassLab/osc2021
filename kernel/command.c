@@ -1,8 +1,8 @@
 #include "command.h"
-#include "thread.h"
-#include "reader.h"
-#include "allocator.h"
-#include "vfs.h"
+#include "process/thread.h"
+#include "mm/cpio.h"
+#include "mm/allocator.h"
+#include "fs/vfs.h"
 #include "../lib/uart.h"
 #include "../lib/string.h"
 

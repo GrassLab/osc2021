@@ -1,11 +1,11 @@
-#include "reader.h"
-#include "process.h"
+#include "cpio.h"
 #include "allocator.h"
-#include "thread.h"
-#include "vfs.h"
-#include "tmpfs.h"
-#include "../lib/uart.h"
-#include "../lib/string.h"
+#include "../process/process.h"
+#include "../process/thread.h"
+#include "../fs/vfs.h"
+#include "../fs/tmpfs.h"
+#include "../../lib/uart.h"
+#include "../../lib/string.h"
 
 const int FILE_NUM_LIMITED = 100;
 char * address_cpio = (char*)0x2000;

@@ -1,10 +1,10 @@
-#include "../lib/uart.h"
-#include "../lib/string.h"
 #include "process.h"
-#include "reader.h"
 #include "thread.h"
-#include "vfs.h"
 #include "fd.h"
+#include "../../lib/uart.h"
+#include "../../lib/string.h"
+#include "../mm/cpio.h"
+#include "../fs/vfs.h"
 
 int do_getpid()
 {

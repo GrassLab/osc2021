@@ -1,6 +1,7 @@
-#pragma once
+#ifndef CPIO_H
+#define CPIO_H
 
-#include "vfs.h"
+#include "../fs/vfs.h"
 
 struct cpio_newc_header {
     char    c_magic[6];
@@ -49,3 +50,4 @@ void EnableInterrupt();
 void PrintCpio();
 void PrintFileContent(char arg[]);
 
+#endif

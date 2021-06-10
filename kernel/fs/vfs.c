@@ -1,9 +1,9 @@
 #include "vfs.h"
 #include "tmpfs.h"
-#include "allocator.h"
-#include "thread.h"
-#include "process.h"
-#include "reader.h"
+#include "../mm/allocator.h"
+#include "../mm/cpio.h"
+#include "../process/thread.h"
+#include "../process/process.h"
 
 struct mount * rootfs;
 extern struct filesystem tmpfs; 

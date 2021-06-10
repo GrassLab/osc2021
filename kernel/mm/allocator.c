@@ -1,8 +1,8 @@
 #include "allocator.h"
-#include "../lib/type.h"
-#include "../lib/math.h"
-#include "../lib/uart.h"
-#include "../lib/string.h"
+#include "../../lib/type.h"
+#include "../../lib/math.h"
+#include "../../lib/uart.h"
+#include "../../lib/string.h"
 
 #define BUDDY_START_ADDR 0x10000000
 #define BUDDY_END_ADDR 0x1f000000
