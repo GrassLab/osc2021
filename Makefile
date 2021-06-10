@@ -19,7 +19,7 @@ OBJS_ASM = $(SRCS_ASM:$(SRC_DIR)/%.S=$(BUILD_DIR)/%.o)
 OBJS_ASM_Q = $(SRCS_ASM:$(SRC_DIR)/%.S=$(DEBUG_DIR)/%.o)
 CFLAGS = -Wall -O1 -ffreestanding -nostdinc -nostdlib -nostartfiles -Iinclude 
 
-.PHONY: all clean run sd asm bootloader build_dir debug_dir
+.PHONY: all clean run asm bootloader build_dir debug_dir
 
 all: clean kernel8.img bootloader initramfs
 
@@ -47,9 +47,6 @@ clean:
 	rm -f kernel8.elf kernel8_qemu.elf $(BUILD_DIR)/*.o *.cpio $(DEBUG_DIR)/*.o
 
 run: kernel8_qemu.img
-	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -serial null -serial stdio -initrd initramfs.cpio
-
-sd: kernel8_qemu.img
 	qemu-system-aarch64 -M raspi3 -kernel kernel8_qemu.img -serial null -serial stdio -initrd initramfs.cpio -drive if=sd,file=$(SD_IMG_PATH),format=raw
 
 asm: kernel8_qemu.img
