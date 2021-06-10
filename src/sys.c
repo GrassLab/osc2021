@@ -244,7 +244,7 @@ void el0_svc_handler(tframe_t *frame) {
     } else if (syscall_no == SYS_MOUNT) {
         sys_mount(frame);
     } else if (syscall_no == SYS_UMOUNT) {
-        sys_umount()
+        sys_umount(frame);
     }
     frame->x[8] = 0;
 }

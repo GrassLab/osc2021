@@ -33,6 +33,7 @@ typedef struct file {
 typedef struct mount{
     const char      *fs_name;
     struct vnode    *root;
+    void (*umount_ops)(struct vnode*);
 } mount_t;
 
 typedef struct vnode_operations {
@@ -54,6 +55,7 @@ int vfs_write(file_t*, const void*, size_t);
 int vfs_close(file_t*);
 file_t* vfs_open(const char*, int, vnode_t*);
 int vfs_setup_mount(mount_t**, const char*, const char*);
+void vfs_vnode_init(vnode_t*, const char*);
 void vfs_init(const char*);
 
 #endif

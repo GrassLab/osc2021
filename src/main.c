@@ -7,7 +7,9 @@
 #include "sys.h"
 #include "vfs.h"
 #include "utils.h"
+
 #include "sdhost.h"
+#include "fat.h"
 
 void foo(void) {
 		thread_t *current = get_current();
@@ -24,13 +26,15 @@ void foo(void) {
 }
 
 void user_test(void) {
-		char *argv[] = {"argv_test", "-o", "arg2", 0, 0};
+		char *argv[] = {"argv_test", 0};
 		do_exec("argv_test.img", argv, -1);
+		thread_exit();
 }
 
 void user_test2(void) {
-		char *argv[] = {"fork_test", "-o", "arg2", 0, 0};
+		char *argv[] = {"fork_test", "-o", 0};
 		do_exec("loop.img", argv, -1);
+		thread_exit();
 }
 
 static void kernel_init(void) {
@@ -38,43 +42,24 @@ static void kernel_init(void) {
 		read_cpio_archive();
 		mm_init();
 		sched_init();
-		vfs_init("tmpfs");
 		sd_init();
+		vfs_init("tmpfs");
 }
 
 int kernel_main(void) {
 		kernel_init();
 
-		/*
-		char buf[512];
-		int count = 0;
-		for (int k =2080; k < 2082; k++) {
-				readblock(k, buf);
-				count = 0;
-				for (int i = 0; i < 32; i++) {
-						for (int j = 0;j < 8; j++) {
-								print_hex(buf[16 * i + 2 * j]);
-								print("(");
-								print_int(count);
-								print(")");
-								print("|");
-								count++;
-								//print("|");
-								print_hex(buf[16 * i + 2 * j + 1]);
-								print("(");
-								print_int(count);
-								print(")");
-								print("|");
-								count++;
-								print(" ");
-						}
-						print("\n");
-				}
+		/*mount_t m;
+		fat_set_mount(&m, "sd");
+		vnode_t *r = m.root;
+		list_head_t *pos = r->node.next;
+		while (pos != &r->node) {
+				vnode_t *t = list_entry(pos, vnode_t, node);
+				print(t->name);
 				print("\n");
-				print_int(k);
-				print("-> ==================================================\n");
-	  }
-		*/
+				pos = pos->next;
+		}*/
+
 		/* require 1 */
 		/*for (int i = 0; i < 5; i++)
 				thread_create(&foo);
@@ -82,9 +67,8 @@ int kernel_main(void) {
 
 		/* require 2 */
 		thread_create(&user_test);
-		//thread_create(&user_test2);
+		thread_create(&user_test2);
 		idle();
-
 		//run_shell();
 		return 0;
 }

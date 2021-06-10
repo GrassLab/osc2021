@@ -1,5 +1,6 @@
 #include "vfs.h"
 #include "tmpfs.h"
+#include "fat.h"
 #include "mm.h"
 #include "utils.h"
 #include "uart.h"
@@ -15,31 +16,20 @@ static void vfs_list_dir(list_head_t *dir, file_type_t type) {
         } else {
             tmp = list_entry(pos, vnode_t, node);
         }
-        print(tmp->name);
+        async_write(tmp->name, strlen(tmp->name));
         if (type == DIR)
-            print("/");
-        print("\n");
+            async_uart_putc('/');
+        async_write("\n", 1);
         pos = pos->next;
     }
 }
 
-static char* cname_preprocessing(vnode_t **dir_node, const char *component_name) {
-    if (*component_name == '/') {
-        *dir_node = rootfs->root;
-        component_name++;
-    } else if (*component_name == '.') {
-        if (*(++component_name) == '.')
-            *dir_node = (*dir_node)->dentry.parent;
-        component_name += 2;
-    }
-    return component_name;
-}
-
 static int vfs_lookup(vnode_t *dir_node, vnode_t **target, const char *component_name,
                       char **target_name, file_type_t type) {
-    component_name = cname_preprocessing(&dir_node, component_name);
-    if (dir_node == NULL)
-        return -1;
+    if (*component_name == '/') {
+        dir_node = rootfs->root;
+        component_name++;
+    }
     /* Parse name */
     list_head_t *pos;
     int shift;
@@ -51,28 +41,35 @@ static int vfs_lookup(vnode_t *dir_node, vnode_t **target, const char *component
             strncpy(name, component_name, shift);
             component_name += (shift + 1);
         } else {
-            /* For system call -> ls */
-            if (!strcmp(component_name, "\0")) {
-                *(target) = dir_node;
-                return 0;
-            } else {
-                strcpy(name, component_name);
-            }
+            strcpy(name, component_name);
         }
-        pos = dir_node->dentry.subdir.next;
-        while (pos != &dir_node->dentry.subdir) {
-            vnode_t *tmp = list_entry(pos, vnode_t, dentry.sibling);
-            if (!strcmp(name, tmp->name)) {
-                find = 1;
-                if (tmp->mount == NULL) {
-                    dir_node = tmp;
-                } else {
-                    dir_node = tmp->dentry.mount->root;
+
+        if (!strcmp(name, ".") || !strcmp(name, "..")) {
+            if (!strcmp(name, "..")) {
+                if (dir_node->dentry.parent != NULL) {
+                    dir_node = dir_node->dentry.parent;
+                    find = 1;
                 }
-                break;
+            } else {
+                find = 1;
             }
-            pos = pos->next;
+        } else {
+            pos = dir_node->dentry.subdir.next;
+            while (pos != &dir_node->dentry.subdir) {
+                vnode_t *tmp = list_entry(pos, vnode_t, dentry.sibling);
+                if (!strcmp(name, tmp->name)) {
+                    find = 1;
+                    if (tmp->dentry.mount == NULL) {
+                        dir_node = tmp;
+                    } else {
+                        dir_node = tmp->dentry.mount->root;
+                    }
+                    break;
+                }
+                pos = pos->next;
+            }
         }
+
         /* shift < 0 -> last component */
         if (!find) {
             if (shift < 0) {
@@ -100,14 +97,25 @@ static int vfs_lookup(vnode_t *dir_node, vnode_t **target, const char *component
     return -1;
 }
 
-static void vfs_traversal(vnode_t *vnode) {
-    if (list_empty(&vnode->dentry.subdir) == true) {
-        list_head_t *pos = vnode->node.next;
-        while (pos != &vnode->node) {
-            vnode_t *tmp = list_entry(pos, vnode_t, node);
-            pos = pos->next
-        }
+static void vfs_traverse_unmount(vnode_t *root, void(*umount_ops)(vnode_t*)) {
+    list_head_t *pos = root->dentry.subdir.next;
+    while(pos != &root->dentry.subdir) {
+        vnode_t *tmp = list_entry(pos, vnode_t, dentry.sibling);
+        vfs_traverse_unmount(tmp, umount_ops);
+        pos = root->dentry.subdir.next;
     }
+
+    pos = root->node.next;
+    while (pos != &root->node) {
+        list_del(pos);
+        vnode_t *file = list_entry(pos, vnode_t, node);
+        umount_ops(file);
+        kfree(file);
+        pos = root->node.next;
+    }
+    list_del(&root->dentry.sibling);
+    kfree(root);
+    return ;
 }
 
 static int vfs_umount(vnode_t **dir_node, const char *pathname) {
@@ -117,9 +125,10 @@ static int vfs_umount(vnode_t **dir_node, const char *pathname) {
     if (vfs_lookup(dir, &target, pathname, &dir_name, DIR) >= 0) {
         if (target->dentry.prev != NULL) {
             dir = target->dentry.prev;
-            kfree(dir->mount);
-            dir->mount = NULL;
-
+            vfs_traverse_unmount(target, dir->dentry.mount->umount_ops);
+            kfree(dir->dentry.mount->fs_name);
+            kfree(dir->dentry.mount);
+            dir->dentry.mount = NULL;
             return 0;
         }
     }
@@ -204,15 +213,17 @@ int vfs_mount(const char *device, const char *pathname,
     if (*(p_name + len - 1) == '/')
         *(p_name + len - 1) = (char)0;
     if (vfs_lookup(dir, &target, pathname, &dir_name, DIR) >= 0) {
-        if (!vfs_setup_mount(&target->dentry.mount, device, pathname)) {
+        if (!vfs_setup_mount(&target->dentry.mount, device, filesystem)) {
             vnode_t *root = target->dentry.mount->root;
             root->dentry.prev = target;
             root->dentry.parent = target->dentry.parent;
             if (dir == target)
                 *dir_node = root;
+            kfree(p_name);
             return 0;
         }
     }
+    kfree(p_name);
     return -1;
 }
 
@@ -266,12 +277,34 @@ int vfs_setup_mount(mount_t **mount, const char *device, const char *filesystem)
         *mount = kmalloc(sizeof(mount_t));
         tmpfs_setup_mount(*mount, device);
         return 0;
+    } else if (!strcmp(filesystem, "fat")) {
+        *mount = kmalloc(sizeof(mount_t));
+        if (fat_set_mount(*mount, device) < 0) {
+            kfree(mount);
+            return -1;
+        } else {
+            return 0;
+        }
     }
     return -1;
 }
 
+void vfs_vnode_init(vnode_t *vnode, const char *name) {
+    strcpy(vnode->name, name);
+    vnode->dentry.mount = NULL;
+    vnode->dentry.prev = NULL;
+    vnode->dentry.parent = NULL;
+    list_init(&vnode->dentry.sibling);
+    list_init(&vnode->dentry.subdir);
+    vnode->v_ops = NULL;
+    vnode->f_ops = NULL;
+    vnode->internal = NULL;
+    list_init(&vnode->node);
+}
+
 void vfs_init(const char *filesystem) {
     tmpfs_init();
+    fat_init();
     vfs_setup_mount(&rootfs, filesystem, filesystem);
     /* Populate with initramfs */
     vnode_t *root = rootfs->root;

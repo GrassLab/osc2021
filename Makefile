@@ -33,7 +33,7 @@ asm:
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -d in_asm
 
 run: all
-	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -initrd initramfs.cpio -drive if=sd,file=$(IMG_FILE),format=raw
+	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -serial null -serial stdio -initrd initramfs.cpio -drive if=sd,file=$(IMG_FILE),format=raw 
 
 debug: all
 	qemu-system-aarch64 -M raspi3 -kernel kernel8.img -display none -S -s -initrd initramfs.cpio

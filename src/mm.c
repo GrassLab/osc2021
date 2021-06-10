@@ -252,12 +252,12 @@ static void* obj_alloc(unsigned int entry) {
     pool_t *p = &pool[entry];
     if (p->head.next != &p->head) {
         //print("Get chunk from:  chunk buffer\n\n");
-        chunk_t *chunk = list_entry(p->head.next, chunk_t, list);
+        chunk_t *get_chunk = list_entry(p->head.next, chunk_t, list);
         list_del(p->head.next);
-        void *addr = chunk->addr;
-        chunk->addr = NULL;
-        if (get_chunk_index(chunk) < chunk_pos)
-            chunk_pos = get_chunk_index(chunk);
+        void *addr = get_chunk->addr;
+        get_chunk->addr = NULL;
+        if (get_chunk_index(get_chunk) < chunk_pos)
+            chunk_pos = get_chunk_index(get_chunk);
         return addr;
     }
 
@@ -279,8 +279,8 @@ static int obj_free(void *addr, unsigned int entry, unsigned int index) {
            (uint64_t)addr <= (start_addr + p->obj_size * (p->obj_used[index] - 1))) {
         list_head_t *pos = p->head.next;
         while (pos != &p->head) {
-            chunk_t *chunk = list_entry(pos, chunk_t, list);
-            if (addr == chunk->addr) {
+            chunk_t *get_chunk = list_entry(pos, chunk_t, list);
+            if (addr == get_chunk->addr) {
                 return -1;
             }
             pos = pos->next;
@@ -331,7 +331,7 @@ void kfree(void *addr) {
     unsigned int index = ((unsigned long)addr - MEM_START) / PAGE_SIZE;
     for (int i = 0; i < MAX_POOL_NUM; i++) {
         if (pool[i].used) {
-            for (int j = 0; j < MAX_POOL_PAGE; j++) {
+            for (int j = 0; j < pool[i].page_used; j++) {
                 if (index == get_page_index(pool[i].page[j])) {
                     if (obj_free(addr, i, index) < 0)
                         print("Invalid address 2\n");

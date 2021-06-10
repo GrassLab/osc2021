@@ -7,7 +7,7 @@
 #include "sched.h"
 #include "context.h"
 
-#define BUFF_SIZE 128
+#define BUFF_SIZE 256
 
 char read_buff[BUFF_SIZE];
 char write_buff[BUFF_SIZE];

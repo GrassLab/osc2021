@@ -10,17 +10,16 @@ typedef struct {
 vnode_operations_t tmpfs_vop;
 file_operations_t tmpfs_fop;
 
+static void tmpfs_umount_operation(vnode_t *file) {
+    tmpfs_file_t *f = (tmpfs_file_t*)file->internal;
+    kfree(f->addr);
+    kfree(f);
+}
+
 static void tmpfs_vnode_init(vnode_t *vnode, const char *name) {
-    strcpy(vnode->name, name);
-    vnode->dentry.mount = NULL;
-    vnode->dentry.prev = NULL;
-    vnode->dentry.parent = NULL;
-    list_init(&vnode->dentry.sibling);
-    list_init(&vnode->dentry.subdir);
+    vfs_vnode_init(vnode, name);
     vnode->v_ops = &tmpfs_vop;
     vnode->f_ops = &tmpfs_fop;
-    vnode->internal = NULL;
-    list_init(&vnode->node);
 }
 
 static void tmpfs_create_file(vnode_t *dir_node, vnode_t **target, const char *file_name) {
@@ -68,6 +67,7 @@ void tmpfs_setup_mount(mount_t *mount, const char *name) {
     char *fs_name = kmalloc(strlen(name) + 1);
     strcpy(fs_name, name);
     mount->fs_name = fs_name;
+    mount->umount_ops = &tmpfs_umount_operation;
 
     mount->root = kmalloc(sizeof(vnode_t));
     strcpy(mount->root->name, "/");
