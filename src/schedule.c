@@ -116,6 +116,7 @@ int user_task_create(char *pathname, int priority){
   int pid = task_create(user_task_start, priority, USER, 1);
   load_app(fd, task_pool[pid].ttbr0);
   LOG(FINE) user_pt_show((void*) task_pool[pid].ttbr0);
+  do_close(fd);
   IRQ_ENABLE();
   return pid;
 }
@@ -283,6 +284,7 @@ void sys_exec(struct trapframe *arg){
   int pid = get_pid();
   uint64_t new_ttbr0 = (uint64_t) malloc(PAGE_SIZE, 1);
   load_app(fd, new_ttbr0);
+  do_close(fd);
   LOG(FINE) user_pt_show((void*) new_ttbr0);
   for (int i=0; i<FD_MAX_NUM; i++){
     task_pool[pid].fd[i] = 0;
