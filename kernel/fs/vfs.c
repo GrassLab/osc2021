@@ -1,5 +1,6 @@
 #include "vfs.h"
 #include "tmpfs.h"
+#include "fat32.h"
 #include "../mm/allocator.h"
 #include "../mm/cpio.h"
 #include "../process/thread.h"
@@ -7,6 +8,7 @@
 
 struct mount * rootfs;
 extern struct filesystem tmpfs; 
+extern struct filesystem fatfs;
 
 void init_filesystem()
 {

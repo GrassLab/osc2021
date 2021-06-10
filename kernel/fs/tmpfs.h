@@ -23,6 +23,6 @@ int tmpfs_write(struct file * file, const void * buf, size_t len);
 struct vnode * tmpfs_create_vnode(struct vnode * src, const char * name);
 struct tmpfs_internel * tmpfs_create_internel(const char * name);
 
-void append_child(struct vnode * parent, struct vnode * child);
+void tmpfs_append_child(struct vnode * parent, struct vnode * child);
 
 #endif
