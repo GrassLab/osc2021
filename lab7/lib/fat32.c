@@ -387,6 +387,8 @@ void parseFAT32(){
     }
      sec_per_FAT = *(unsigned int*)(buf+36);
      //uart_printf("sec per fat:%d\n",sec_per_FAT);
+     unsigned int clus_index_root_dir = *(unsigned int*)(buf+44);
+    uart_printf("cluster index of root dir:%d\n",clus_index_root_dir);
 
      metadata.sector_num = num_of_sec_in_par;
      metadata.sector_size = sector_size;
