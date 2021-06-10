@@ -1,0 +1,6 @@
+Command       | Description
+--------------|--------------------------------------------
+timer enable  | enable print system time ever 2 secs
+timer disable | disable print system time ever 2 secs
+timer value   | return "cntpct_el0" value
+timer sec     | return system time
