@@ -90,25 +90,25 @@ void map_user_page(pd_t *tbl, unsigned long va, unsigned long pa, int pflags) {
 static void _free_user_vm(pd_t *tbl, int lvl) {
     for (int i = 0; i < 512; i++) {
         if (tbl[i]) {
-            if (i < 3) {
-                pd_t *nxt = (pd_t *)phys_to_virt(tbl[i] & ENTRY_PA_MASK);
+            pd_t *nxt = (pd_t *)phys_to_virt(tbl[i] & ENTRY_PA_MASK);
+            /* don't free pages here, since it contains ustack */
+            if (lvl < 2) {
                 _free_user_vm(nxt, lvl + 1);
-            } else {
-                kfree(phys_to_virt(tbl[i] & ENTRY_PA_MASK));
             }
+            kfree(nxt);
         }
     }
-    kfree(tbl);
 }
 
-void free_user_vm(pd_t *tbl) {
+void free_user_vm(pd_t *tbl, struct vm_area *vm) {
     _free_user_vm(tbl, 0);
-}
+    kfree(tbl);
 
-void free_vm_area(struct vm_area *vm) {
     struct vm_area *tmp;
-
     while (vm) {
+        for (int i = 0; i < vm->size / PAGE_SIZE; i++) {
+            kfree(vm->va_map[i]);
+        }
         tmp = vm;
         vm = vm->next;
         kfree(tmp);

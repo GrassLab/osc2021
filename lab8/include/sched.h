@@ -42,7 +42,7 @@ struct task_struct {
     unsigned preempt_count;
     unsigned need_resched;
 
-    struct vm_area *vm_map;
+    struct vm_area *vm_list;
     void *ttbr0;
 
     char *stack;

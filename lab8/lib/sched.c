@@ -91,10 +91,7 @@ void free_task(struct task_struct *ts) {
     kfree(ts->kstack);
 
     /* free all vm */
-    //free_user_vm(ts->ttbr0);
-
-    /* free vm list */
-    //free_vm_area(ts->vm_map);
+    free_user_vm(ts->ttbr0, ts->vm_list);
 
     /* close all fds */
     if (ts->files) {

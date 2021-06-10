@@ -23,6 +23,7 @@ struct vm_area {
     size_t va;
     size_t size;
     size_t flags;
+    void *va_map[0]; /* TODO: bad design */
 };
 
 void setup_kernel_space_mapping();
@@ -31,7 +32,6 @@ void map_user_page(pd_t *tbl, unsigned long va, unsigned long pa, int pflags);
 void *alloc_user_stack(pd_t *tbl, unsigned long size);
 void switch_mm();
 size_t get_PTE(size_t va);
-void free_user_vm(pd_t *tbl);
-void free_vm_area(struct vm_area *vm);
+void free_user_vm(pd_t *tbl, struct vm_area *vm);
 
 #endif

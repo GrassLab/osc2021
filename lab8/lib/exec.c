@@ -53,7 +53,7 @@ static void *init_stack_args(char *stack, const char *argv[]) {
 static struct vm_area *load_elf_segment(pd_t *tbl, void *elf) {
     Elf64_Ehdr *ehdr = (Elf64_Ehdr *)elf;
     Elf64_Phdr *phdr = (Elf64_Phdr *)((char *)elf + ehdr->e_phoff);
-    struct vm_area *maplist = NULL;
+    struct vm_area *vmlist = NULL;
 
     for (int i = 0; i < ehdr->e_phnum; i++) {
         if (phdr[i].p_type == PT_LOAD) {
@@ -71,44 +71,46 @@ static struct vm_area *load_elf_segment(pd_t *tbl, void *elf) {
             const unsigned long total_size = align_up(phdr[i].p_memsz + va_off, PAGE_SIZE);
             const unsigned long file_size = align_up(phdr[i].p_filesz + va_off, PAGE_SIZE);
 
-            struct vm_area *vm_map = kmalloc(sizeof(struct vm_area));
-            vm_map->va = va_aligned;
-            vm_map->size = total_size;
-            vm_map->flags = phdr[i].p_flags;
-            vm_map->next = maplist;
-            maplist = vm_map;
+            struct vm_area *vm = kmalloc(sizeof(struct vm_area) + sizeof(size_t) * (total_size / PAGE_SIZE));
+            vm->va = va_aligned;
+            vm->size = total_size;
+            vm->flags = phdr[i].p_flags;
+            vm->next = vmlist;
+            vmlist = vm;
 
             /* TODO: zero out offset/ending part */
             for (int j = 0; j < file_size; j += PAGE_SIZE) {
                 void *p = kcalloc(PAGE_SIZE);
+                vm->va_map[j / PAGE_SIZE] = p;
                 map_user_page(tbl, va_aligned + j, virt_to_phys(p), phdr[i].p_flags);
                 memcpy(p, elf + offset_aligned + j, PAGE_SIZE);
             }
 
             for (int j = file_size; j < total_size ; j += PAGE_SIZE) {
                 void *p = kcalloc(PAGE_SIZE);
+                vm->va_map[j / PAGE_SIZE] = p;
                 map_user_page(tbl, va_aligned + j, virt_to_phys(p), phdr[i].p_flags);
             }
         }
     }
 
-    return maplist;
+    return vmlist;
 }
 
 /* in-place substitute all task_struct data, return to new context */
 /* (is in-place substitute a bad idea ??) */
 /* TODO: check if disable preemption is enough */
-static void replace_user_context(pd_t *tbl, struct vm_area *maplist, size_t entry, const char *argv[]) {
+static void replace_user_context(pd_t *tbl, struct vm_area *vmlist, size_t entry, const char *argv[]) {
     disable_preempt();
 
     struct task_struct *ts = current;
     kfree(ts->stack);
 
+    /* TODO: should copy argv to kernel space */
+    /* alloc before freeing page table (accessing argv cause segfault) */
     ts->stack = alloc_user_stack(tbl, USTACK_SIZE);
     char *stack_top = init_stack_args(ts->stack + USTACK_SIZE, argv);
     size_t sp_off = stack_top - ts->stack;
-
-    /* get range from ts->vm_map */
 
     /* replace page table */
     asm(
@@ -120,11 +122,9 @@ static void replace_user_context(pd_t *tbl, struct vm_area *maplist, size_t entr
     ::"r"(tbl));
 
     /* free previous memory space */
-    //free_user_vm(ts->ttbr0);
+    free_user_vm(ts->ttbr0, ts->vm_list);
     ts->ttbr0 = tbl;
-
-    //free_vm_area(ts->vm_map);
-    ts->vm_map = maplist;
+    ts->vm_list = vmlist;
 
     /* svc call initiate by user should only and always have one trapframe on kstack */
     /* so we won't accidentlly corrupt the stack we use now */
@@ -161,15 +161,15 @@ int do_exec(const char *path, const char *argv[]) {
 
     pd_t *tbl = kcalloc(PAGE_SIZE);
 
-    struct vm_area *maplist = load_elf_segment(tbl, elf);
-    if (!maplist) {
+    struct vm_area *vmlist = load_elf_segment(tbl, elf);
+    if (!vmlist) {
         goto FAILED;
     }
 
     kfree(elf);
 
     /* eret to new user context */
-    replace_user_context(tbl, maplist, entry, argv);
+    replace_user_context(tbl, vmlist, entry, argv);
     return 0;
 
 FAILED:
@@ -183,12 +183,12 @@ SYSCALL_DEFINE2(exec, const char *, path, const char **, argv) {
 }
 
 /* only used for kthread to initialize a userland process */
-static void exec_user_context(pd_t *tbl, struct vm_area *maplist, size_t entry, void *ustack, const char *argv[]) {
+static void exec_user_context(pd_t *tbl, struct vm_area *vmlist, size_t entry, void *ustack, const char *argv[]) {
     disable_interrupt();
 
     struct task_struct *ts = current;
     ts->stack = ustack;
-    ts->vm_map = maplist;
+    ts->vm_list = vmlist;
 
     /* set page table */
     write_sysreg(ttbr0_el1, tbl);
@@ -239,13 +239,13 @@ int kernel_exec_file(const char *path, const char *argv[]) {
 
     /* load elf segments to vm */
     pd_t *tbl = kcalloc(PAGE_SIZE);
-    struct vm_area *maplist = load_elf_segment(tbl, elf);
+    struct vm_area *vmlist = load_elf_segment(tbl, elf);
     void *ustack = alloc_user_stack(tbl, USTACK_SIZE);
 
     kfree(elf);
 
     /* instantly eret to userland */
-    exec_user_context(tbl, maplist, entry, ustack, argv);
+    exec_user_context(tbl, vmlist, entry, ustack, argv);
 
 FAILED:
     kfree(elf);

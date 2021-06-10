@@ -9,10 +9,16 @@
 #include <mmu.h>
 #include <printf.h>
 
-static void fork_vm(pd_t *tbl, struct vm_area *vmlist) {
+static void copy_vm(pd_t *tbl, struct vm_area *vmlist, struct vm_area **new_vmlist) {
     struct vm_area *vm = vmlist;
+    struct vm_area **new_vm = new_vmlist;
 
     while (vm) {
+        *new_vm = kmalloc(sizeof(struct vm_area) + sizeof(void *) * vm->size / PAGE_SIZE);
+        (*new_vm)->va = vm->va;
+        (*new_vm)->flags = vm->flags;
+        (*new_vm)->size = vm->size;
+
         for (int i = 0; i < vm->size; i += PAGE_SIZE) {
             void *p = kcalloc(PAGE_SIZE);
             map_user_page(tbl, vm->va + i, virt_to_phys(p), vm->flags);
@@ -25,10 +31,14 @@ static void fork_vm(pd_t *tbl, struct vm_area *vmlist) {
 
             void *old_p = phys_to_virt(entry & PAR_PA_MASK);
             memcpy(p, old_p, PAGE_SIZE);
+            (*new_vm)->va_map[i / PAGE_SIZE] = p;
         }
 
         vm = vm->next;
+        new_vm = &(*new_vm)->next;
     }
+
+    *new_vm = NULL;
 }
 
 /* for userland */
@@ -49,7 +59,9 @@ static struct task_struct *fork_context() {
     ts->stack = alloc_user_stack(ts->ttbr0, USTACK_SIZE);
     memcpy(ts->stack, current->stack, USTACK_SIZE);
 
-    fork_vm(ts->ttbr0, ts->vm_map);
+    struct vm_area *vmlist;
+    copy_vm(ts->ttbr0, ts->vm_list, &vmlist);
+    ts->vm_list = vmlist;
 
     struct pt_regs *trapframe = (struct pt_regs *)((size_t)ts->kstack + KSTACK_SIZE - sizeof(struct pt_regs));
     memcpy(trapframe, old_trapframe, sizeof(struct pt_regs));
