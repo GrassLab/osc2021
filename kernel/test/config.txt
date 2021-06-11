@@ -1,2 +1,0 @@
-kernel=123
-init
