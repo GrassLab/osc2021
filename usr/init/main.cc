@@ -2,8 +2,6 @@
 #include <vlibc.h>
 
 int main(int argc, char **argv) {
-  init_printf(nullptr, __libc_putchar);
-
   int pid;
   int wstatus;
 
@@ -13,8 +11,8 @@ int main(int argc, char **argv) {
       break;
 
     case 0: { // child
-      char* arguments[] = {"/bin/login", nullptr};
-      exec("/bin/login", arguments);
+      char* arguments[] = {"/sbin/login", nullptr};
+      exec("/sbin/login", arguments);
       break;
     }
 

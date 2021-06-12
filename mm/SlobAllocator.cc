@@ -65,6 +65,11 @@ void* SlobAllocator::allocate(size_t requested_size) {
 
   victim = split_from_top_chunk(requested_size);
 
+  if (reinterpret_cast<size_t>(victim + 1) % PAGE_SIZE == 0) [[unlikely]] {
+    Kernel::panic("fatal error: _top_chunk = 0x%x, _page_frame_allocatable_begin = 0x%x, req_size = 0x%x, victim = 0x%x\n",
+        _top_chunk, _page_frame_allocatable_begin, requested_size, victim);
+  }
+
 out:
   return victim + 1;  // skip the header
 }
@@ -123,7 +128,7 @@ void SlobAllocator::deallocate(void* p) {
 }
 
 void SlobAllocator::dump_slob_info() const {
-  puts("--- dumping slob bins ---");
+  printf("--- dumping slob bins ---\n");
 
   Slob* ptr = nullptr;
 
@@ -144,7 +149,7 @@ void SlobAllocator::dump_slob_info() const {
     ptr = ptr->next;
   }
   printf("(null)\n");
-  puts("--- end dumping slob bins ---");
+  printf("--- end dumping slob bins ---\n");
 
   printf("_page_frame_allocatable_begin = 0x%x\n", _page_frame_allocatable_begin);
   printf("_top_chunk                    = 0x%x\n", _top_chunk);
@@ -163,12 +168,8 @@ size_t SlobAllocator::get_chunk_header_size() {
 
 void SlobAllocator::request_new_page_frame() {
   _page_frame_allocatable_begin = _buddy_allocator->allocate_one_page_frame();
-
   _top_chunk = _page_frame_allocatable_begin;
-
-  _page_frame_allocatable_end = reinterpret_cast<char*>(_top_chunk) +
-                                PAGE_SIZE -
-                                BuddyAllocator::get_block_header_size();
+  _page_frame_allocatable_end = reinterpret_cast<char*>(_top_chunk) + PAGE_SIZE;
 }
 
 bool SlobAllocator::is_first_chunk_in_page_frame(const Slob* chunk) const {

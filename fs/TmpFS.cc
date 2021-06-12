@@ -1,6 +1,7 @@
 // Copyright (c) 2021 Marco Wang <m.aesophor@gmail.com>. All rights reserved.
 #include <fs/TmpFS.h>
 
+#include <dev/Console.h>
 #include <fs/Stat.h>
 #include <fs/VirtualFileSystem.h>
 #include <libs/CString.h>
@@ -86,6 +87,10 @@ SharedPtr<Vnode> TmpFSInode::get_ith_child(size_t i) {
   return nullptr;
 }
 
+Vnode* TmpFSInode::get_parent() {
+  return _parent;
+}
+
 size_t TmpFSInode::get_children_count() const {
   return _children.size();
 }
@@ -97,6 +102,10 @@ int TmpFSInode::chmod(const mode_t mode) {
 
 int TmpFSInode::chown(const uid_t uid, const gid_t gid) {
   return -1;
+}
+
+size_t TmpFSInode::hash_code() const {
+  return Hash<TmpFSInode>{}(*this);
 }
 
 }  // namespace valkyrie::kernel

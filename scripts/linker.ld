@@ -1,5 +1,6 @@
 SECTIONS {
-  . = 0x80000;
+  .  = 0xffff000000000000;  /* kernel space begin */
+  . += 0x80000;             /* kernel load address */
 
   .text ALIGN(0x10) : {
     *(.text)

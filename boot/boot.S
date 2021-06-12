@@ -3,17 +3,21 @@
 // boot.S - Valkyrie Kernel Entry Point
 //
 // The GPU of rpi3 will place the kernel8.img at 0x80000
-// and start executing the code there. In our case,
-// 0x80000 is the address of `_start` (see scripts/linker.ld for details).
+// and start executing the code there.
+//
+// In our case, the physical address of `_start` is 0x80000,
+// whereas the virtual address of `_start` is 0xffff000000080000.
+// All symbols in build/valkyrie.eif only exists at 0xffff*
+// because it is compiled in that way (see scripts/linker.ld for details).
 //
 // We will do the following tasks in boot.S:
-// 1. Set the SP (Stack Pointer) to 0x80000 and let it grow towards 0
-// 2. initialize the .bss segment to zeroes by calling memset
-// 3. configure CPACR_EL1 to allow the use of variadic functions
-// 4. configure HCR_EL2.RW to 1 to run at EL1 in 64-bit mode
-// 5. finally, branch to the `kmain()` function.
-
-.extern memset
+// 1. switch the Exception Level from EL2 (hypervisor) to EL1 (supervisor).
+// 2. configure CPACR_EL1 to allow the use of variadic functions
+// 3. configure HCR_EL2.RW to 1 to run at EL1 in 64-bit mode
+// 4. branch to `__mmu_init()`, which initializes and turns on MMU.
+// 5. set the SP (Stack Pointer) to 0xffff000000080000.
+// 6. initialize the .bss segment to zeroes by calling memset
+// 7. transfer control to `kmain()`.
 
 .section ".text"
 .global _start
@@ -22,18 +26,6 @@ _start:
   mrs x0, mpidr_el1
   and x0, x0, 3
   cbnz x0, _halt
-
-  // Initialize the stack pointer to the address of _start,
-  // allowing it to grow toward lower address.
-  ldr x0, = _start
-  mov sp, x0
-
-  // Initialize .bss by calling memset()
-  ldr x0, = _bss_start
-  mov x1, #0
-  ldr x2, = _bss_end
-  sub x2, x2, x0
-  bl memset
 
   // Allow access to variadic functions in EL1.
   // On Arm64, when we want to print out some message, the va_list will
@@ -51,6 +43,25 @@ _start:
   orr x0, x0, #(1 << 31)
   msr HCR_EL2, x0
 
+__switch_to_EL1:
+  ldr x0, = evt
+  msr VBAR_EL1, x0
+
+  mov x0, 0
+  orr x0, x0, #(1 << 0)
+  orr x0, x0, #(1 << 2)
+  orr x0, x0, #(0b1111 << 6)
+  msr spsr_el2, x0
+
+  adr x0, __mmu_init
+  msr elr_el2, x0
+
+  ldr x0, = _start - 0x10  // sets SP to 0xffff000000080000 - 0x10
+  msr sp_el1, x0
+  eret  // eret to `__mmu_init()`, which will branch back to `__boot_rest()`
+
+.global __boot_rest
+__boot_rest:
   // Transfer control to kmain(), see kernel/kmain.cc
   bl kmain
 

@@ -43,15 +43,9 @@ class FAT32 final : public FileSystem {
     [[gnu::always_inline]] bool is_the_end() const {
       return *reinterpret_cast<const uint8_t*>(this) == 0;
     }
-
-   protected:
-    Entry();
-    Entry(const void* ptr);
   };
 
   struct [[gnu::packed]] FilenameEntry final : public FAT32::Entry {
-    FilenameEntry() = default;
-    FilenameEntry(const void* ptr) : FAT32::Entry(ptr) {}
     String get_filename() const;
 
     uint8_t sequence_number;
@@ -65,9 +59,8 @@ class FAT32 final : public FileSystem {
   };
 
   struct [[gnu::packed]] DirectoryEntry final : public FAT32::Entry {
-    DirectoryEntry() = default;
-    DirectoryEntry(const void* ptr) : FAT32::Entry(ptr) {}
     uint32_t get_first_cluster_number() const;
+    void set_first_cluster_number(const uint32_t n);
 
     char name[8];
     char extension[3];
@@ -197,6 +190,7 @@ class FAT32 final : public FileSystem {
 class FAT32Inode final : public Vnode {
   // Friend declaration
   friend class FAT32;
+  friend struct Hash<FAT32Inode>;
 
  public:
   FAT32Inode(FAT32& fs,
@@ -222,16 +216,25 @@ class FAT32Inode final : public Vnode {
   virtual SharedPtr<Vnode> remove_child(const String& name) override { return nullptr; }
   virtual SharedPtr<Vnode> get_child(const String& name) override;
   virtual SharedPtr<Vnode> get_ith_child(size_t i) override;
+  virtual Vnode* get_parent() override;
   virtual size_t get_children_count() const override;
 
   virtual int chmod(const mode_t) override { return 0; }
   virtual int chown(const uid_t, const gid_t) override { return 0; }
 
-  virtual const String& get_name() const override { return _name; }
+  virtual String get_name() const override;
   virtual char* get_content() override;
   virtual void set_content(UniquePtr<char[]> content, off_t new_size) override;
+  virtual size_t hash_code() const override;
 
  private:
+  bool is_root_directory_inode() const;
+  uint32_t dir_first_cluster_number() const;
+
+  void allocate_first_cluster() const;
+
+  void update_dentry_to_disk(Function<void (FAT32::DirectoryEntry*)> callback) const;
+
   SharedPtr<FAT32Inode>
   find_child_if(Function<bool (const FAT32::DirectoryEntryView&)> predicate,
                 uint32_t* out_offset = nullptr) const; 
@@ -251,6 +254,23 @@ class FAT32Inode final : public Vnode {
   UniquePtr<char[]> _content;
 };
 
+
+// Explicit (full) specialization of `struct Hash` for FAT32Inode.
+template <>
+struct Hash<FAT32Inode> final {
+  size_t operator ()(const FAT32Inode& inode) {
+    constexpr size_t prime = 17;
+    size_t ret = 7;
+
+    ret += prime * hash(inode._size);
+    ret += prime * hash(inode._mode);
+    ret += hash(inode._name);
+    ret += prime * hash(inode._first_cluster_number);
+    ret += prime * hash(inode._parent_cluster_offset);
+    ret += prime * hash(inode._parent_cluster_offset);
+    return ret;
+  }
+};
 
 }  // namespace valkyrie::kernel
 

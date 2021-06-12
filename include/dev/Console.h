@@ -3,18 +3,47 @@
 #define VALKYRIE_CONSOLE_H_
 
 #include <Types.h>
-#include <dev/ConsoleColors.h>
-#include <driver/MiniUART.h>
+#include <dev/CharacterDevice.h>
 #include <libs/printf.h>
 
-namespace valkyrie::kernel::console {
+namespace valkyrie::kernel {
 
-void initialize(MiniUART* mini_uart);
+class Console : public CharacterDevice {
+ public:
+  enum class Color {
+    BLACK,
+    RED,
+    GREEN,
+    YELLOW,
+    BLUE,
+    PURPLE,
+    CYAN,
+    WHITE
+  };
 
-void set_color(Color fg_color, bool bold = false);
-void clear_color();
+  static Console& get_instance();
 
-}  // namespace valkyrie::kernel::console
+  virtual ~Console() = default;
+  Console(const Console&) = delete;
+  Console(Console&&) = delete;
+  Console& operator =(const Console&) = delete;
+  Console& operator =(Console&&) = delete;
+
+  virtual char read_char() override;
+  virtual void write_char(const char c) override; 
+
+  int read(char buf[], size_t size);
+  int write(const char buf[], size_t size);
+
+
+  void set_color(Console::Color fg_color, bool bold = false);
+  void clear_color();
+
+ protected:
+  Console(CharacterDevice::Driver& driver);
+};
+
+}  // namespace valkyrie::kernel
 
 
 template <typename... Args>
@@ -29,7 +58,6 @@ void sprintf(char* s, const char* fmt, Args&&... args) {
 
 template <typename... Args>
 void printk(const char* fmt, Args&&... args) {
-  // FIXME: not sure why we cannot access cntpct_el0 at EL0...(?)
   uint64_t cntpct_el0;
   uint64_t cntfrq_el0;
   uint64_t timestamp;
@@ -44,12 +72,8 @@ void printk(const char* fmt, Args&&... args) {
 
 
 extern "C" {
-
 char getchar();
-void gets(char* s);
 void putchar(const char c);
-void puts(const char* s, bool newline = true);
-
 }
 
 #endif  // VALKYRIE_CONSOLE_H_

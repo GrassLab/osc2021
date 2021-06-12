@@ -5,8 +5,6 @@
 bool validate_user(const char* username, const char* password);
 
 int main(int argc, char **argv) {
-  init_printf(nullptr, __libc_putchar);
-
   int pid;
   char username[32];
   char password[32];
@@ -16,10 +14,10 @@ int main(int argc, char **argv) {
     memset(password, 0, sizeof(password));
 
     printf("Localhost login: ");
-    uart_read(username, sizeof(username) - 1);
+    read(0, username, sizeof(username) - 1);
 
     printf("Password: ");
-    uart_read(password, sizeof(password) - 1);
+    read(0, password, sizeof(password) - 1);
 
     if (!validate_user(username, password)) {
       continue;

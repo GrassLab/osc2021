@@ -5,7 +5,6 @@
 int run_shell(const char* username);
 
 int main(int argc, char **argv) {
-  init_printf(nullptr, __libc_putchar);
   return run_shell(argv[1]);
 }
 
@@ -51,7 +50,7 @@ int run_shell(const char* username) {
   while (true) {
     memset(buf, 0, sizeof(buf));
     printf("[%s@localhost]%c ", username, prompt);
-    uart_read(buf, 255);
+    read(0, buf, 255);
 
     argc = get_argc(buf);
     str = buf;
@@ -71,6 +70,11 @@ int run_shell(const char* username) {
 
     } else if (!strncmp(buf, "exit", sizeof(buf))) {
       break;
+
+    } else if (!strncmp(buf, "cd", sizeof(buf))) {
+      if (chdir(arguments[1]) == -1) {
+        printf("cd: no such file or directory: %s\n", arguments[1]);
+      }
 
     } else if (!strncmp(buf, "echo $?", sizeof(buf))) {
       printf("%d\n", wstatus);

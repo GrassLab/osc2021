@@ -13,8 +13,6 @@ int main(int argc, char **argv) {
   int ret;
   DirectoryEntry dentry;
 
-  init_printf(nullptr, __libc_putchar);
-
   if (argc < 1) {
     printf("ls: argv[0] should be the path to ls\n");
     ret = -1;
@@ -22,7 +20,7 @@ int main(int argc, char **argv) {
   }
 
   if (argc == 1) {
-    argv[1] = "/";
+    argv[1] = ".";
   }
 
   if ((fd = open(argv[1], 0)) == -1) {

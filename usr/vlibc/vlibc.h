@@ -5,6 +5,17 @@
 #include <types.h>
 #include <printf.h>
 
+#define O_CREAT ((1 << 3))
+
+#define assert(pred)                \
+  do {                              \
+    if (!(pred)) {                  \
+      printf("assertion failed\n"); \
+      exit(1);                      \
+    }                               \
+  } while (0)
+
+
 extern "C" {
 
 // System call wrappers
@@ -12,9 +23,6 @@ int read(int fd, void* buf, size_t count);
 int write(int fd, const void* buf, size_t count);
 int open(const char* pathname, int options);
 int close(int fd);
-size_t uart_read(char buf[], size_t size);
-size_t uart_write(const char buf[], size_t size);
-void uart_putchar(const char c);
 int fork();
 int exec(const char* name, const char *const argv[]);
 [[noreturn]] void exit(int error_code);
@@ -24,11 +32,13 @@ int sched_yield();
 long kill(pid_t pid, int signal);
 int signal(int signal, void (*handler)());
 int access(const char* pathname, int options);
-
-
-inline void __libc_putchar(void*, const char c) {
-  uart_putchar(c);
-}
+int chdir(const char* pathname);
+int mkdir(const char* pathname);
+int rmdir(const char* pathname);
+int unlink(const char* pathname);
+int mount(const char* device_name, const char* mountpoint, const char* fs_name);
+int umount(const char* mountpoint);
+int getcwd(char* buf);
 
 }
 
