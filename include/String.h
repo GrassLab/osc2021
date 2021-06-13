@@ -3,6 +3,7 @@
 #define VALKYRIE_STRING_H_
 
 #include <Iterator.h>
+#include <Hash.h>
 #include <List.h>
 #include <Memory.h>
 #include <libs/CString.h>
@@ -50,6 +51,7 @@ class String {
 
 
   char& operator [](size_t i) { return _s[i]; }
+  const char& operator [](size_t i) const { return _s[i]; }
 
   bool operator ==(const String& r) const {
     return !strcmp(c_str(), r.c_str());
@@ -65,6 +67,10 @@ class String {
     strcpy(ret._s.get(), _s.get());
     strcat(ret._s.get(), r._s.get());
     return ret;
+  }
+
+  String& operator +=(const String& r) {
+    return *this = move(*this + r);
   }
 
   //operator bool() const { return !empty(); }
@@ -84,7 +90,7 @@ class String {
   size_t find_first_of(char c, size_t pos = 0) const {
     size_t len = size();
     for (size_t i = 0; i < len; i++) {
-      if (at(i) == c) {
+      if (_s[i] == c) {
         return i;
       }
     }
@@ -94,7 +100,7 @@ class String {
   size_t find_first_not_of(char c, size_t pos = 0) const {
     size_t len = size();
     for (size_t i = 0; i < len; i++) {
-      if (at(i) != c) {
+      if (_s[i] != c) {
         return i;
       }
     }
@@ -113,7 +119,7 @@ class String {
 
     pos = (pos == npos) ? size() - 1 : pos;
     for (int i = pos; i >= 0; i--) {
-      if (at(i) == c) {
+      if (_s[i] == c) {
         return i;
       }
     }
@@ -127,7 +133,7 @@ class String {
 
     pos = (pos == npos) ? size() - 1 : pos;
     for (int i = pos; i >= 0; i--) {
-      if (at(i) != c) {
+      if (_s[i] != c) {
         return i;
       }
     }
@@ -204,6 +210,25 @@ class String {
     return substrings;
   }
 
+  // Returns a string in which the string elements of sequence `seq`
+  // have been joined by *this.
+  // FIXME: pass by const ref (currently the ConstIterator is broken)
+  [[nodiscard]]
+  String join(List<String>& seq) {
+    const size_t len = seq.size();
+    String ret;
+
+    for (auto it = seq.begin(); it != seq.end(); it++) {
+      ret += *it;
+
+      if (it.index() != len - 1) [[likely]] {
+        ret += *this;
+      }
+    }
+
+    return ret;
+  }
+
   void to_upper() {
     constexpr int offset = 'a' - 'A';
 
@@ -242,6 +267,21 @@ class String {
 
  private:
   UniquePtr<char[]> _s;
+};
+
+
+// Explicit (full) specialization of `struct Hash` for String.
+template <>
+struct Hash<String> final {
+  size_t operator ()(const String& s) const {
+    constexpr size_t prime = 19;
+    size_t ret = 5;
+
+    for (auto c : s) {
+      ret += prime * hash(c);
+    }
+    return ret;
+  }
 };
 
 }  // namespace valkyrie::kernel

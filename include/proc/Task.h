@@ -5,14 +5,11 @@
 #include <List.h>
 #include <Memory.h>
 #include <Types.h>
-#include <dev/Console.h>
 #include <fs/File.h>
 #include <fs/Vnode.h>
-#include <libs/CString.h>
 #include <mm/Page.h>
-#include <mm/MemoryManager.h>
+#include <mm/VMMap.h>
 #include <proc/Signal.h>
-#include <proc/TrapFrame.h>
 
 #define TASK_TIME_SLICE    3
 #define TASK_NAME_MAX_LEN 16
@@ -51,6 +48,12 @@ class Task {
   // Copy assignment operator
   Task& operator= (const Task& r) = delete;
 
+  // Move constructor
+  Task(Task&& r) noexcept = delete;
+
+  // Move assignment operator
+  Task& operator= (Task&& r) noexcept = delete;
+
 
   [[gnu::always_inline]] static Task* current() {
     Task* ret;
@@ -79,6 +82,7 @@ class Task {
   bool is_fd_valid(const int fd) const;
 
 
+  // FIXME: move all these definition to .cc
   Task::State get_state() const { return _state; }
   pid_t get_pid() const { return _pid; }
   TrapFrame* get_trap_frame() const { return _trap_frame; }
@@ -106,6 +110,17 @@ class Task {
   }
   
 
+  SharedPtr<Vnode> get_cwd_vnode() const {
+    return _cwd_vnode;
+  }
+
+  void set_cwd_vnode(SharedPtr<Vnode> vnode) {
+    _cwd_vnode = move(vnode);
+  }
+
+  const VMMap& get_vmmap() const { return _vmmap; }
+  size_t* get_ttbr0_el1() const { return _vmmap.get_pgd(); }
+
  private:
   size_t copy_arguments_to_user_stack(const char* const _argv[]);
 
@@ -128,6 +143,7 @@ class Task {
     uint64_t fp;
     uint64_t lr;
     uint64_t sp;
+    uint64_t ttbr0_el1;
   } _context;
 
   Task* _parent;
@@ -137,8 +153,8 @@ class Task {
   int _error_code;
   pid_t _pid;
   int _time_slice;
+  VMMap _vmmap;
   void (*_entry_point)();
-  void* _elf_dest;
   Page _kstack_page;
   Page _ustack_page;
   TrapFrame* _trap_frame;
@@ -152,7 +168,7 @@ class Task {
   SharedPtr<File> _fd_table[NR_TASK_FD_LIMITS];
 
   // Current working directory
-  Vnode* _cwd_vnode;
+  SharedPtr<Vnode> _cwd_vnode;
 };
 
 }  // namespace valkyrie::kernel

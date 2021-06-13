@@ -22,18 +22,19 @@ void Kernel::run() {
   print_banner();
   print_hardware_info();
 
-  printk("switching to supervisor mode... (≧▽ ≦)\n");
-  _exception_manager.downgrade_exception_level(1);
-
   /*
   printk("enabling timer interrupts\n");
   _timer_multiplexer.get_arm_core_timer().enable();
   */
  
-  printk("VFS: mounting rootfs...\n");
+  printk("VFS: mounting rootfs\n");
   _vfs.mount_rootfs();
 
-  printk("starting task scheduler...\n");
+  printk("VFS: mounting devtmpfs\n");
+  _vfs.mount_devtmpfs();
+  _vfs.populate_devtmpfs();
+
+  printk("starting task scheduler\n");
   _task_scheduler.run();
 
   Kernel::panic("you shouldn't have reached here...\n");
@@ -41,11 +42,13 @@ void Kernel::run() {
 
 
 void Kernel::print_banner() {
-  console::set_color(console::Color::GREEN, /*bold=*/true);
-  puts("--- Valkyrie OS ---");
-  console::set_color(console::Color::YELLOW, /*bold=*/true);
-  puts("Developed by: Marco Wang <aesophor.cs09g@nctu.edu.tw>");
-  console::clear_color();
+  auto& console = Console::get_instance();
+
+  console.set_color(Console::Color::GREEN, /*bold=*/true);
+  printf("--- Valkyrie OS (Virtual Memory Edition) ---\n");
+  console.set_color(Console::Color::YELLOW, /*bold=*/true);
+  printf("Developed by: Marco Wang <aesophor.cs09g@nctu.edu.tw>\n\n");
+  console.clear_color();
 }
 
 void Kernel::print_hardware_info() {
