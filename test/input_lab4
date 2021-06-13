@@ -1,0 +1,5 @@
+
+help
+loadapp
+0x70000
+../lab4/archive/rootfs/app.img
