@@ -12,6 +12,8 @@
 #include <string.h>
 #include <mm.h>
 #include <fs/vfs.h>
+#include <sdcard.h>
+#include <fs/fat32.h>
 
 void foo() {
     enable_interrupt();
@@ -119,8 +121,10 @@ void main(void *_dtb_ptr) {
     /* enable for EL0 */
     enable_fpu();
     init_rootfs();
+    sd_init();
+    init_fat32();
 
-    schedule_kthread(&shell);
+    schedule_kthread(&run_init);
 
     enable_core_timer();
     enable_interrupt();
