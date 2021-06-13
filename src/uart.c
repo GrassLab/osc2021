@@ -5,8 +5,9 @@
 #include "utils.h"
 #include "config.h"
 #include "sched.h"
+#include "context.h"
 
-#define BUFF_SIZE 128
+#define BUFF_SIZE 256
 
 char read_buff[BUFF_SIZE];
 char write_buff[BUFF_SIZE];
@@ -61,6 +62,11 @@ char uart_getc() {
 void uart_putc(char c) {
     while (!(*AUX_MU_LSR & 0x20)) {}
     *AUX_MU_IO = c;
+}
+
+void async_uart_putc(char c) {
+    buffer_push(c, uart_out);
+    *AUX_MU_IER |= 0x2;
 }
 
 size_t async_write(const char *s, size_t size) {
@@ -157,7 +163,7 @@ void print_int(unsigned long long num) {
         uart_putc((char)(buffer[i] + 48));
 }
 
-static void print_hex(unsigned long long num) {
+void print_hex(unsigned long long num) {
     if (!num) {
         uart_putc('0');
         return ;

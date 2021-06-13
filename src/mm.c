@@ -32,7 +32,7 @@ typedef struct {
 typedef struct {
     char         used;
     unsigned int obj_size;
-    unsigned int obj_used;
+    unsigned int obj_used[MAX_POOL_PAGE];
     unsigned int page_used;
     page_t       *page[MAX_POOL_PAGE];
     list_head_t  head;
@@ -206,12 +206,16 @@ static page_t* buddy_alloc(unsigned int order) {
 }
 
 static void buddy_free(page_t *block) {
-    block->used = 0;
-    memset((void*)get_address(block), pow(2, block->order), 0);
-    /*print("******************Free pages*****************\n");
-    print_block(block);
-    print("*********************************************\n\n");*/
-    buddy_merge(block);
+    if (block->used) {
+        block->used = 0;
+        memset((void*)get_address(block), pow(2, block->order), 0);
+        /*print("******************Free pages*****************\n");
+        print_block(block);
+        print("*********************************************\n\n");*/
+        buddy_merge(block);
+    } else {
+        print("Invalid address 1\n");
+    }
 }
 
 /*
@@ -236,8 +240,8 @@ static void pool_create(unsigned int size, unsigned int entry) {
     pool_t *p = &pool[entry];
     p->used = 1;
     p->obj_size = size;
-    p->obj_used = 0;
     p->page_used = 1;
+    p->obj_used[p->page_used - 1] = 0;
     p->page[p->page_used - 1] = buddy_alloc(0);
 }
 
@@ -248,33 +252,49 @@ static void* obj_alloc(unsigned int entry) {
     pool_t *p = &pool[entry];
     if (p->head.next != &p->head) {
         //print("Get chunk from:  chunk buffer\n\n");
-        chunk_t *chu = list_entry(p->head.next, chunk_t, list);
+        chunk_t *get_chunk = list_entry(p->head.next, chunk_t, list);
         list_del(p->head.next);
-        void *addr = chu->addr;
-        chu->addr = NULL;
-        if (get_chunk_index(chu) < chunk_pos)
-            chunk_pos = get_chunk_index(chu);
+        void *addr = get_chunk->addr;
+        get_chunk->addr = NULL;
+        if (get_chunk_index(get_chunk) < chunk_pos)
+            chunk_pos = get_chunk_index(get_chunk);
         return addr;
     }
 
     //print("Get chunk from:  page\n\n");
-    p->obj_used++;
-    if ((p->obj_size * (p->obj_used - 1)) >= PAGE_SIZE) {
+    p->obj_used[p->page_used - 1]++;
+    if ((p->obj_size * (p->obj_used[p->page_used - 1] - 1)) >= PAGE_SIZE) {
         if ((p->page[p->page_used] = buddy_alloc(0)) == NULL)
             return NULL;
+        p->obj_used[p->page_used] = 1;
         p->page_used++;
-        p->obj_used = 1;
     }
-    return (void*)(get_address(p->page[p->page_used - 1]) + p->obj_size * (p->obj_used - 1));
+    return (void*)(get_address(p->page[p->page_used - 1]) + p->obj_size * (p->obj_used[p->page_used - 1] - 1));
 }
 
-static void obj_free(void *addr, unsigned int entry) {
-    //print("Put chunk into chunk buffer\n");
+static int obj_free(void *addr, unsigned int entry, unsigned int index) {
     pool_t *p = &pool[entry];
-    memset(addr, p->obj_size, 0);
-    chunk[chunk_pos].addr = addr;
-    list_add_tail(&p->head, &chunk[chunk_pos].list);
-    while (chunk[++chunk_pos].addr != NULL) {}
+    uint64_t start_addr = MEM_START + index * PAGE_SIZE;
+    if (!(((uint64_t)addr - start_addr) % p->obj_size) &&
+           (uint64_t)addr <= (start_addr + p->obj_size * (p->obj_used[index] - 1))) {
+        list_head_t *pos = p->head.next;
+        while (pos != &p->head) {
+            chunk_t *get_chunk = list_entry(pos, chunk_t, list);
+            if (addr == get_chunk->addr) {
+                return -1;
+            }
+            pos = pos->next;
+        }
+
+        //print("Put chunk into chunk buffer\n");
+        memset(addr, p->obj_size, 0);
+        chunk[chunk_pos].addr = addr;
+        list_add_tail(&p->head, &chunk[chunk_pos].list);
+        while (chunk[++chunk_pos].addr != NULL) {}
+    } else {
+        return -1;
+    }
+    return 0;
 }
 
 void* kmalloc(unsigned int size){
@@ -311,20 +331,22 @@ void kfree(void *addr) {
     unsigned int index = ((unsigned long)addr - MEM_START) / PAGE_SIZE;
     for (int i = 0; i < MAX_POOL_NUM; i++) {
         if (pool[i].used) {
-            for (int j = 0; j < MAX_POOL_PAGE; j++) {
+            for (int j = 0; j < pool[i].page_used; j++) {
                 if (index == get_page_index(pool[i].page[j])) {
-                    obj_free(addr, i);
+                    if (obj_free(addr, i, index) < 0)
+                        print("Invalid address 2\n");
                     return ;
                 }
             }
+        } else {
+            break;
         }
     }
     if ((((unsigned int)addr - MEM_START) % PAGE_SIZE)!= 0 ||
           (unsigned int)addr < MEM_START ||
           (unsigned int)addr >= MEM_END) {
-        print("Address not found\n");
+        print("Invalid address 3\n");
     } else {
-        unsigned int index = ((unsigned int)addr - MEM_START) / PAGE_SIZE;
         buddy_free(&page[index]);
     }
 }

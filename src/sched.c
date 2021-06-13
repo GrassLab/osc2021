@@ -48,6 +48,8 @@ static void thread_init(void) {
           thread_pool[i].ustack_num = 0;
           thread_pool[i].read_size = 0;
           thread_pool[i].wait_time = 0;
+          for (int j = 0; j < MAX_FD_NUM; j++)
+              thread_pool[i].fd_table[j] = NULL;
           thread_pool[i].state = exit;
           reg_init(&thread_pool[i].reg);
           list_init(&thread_pool[i].node);
@@ -62,6 +64,8 @@ thread_t* thread_create(void (*task)(void)) {
     if (count == MAX_THREAD_NUM)
         return NULL;
     thread_pool[count].kstack_addr = kmalloc(TSTACK_SIZE);
+    thread_pool[count].wd = rootfs->root;
+    thread_pool[count].fd_pos = 0;
     thread_pool[count].state = ready;
     /* Set context */
     thread_pool[count].reg.sp = (uint64_t)thread_pool[count].kstack_addr + TSTACK_SIZE;
@@ -117,6 +121,12 @@ static void kill_zombie(void) {
         thread_t *tmp = list_entry(dead_queue.head.next, thread_t, node);
         list_del(dead_queue.head.next);
         kfree(tmp->kstack_addr);
+        for (int i = 0; i < MAX_FD_NUM; i++) {
+            if (tmp->fd_table[i] != NULL) {
+                vfs_close(tmp->fd_table[i]);
+                tmp->fd_table[i] = NULL;
+            }
+        }
         tmp->state = exit;
         reg_init(&tmp->reg);
     }

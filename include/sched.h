@@ -2,9 +2,11 @@
 #define  _SCHED_H_
 
 #include "list.h"
+#include "vfs.h"
 #include "type.h"
 
 #define MAX_USTACK_NUM 20
+#define MAX_FD_NUM     50
 
 typedef unsigned int pid_t;
 
@@ -40,6 +42,9 @@ typedef struct {
     uint16_t       ustack_num;
     uint16_t       wait_time;
     size_t         read_size;
+    file_t          *fd_table[MAX_FD_NUM];
+    vnode_t        *wd;
+    uint16_t       fd_pos;
     thread_state_t state;
     list_head_t    node;
 } thread_t;

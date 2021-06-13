@@ -4,11 +4,17 @@
 #include "type.h"
 
 void delay(uint64_t);
+size_t strlen(const char*);
 int strcmp(const char*, const char*);
-int char_2_int(char);
-unsigned int str_2_int(const char*);
+void strcpy(char*, const char*);
+void strncpy(char*, const char*, size_t);
+void strcat(char*, const char*);
+int strchr(const char*, char);
+int ctoi(char);
+unsigned int atoi(const char*);
 unsigned long pow(unsigned int,
                   unsigned int);
-void memset(void*, unsigned long, char);
+void memset(void*, size_t, char);
+void memcpy(void*, void*, size_t);
 
 #endif

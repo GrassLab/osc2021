@@ -13,7 +13,7 @@ static void uart_interrupt_handler() {
     if ((*AUX_MU_IIR & 0x4)) {
         if (buffer_full(uart_in) == false) {
             char c = *AUX_MU_IO;
-            uart_putc(c);
+            async_uart_putc(c);
             buffer_push(c, uart_in);
             read_size--;
             if (read_size == 0) {
