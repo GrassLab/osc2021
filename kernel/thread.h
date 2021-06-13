@@ -1,6 +1,7 @@
 #ifndef THREAD_H
 #define THREAD_H
 
+#include "fd.h"
 #include "../lib/type.h"
 
 #define THREAD_SIZE 4096
@@ -43,6 +44,8 @@ struct Thread {
 
     unsigned long program_addr;
     enum Thread_State state;
+
+    struct fd_node fd_table[FD_TABLE_SIZE];
 
     struct Thread * next;
 };

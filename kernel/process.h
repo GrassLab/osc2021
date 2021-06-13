@@ -12,4 +12,9 @@ void do_fork();
 void do_exec(const char * name, const char * argv[]);
 void do_exit();
 
+int do_open(const char * path_name, int flags);
+int do_close(int fd);
+int do_write(int fd, const void * buf, size_t len);
+int do_read(int fd, void * buf, size_t len);
+
 #endif

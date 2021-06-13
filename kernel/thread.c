@@ -24,6 +24,8 @@ void thread_init()
         uart_puts("\n");
         thread_table[i]->state = Thread_Wait;
         thread_table[i]->next = NULL;
+
+        init_fd_table(&(thread_table[i]->fd_table));
     }
 }
 

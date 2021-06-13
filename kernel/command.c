@@ -2,6 +2,7 @@
 #include "thread.h"
 #include "reader.h"
 #include "allocator.h"
+#include "vfs.h"
 #include "../lib/uart.h"
 #include "../lib/string.h"
 
@@ -18,6 +19,7 @@ void CommandInit()
 {
     buddy_initialize();
     thread_init();
+    init_filesystem();
 }
 
 void CommandHelp()
@@ -124,8 +126,11 @@ void CommandBuddyAlloc(const int size)
 void CommandThreadTest(int test_id)
 {
     thread_test(test_id);
+}
 
-    return;
+void CommandVfsTest(int test_id)
+{
+    vfs_test(test_id);
 }
 
 void CommandNotFound(char *s)

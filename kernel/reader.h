@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vfs.h"
+
 struct cpio_newc_header {
     char    c_magic[6];
     char    c_ino[8];

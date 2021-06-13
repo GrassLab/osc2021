@@ -5,10 +5,10 @@
 int main(int argc, char ** argv)
 {
     char* temp_str = "\nFork Test, pid: ";
-    write(temp_str, strlen(temp_str));
+    print(temp_str, strlen(temp_str));
     itoa(getpid(), temp_str, 0);
-    write(temp_str, strlen(temp_str));
-    write("\n", 1);
+    print(temp_str, strlen(temp_str));
+    print("\n", 1);
 
     int cnt = 1;
     int ret = 0;

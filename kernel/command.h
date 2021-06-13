@@ -18,6 +18,7 @@ void CommandBuddyFree(int section);
 void CommandBuddyFreePool(int pool, int index);
 void CommandBuddyAlloc(int size);
 void CommandThreadTest(int test_id);
+void CommandVfsTest(int test_id);
 void CommandNotFound(char *);
 void CommandReboot();
 
