@@ -1,4 +1,5 @@
 #define MAX_TASK_NR 32
+#define MAX_VMA_NR 128
 #define MAX_WAIT_NR 8
 #define MAX_WAIT_ARGS_NR 16
 
@@ -37,6 +38,24 @@ struct sig_struct {
     char *ksp;
 };
 
+#define VM_ANONYMOUS 0x1 // 1: anoymous; 0: file
+#define VM_SHARED    0x2 // 1: shared  ; 0: private
+#define PROT_RO      0x1
+#define PROT_RW      0x2
+
+#define MAP_ANONYMOUS 0x1
+#define MAP_SHARED    0x2
+#define MAP_FIXED     0x4
+#define MAP_POPULATE  0x8
+#define MAP_SYS       0x16
+
+#define PROT_NONE  0x1
+#define PROT_READ  0x2
+#define PROT_WRITE 0x4
+#define PROT_EXEC  0x8
+
+
+
 struct task {
     struct cpu_context ctx;
     int pid;
@@ -56,6 +75,7 @@ struct task {
     struct task *next, *prev;
     struct file *fd_tab[8];
     struct vnode *wd;
+    struct mm_struct *mm;
 };
 
 struct trap_frame {
@@ -87,3 +107,7 @@ int schedule();
 int sys_exit();
 extern void cpu_switch_to(struct task* prev, struct task* next);
 int rm_from_ready(struct task *old);
+int init_mms_pool();
+int init_vma_pool();
+struct vm_area_struct *new_vma();
+struct mm_struct *new_mm_struct();

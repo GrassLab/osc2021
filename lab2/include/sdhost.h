@@ -1,6 +1,6 @@
 // mmio
-// #define KVA 0xffff000000000000
-#define KVA 0x0000000000000000
+#define KVA 0xffff000000000000
+// #define KVA 0x0000000000000000
 #define MMIO_BASE (KVA + 0x3f000000)
 
 // SD card command

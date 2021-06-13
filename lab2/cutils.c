@@ -1,3 +1,19 @@
+
+unsigned long _align_upper(unsigned long addr, int alignment)
+{
+    unsigned long res;
+    int r = addr % alignment;
+    res = r ? addr + alignment - r : addr;
+    return res;
+}
+
+unsigned long _align_down(unsigned long addr, int alignment)
+{
+    int r = addr % alignment;
+    return addr - r;
+}
+
+
 char *align_upper(char *addr, int alignment)
 {
     char *res;

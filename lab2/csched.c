@@ -217,6 +217,50 @@ int rm_from_ready(struct task *old)
     return 0;
 }
 
+struct mm_struct mm_struct_pool[MAX_TASK_NR];
+struct vm_area_struct vma_pool[MAX_VMA_NR];
+
+int init_mms_pool()
+{
+    for (int i = 0; i < MAX_TASK_NR; ++i)
+        mm_struct_pool[i].cpio_start = 0;
+    return 0;
+}
+
+struct mm_struct *new_mm_struct()
+{
+    for (int i = 0; i < MAX_TASK_NR; ++i) {
+        if (!(mm_struct_pool[i].cpio_start)) {
+            mm_struct_pool[i].cpio_start = (char*)1;
+            mm_struct_pool[i].page_nr = 0;
+            mm_struct_pool[i].mmap = 0;
+            return &mm_struct_pool[i];
+        }
+    }
+    return 0; // NULL
+}
+
+int init_vma_pool()
+{
+    for (int i = 0; i < MAX_VMA_NR; ++i)
+        vma_pool[i].vm_end = 0;
+    return 0;
+}
+
+
+struct vm_area_struct *new_vma()
+{
+    for (int i = 0; i < MAX_VMA_NR; ++i) {
+        if (!(vma_pool[i].vm_end)) {
+            vma_pool[i].vm_end = 1;
+            vma_pool[i].vm_next = 0;
+            return &vma_pool[i];
+        }
+    }
+    return 0; // NULL
+}
+
+
 struct task *thread_create(unsigned long func_addr, unsigned long args)
 {
     struct task *new;
@@ -226,8 +270,9 @@ struct task *thread_create(unsigned long func_addr, unsigned long args)
     /* Setting task struct */
     new->kernel_stack_page = kmalloc(0x1000); // 4kb
     new->ksp = new->kernel_stack_page + 0x1000 - sizeof(struct trap_frame); // 16 alignment
-    new->user_stack_page = kmalloc(0x1000); // 4kb
-    new->usp = new->user_stack_page + 0x1000; // 16 alignment
+    // new->user_stack_page = kmalloc(0x1000); // 4kb
+    // new->usp = new->user_stack_page + 0x1000; // 16 alignment
+    new->usp = (char*)0x0000fffffffffff0; // 16 alignment
     new->ctx.x19 = func_addr;
     new->ctx.x20 = args;
     new->ctx.x30 = (unsigned long)ret_from_fork; // pc
@@ -240,7 +285,9 @@ struct task *thread_create(unsigned long func_addr, unsigned long args)
     new->sig.sigpend = 0;
     for (int i = 0; i < MAX_SIG_NR; ++i)
         new->sig.user_handler[i] = 0;
-    
+    new->mm = new_mm_struct();
+    new->mm->pgd = alloc_page_table(new->mm);
+
     add_to_ready(new);
     return new;
 }
@@ -261,12 +308,13 @@ struct task *pick_next()
 int schedule()
 {
     struct task *next, *prev;
-
+// uart_send_string("[SCHEDULE]\r\n");
     prev = current;
     next = pick_next();
     if (prev == next) // Need no sched.
         return 0;
     current = next;
+    set_ttbr0(KVA_TO_PA((unsigned long)(current->mm->pgd)));
     cpu_switch_to(prev, next);
     enable_irq();
     return 0;

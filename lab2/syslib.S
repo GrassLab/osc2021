@@ -125,3 +125,9 @@ mknod:
   mov x8, SYS_MKNOD
   svc 0
   ret
+
+.global mmap
+mmap:
+  mov x8, SYS_MMAP
+  svc 0
+  ret

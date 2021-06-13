@@ -11,13 +11,14 @@
 #include "include/procfs.h"
 #include "include/fat32.h"
 #include "include/sdhost.h"
+#include "include/entry.h"
 // #include "include/initramfs.h"
 #include "utils.h"
 #define CMD_SIZE 64
 #define FILE_NAME_SIZE 64
-#define PM_PASSWORD 0x5a000000
-#define PM_RSTC 0x3F10001c
-#define PM_WDOG 0x3F100024
+#define PM_PASSWORD (0x5a000000)
+#define PM_RSTC (0x3F10001c + 0xffff000000000000)
+#define PM_WDOG (0x3F100024 + 0xffff000000000000)
 
 int BSSTEST = 0;
 extern char *dt_base_g;
@@ -65,9 +66,9 @@ int do_reboot(void)
     return 0;
 }
 
-void set_dt_base(char *dt_base)
+void set_dt_base(unsigned long dt_base)
 {
-    dt_base_g = dt_base;
+    // dt_base_g = (char*)(dt_base + 0xffff000000000000);
     return;
 }
 
@@ -146,6 +147,9 @@ int ls_initramfs()
         if (!strcmp(name_start, "TRAILER!!!"))
             break;
         data_start = align_upper(name_start + namesize, 4);
+        uart_send_string("From ls_initramfs: ");
+        uart_send_ulong((unsigned long)data_start);
+        uart_send_string("\r\n");
         uart_send_string(name_start);
         uart_send_string("\r\n");
         ent = (struct cpio_newc_header*)align_upper(data_start + filesize, 4);
@@ -381,10 +385,9 @@ int cmd_handler(char *cmd)
     return 0;
 }
 
+
 int ls(char *path) {
     int fd = open(path, 0);
-    char name[100];
-    int size;
     // Modify the for loop to iterate
     // the directory entries of the
     // opened directory.
@@ -612,18 +615,19 @@ void user_logic_5(int argc, char **argv)
 void user_logic_6(int argc, char **argv)
 {
     int fd;
-    char buf[20];// = "This is SUPER COOL!";
+    char buf[17];// = "This is NOT COOL";
+    uart_send_string("From user_logic_6: A\r\n");
 
     ls(".");
-    // fd = open("/PAYWAY.C", O_CREAT);
-    if ((fd = open("/PAYWAY.C", 0)) < 0) {
+    // fd = open("/HALO.PY", O_CREAT);
+    if ((fd = open("/HALO.PY", 0)) < 0) {
         uart_send_string("Error: fd open fail\r\n");
         exit();
     }
     read(fd, buf, 32);
     buf[20] = '\0';
     uart_send_string(buf);
-    // write(fd, buf, 19);
+    write(fd, buf, 19);
     // sync();
     exit();
 }
@@ -654,9 +658,12 @@ void user_thread()
     argv[4] = "haha";
     argv[5] = "shutup\r\n";
     argv[6] = 0;
-
+    uart_send_string("From user_thread: A\r\n");
+    // char *inva = 0x00ff0000ffff0000;
+    // *inva = 'k';
     // argv = {"user_logic", "hello1", "-aux", 0};
-    exec("bin/argv_test", argv);
+    // exec("bin/argv_test", argv);
+    exec("bin/ff.elf", argv);
     // exit();
 }
 
@@ -685,14 +692,15 @@ void idle()
     struct task *walk;
 
     while (1) {
-        // uart_send_string("From idle\r\n");
+        // uart_send_string("[IDLE]\r\n");
         // delay(10000000);
         for (int i = 0; i < MAX_TASK_NR; ++i) {
             walk = &task_pool[i];
             if (walk->free == 0 && walk->status == TASK_ZOMBIE) {
                 uart_send_string("From idle: Find zombie and cleared.\r\n");
                 kfree(walk->kernel_stack_page);
-                kfree(walk->user_stack_page);
+                destroy_pgd(walk->mm);
+                // kfree(walk->user_stack_page);
                 walk->free = 1;
             }
         }
@@ -702,44 +710,89 @@ void idle()
 }
 
 
-// int sys_exec(char *filename, char *const argv[])
+int sys_exec(char *filename, char *const argv[])
+{
+    struct mm_struct *mm;
+    struct cpio_newc_header* ent;
+    int filesize, namesize;
+    char *name_start, *data_start;
+
+    mm = current->mm;
+    ent = (struct cpio_newc_header*)INITRAMFS_BASE;
+    while (1)
+    {
+        namesize = hex_string_to_int(ent->c_namesize, 8);
+        filesize = hex_string_to_int(ent->c_filesize, 8);
+        name_start = ((char *)ent) + sizeof(struct cpio_newc_header);
+        data_start = align_upper(name_start + namesize, 4);
+        if (!strcmp(filename, name_start)) { // Find the file
+            mm->cpio_start = data_start;
+            mm->cpio_size = filesize;
+            if (!filesize)
+                return 0;
+            create_user_space(mm); // virtual space: 0 ~ filesize
+            break;
+        }
+        if (!strcmp(name_start, "TRAILER!!!")) {
+            // Still don't find file at the end.
+            uart_send_string("do_exec: ");
+            uart_send_string(filename);
+            uart_send_string(": No such file or directory\r\n");
+            return 1;
+        }
+        ent = (struct cpio_newc_header*)align_upper(data_start + filesize, 4);
+    }
+
+
+    int argc, len;
+    char *user_sp;
+    char **argv_fake, **argv_fake_start;
+    struct trap_frame *cur_trap_frame;
+delay(10000000);
+    /* Get argc, not include null terminate */
+    argc = 0;
+    while (argv[argc])
+        argc++;
+    argv_fake = (char**)kmalloc(0x1000);
+    user_sp = current->usp;
+    for (int i = argc - 1; i >= 0; --i) {
+        len = strlen(argv[i]) + 1; // including '\0'
+        user_sp -= len;
+        argv_fake[i] = user_sp;
+        memcpy(user_sp, argv[i], len);
+    }
+    user_sp -= sizeof(char*); // NULL pointer
+    user_sp = align_down(user_sp, 0x8); // or pi will fail
+    *((char**)user_sp) = (char*)0;
+    for (int i = argc - 1; i >= 0; --i) {
+        user_sp -= sizeof(char*);
+        *((char**)user_sp) = argv_fake[i];
+    }
+    // TODO: argv_fake_start: this is
+    // temporary. cause now  I don't
+    // have solution to conquer the
+    // pushing stack issue when
+    // starting of function call.
+    argv_fake_start = (char**)user_sp;
+    user_sp -= sizeof(char**); // char** argv
+    *((char**)user_sp) = user_sp + sizeof(char**);
+    user_sp -= sizeof(int); // argc
+    *((int*)user_sp) = argc;
+    kfree((char*)argv_fake);
+    current->usp = align_down(user_sp, 0x10);
+
+    cur_trap_frame = (struct trap_frame *)(get_trap_frame(current) + 0xffff000000000000);
+    cur_trap_frame->regs[0] = (unsigned long)argc;
+    cur_trap_frame->regs[1] = (unsigned long)argv_fake_start;
+    cur_trap_frame->sp_el0 = (unsigned long)current->usp;
+    cur_trap_frame->elr_el1 = 0x0; // user space start from 0.
+    cur_trap_frame->spsr_el1 = 0x0; //0x0 0x3C5 enable_irq
+
+    return argc;  // Geniusly
+}
+
+// int sys_exec(unsigned long func_addr, char *const argv[])
 // {
-//     unsigned long func_addr;
-//     struct cpio_newc_header* ent;
-//     int filesize, namesize;
-//     char *name_start, *data_start;
-
-//     ent = (struct cpio_newc_header*)INITRAMFS_BASE;
-//     while (1)
-//     {
-//         namesize = hex_string_to_int(ent->c_namesize, 8);
-//         filesize = hex_string_to_int(ent->c_filesize, 8);
-//         name_start = ((char *)ent) + sizeof(struct cpio_newc_header);
-//         data_start = align_upper(name_start + namesize, 4);
-//         if (!strcmp(filename, name_start)) {
-//             func_addr = (unsigned long)data_start;
-//             break;
-//             if (!filesize)
-//                 return 0;
-//             // load file to user_stack_page.
-//             char *code_start = current->user_stack_page;
-//             for (int i = 0; i < filesize; ++i)
-//                 code_start[i] = data_start[i];
-//             run_user_program(code_start, current->usp);
-//             // never come back again.
-//             uart_send_string("Should never print out.\r\n");
-//             return 0;
-//         }
-//         ent = (struct cpio_newc_header*)align_upper(data_start + filesize, 4);
-
-//         if (!strcmp(name_start, "TRAILER!!!"))
-//             break;
-//     }
-//     // uart_send_string("do_exec: ");
-//     // uart_send_string(filename);
-//     // uart_send_string(": No such file or directory\r\n");
-//     // return 1;
-
 //     int argc, len;
 //     char *user_sp;
 //     char **argv_fake, **argv_fake_start;
@@ -783,66 +836,13 @@ void idle()
 //     cur_trap_frame->regs[1] = (unsigned long)argv_fake_start;
 //     cur_trap_frame->sp_el0 = (unsigned long)current->usp;
 //     cur_trap_frame->elr_el1 = func_addr;
-//     cur_trap_frame->spsr_el1 = 0x0; // enable_irq
+//     cur_trap_frame->spsr_el1 = 0x3C5; // enable_irq
 
 //     // set_user_program((char*)func_addr, current->usp, argc,
 //     //     argv_fake_start, current->kernel_stack_page + 0x1000);
 //     // never come back again.
 //     return argc;  // Geniusly
 // }
-
-int sys_exec(unsigned long func_addr, char *const argv[])
-{
-    int argc, len;
-    char *user_sp;
-    char **argv_fake, **argv_fake_start;
-    struct trap_frame *cur_trap_frame;
-delay(10000000);
-    /* Get argc, not include null terminate */
-    argc = 0;
-    while (argv[argc])
-        argc++;
-    // argv_fake = kmalloc(argc*sizeof(char*));
-    argv_fake = (char**)kmalloc(0x1000);
-    user_sp = current->user_stack_page + 0x1000;
-    for (int i = argc - 1; i >= 0; --i) {
-        len = strlen(argv[i]) + 1; // including '\0'
-        user_sp -= len;
-        argv_fake[i] = user_sp;
-        memcpy(user_sp, argv[i], len);
-    }
-    user_sp -= sizeof(char*); // NULL pointer
-    user_sp = align_down(user_sp, 0x8); // or pi will fail
-    *((char**)user_sp) = (char*)0;
-    for (int i = argc - 1; i >= 0; --i) {
-        user_sp -= sizeof(char*);
-        *((char**)user_sp) = argv_fake[i];
-    }
-    // TODO: argv_fake_start: this is
-    // temporary. cause now  I don't
-    // have solution to conquer the
-    // pushing stack issue when
-    // starting of function call.
-    argv_fake_start = (char**)user_sp;
-    user_sp -= sizeof(char**); // char** argv
-    *((char**)user_sp) = user_sp + sizeof(char**);
-    user_sp -= sizeof(int); // argc
-    *((int*)user_sp) = argc;
-    kfree((char*)argv_fake);
-    current->usp = align_down(user_sp, 0x10);
-
-    cur_trap_frame = get_trap_frame(current);
-    cur_trap_frame->regs[0] = (unsigned long)argc;
-    cur_trap_frame->regs[1] = (unsigned long)argv_fake_start;
-    cur_trap_frame->sp_el0 = (unsigned long)current->usp;
-    cur_trap_frame->elr_el1 = func_addr;
-    cur_trap_frame->spsr_el1 = 0x0; // enable_irq
-
-    // set_user_program((char*)func_addr, current->usp, argc,
-    //     argv_fake_start, current->kernel_stack_page + 0x1000);
-    // never come back again.
-    return argc;  // Geniusly
-}
 
 
 int shell()
@@ -859,10 +859,16 @@ int shell()
     }
 }
 
+extern unsigned long *kpgd;
+
+
 int kernel_main(char *sp)
 {
     // do_dtp(uart_probe);
+    // el1_table_init();
     rd_init();
+    // create_kernel_pgd(0, 0x40000000);
+    // set_ttbr1((unsigned long)kpgd - 0xffff000000000000);
     dynamic_mem_init();
     timerPool_init();
     core_timer_enable();
@@ -895,14 +901,16 @@ int kernel_main(char *sp)
 
 //
     init_ts_pool();
+    init_mms_pool();
+    init_vma_pool();
     current = new_ts();
     current->ctx.sp = (unsigned long)kmalloc(4096);
     thread_create((unsigned long)idle, 0);
-    // thread_create((unsigned long)shell, 0);
+    thread_create((unsigned long)shell, 0);
     // thread_create((unsigned long)test_thread_1, "CCC\r\n");
     // thread_create((unsigned long)test_thread_2, "DDD\r\n");
-    // thread_create((unsigned long)user_thread, 0);
-    thread_create((unsigned long)user_thread_2, 0);
+    thread_create((unsigned long)user_thread, 0);
+    // thread_create((unsigned long)user_thread_2, 0);
 delay(50000000);
 
 

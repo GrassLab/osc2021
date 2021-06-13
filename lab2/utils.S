@@ -133,3 +133,32 @@ wait_for_interrupt:
 //get_syscall_type:
 //    mov x0, x8
 //    ret
+
+
+.globl set_ttbr1
+set_ttbr1:
+    dsb ish // ensure write has completed
+    msr ttbr1_el1, x0 // switch translation based address.
+    tlbi vmalle1is // invalidate all TLB entries
+    dsb ish // ensure completion of TLB invalidatation
+    isb // clear pipeline
+    ret
+
+.globl _set_ttbr1
+_set_ttbr1:
+    msr    ttbr1_el1, x0
+    ret
+
+.globl set_ttbr0
+set_ttbr0:
+    dsb ish // ensure write has completed
+    msr ttbr0_el1, x0 // switch translation based address.
+    tlbi vmalle1is // invalidate all TLB entries
+    dsb ish // ensure completion of TLB invalidatation
+    isb // clear pipeline
+    ret
+
+.globl _set_ttbr0
+_set_ttbr0:
+    msr    ttbr1_el1, x0
+    ret

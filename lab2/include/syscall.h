@@ -19,7 +19,9 @@
 #define SYS_UMOUNT			19
 #define SYS_SYNC			20
 #define SYS_MKNOD			21
+#define SYS_MMAP			22
 
 #define ESR_ISS_MASK ((1 << 25) - 1)
 
 #define EAGAIN 0
+

@@ -1,7 +1,8 @@
 
 .globl el1_table_init
 el1_table_init:
-    adr    x0, el1_table
+    //adr    x0, el1_table
+    ldr    x0, =el1_table
     msr    VBAR_EL1, x0
     ret
 
@@ -94,6 +95,11 @@ syscall_entry:
     eret
 #define ESR_ELx_EC_SHIFT        26
 #define ESR_ELx_EC_SVC64        0x15
+#define ESR_ELx_EC_IABT_LOW     0x20
+#define ESR_ELx_EC_IABT         0x21
+#define ESR_ELx_EC_DABT_LOW     0x24
+#define ESR_ELx_EC_DABT         0x25
+
 el0_sync:
     save_all
     mov    x26, x0
@@ -106,7 +112,29 @@ el0_sync:
     lsr    x24, x25, #ESR_ELx_EC_SHIFT // exception class
     cmp    x24, #ESR_ELx_EC_SVC64      // SVC in 64-bit state
     b.eq   syscall_entry
-    b invalid_handler
+    cmp    x24, #ESR_ELx_EC_DABT_LOW       // data abort in EL0
+    b.eq   el0_da
+    cmp    x24, #ESR_ELx_EC_DABT           // data abort in ELx
+    b.eq   el0_da
+    cmp    x24, #ESR_ELx_EC_IABT_LOW       // instruction abort in EL0
+    b.eq   el0_da
+    cmp    x24, #ESR_ELx_EC_IABT           // instruction abort in ELx
+    b.eq   el0_da
+    mrs    x0, esr_el1
+    b      invalid_handler
+
+el0_da:
+    //bl     enable_irq
+    mrs    x0, far_el1
+    mrs    x1, esr_el1         
+    bl     do_mem_abort
+    cmp    x0, 0
+    b.eq   1f
+    b      invalid_handler
+1:
+    bl disable_irq              
+    load_all
+    eret
 
 .globl irq_entry
 irq_entry:
@@ -121,6 +149,7 @@ irq_entry:
 
 .globl invalid_entry
 invalid_entry:
+    mrs x0, esr_el1
     b   invalid_handler
 
 // [0]
