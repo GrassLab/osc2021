@@ -62,3 +62,12 @@ static inline struct list_head *list_pop(struct list_head *list) {
   list_del(entry);
   return entry;
 }
+
+// Pop an entry from list, assuming that the list is not empty
+// !! Caution: must called with the list head, otherwise would produce wrong
+// !! result
+static inline struct list_head *list_pop_front(struct list_head *list) {
+  struct list_head *entry = list->next;
+  list_del(entry);
+  return entry;
+}

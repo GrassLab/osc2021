@@ -1,11 +1,18 @@
 #include "bool.h"
-#include "cfg.h"
+#include "config.h"
 #include "list.h"
+#include "log.h"
 #include "mm.h"
 #include "mm/alloc.h"
 #include "mm/startup.h"
 #include "uart.h"
 #include <stddef.h>
+
+#ifdef CFG_LOG_MEM_BUDDY
+static const int _DO_LOG = 1;
+#else
+static const int _DO_LOG = 0;
+#endif
 
 #define NOT_AVAILABLE -9999
 
@@ -68,20 +75,19 @@ void buddy_free(BuddyAllocater *alloc, struct Frame *frame) {
     node = &alloc->frames[frame_idx];
     if (buddy_idx(node) >= (1 << BUDDY_MAX_EXPONENT)) {
       list_push(&node->list_base, &alloc->free_lists[node->exp]);
-      uart_println(" push to freelist: node(idx:%d,exp:%d)", node->arr_index,
-                   node->exp);
+      log_println(" push to freelist: node(idx:%d,exp:%d)", node->arr_index,
+                  node->exp);
       break;
     }
     buddy = &alloc->frames[buddy_idx(node)];
-    uart_printf("Try to merge buddy(idx:%d,exp:%d) node(idx:%d,exp:%d)",
+    log_println("Try to merge buddy(idx:%d,exp:%d) node(idx:%d,exp:%d)",
                 buddy->arr_index, buddy->exp, node->arr_index, node->exp);
-
     // Buddy is currently not in any list, therefore in used
     if (buddy->list_base.next == NULL) {
       list_push(&node->list_base, &alloc->free_lists[node->exp]);
-      uart_println(" busy");
-      uart_println(" push to freelist: node(idx:%d,exp:%d)", node->arr_index,
-                   node->exp);
+      log_println(" busy");
+      log_println(" push to freelist: node(idx:%d,exp:%d)", node->arr_index,
+                  node->exp);
       break;
     }
     list_del(&buddy->list_base);
@@ -93,7 +99,7 @@ void buddy_free(BuddyAllocater *alloc, struct Frame *frame) {
     high->exp = -1;
     low->exp += 1;
     frame_idx = low->arr_index;
-    uart_println(" merged");
+    log_println(" merged");
   }
 }
 
@@ -109,9 +115,9 @@ bool provide_frame_with_exp(BuddyAllocater *alloc, int required_exp) {
     }
 
     // Split nodes from the top to bottom
-    uart_puts("Split node from list(exp)");
+    log_printf("Split node from list(exp)");
     for (int exp = target; exp > required_exp; exp--) {
-      uart_printf(" %d", exp);
+      log_printf(" %d", exp);
       Frame *node = (Frame *)list_pop(&alloc->free_lists[exp]);
 
       int child_exp = exp - 1;
@@ -122,7 +128,8 @@ bool provide_frame_with_exp(BuddyAllocater *alloc, int required_exp) {
       list_push(&child1->list_base, &alloc->free_lists[child_exp]);
       list_push(&child2->list_base, &alloc->free_lists[child_exp]);
     }
-    uart_println("");
+    log_println("");
+
     return true;
   }
   return false;
@@ -179,8 +186,7 @@ bool is_frame_wrapped_by_collison(Frame *node, StartupAllocator_t *sa) {
 void buddy_init_reserved(BuddyAllocater *alloc, StartupAllocator_t *sa) {
   Frame *node, *child1, *child2;
   int child_exp;
-
-#ifdef CFG_LOG_STARTUP
+#ifdef CFG_LOG_MEM_STARTUP
   MemRegion reg;
   for (int i = 0; i < sa->num_reserved; i++) {
     reg.addr = sa->_reserved[i].addr;
@@ -193,14 +199,14 @@ void buddy_init_reserved(BuddyAllocater *alloc, StartupAllocator_t *sa) {
     // split node
     list_del(&node->list_base);
     if (true == is_frame_wrapped_by_collison(node, sa)) {
-#ifdef CFG_LOG_STARTUP
+#ifdef CFG_LOG_MEM_STARTUP
       uart_println("collison -  remove node[%x, %x]", node->addr,
                    end_addr(node));
 #endif
       continue;
     }
 
-#ifdef CFG_LOG_STARTUP
+#ifdef CFG_LOG_MEM_STARTUP
     uart_println("collison -  node[%x, %x]", node->addr, end_addr(node));
 #endif
     child_exp = (node->exp) - 1;
@@ -209,14 +215,14 @@ void buddy_init_reserved(BuddyAllocater *alloc, StartupAllocator_t *sa) {
     child1->exp = child_exp;
     child2->exp = child_exp;
     if (false == is_frame_wrapped_by_collison(child1, sa)) {
-#ifdef CFG_LOG_STARTUP
+#ifdef CFG_LOG_MEM_STARTUP
       uart_println("collison -  push child[%x, %x]", child1->addr,
                    end_addr(child1));
 #endif
       list_push(&child1->list_base, &alloc->free_lists[child_exp]);
     }
     if (false == is_frame_wrapped_by_collison(child2, sa)) {
-#ifdef CFG_LOG_STARTUP
+#ifdef CFG_LOG_MEM_STARTUP
       uart_println("collison -  push child[%x, %x]", child2->addr,
                    end_addr(child2));
 #endif

@@ -27,6 +27,7 @@
 #include "uart.h"
 #include "gpio.h"
 #include "string.h"
+#include "syscall.h"
 #include <stdarg.h>
 
 /* Auxilary mini UART registers */
@@ -76,6 +77,26 @@ void uart_init() {
   *AUX_MU_CNTL = 3; // enable Tx, Rx
 }
 
+size_t sys_uart_write(const char s[], size_t size) {
+  size_t written;
+  for (written = 0; written < size; written++) {
+    /* convert newline to carrige return + newline */
+    if (*s == '\n')
+      uart_send('\r');
+    uart_send(*s++);
+  }
+  return written;
+}
+
+size_t sys_uart_read(char buf[], size_t size) {
+  size_t read = 0;
+  for (read = 0; read < size - 1; read++) {
+    buf[read] = uart_getc();
+  }
+  buf[read] = 0;
+  return read;
+}
+
 /**
  * Send a character
  */
@@ -119,6 +140,7 @@ void uart_puts(char *s) {
 void uart_println(char *fmt, ...) {
   int64_t i;
   char *s;
+  char c;
 
   va_list arg;
   va_start(arg, fmt);
@@ -144,6 +166,10 @@ void uart_println(char *fmt, ...) {
       i = va_arg(arg, int);
       uart_puts("0x");
       uart_puts(itoa((int64_t)i, 16));
+      break;
+    case 'c':
+      c = va_arg(arg, int);
+      uart_send(c);
       break;
     case 's':
       s = va_arg(arg, char *);
@@ -162,6 +188,7 @@ void uart_println(char *fmt, ...) {
 void uart_printf(char *fmt, ...) {
   int64_t i;
   char *s;
+  char c;
 
   va_list arg;
   va_start(arg, fmt);
@@ -187,6 +214,10 @@ void uart_printf(char *fmt, ...) {
       i = va_arg(arg, int);
       uart_puts("0x");
       uart_puts(itoa((int64_t)i, 16));
+      break;
+    case 'c':
+      c = va_arg(arg, int);
+      uart_send(c);
       break;
     case 's':
       s = va_arg(arg, char *);

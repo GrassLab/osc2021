@@ -1,6 +1,6 @@
 // save general registers to stack
 .macro save_all
-    sub sp, sp, 32 * 8
+    sub sp, sp, 16 * 17
     stp x0, x1, [sp ,16 * 0]
     stp x2, x3, [sp ,16 * 1]
     stp x4, x5, [sp ,16 * 2]
@@ -16,11 +16,26 @@
     stp x24, x25, [sp ,16 * 12]
     stp x26, x27, [sp ,16 * 13]
     stp x28, x29, [sp ,16 * 14]
-    str x30, [sp, 16 * 15]
+
+    // lr(x30), sp_el0
+    mrs x21, sp_el0
+    stp x30, x21, [sp, 16 * 15]
+    // eret address, flags
+    mrs x22, elr_el1
+    mrs x23, spsr_el1
+    stp x22, x23, [sp, 16 * 16]
 .endm
 
 // load general registers from stack
 .macro load_all
+
+    ldp x22, x23, [sp, 16 * 16]
+    msr elr_el1, x22
+    msr spsr_el1, x23
+
+    ldp x30, x21, [sp, 16 * 15]
+    msr sp_el0, x21
+
     ldp x0, x1, [sp ,16 * 0]
     ldp x2, x3, [sp ,16 * 1]
     ldp x4, x5, [sp ,16 * 2]
@@ -36,8 +51,7 @@
     ldp x24, x25, [sp ,16 * 12]
     ldp x26, x27, [sp ,16 * 13]
     ldp x28, x29, [sp ,16 * 14]
-    ldr x30, [sp, 16 * 15]
-    add sp, sp, 32 * 8
+    add sp, sp, 16 * 17
 .endm
 
 .section ".text.boot"
@@ -105,6 +119,7 @@ not_impl:
 
 _syn_handler:
     save_all
+    mov x0, sp
     bl syn_handler
     load_all
     eret
@@ -115,6 +130,10 @@ _irq_handler:
     load_all
     eret
 
+.global fork_child_eret
+fork_child_eret:
+    load_all
+    eret
 
 .align 11
 .global exception_vector_table
@@ -131,7 +150,7 @@ exception_vector_table:
     .align 7
 
     // Exception from current EL with SP_ELx
-    b not_impl   //  Synchronous
+    b _syn_handler  //  Synchronous
     .align 7
     b not_impl   //  IRQ
     .align 7

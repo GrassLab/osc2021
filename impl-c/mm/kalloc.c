@@ -1,12 +1,19 @@
 #include "bool.h"
 #include "list.h"
+#include "log.h"
 #include "mm.h"
 #include "mm/startup.h"
 #include "uart.h"
 #include <stddef.h>
 
+#ifdef CFG_LOG_MEM_KALLOC
+static const int _DO_LOG = 1;
+#else
+static const int _DO_LOG = 0;
+#endif
+
 struct AllocationManager KAllocManager;
-struct Frame Frames[BUDDY_MAX_EXPONENT << 1];
+struct Frame Frames[1 << BUDDY_MAX_EXPONENT];
 
 void KAllocManager_run_example() {
   void *a[30];
@@ -63,9 +70,7 @@ void *kalloc(int size) {
   if (size <= (1 << SLAB_OBJ_MAX_SIZE_EXP)) {
     for (int i = SLAB_OBJ_MIN_SIZE_EXP; i < SLAB_OBJ_MAX_SIZE_EXP; i++) {
       if (size < 1 << i) {
-#ifdef CFG_LOG_KALLOC
-        uart_println("Allocation from slab allocator, size: %d", size);
-#endif
+        log_println("Allocation from slab allocator, size: %d", size);
         addr = slab_alloc(
             &KAllocManager.obj_allocator_list[i - SLAB_OBJ_MIN_SIZE_EXP]);
         return addr;
@@ -76,12 +81,9 @@ void *kalloc(int size) {
   for (int i = 0; i < BUDDY_MAX_EXPONENT; i++) {
     if ((i << FRAME_SHIFT) >= size) {
       Frame *frame = buddy_alloc(&KAllocManager.frame_allocator, i);
-#ifdef CFG_LOG_KALLOC
-
-      uart_println("Allocate Request exp:%d", i);
-      uart_println("Allocated addr:%x, frame_idx:%d", frame->addr,
-                   frame->arr_index);
-#endif
+      log_println("Allocate Request exp:%d", i);
+      log_println("Allocated addr:%x, frame_idx:%d", frame->addr,
+                  frame->arr_index);
       return frame->addr;
     }
   }
@@ -94,11 +96,8 @@ void kfree(void *addr) {
   if (frame->slab_allocator) {
     slab_free(addr);
   } else {
-
-#ifdef CFG_LOG_KALLOC
-    uart_println("Free Request addr:%x, frame_idx:%d", frame->addr,
-                 frame->arr_index);
-#endif
+    log_println("Free Request addr:%x, frame_idx:%d", frame->addr,
+                frame->arr_index);
     buddy_free(&KAllocManager.frame_allocator, frame);
   }
 }

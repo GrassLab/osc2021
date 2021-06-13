@@ -24,7 +24,7 @@ typedef struct AllocationManager {
 
 // Statically linked to the heap space
 // because their lifetimes is equal to the system itself
-extern struct Frame Frames[BUDDY_MAX_EXPONENT << 1];
+extern struct Frame Frames[1 << BUDDY_MAX_EXPONENT];
 
 // Allocate a  memory space to use in kernel space
 void *kalloc(int size);

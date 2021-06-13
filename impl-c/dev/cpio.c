@@ -1,13 +1,18 @@
-#include "cpio.h"
-#include "cfg.h"
+#include "dev/cpio.h"
+#include "config.h"
+#include "log.h"
 #include "string.h"
 #include "uart.h"
+
+#ifdef CFG_LOG_CPIO
+static const int _DO_LOG = 1;
+#else
+static const int _DO_LOG = 0;
+#endif
 
 int _hexChar2Int(char c);
 int64_t _parseHexStr(const char *buf, int len);
 uintptr_t _alignUp(unsigned long n, unsigned long align);
-int _cpioParseHeader(CpioNewcHeader *header, const char **filename,
-                     uint64_t *_filesize, void **data, CpioNewcHeader **next);
 
 int cpioLs(void *archive) {
   CpioNewcHeader *header, *next;
@@ -15,7 +20,7 @@ int cpioLs(void *archive) {
   void *fileContent;
   int err;
   for (header = archive;; header = next) {
-    err = _cpioParseHeader(header, &filename, NULL, &fileContent, &next);
+    err = cpioParseHeader(header, &filename, NULL, NULL, &fileContent, &next);
     if (err) {
       return 1;
     }
@@ -30,7 +35,7 @@ void *cpioGetFile(void *archive, const char *name, unsigned long *size) {
   void *fileContent;
   int err;
   for (header = archive;; header = next) {
-    err = _cpioParseHeader(header, &filename, size, &fileContent, &next);
+    err = cpioParseHeader(header, &filename, size, NULL, &fileContent, &next);
     if (err) {
       return NULL;
     }
@@ -55,7 +60,7 @@ int cpioInfo(void *archive, CpioSummaryInfo *info) {
 
   header = archive;
   for (uint32_t i = 0;; i++, info->numFiles++, header = next) {
-    err = _cpioParseHeader(header, &filename, &filesize, &data, &next);
+    err = cpioParseHeader(header, &filename, &filesize, NULL, &data, &next);
     if (err == -1) {
       return err;
     } else if (err == 1) {
@@ -112,33 +117,30 @@ uintptr_t _alignUp(uintptr_t n, unsigned long align) {
   return (n + align - 1) & (~(align - 1));
 }
 
-int _cpioParseHeader(CpioNewcHeader *header, const char **filename,
-                     uint64_t *_filesize, void **data, CpioNewcHeader **next) {
+int cpioParseHeader(CpioNewcHeader *header, const char **filename,
+                    uint64_t *_filesize, uint64_t *mode, void **data,
+                    CpioNewcHeader **next) {
   if (strncmp(header->magic, CPIO_HEADER_MAGIC, 6)) {
-    if (CFG_LOG_ENABLE) {
-      uart_println("  [parseHeader] uncorrect header magic field");
-    }
+    log_println("  [parseHeader] uncorrect header magic field");
     return 1;
   }
 
-  int64_t filesize, namesize;
+  uint64_t filesize, namesize, fmode;
   if (((filesize = _parseHexStr(header->filesize, 8)) == -1) ||
-      ((namesize = _parseHexStr(header->namesize, 8)) == -1)) {
+      ((namesize = _parseHexStr(header->namesize, 8)) == -1) ||
+      ((fmode = _parseHexStr(header->mode, 8)) == -1)) {
     return -1;
   }
-  if (CFG_LOG_ENABLE) {
-    uart_println("  [parseHeader] found entry: size:%d, namesize:%d", filesize,
-                 namesize);
-  }
+
+  log_println("  [parseHeader] found entry: size:%d, namesize:%d", filesize,
+              namesize);
 
   // Get filename && filesize
   *filename = ((char *)header) + sizeof(CpioNewcHeader);
 
   // Ensure this file is not the trailer in CPIO indicating EOF.
   if (strncmp(*filename, CPIO_FOOTER_MAGIC, sizeof(CPIO_FOOTER_MAGIC)) == 0) {
-    if (CFG_LOG_ENABLE) {
-      uart_println("  [parseHeader] hit cpio footer");
-    }
+    log_println("  [parseHeader] hit cpio footer");
     return -1;
   }
 
@@ -150,6 +152,9 @@ int _cpioParseHeader(CpioNewcHeader *header, const char **filename,
   // Return filesize if requested
   if (_filesize) {
     *_filesize = filesize;
+  }
+  if (mode != NULL) {
+    *mode = fmode;
   }
   return 0;
 }

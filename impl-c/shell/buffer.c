@@ -1,6 +1,6 @@
 #include "shell/buffer.h"
 #include "bool.h"
-#include "cfg.h"
+#include "config.h"
 #include "test.h"
 
 static void bfr_cursor_mov_left(struct InputBuffer *bfr) {

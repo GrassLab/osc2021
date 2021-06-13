@@ -1,8 +1,15 @@
 #include "bool.h"
 #include "list.h"
+#include "log.h"
 #include "mm.h"
 #include "uart.h"
 #include <stddef.h>
+
+#ifdef CFG_LOG_MEM_SLAB
+static const int _DO_LOG = 1;
+#else
+static const int _DO_LOG = 0;
+#endif
 
 void *slab_alloc(SlabAllocator *alloc) {
   Frame *frame;
@@ -11,12 +18,12 @@ void *slab_alloc(SlabAllocator *alloc) {
     if (!list_empty(&alloc->partial_list)) {
       frame = (Frame *)list_pop(&alloc->partial_list);
       alloc->cur_frame = frame;
-      uart_println("slab: Recycle frame from partial filled slab");
+      log_println("slab: Recycle frame from partial filled slab");
     } else {
       frame = buddy_alloc(alloc->frame_allocator, 0);
       if (frame == NULL)
         return NULL;
-      uart_println("slab: Request frame from buddy system");
+      log_println("slab: Request frame from buddy system");
       frame->slab_allocator = alloc;
       alloc->cur_frame = frame;
       for (int i = 0; i < SLAB_MAX_SLOTS; i++) {
@@ -24,8 +31,8 @@ void *slab_alloc(SlabAllocator *alloc) {
       }
       frame->free_slot_remains = alloc->max_slab_num_obj;
       // frame->free_slot_remains = 5;
-      uart_println("  slot remains: %d, max:%d", frame->free_slot_remains,
-                   alloc->max_slab_num_obj);
+      log_println("  slot remains: %d, max:%d", frame->free_slot_remains,
+                  alloc->max_slab_num_obj);
     }
   }
   frame = alloc->cur_frame;
@@ -46,7 +53,7 @@ void *slab_alloc(SlabAllocator *alloc) {
     // if the page is full, move it to the full-list
     list_push(&frame->list_base, &alloc->full_list);
     alloc->cur_frame = NULL;
-    uart_println("==== slab frame is full");
+    log_println("==== slab frame is full");
   }
   return addr;
 }
@@ -61,9 +68,9 @@ void slab_free(void *obj) {
                    alloc->unit_size);
 
   if (frame->slot_available[obj_index] == 1) {
-    uart_println("!!Free after free");
+    log_println("!!Free after free");
   }
-  uart_println("slab: Free object");
+  log_println("slab: Free object");
   frame->slot_available[obj_index] = 1;
   frame->free_slot_remains += 1;
   if (frame != alloc->cur_frame) {
@@ -71,7 +78,7 @@ void slab_free(void *obj) {
     if (frame->slot_available > 0) {
       list_push(&frame->list_base, &alloc->partial_list);
     } else {
-      uart_println("slab: release block");
+      log_println("slab: release block");
       buddy_free(alloc->frame_allocator, frame);
     }
   }
