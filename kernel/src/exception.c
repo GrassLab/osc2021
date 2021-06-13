@@ -38,6 +38,11 @@ void sync_handler_lowerEL_64(uint64_t sp) {
     // printf("syscall number: %d\n", iss);
     trap_frame_t *trap_frame = (trap_frame_t *)sp;
     syscall_handler(iss, trap_frame);
+  } else if (ec == 0b100100) {  // SVC instruction
+    uint64_t far;
+    asm volatile("mrs %0, far_el1" : "=r"(far));
+    printf("[Data Abort] pid: %d, far_el1: 0x%llx\n", get_current()->pid, far);
+    exit();
   }
 }
 

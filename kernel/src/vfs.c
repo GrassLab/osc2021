@@ -39,7 +39,7 @@ void vfs_init() {
   tmpfs->setup_mount = tmpfs_setup_mount;
   register_filesystem(tmpfs);
 
-  // init and register tmpfs
+  // init and register fatfs
   fatfs_init();
   struct filesystem* fatfs =
       (struct filesystem*)malloc(sizeof(struct filesystem));

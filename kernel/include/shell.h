@@ -1,8 +1,10 @@
 #pragma once
 
+#include "gpio.h"
+
 #define PM_PASSWORD 0x5a000000
-#define PM_RSTC ((volatile unsigned int *)0x3F10001c)
-#define PM_WDOG ((volatile unsigned int *)0x3F100024)
+#define PM_RSTC ((volatile unsigned int *)(MMIO_BASE + 0x10001c))
+#define PM_WDOG ((volatile unsigned int *)(MMIO_BASE + 0x100024))
 
 #define MAX_BUFFER_SIZE 64
 char buffer[MAX_BUFFER_SIZE];
@@ -24,6 +26,7 @@ void cmd_thread_vfs_test();
 void cmd_thread_vfs_ls_test();
 void cmd_thread_vfs_hard_test();
 void cmd_thread_fatfs_test();
+void cmd_thread_mmu_test();
 
 void clear_buffer();
 void receive_cmd();

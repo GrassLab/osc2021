@@ -1,5 +1,5 @@
 CC = aarch64-linux-gnu-gcc
-CFLAGS = -Iinclude -Wall -nostdlib -nostartfiles -ffreestanding
+CFLAGS = -g -Iinclude -Wall -nostdlib -nostartfiles -ffreestanding
 # ASMFLAGS = 
 LD = aarch64-linux-gnu-ld
 OBJCOPY = aarch64-linux-gnu-objcopy
@@ -20,7 +20,7 @@ $(BUILD_DIR)/%_c.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/%_s.o: $(SRC_DIR)/%.S
-	$(CC) $(ASMFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 C_FILES = $(wildcard $(SRC_DIR)/*.c)
 ASM_FILES = $(wildcard $(SRC_DIR)/*.S)
@@ -35,4 +35,8 @@ kernel8.img: kernel8.elf
 
 run:
 	$(QEMU) -M raspi3 -kernel $(BUILD_DIR)/kernel8.img -display none -serial null -serial stdio \
+		-initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -drive if=sd,file=sfn_nctuos.img,format=raw
+
+debug:
+	$(QEMU) -M raspi3 -kernel $(BUILD_DIR)/kernel8.img -display none -serial null -s -S -serial stdio \
 		-initrd initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -drive if=sd,file=sfn_nctuos.img,format=raw

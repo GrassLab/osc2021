@@ -5,8 +5,11 @@
 #include "vfs.h"
 
 #define STACK_SIZE 4096
-#define USER_PROGRAM_BASE 0x30000000
-#define USER_PROGRAM_SIZE (1 * mb)
+#define USER_STACK_BASE ((uint64_t)0x1000000000000 - STACK_SIZE)
+#define USER_PROGRAM_BASE 0x80000
+#define USER_PROGRAM_SIZE (16 * kb)
+
+#define MAX_PAGE_FRAME_PER_THREAD 1000
 
 #define THREAD_DEAD 1
 #define THREAD_FORK 2
@@ -48,6 +51,9 @@ typedef struct thread_info {
   uint64_t user_program_base;
   uint32_t user_program_size;
   fd_table_t fd_table;
+  uint64_t *pgd;
+  uint32_t page_frame_ids[MAX_PAGE_FRAME_PER_THREAD];
+  uint32_t page_frame_count;
   struct thread_info *next;
 } thread_info;
 
@@ -89,3 +95,7 @@ void create_child(thread_info *parent, thread_info *child);
 struct file *thread_get_file(int fd);
 int thread_register_fd(struct file *file);
 int thread_clear_fd(int fd);
+
+uint64_t thread_allocate_page(thread_info *thread, uint64_t size);
+void thread_free_page(thread_info *thread);
+void switch_pgd(uint64_t next_pgd);
