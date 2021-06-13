@@ -1,1 +1,0 @@
-initramfs initramfs.cpio 0x20000000
