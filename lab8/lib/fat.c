@@ -1,4 +1,5 @@
 #include "sd.h"
+#include "allocator.h"
 #include "uart.h"
 #include "error.h"
 #include "vfs.h"
@@ -13,6 +14,7 @@ typedef struct{
 	unsigned int table_beg,table_num,table_size;
 	unsigned int data_beg;
 	unsigned int* table;
+	unsigned int* dirty;
 }MetaData;
 
 typedef struct{
@@ -75,7 +77,7 @@ void parseDentry(Dentry* dentry,vnode* node,vnode* parent,int display){
 	node->mnt=parent->mnt;
 	node->v_ops=parent->v_ops;
 	node->f_ops=parent->f_ops;
-	node->internal=(void*)alloc_page(sizeof(Content));
+	node->internal=(void*)dalloc(sizeof(Content));
 	Content* content=(Content*)(node->internal);
 	content->parent=parent;
 	for(int i=0;i<13;++i)content->name[i]=name[i];
@@ -102,7 +104,7 @@ unsigned int getChainLen(unsigned int id){
 
 unsigned int getChain(unsigned int id,unsigned char** buf){
 	unsigned int len=getChainLen(id)*512;
-	*buf=(unsigned char*)alloc_page(len);
+	*buf=(unsigned char*)falloc(len);
 	for(int i=0;i<len;i+=512){
  		readblock(metadata.data_beg+id,(*buf)+i);
 
@@ -120,28 +122,33 @@ void syncFAT(file* f){
 	content->dirty=0;
 
 	{//update table
-		int old_blks=getChainLen(content->id);//original blk numbers
-		int cur_blks=content->len/512;//present blk numbers
+		int old_blks=getChainLen(content->id);
+		int cur_blks=content->len/512;
 		if(content->len%512)cur_blks++;
 		if(old_blks>cur_blks)ERROR("old_blks>cur_blks");
 		int tail=content->id;
 		while(metadata.table[tail]<0xFFFFFF8)tail=metadata.table[tail];
-		for(int i=0;old_blks<cur_blks&&i<metadata.table_size*512/4;++i){//4byte = 32bits
-			if(metadata.table[i]!=0)continue;//find free blk for storing new dasa
+		for(int i=0;old_blks<cur_blks&&i<metadata.table_size*512/4;++i){
+			if(metadata.table[i]!=0)continue;
 			metadata.table[tail]=i;
+			metadata.dirty[tail/512]=1;
 			tail=i;
 			metadata.table[tail]=0xFFFFFF8;
+			metadata.dirty[tail/512]=1;
 			old_blks++;
 		}
 		for(int i=0;i<metadata.table_size;++i){
-			//readblock(metadata.table_beg+i,((char*)(metadata.table))+i*512);
-			writeblock(metadata.table_beg+i,((char*)(metadata.table))+i*512);
+			if(metadata.dirty[i]){
+				writeblock(metadata.table_beg+i,((char*)(metadata.table))+i*512);
+				metadata.dirty[i]=0;
+			}
 		}
 	}
 	{//update data
 		unsigned char* data=(unsigned char*)(content->cache);
 		int cur=content->id;
 		for(int i=0;i<content->len;i+=512){
+			if(cur<2||cur>0xFFFFFEF)ERROR("wrong table id!");
 			writeblock(metadata.data_beg+cur,data);
 			data+=512;
 			cur=metadata.table[cur];
@@ -151,7 +158,7 @@ void syncFAT(file* f){
 		int pos=-1;
 		vnode** childs=(vnode**)(((Content*)(parent->internal))->cache);
 		int child_num=((Content*)(parent->internal))->len;
-		for(int i=0;i<child_num;++i){//find child position
+		for(int i=0;i<child_num;++i){
 			vnode* child=childs[i];
 			Content* child_content=(Content*)(child->internal);
 			if(strcmp(content->name,child_content->name)==0){
@@ -160,15 +167,15 @@ void syncFAT(file* f){
 			}
 		}
 		if(pos==-1)ERROR("sync a unknown file!");
-		int dirsize=512/32;//max file size per sector
+		int dirsize=512/32;
 		int cur=((Content*)(parent->internal))->id;
-		for(int i=0;i<pos/dirsize;++i)cur=metadata.table[cur];//find file f sector
-		char* buf=(char*)alloc_page(512);
-		readblock(metadata.data_beg+cur,buf);//read parent fat table
-		Dentry* dentry=(Dentry*)(buf+(pos%dirsize)*32);//write file length into fat table
+		for(int i=0;i<pos/dirsize;++i)cur=metadata.table[cur];
+		char* buf=(char*)falloc(512);
+		readblock(metadata.data_beg+cur,buf);
+		Dentry* dentry=(Dentry*)(buf+(pos%dirsize)*32);
 		dentry->len=content->len;
-		writeblock(metadata.data_beg+cur,buf);//write back fat table
-		free_page((unsigned long)buf, 512);
+		writeblock(metadata.data_beg+cur,buf);
+		ffree((unsigned long)buf);
 	}
 }
 
@@ -188,11 +195,11 @@ int writeFAT(file* f,const void* buf,unsigned long len){
 
 	char* cache=(char*)(content->cache);
 	if(f->f_pos+len > content->capacity){
-		char* new_cache=(char*)alloc_page((f->f_pos+len)*2);
+		char* new_cache=(char*)falloc((f->f_pos+len)*2);
 		for(int i=0;i<content->len;++i)new_cache[i]=cache[i];
 		content->capacity=(f->f_pos+len)*2;
 		content->cache=new_cache;
-		free_page((unsigned long)cache, (content->capacity)/2);
+		ffree((unsigned long)cache);
 		cache=new_cache;
 	}
 
@@ -241,20 +248,20 @@ int lookupFAT(vnode* dir_node,vnode** target,const char* component_name){
 	if(content->type!=1)ERROR("not a directory!");
 	if(content->cache==0){
 		unsigned char* buf;
-		unsigned int len=getChain(content->id,&buf);//read id block into buf and return total byte of id file
-		vnode** childs=(vnode**)alloc_page(len/32*8);//len/32 = max files number, 8 = size of (vnode**)
+		unsigned int len=getChain(content->id,&buf);
+		vnode** childs=(vnode**)dalloc(len/32*8);
 		int cnt=0;
 		for(int i=0;i<len;i+=32){
 			if(buf[i]==0)break;
-			childs[cnt]=(vnode*)alloc_page(sizeof(vnode));
+			childs[cnt]=(vnode*)dalloc(sizeof(vnode));
 			parseDentry((Dentry*)(buf+i),childs[cnt],dir_node,1);
 			cnt++;
 		}
-		free_page((unsigned long)buf, getChainLen(content->id)*512);
+		ffree((unsigned long)buf);
 
 		content->cache=childs;
-		content->capacity=len/32;//max files number
-		content->len=cnt;//files number
+		content->capacity=len/32;
+		content->len=cnt;
 		content->dirty=0;
 	}
 
@@ -273,22 +280,24 @@ int lookupFAT(vnode* dir_node,vnode** target,const char* component_name){
 }
 
 void parseRoot(vnode* root){
-	unsigned char* table=(unsigned char*)alloc_page(metadata.table_size*512);
+	unsigned char* table=(unsigned char*)falloc(metadata.table_size*512);
 	for(int i=0;i<metadata.table_size;++i){
 		readblock(metadata.table_beg+i,table+i*512);
 	}
 	//for(int i=0;i<50;++i)uart_printf("%d\n",*(unsigned int*)(table+i*4));
 	if(metadata.table!=0)ERROR("dirty table!");
 	metadata.table=(unsigned int*)table;
+	metadata.dirty=(unsigned int*)falloc(metadata.table_size*4);
+	for(int i=0;i<metadata.table_size;++i)metadata.dirty[i]=0;
 
-	root->v_ops=(vnode_operations*)alloc_page(sizeof(vnode_operations));
+	root->v_ops=(vnode_operations*)dalloc(sizeof(vnode_operations));
 	root->v_ops->lookup=lookupFAT;
 	root->v_ops->create=createFAT;
-	root->f_ops=(file_operations*)alloc_page(sizeof(file_operations));
+	root->f_ops=(file_operations*)dalloc(sizeof(file_operations));
 	root->f_ops->read=readFAT;
 	root->f_ops->write=writeFAT;
 	root->f_ops->sync=syncFAT;
-	root->internal=(void*)alloc_page(sizeof(Content));
+	root->internal=(void*)dalloc(sizeof(Content));
 
 	Content* content=(Content*)(root->internal);
 	content->name[0]='.';content->name[1]=0;
@@ -298,23 +307,23 @@ void parseRoot(vnode* root){
 }
 
 void parseFAT32(){
-	unsigned char* buf=(unsigned char*)alloc_page(512);
+	unsigned char* buf=(unsigned char*)falloc(512);
 	readblock(metadata.partition_beg,buf);
 
 	if(buf[510]!=0x55||buf[511]!=0xaa)ERROR("invalid FAT signature!");
 	//unsigned int sector_size=*(unsigned short*)(buf+11);//need aligned
-	unsigned int sector_size=buf[12]; //byte per sector
+	unsigned int sector_size=buf[12];
 	sector_size=(sector_size<<8)+buf[11];
 	if(sector_size!=512)ERROR("invalid sector_size!");
-	unsigned int cluster_size=*(unsigned char*)(buf+13);//sector per cluster
+	unsigned int cluster_size=*(unsigned char*)(buf+13);
 	if(cluster_size!=1)ERROR("invalid cluster_size!");
-	unsigned int table_beg=*(unsigned short*)(buf+14);//FAT1 offset buf[14][15]
-	unsigned int table_num=buf[16];//number of FAT table
+	unsigned int table_beg=*(unsigned short*)(buf+14);
+	unsigned int table_num=buf[16];
 	//unsigned int sector_num=*(unsigned short*)(buf+19);//need aligned
-	unsigned int sector_num=buf[20]; //total sector num
+	unsigned int sector_num=buf[20];
 	sector_num=(sector_num<<8)+buf[19];
 	if(sector_num==0)sector_num=*(unsigned int*)(buf+32);
-	unsigned int table_size=*(unsigned short*)(buf+22);//sectors per FAT
+	unsigned int table_size=*(unsigned short*)(buf+22);//sectors/table
 	if(table_size!=0)ERROR("not FAT32!");
 	table_size=*(unsigned int*)(buf+36);
 	//uart_printf("%d %d %d %d %d\n",sector_size,table_beg,table_num,sector_num,table_size);
@@ -325,29 +334,33 @@ void parseFAT32(){
 	metadata.table_size=table_size;
 	metadata.data_beg=metadata.table_beg+table_num*table_size-2;//-2 is important!
 
-	free_page((unsigned long)buf, 512);
+	ffree((unsigned long)buf);
 }
 
 void parseMBR(){
-	unsigned char* buf=(unsigned char*)alloc_page(512);
+	unsigned char* buf=(unsigned char*)falloc(512);
 	readblock(0,buf);
 
 	if(buf[510]!=0x55||buf[511]!=0xaa)ERROR("invalid MBR signature!");
 	if(buf[446]!=0x80)ERROR("invalid partition status!");
 	unsigned char* partition_entry=buf+446;
+	unsigned char partition_type=*(unsigned char*)(partition_entry+4);
+	if(partition_type!=0xb)ERROR("not FAT32!");
+	//unsigned int beg=*(unsigned int*)(partition_entry+8);//need aligned
+	//unsigned int num=*(unsigned int*)(partition_entry+12);//need aligned
 	for(int i=0;i<4;++i){
 		buf[i]=partition_entry[8+i];
 		buf[4+i]=partition_entry[12+i];
 	}
 	unsigned int beg=*(unsigned int*)(buf);
-
+	unsigned int num=*(unsigned int*)(buf+4);
 	metadata.partition_beg=beg;
 
-	free_page((unsigned long)buf, 512);
+	ffree((unsigned long)buf);
 }
 
 int fat_Setup(filesystem* fs,mount* mnt){
-	char* name=(char*)alloc_page(6);
+	char* name=(char*)dalloc(6);
 	name[0]='f';
 	name[1]='a';
 	name[2]='t';
@@ -356,7 +369,7 @@ int fat_Setup(filesystem* fs,mount* mnt){
 	name[5]=0;
 	fs->name=name;
 	fs->setup_mount=fat_Setup;
-	mnt->root=(vnode*)alloc_page(sizeof(vnode));
+	mnt->root=(vnode*)dalloc(sizeof(vnode));
 	mnt->fs=fs;
 	mnt->root->mnt=mnt;
 	parseMBR();

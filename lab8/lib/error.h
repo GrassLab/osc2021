@@ -1,0 +1,1 @@
+void ERROR(char* str);
