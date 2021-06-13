@@ -387,6 +387,8 @@ void parseFAT32(){
     }
      sec_per_FAT = *(unsigned int*)(buf+36);
      //uart_printf("sec per fat:%d\n",sec_per_FAT);
+     unsigned int clus_index_root_dir = *(unsigned int*)(buf+44);
+    uart_printf("cluster index of root dir:%d\n",clus_index_root_dir);
 
      metadata.sector_num = num_of_sec_in_par;
      metadata.sector_size = sector_size;
@@ -401,17 +403,19 @@ void parseFAT32(){
 void parseMBR(){
     unsigned char* buf = (unsigned char*)my_alloc(512);
     readblock(0,buf);
-
+    uart_printf("1\n");
     if(buf[510]!=0x55 || buf[511]!=0xaa){
         uart_printf("Invalid MBR Signature\n");
         while(1);
     }
+    uart_printf("2\n");
 
     if(buf[446]!=0x80){
         uart_printf("Inactive partiotion\n");
         while(1);
     }
 
+    uart_printf("3\n");
     unsigned char* partition_table = buf+446;
     unsigned char partition_type = *(unsigned char*)(partition_table+4);
     if(partition_type != 0xb){
@@ -419,15 +423,18 @@ void parseMBR(){
         while(1);
     }
 
+    uart_printf("4\n");
     for(int i =0;i < 4; ++i){
         buf[i] = partition_table[8+i];
         buf[i+4] = partition_table[12+i];
     }
+    uart_printf("5\n");
 
-    unsigned int sec_bet_MAP = *(unsigned int*)buf;
-    unsigned int num_in_par = *(unsigned int*)buf+4;
+    unsigned int sec_bet_MAP = *(unsigned int*)(buf);
+    unsigned int num_in_par = *(unsigned int*)(buf+4);
     metadata.partition_beg = sec_bet_MAP;
 
+    uart_printf("6\n");
     my_free((unsigned long)buf);
 }
 int fatSetup(filesystem* fs, mount *mnt){
