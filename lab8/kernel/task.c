@@ -21,6 +21,7 @@ struct task_struct* privilege_task_create( void(*func)() ) {
   task_pool[i].kstack = (void* )KERNEL_STACK_ADDR + TASK_STACK_SIZE * i;
   task_pool[i].ctx.sp = (size_t)task_pool[i].kstack + TASK_STACK_SIZE; 
   task_pool[i].ctx.lr = (size_t)func;
+  task_pool[i].ctx.pgd = null;
   task_pool[i].stack = (void *)USER_STACK_ADDR + TASK_STACK_SIZE * i;
   task_pool[i].next = null;
   task_pool[i].start = null;
@@ -164,6 +165,30 @@ void task_vfs_test2_init() {
   switch_to(&fake, &task_pool[0]);
 
 
+}
+
+void virtual_task() {
+
+  char *virtual_argv[] = {" virtual_test", 0};
+  do_exec("virtual_test", virtual_argv);
+}
+
+void task_virtual_init() {
+  struct task_struct fake;
+  
+  disable_interrupt();
+  //create idle task
+  privilege_task_create(idle_task);
+
+  privilege_task_create(virtual_task);
+    
+  task_queue_pop(&run_queue);
+  
+  task_queue_status(&run_queue);
+
+  enable_interrupt();
+
+  switch_to(&fake, &task_pool[0]);
 }
 
 void user_vfs_task() {

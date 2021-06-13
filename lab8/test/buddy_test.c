@@ -38,6 +38,12 @@ void test_buddy_malloc_with_merged() {
   uart_puts("\n");
   
   buddy_free(chunk1);
+  
+  buddy_status(); 
+  printf("press any key to continue...");
+  uart_getc();
+  uart_puts("\n");
+
   buddy_free(chunk2);
 }
 

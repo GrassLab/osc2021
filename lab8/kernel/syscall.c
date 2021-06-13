@@ -6,6 +6,7 @@
 #include <elf.h>
 #include <uart.h>
 #include <vfs.h>
+#include <page.h>
 
 void sys_exit(int status) {
   do_exit(status);
@@ -25,7 +26,8 @@ void do_exit(int status) {
   //remove from run queue
   task_queue_remove(current_task, &run_queue);
   //should free user space memory
-  //varied_free(current_task->start);
+  //should free user space page table
+  
   //get next task
   next_task = task_queue_pop(&run_queue);
   
@@ -45,6 +47,7 @@ int do_fork() {
   //fork a new user task
   struct task_struct *new_task; 
   struct trapframe* current_tf, *new_tf;
+  size_t offset;
   void* start;
   
  
@@ -62,23 +65,32 @@ int do_fork() {
     if(start == null) {
       return -1;
     }
-
+    
     //copy trapframe in kernel stack
     current_tf = get_trapframe(get_current());
     new_tf = get_trapframe(new_task);
     memcpy((char* )new_tf, (char* )current_tf, sizeof(struct trapframe));
     
-    //set return value, elr_el1, sp_el0
+    //stack has used
+    offset = USER_STACK - current_tf->sp_el0;
+    
+    //set return value, not need to set sp_el0, elr_el1, since it's virtual address
     new_tf->x0 = 0;
-    new_tf->elr_el1 = (size_t)new_task->start + (current_tf->elr_el1 - (size_t)get_current()->start);
-    new_tf->sp_el0 = ((size_t)new_task->stack + TASK_STACK_SIZE) + (current_tf->sp_el0 - ((size_t)get_current()->stack + TASK_STACK_SIZE));  
     
     //copy user stack memory
-    memcpy((char *)new_tf->sp_el0, (char* )current_tf->sp_el0, (size_t)get_current()->stack + TASK_STACK_SIZE - current_tf->sp_el0);
+    memcpy((char *)new_task->stack + TASK_STACK_SIZE - offset, (char *)get_current()->stack + TASK_STACK_SIZE - offset, offset);
     //copy heap (?)
     
     //copy context
     memcpy((char* )&new_task->ctx, (char *)&get_current()->ctx, sizeof(struct context));
+    
+    disable_interrupt();
+    //map binary, stack
+    new_task->ctx.pgd = null;
+    page_map_binary(start, new_task->size, &(new_task->ctx.pgd));
+    page_map_stack(new_task->stack + TASK_STACK_SIZE, &(new_task->ctx.pgd));
+    
+    enable_interrupt();
     
     //set lr, sp
     new_task->ctx.lr = (size_t)kernel_exit;
@@ -94,18 +106,14 @@ int do_fork() {
 
 void* fork_memcpy(struct task_struct *t, void* start, size_t size) {
   void* addr;
-  int allocated_size;
 
-  allocated_size = size + PAGE_SIZE;
   //allocate memory for new user program
   disable_interrupt();
   
-  addr = varied_malloc(allocated_size);
+  addr = buddy_malloc(size);
   
   enable_interrupt();
   
-  addr += PAGE_SIZE - (size_t)addr % PAGE_SIZE;
-
   if(addr == null)
     return null;
   
@@ -150,8 +158,14 @@ int do_exec(const char* name, char* const argv[]) {
   //set pass argument
   stack = exec_set_argv(stack, argc, argv);
   
-  printf("stack: 0x%x\n", stack);
+  printf("stack: 0x%x, 0x%x\n", stack, get_current()->stack);
+  
+  disable_interrupt();
+  //map binary and stack
+  page_map_binary(get_current()->start, get_current()->size, &(get_current()->ctx.pgd));
+  page_map_stack(get_current()->stack + TASK_STACK_SIZE, &(get_current()->ctx.pgd));
 
+  enable_interrupt();
   /** set user context
    * set kernel stack sp
    * set user stack sp_el0
@@ -161,16 +175,20 @@ int do_exec(const char* name, char* const argv[]) {
   /*asm volatile("mov x0, %0\n" "msr sp_el0, x0\n"
                "mov sp, %1\n" 
                "mov x0, %2\n" "msr elr_el1, x0\n" 
-               "mov x30, %3\n"
-               "mov x0, %4\n"
-               "mov x1, %5\n"
+               "mov x0, %3\n"
+               "mov x1, %4\n"
+               "dsb ish \n" 
+               "mov x0, %5\n" "msr ttbr0_el1, x0\n"
+               "tlbi vmalle1is\n" 
+               "dsb ish\n" 
+               "isb\n" 
                "eret\n"
                ::"r"(stack),
                "r"(get_current()->kstack + TASK_STACK_SIZE),
-               "r"(start),
-               "r"((void* )exit),
+               "r"((0x10031000)),
                "r"(argc),
-               "r"(stack + sizeof(int))
+               "r"(stack + 0x10),
+               "r"((size_t)ttbr0 & 0x0000fffffffffff0)
                 :"x0");*/
 
  
@@ -178,15 +196,17 @@ int do_exec(const char* name, char* const argv[]) {
   
   printf("current_tf: 0x%x\n", current_tf);
   current_tf->x0 = argc;
-  current_tf->x1 = (size_t)stack + 0x10;
-  current_tf->sp_el0 = (size_t)stack;
-  current_tf->elr_el1 = (size_t)start;
-
-  disable_interrupt();
-
-  asm volatile("mov sp, %0\n" "blr %1\n"::"r"(current_tf), "r"((void* )kernel_exit));
+  //sp_el0, elr_el1, should be the virtual address
+  current_tf->sp_el0 = USER_STACK - pd_encode_offset((size_t)(get_current()->stack + TASK_STACK_SIZE - stack));
+  current_tf->x1 = current_tf->sp_el0 + 0x10;
+  current_tf->elr_el1 = USER_PROCESS + pd_encode_addr((size_t)(start - addr));
   
-  enable_interrupt();
+  //jump to exec_exit, which will set the ttbr0_el1 page table
+  asm volatile("mov x0, %0\n" "mov sp, %1\n" "blr %2\n"::
+  "r"(get_current()->ctx.pgd), 
+  "r"(current_tf),
+  "r"((void* )exec_exit): "x0");
+  
   return 0;
 }
 
@@ -254,7 +274,7 @@ void* load_program(const char* name) {
    if(metadata == null)
     return null;
   
-  size = metadata->file_size + PAGE_SIZE;
+  size = metadata->file_size;
   
   if((size_t)get_current()->start >= BUDDY_START) {
     if(get_current()->size >= metadata->file_size) {
@@ -277,17 +297,12 @@ void* load_program(const char* name) {
     }
   }
 
-  /** use a stupid method to prevent wrong offset, allocate more space in order to
-   * make base address become 0xX000, since binary used here is smaller than 0x1000, the alignment 
-   * only need to be done to 0x1000. 
-   */
   disable_interrupt();
 
-  addr = varied_malloc(size);
+  addr = buddy_malloc(size);
 
   enable_interrupt();
-  addr += PAGE_SIZE - (size_t)addr % PAGE_SIZE;
-
+  
   if(addr == null)
     return null;
   
@@ -297,7 +312,7 @@ void* load_program(const char* name) {
   //store user space info
   get_current()->start = addr;
   get_current()->size = metadata->file_size;
-
+  
   return addr; 
 }
 

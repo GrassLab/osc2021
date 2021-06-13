@@ -43,7 +43,7 @@ void fat32_filename_convert(char* name, char* extension, char* filename) {
 }
 
 static int lookup(struct vnode* dir_node, struct vnode** target, const char* component_name) {
-  struct directory_entry* d_entry, *find_entry;
+  struct directory_entry* d_entry;
   struct fat32_inode *inode;
   struct vnode *v_node;
   char buf[FAT32_BLOCK_SIZE], fat_table[FAT32_BLOCK_SIZE], filename[FAT32_D_ENTRY_NAME_SIZE + FAT32_D_ENTRY_EXTENSION_SIZE + 1];
@@ -64,7 +64,7 @@ static int lookup(struct vnode* dir_node, struct vnode** target, const char* com
   
   d_entry = &(inode->d_entry);
   //is directory
-  if((d_entry->attribute) & 0x10 == 0) 
+  if(((d_entry->attribute) & 0x10) == 0) 
     return 1;
 
   //get first cluster number
@@ -81,7 +81,7 @@ static int lookup(struct vnode* dir_node, struct vnode** target, const char* com
     i = 0;
     //printf("cluster_num: %d\n", cluster_num);
     //traverse directory table
-    while(d_entry + i <= buf + FAT32_BLOCK_SIZE) {
+    while(d_entry + i <= (struct directory_entry* )(buf + FAT32_BLOCK_SIZE)) {
       if(*(char*)(d_entry + i) == '\x00') {
         //dir end
         break;
@@ -129,7 +129,7 @@ static int lookup(struct vnode* dir_node, struct vnode** target, const char* com
 
 static int setup_mount(struct filesystem* fs, struct mount* _mount) {
   struct directory_entry *d_entry;
-  struct fat32_inode *inode;
+  
   _mount->fs = fs;
   
    d_entry = (struct directory_entry* )varied_malloc(sizeof(struct directory_entry));
@@ -204,7 +204,7 @@ size_t fat32_find_free_cluster(struct fat32_inode *inode) {
   for(int i = 0; i < inode->sectors_per_fat_large_fat32; i++) {
     readblock(inode->lba + inode->num_of_reserved_sectors + i, fat_table);
     
-    fat_entry = fat_table;
+    fat_entry = (uint32_t *)fat_table;
 
     for(int j = 0; j < FAT32_ENTRY_PER_FAT_TABLE; j++) {
       //if next cluster num = 0, means free cluster
@@ -223,10 +223,9 @@ size_t fat32_find_free_cluster(struct fat32_inode *inode) {
 
 static int write(struct file* file, const void* buf, size_t len) {
   struct fat32_inode* inode;
-  struct directory_entry *d_entry, *trav_d_entry;
-  size_t write_bytes, cluster_num, pre_cluster_num, pos, size, write_len, cluster_size;
-  char fat_buf[FAT32_BLOCK_SIZE], fat_table[FAT32_BLOCK_SIZE], filename[FAT32_D_ENTRY_NAME_SIZE + FAT32_D_ENTRY_EXTENSION_SIZE + 1];
-  
+  struct directory_entry *d_entry;
+  size_t write_bytes, cluster_num, pre_cluster_num, pos, write_len, cluster_size;
+  char fat_buf[FAT32_BLOCK_SIZE], fat_table[FAT32_BLOCK_SIZE];
   inode = file->vnode->internal;
   
   write_bytes = 0;
@@ -246,7 +245,6 @@ static int write(struct file* file, const void* buf, size_t len) {
   pre_cluster_num = cluster_num;
   
   pos = file->f_pos;
-  size = d_entry->size;
   cluster_size = FAT32_BLOCK_SIZE;
 
   while(1) {
@@ -458,7 +456,6 @@ static int read(struct file* file, void* buf, size_t len) {
 
 void set_dir_entry(struct directory_entry* d_entry, const char* component_name, size_t cluster_num) {
   
-  int j;
   printf("%s %d\n", component_name, strlen(component_name));
   
   for(int i = 0; i < FAT32_D_ENTRY_NAME_SIZE; i++) {
@@ -699,7 +696,7 @@ void* fat32_parse_boot_sector(uint32_t lba) {
   uint32_t sectors_per_fat_large_fat32: %d\n\
   uint16_t flag: %x\n\
   uint16_t version: %d\n\
-  uint32_t cluster_num_of_root_dir: %d\n\ 
+  uint32_t cluster_num_of_root_dir: %d\n\
   uint16_t num_of_fs_info_sectors: %d\n\
   uint16_t num_of_backup_sectors: %d\n\
   uint8_t drvie_num: %d\n",
@@ -734,7 +731,6 @@ void fat32_parse_root_directory(struct fat32_info* fat32_info) {
   char buf[FAT32_BLOCK_SIZE];
   struct directory_entry* d_entry;
   struct directory_table* d_table;
-  char filename[FAT32_D_ENTRY_NAME_SIZE + FAT32_D_ENTRY_EXTENSION_SIZE + 1];
   int i;
   
   //root directory
@@ -777,7 +773,7 @@ void fat32_parse_root_directory(struct fat32_info* fat32_info) {
 }
 
 void fat32_traverse_root_directory(struct fat32_info* fat32_info) {
-  char buf[FAT32_BLOCK_SIZE];
+  
   struct directory_entry* d_entry;
   char filename[FAT32_D_ENTRY_NAME_SIZE + FAT32_D_ENTRY_EXTENSION_SIZE + 1];
   

@@ -5,6 +5,7 @@
         "typeinfo": "cpp",
         "type_traits": "c",
         "uart.h": "c",
-        "page.h": "c"
+        "page.h": "c",
+        "types.h": "c"
     }
 }

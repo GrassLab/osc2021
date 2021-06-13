@@ -17,7 +17,7 @@ void schedule() {
     task_queue_push(current_task, &run_queue);
     
     current_task->resched = 0;
-      
+    
     enable_interrupt();
 
     if(next_task != null) {

@@ -1,5 +1,6 @@
 #include <uart.h>
 #include <printf.h>
+#include <syscall.h>
 
 void exception_level_info() {
   int32_t spsr_el1, esr_el1;
@@ -23,3 +24,10 @@ void syscall_number_error() {
   printf("syscall_number_error\n");
 }
 
+void page_fault_handler() {
+  size_t far_el1;
+  asm volatile("mrs  %0, far_el1": "=r"(far_el1));
+  printf("far_el1: %x\n", far_el1);
+
+  do_exit(-1);
+}

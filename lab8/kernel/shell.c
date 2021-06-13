@@ -231,6 +231,10 @@ void do_command(char* command) {
     }
     vfs_write_test(name, command, strlen(command));
   }
+  else if(strncmp(command, "lab8_test", 9) == 0) {
+    core_timer_enable();
+    task_virtual_init();
+  }
   else {
     printf("unknown command\n");
   }	

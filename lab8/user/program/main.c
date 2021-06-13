@@ -51,7 +51,7 @@
   return 0;
 }*/
 
-int main(int argc, char** argv) {
+/*int main(int argc, char** argv) {
   int fd = open(argv[1], 0);
   char name[100];
   int size;
@@ -61,6 +61,23 @@ int main(int argc, char** argv) {
     if(size == 0)
       break;
     printf("Name: %s Size: %d\n", name, size);
+  }
+  return 0;
+}*/
+
+int main(void) {
+  int cnt = 0;
+  if(fork() == 0) {
+    fork();
+    fork();
+    while(cnt < 10) {
+      printf("pid: %d, sp: 0x%x cnt: %d\n", getpid(), &cnt, cnt++); // address should be the same, but the cnt should be increased indepndently
+      delay(1);
+    }
+  } else {
+    int* a = 0x12; // a non-mapped address.
+    printf("%d\n", *a); // trigger simple page fault.
+    printf("Should not be printed\n");
   }
   return 0;
 }
