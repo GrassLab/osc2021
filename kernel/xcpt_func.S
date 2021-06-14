@@ -9,8 +9,6 @@ from_el2_to_el1:
     mov x0, 0x3c5 // EL1h (SPSel = 1) with interrupt disabled
     msr spsr_el2, x0
     msr elr_el2, x30
-    mov x0, #(3 << 20)
-	msr cpacr_el1, x0
     eret // return to EL1
 
 .global from_el1_to_el0
@@ -30,11 +28,11 @@ run_user_program:
     msr sp_el0, x2 // point to stack
     mov x2, 0x340  // disable interrupt 0x3c0
     msr spsr_el1, x2
-    mrs x3, sp_el0
-    ldr x0, [x3, 0]
-    ldr x1, [x3, 8]
+    //mrs x3, sp_el0
+    //ldr x0, [x3, 0]
+    //ldr x1, [x3, 8]
     eret
-
+    
 .global core_timer_enable
 core_timer_enable:
     mov x0, 1

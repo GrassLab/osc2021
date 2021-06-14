@@ -9,9 +9,8 @@ void x0Set(unsigned long v){
 	task[16]=v;
 }
 
-void sys_getpid() {
-    x0Set(current->id);
-    return;
+int sys_getpid() {
+    return current->id;
 }
 
 void sys_uart_read(char *buf, int size) {
@@ -19,7 +18,7 @@ void sys_uart_read(char *buf, int size) {
 }
 
 void sys_uart_write(char *buf, int size) {
-    uart_puts(buf);
+    uart_printf(buf);
 }
 
 void sys_exec(char *name, char **argv) {
@@ -30,9 +29,8 @@ void sys_exit() {
     _exit();
 }
 
-void sys_fork() {
-    x0Set(create_thread(0, 0, 0, 0));
-    return;
+int sys_fork() {
+    return create_thread(0, 0, 0);
 }
 
 int sys_open(const char *pathname, int flags) {

@@ -105,6 +105,9 @@ void main() {
         else if(!strcmp(input, "lab7")) {
             lab7();
         }
+        else if(!strcmp(input, "lab8")) {
+            lab8();
+        }
         else {
             uart_puts("Error: ");
             uart_puts(input);

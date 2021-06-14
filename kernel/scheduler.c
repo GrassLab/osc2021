@@ -46,11 +46,13 @@ int create_thread(unsigned long clone_flags, unsigned long fn, unsigned long arg
 	if (clone_flags & PF_KTHREAD) {
 		p->cpu_context.x19 = fn;
 		p->cpu_context.x20 = arg;
+        p->cpu_context.pc = (unsigned long)ret_from_fork;
 	} else {
 		struct pt_regs * cur_regs = task_pt_regs(current);
 		*childregs = *cur_regs;
 		childregs->regs[0] = 0;
 		copy_virt_memory(p);
+        p->cpu_context.pc = (unsigned long)ret_to_user;
 	}
 	p->flags = clone_flags;
 	p->priority = current->priority;
@@ -58,7 +60,7 @@ int create_thread(unsigned long clone_flags, unsigned long fn, unsigned long arg
 	p->counter = p->priority;
 	p->preempt_count = 1; //disable preemtion until schedule_tail
 
-	p->cpu_context.pc = (unsigned long)ret_from_fork;
+	
 	p->cpu_context.sp = (unsigned long)childregs;
 	int pid = nr_tasks++;
     p->id = pid;

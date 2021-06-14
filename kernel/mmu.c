@@ -31,11 +31,13 @@ unsigned long map_table(unsigned long *table, unsigned long shift, unsigned long
 void map_page(struct task_struct *task, unsigned long va, unsigned long page){
 	unsigned long pgd;
 	if (!task->mm.pgd) {
-		task->mm.pgd = kmalloc(1<<12);
-        memzero(task->mm.pgd, PAGE_SIZE);
-		task->mm.kernel_pages[++task->mm.kernel_pages_count] = task->mm.pgd;
+		pgd = kmalloc(1<<12);
+        memzero(pgd, PAGE_SIZE);
+		task->mm.kernel_pages[++task->mm.kernel_pages_count] = pgd;
+        task->mm.pgd = pgd & 0x0000ffffffffffff; // task.mm->pgd should be 0x0000.....
 	}
-	pgd = task->mm.pgd;
+	pgd = task->mm.pgd | 0xffff000000000000; // pgd should be 0xffff....
+    
 	int new_table;
 	unsigned long pud = map_table((unsigned long *)(pgd), PGD_SHIFT, va, &new_table);
 	if (new_table) {
@@ -60,6 +62,7 @@ unsigned long allocate_user_page(struct task_struct *task, unsigned long va) {
 		return 0;
 	}
 	map_page(task, va, page);
+    
 	return page;
 }
 

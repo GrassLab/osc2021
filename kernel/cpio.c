@@ -197,15 +197,12 @@ unsigned long argv_puts(char **argv, unsigned long stack_top) {
 }
 
 unsigned long load_user_program_withArgv(char *name, char **argv) {
-    //uart_printf("Please enter app load address (Hex): ");
-    //unsigned long *prog_addr = (unsigned long *)uart_getX(1);
-    unsigned long *prog_addr = allocate_user_page(current, 0x70000) | 0xffff000000000000;
-    //unsigned long stack_top = (unsigned long)prog_addr + PROCESS_SIZE;
+    unsigned char *prog_addr = allocate_user_page(current, 0x70000) | 0xffff000000000000;
     unsigned long stack_top = allocate_user_page(current, 0x71000) | 0xffff000000000000;
     volatile unsigned char *cpio_address = cpio_address_base;
-    unsigned long * file_data = NULL;
+    unsigned char* file_data = NULL;
     int file_size = 0;
-
+    
     while(1) {
         file_size = 0;        
         int name_size = 0;
@@ -240,6 +237,10 @@ unsigned long load_user_program_withArgv(char *name, char **argv) {
     uart_printf("loading user file with argv...\n");
     //stack_top = argv_puts(argv, stack_top);
     set_pgd(current->mm.pgd);
+    struct pt_regs *regs = task_pt_regs(current);
+	regs->pstate = 0x00000000;
+	regs->pc = 0x70000;
+	regs->sp = 0x71000;  
     run_user_program(0x70000, 0x71000);
     return 1;
 }

@@ -96,6 +96,7 @@ ret_from_fork:
 	mov	x0, x20
 	blr	x19
 
+.global ret_to_user
 ret_to_user:
 	bl disable_irq				
 	kernel_exit 0 
