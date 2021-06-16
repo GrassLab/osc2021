@@ -33,15 +33,18 @@ struct pt_regs * task_pt_regs(struct task_struct *tsk)
 
 int create_thread(unsigned long clone_flags, unsigned long fn, unsigned long arg)
 {
+    
 	preempt_disable();
 	struct task_struct *p;
 
 	unsigned long page = kmalloc(1<<12);
 	p = (struct task_struct *) page;
 	struct pt_regs *childregs = task_pt_regs(p);
-
-	if (!p)
+    memzero(p, 4096);
+	
+    if (!p) {
 		return -1;
+    }
 
 	if (clone_flags & PF_KTHREAD) {
 		p->cpu_context.x19 = fn;

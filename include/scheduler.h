@@ -85,10 +85,12 @@ void ret_from_fork();
 void ret_to_user();
 
 #define INIT_TASK \
-/*cpu_context*/ { { 0,0,0,0,0,0,0,0,0,0,0,0,0}, \
-/* state etc */	 0, 0, 0, 2, 0, PF_KTHREAD, \
-/* mm */ { 0, 0, {{0}}, 0, {0}} \
-}
+/*cpu_context*/ 	{ { 0,0,0,0,0,0,0,0,0,0,0,0,0}, \
+/* state etc */	 		0, 0, 0, 2, 0, PF_KTHREAD, \
+/* mm */ 				{ 0, 0, {{0}}, 0, {0}}, \
+/* fd_table */ 			0, \
+/* child */				0 \
+					}	
 
 #endif
 #endif
