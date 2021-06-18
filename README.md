@@ -6,6 +6,21 @@
 | --- | ----------- | --- | --- |
 |`309552002`| `jackhong12` | `黃振宏` | jackhuang1205@gmail.com |
 
+## Enviroment
+- OS: `unbuntu 20.04`
+```
+sudo apt-get install gcc-aarch64-linux-gnu
+sudo apt install gdb-multiarch
+sudo apt-get install qemu qemu-system qemu-user
+
+# python package
+sudo apt install python3-pip
+python3 -m pip install pyserial
+
+# USB permission
+sudo usermod -aG dialout $USER
+```
+
 ## TODO
 - [ ] switch from el2 to el1
 - [ ] Add a command that can load a user program in the initramfs. Then, use eret to jump to the start address.
