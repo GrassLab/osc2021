@@ -9,6 +9,9 @@ struct file_entry {
         char filename[24];
         uint32_t next_free_entry;
     };
+
+    uint32_t fat32_entry;
+    uint32_t fat32_block;
     
     uint32_t block;
     uint32_t file_size;
@@ -23,6 +26,7 @@ struct fd_entry {
     uint32_t mode;
 };
 
+void fs_init();
 int open(char *filename, int mode);
 size_t read(int fd, char *buf, size_t count);
 size_t write(int fd, char *buf, size_t count);

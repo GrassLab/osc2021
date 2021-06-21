@@ -13,3 +13,12 @@ void *memcpy(void *dest, const void *src, size_t n) {
     }
     return dest;
 }
+
+int memcmp(const void *s1, const void *s2, size_t n) {
+    char *c1 = (char*) s1, *c2 = (char*) s2;
+    for (int i = 0; i < n; i++) {
+        int val = *c1 - *c2;
+        if (val != 0) return val;
+    }
+    return 0;
+}
