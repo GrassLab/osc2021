@@ -128,35 +128,33 @@ static file_entry * load(char *filename) {
     
     file_block * file_block_root = (file_block*) FILE_CONTENT_BASE;
 
-    for (int i = 0; i < 1; i++) {
-        readblock(fat32.data_start_block + i, fat32_buffer);
-        for (int j = 0; j < 16; j++) {
-            if (fat32_buffer[j * 32 + 11] == 0x20 && fat32_filename_cmp(&fat32_buffer[j * 32], file_entry->filename)) {
-                file_entry->fat32_entry = i * 16 + j;
-                memcpy(&file_entry->file_size, &fat32_buffer[j * 32 + 28], 4);
-                int data_block_index;
-                memcpy(&data_block_index, &fat32_buffer[j * 32 + 26], 2);
-                memcpy(((char*)&data_block_index) + 2, &fat32_buffer[j * 32 + 20], 2);
-                file_entry->fat32_block = data_block_index;
-                uint32_t block_index = file_entry->block;
+    readblock(fat32.data_start_block, fat32_buffer);
+    for (int j = 0; j < 16; j++) {
+        if (fat32_buffer[j * 32 + 11] == 0x20 && fat32_filename_cmp(&fat32_buffer[j * 32], file_entry->filename)) {
+            file_entry->fat32_entry = j;
+            memcpy(&file_entry->file_size, &fat32_buffer[j * 32 + 28], 4);
+            int data_block_index;
+            memcpy(&data_block_index, &fat32_buffer[j * 32 + 26], 2);
+            memcpy(((char*)&data_block_index) + 2, &fat32_buffer[j * 32 + 20], 2);
+            file_entry->fat32_block = data_block_index;
+            uint32_t block_index = file_entry->block;
 
-                while (true) {
-                    readblock(fat32.data_start_block + data_block_index - fat32.root_dir_start, &file_block_root[block_index]);
-                    int fat_block_index = data_block_index / 128;
-                    readblock(fat_block_index + fat32.fat_start_block, fat32_buffer);
-                    data_block_index = ((int*)fat32_buffer)[data_block_index % 128];
-                    if ((data_block_index & 0xffffff8) != 0xffffff8) {
-                        int new_block_index = get_free_block();
-                        block_entries[block_index] = new_block_index;
-                        block_index = new_block_index;
-                    }
-                    else {
-                        break;
-                    }
+            while (true) {
+                readblock(fat32.data_start_block + data_block_index - fat32.root_dir_start, &file_block_root[block_index]);
+                int fat_block_index = data_block_index / 128;
+                readblock(fat_block_index + fat32.fat_start_block, fat32_buffer);
+                data_block_index = ((int*)fat32_buffer)[data_block_index % 128];
+                if ((data_block_index & 0xffffff8) != 0xffffff8) {
+                    int new_block_index = get_free_block();
+                    block_entries[block_index] = new_block_index;
+                    block_index = new_block_index;
                 }
-
-                return file_entry;
+                else {
+                    break;
+                }
             }
+
+            return file_entry;
         }
     }
     return file_entry;

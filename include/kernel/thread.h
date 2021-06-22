@@ -37,7 +37,7 @@ struct alignas(16) task_struct {
 
 extern task_struct* tasks;
 
-
+void task_init();
 
 extern "C" {
     void do_exit();
