@@ -103,3 +103,16 @@ int tmpfs_create (struct vnode* dir_node, struct vnode** target, const char* com
     }
     return 0;
 }
+
+// do nothing
+int tmpfs_file_flush (struct file *file) {
+    return 0;
+}
+
+int tmpfs_vnode_flush (struct vnode *node) {
+    if (node->type == VNODE_FILE) {
+        node->internal = bs_malloc(PAGE_SIZE);
+        memset(node->internal, '\0', PAGE_SIZE);
+    }
+    return 0;
+}

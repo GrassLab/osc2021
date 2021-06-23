@@ -128,9 +128,10 @@ long strfind (const char *buffer, char token) {
     return -1;
 }
 
-void memcpy (unsigned char *dest, unsigned char *source, unsigned int size) {
+void memcpy (void *dest, void *source, unsigned int size) {
+    char *ptrd = dest, *ptrs = source;
     for (int i = 0; i < size; i++) {
-        dest[i] = source[i];
+        ptrd[i] = ptrs[i];
     }
 }
 

@@ -38,6 +38,7 @@ struct file {
     u32 f_pos; // The next read/write position of this opened file
     struct file_operations* f_ops;
     int flags;
+    void *internal;
 };
 
 struct mount {
@@ -53,11 +54,13 @@ struct filesystem {
 struct file_operations {
     int (*write) (struct file* file, const void* buf, u32 len);
     int (*read) (struct file* file, void* buf, u32 len);
+    int (*flush) (struct file *file);
 };
 
 struct vnode_operations {
     int (*lookup)(struct vnode* dir_node, struct vnode** target, const char* component_name);
     int (*create)(struct vnode* dir_node, struct vnode** target, const char* component_name);
+    int (*flush)(struct vnode *node);
 };
 
 void init_vfs ();
@@ -68,4 +71,5 @@ int vfs_write(struct file* file, const void* buf, u32 len);
 int vfs_read(struct file* file, void* buf, u32 len);
 int vfs_close(struct file* file);
 struct file* vfs_open(const char* pathname, int flags);
+int register_filesystem(struct filesystem* fs);
 #endif

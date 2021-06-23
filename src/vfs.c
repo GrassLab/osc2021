@@ -36,12 +36,14 @@ void init_vfs () {
     *fop = (struct file_operations) {
         .write = tmpfs_write,
         .read = tmpfs_read,
+        .flush = tmpfs_file_flush,
     };
 
     struct vnode_operations *vop = m_malloc(sizeof(struct vnode_operations));
     *vop = (struct vnode_operations) {
         .lookup = tmpfs_lookup,
         .create = tmpfs_create,
+        .flush = tmpfs_vnode_flush,
     };
 
     *root = (struct vnode) {
@@ -93,8 +95,10 @@ int vfs_touch (const char *path) {
     }
 
     tmp->type = VNODE_FILE;
-    tmp->internal = bs_malloc(PAGE_SIZE);
-    memset(tmp->internal, '\0', PAGE_SIZE);
+
+    // update data in devices
+    tmp->v_ops->flush(tmp);
+
     return 0;
 }
 
@@ -111,12 +115,28 @@ int vfs_mkdir (const char *path) {
     }
 
     tmp->type = VNODE_DIR;
+
+    // update data in devices
+    tmp->v_ops->flush(tmp);
+
     return 0;
 }
 
 int register_filesystem(struct filesystem* fs) {
-  // register the file system to the kernel.
-  return 0;
+    int i;
+    for (i = 0; i < MOUNT_TABLE_SIE; i++)
+        if (!mount_table[i].fs) break;
+
+    if (mount_table[i].fs)
+        return -1;
+
+    fs->setup_mount(mount_table[0].fs, &mount_table[i]);
+
+    struct vnode_child *list = m_malloc(sizeof(struct vnode_child));
+    list->child = mount_table[i].root;
+    list->next = rootfs->root->childs;
+    rootfs->root->childs = list;
+    return 0;
 }
 
 struct file* vfs_open(const char* pathname, int flags) {
@@ -159,15 +179,13 @@ struct file* vfs_open(const char* pathname, int flags) {
             ret->vnode = tmp;
             ret->f_ops = tmp->f_ops;
             ret->f_pos = 0;
+            ret->internal = NULL;
             break;
         }
     }
     return ret;
-
-  // 1. Lookup pathname from the root vnode.
-  // 2. Create a new file descriptor for this vnode if found.
-  // 3. Create a new file if O_CREAT is specified in flags.
 }
+
 int vfs_close(struct file* file) {
     if (!file) return -1;
     *file = (struct file) {
@@ -178,6 +196,7 @@ int vfs_close(struct file* file) {
     };
     return 0;
 }
+
 int vfs_write(struct file* file, const void* buf, u32 len) {
     // TODO: check file size before writing content
     return file->f_ops->write(file, buf, len);

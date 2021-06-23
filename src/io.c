@@ -90,7 +90,8 @@ void kprintf (char *format, ...) {
                     uart_send(tmp);
                 }
                 else if (format[i + 1] == 'c') {
-                    uart_send("[d]");
+                    char tmp = va_arg(ap, int);
+                    uart_sendc(tmp);
                 }
                 else if (format[i + 1] == 'p') {
                     uart_send("[d]");

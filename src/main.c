@@ -14,6 +14,8 @@
 #include "sched.h"
 #include "lib.h"
 #include "vfs.h"
+#include "sdhost.h"
+#include "fat32.h"
 
 void foo () {
     for (int i = 0; i < 10; i++) {
@@ -63,6 +65,24 @@ void initd_lab6 () {
     close(b);
     b = open("hello", O_READ);
     a = open("world", O_READ);
+    int sz;
+    sz = read(b, buf, 100);
+    sz += read(a, buf + sz, 100);
+    buf[sz] = '\0';
+    kprintf("%s\n", buf); // should be Hello World!
+    while (1);
+}
+
+void initd_lab7 () {
+    char buf[256];
+    int a = open("fat32/hello.txt", O_CREAT);
+    int b = open("fat32/world.txt", O_CREAT);
+    write(a, "Hello ", 6);
+    write(b, "World!", 6);
+    close(a);
+    close(b);
+    b = open("fat32/hello.txt", O_READ);
+    a = open("fat32/world.txt", O_READ);
     int sz;
     sz = read(b, buf, 100);
     sz += read(a, buf + sz, 100);
@@ -168,8 +188,25 @@ void parse_command (char *b) {
         create_initd(initd_lab6);
     }
 
+    else if (!strcmp(b, "lab7-demo")) {
+        create_initd(initd_lab7);
+    }
+
     else if (!strcmp(b, "test")) {
-        create_initd(initd_lab6);
+        //create_initd(initd_lab6);
+        struct file *f = vfs_open("fat32/t1.txt", O_CREAT);
+        char buffer[0x800];
+        memset(buffer, 'a', 0x200);
+        memset(&buffer[0x200], 'b', 0x200);
+        vfs_write(f, buffer, 0x400);
+        //vfs_write(f, buffer, 0x400);
+        //struct file *f = vfs_open("fat32/fixup.dat", O_READ);
+        f = vfs_open("fat32/t1.txt", O_CREAT);
+        memset(buffer, '\0', 0x800);
+        u32 size = vfs_read(f, buffer, 0x800);
+        kprintf("%s\n", buffer);
+        kprintf("%x\n", size);
+        kprintf("%x\n", strlen(buffer));
     }
     else if (!strcmp(b, "malloc_bins")) {
         show_malloc_bins();
@@ -216,6 +253,9 @@ int main () {
     init_sched();
 
     init_vfs();
+
+    sd_init();
+    fat32_init();
 
     kprintf("\n");
     kprintf("+========================+\n");
