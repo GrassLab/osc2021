@@ -1,5 +1,6 @@
 SECTIONS {
-    . = 0x80000;
+    . = 0xffff000000000000;
+    . += 0x80000;
     .text.boot : { *(.text.boot) }
     .bss  : { 
         __bss_start__ = .;

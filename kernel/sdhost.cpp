@@ -1,8 +1,8 @@
 #include <kernel/sdhost.h>
 
 // mmio
-// #define KVA 0xffff000000000000
-#define KVA 0
+#define KVA 0xffff000000000000
+// #define KVA 0
 #define MMIO_BASE (KVA + 0x3f000000)
 
 // SD card command
