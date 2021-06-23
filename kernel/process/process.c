@@ -50,6 +50,7 @@ int do_open(const char * path_name, int flags)
     struct Thread * t = current_thread();
 
     int fd = insert_fd(t->fd_table, f);
+    
     return fd;
 }
 
@@ -67,11 +68,9 @@ int do_close(int fd)
 int do_write(int fd, const void * buf, size_t len)
 {
     struct Thread * t = current_thread();
-
     struct File * f = t->fd_table[fd].f;
 
     int ret = vfs_write(f, buf, len);
-
     return ret;
 }
 

@@ -15,7 +15,7 @@ void init_filesystem()
     rootfs = (struct mount *)buddy_alloc(sizeof(struct mount));
     rootfs->root = (struct vnode *)buddy_alloc(sizeof(struct vnode));
 
-    register_filesystem(&tmpfs);
+    register_filesystem(&fatfs);
 }
 
 int register_filesystem(struct filesystem * fs)
@@ -65,6 +65,24 @@ void vfs_test_1()
     do_exec("fs_test.img", "");
 }
 
+void vfs_test_2()
+{
+    int a = do_open("HELLO.TXT", 0);
+    int s;
+    char * buf;
+
+    do_write(a, "Hello OSDI\n", 12);
+
+    do_close(a);
+
+    a = do_open("HELLO.TXT", 0);
+    s = do_read(a, buf, 100);
+
+    buf[s - 1] = '\0';
+
+    uart_puts(buf);
+}
+
 void vfs_test(int test_id)
 {
     // current default thread
@@ -78,6 +96,8 @@ void vfs_test(int test_id)
             thread_create(vfs_test_1);
             idle();
         break;
+        case 2:
+            vfs_test_2();
         default:
         break;
     }
