@@ -56,7 +56,7 @@ static void sys_clone(void *func) {
 }
 
 
-static void sys_exit() {
+void sys_exit() {
     uint64_t current = get_tpidr_el1();
     bool has_same_program = false;
     for (int i = 0; i < total_threads; i++) {

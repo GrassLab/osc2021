@@ -26,21 +26,23 @@ public:
             }
             argv[i] = nullptr;
             bool known_command = false;
-            for (NameFuncMap& elem : map) {
-                if (strcmp(elem.command, argv[0]) == 0) {
-                    (this->*elem.func)();
-                    known_command = true;
-                    break;
+            if (argv[0] != nullptr) {
+                for (NameFuncMap& elem : map) {
+                    if (strcmp(elem.command, argv[0]) == 0) {
+                        (this->*elem.func)();
+                        known_command = true;
+                        break;
+                    }
                 }
-            }
-            if (argv[0] != nullptr && !known_command) {
-                int pid = fork();
-                if (pid == 0) {
-                    exec(argv[0], (const char**)argv);
-                    io() << "Unknown command\r\n";
-                    exit();
+                if (!known_command) {
+                    int pid = fork();
+                    if (pid == 0) {
+                        exec(argv[0], (const char**)argv);
+                        io() << "Unknown command\r\n";
+                        exit();
+                    }
+                    wait(pid);
                 }
-                wait(pid);
             }
             io() << "% ";
         }
