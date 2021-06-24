@@ -91,7 +91,7 @@ static int get_free_block() {
 
 static void write_fat(int fat_block_index, char * buffer) {
     for (int i = 0; i < fat32.fat_count; i++) {
-        writeblock(fat32.fat_start_block + i * fat32.fat_size, buffer);
+        writeblock(fat32.fat_start_block + i * fat32.fat_size + fat_block_index , buffer);
     }
 }
 
@@ -208,11 +208,12 @@ int open(char *filename, int mode) {
             writeblock(fat32.data_start_block + target_file_entry->fat32_entry / 16, fat32_buffer);
             readblock(fat32.fat_start_block + target_file_entry->fat32_block / 128, fat32_buffer);
             int block_index = ((int*)fat32_buffer)[target_file_entry->fat32_block % 128];
-            ((int*)fat32_buffer)[target_file_entry->fat32_block % 128] = 0;
+            ((int*)fat32_buffer)[target_file_entry->fat32_block % 128] = 0xffffffff;
             write_fat(target_file_entry->fat32_block / 128, fat32_buffer);
             while (block_index & 0xffffff8 != 0xffffff8) {
                 readblock(fat32.fat_start_block + block_index / 128, fat32_buffer);
                 int next_block_index = ((int*)fat32_buffer)[block_index % 128];
+                ((int*)fat32_buffer)[block_index % 128] = 0;
                 write_fat(block_index / 128, fat32_buffer);
                 block_index = next_block_index;
             }

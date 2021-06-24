@@ -33,7 +33,7 @@ static void schedule_internal(bool save_current) {
             }
         }
     }
-    switch_to(save_current ? &tasks[current] : nullptr, &tasks[target], target);
+    switch_to(save_current ? &tasks[current].regs : nullptr, &tasks[target].regs, tasks[target].page_table, target);
 }
 
 static void sys_schedule() {
@@ -112,6 +112,7 @@ int sys_exec(char* name, char** argv) {
             char *arg_final = sp_el0 + (tmp - arg);
             for (int i = 0; i < argc; i++) {
                 ((char**)arg_final)[i] -= (arg - ((char*)tasks[tpidr].stack_alloc) - 0x1000 + arg_size);
+                ((char**)arg_final)[i] = (char*)((uint64_t(((char**)arg_final)[i]) & 0xfff) | 0x10000000);
             }
             bool has_same_program = false;
             for (int i = 0; i < total_threads; i++) {
@@ -126,11 +127,13 @@ int sys_exec(char* name, char** argv) {
             tasks[tpidr].program_size = (cpio.filesize + 4095) & ~4095; // Align 4096
             tasks[tpidr].regs.sp = tasks[tpidr].kernel_stack_alloc + 4096;
             tasks[tpidr].regs.lr = (void*)kernel_thread_start;
-            tasks[tpidr].regs.elr_el1 = tasks[tpidr].program_alloc = memcpy(malloc(tasks[tpidr].program_size), cpio.filecontent, cpio.filesize);
-            tasks[tpidr].regs.sp_el0 = sp_el0;
+            tasks[tpidr].program_alloc = memcpy(malloc(tasks[tpidr].program_size), cpio.filecontent, cpio.filesize);
+            tasks[tpidr].page_table->program_alloc = uint64_t(kernel_to_physical(tasks[tpidr].program_alloc)) | USER_FLAG;
+            tasks[tpidr].regs.elr_el1 = (void *)0x10001000;
+            tasks[tpidr].regs.sp_el0 = (void*)((uint64_t(sp_el0) & 0xfff) | 0x10000000);
             tasks[tpidr].sleep_until = 0;
             tasks[tpidr].wait_pid = 0;
-            switch_to(nullptr, &tasks[tpidr], tpidr, argc, arg_final);
+            switch_to(nullptr, &tasks[tpidr].regs, tasks[tpidr].page_table, tpidr, argc, (uint64_t(arg_final) & 0xfff) | 0x10000000);
         }
         else {
             cpio = CPIO(cpio.next);
@@ -164,6 +167,9 @@ static uint64_t sys_fork() {
     tasks[child].fd_entries = malloc(4096);
     memcpy(tasks[child].fd_entries, tasks[parent].fd_entries, 4096);
     tasks[child].program_alloc = tasks[parent].program_alloc;
+    tasks[child].page_table = (struct page_table_struct*)malloc(4096);
+    tasks[child].page_table->program_alloc = uint64_t(kernel_to_physical(tasks[child].program_alloc)) | USER_FLAG;
+    tasks[child].page_table->stack_alloc = uint64_t(kernel_to_physical(tasks[child].stack_alloc)) | USER_FLAG | NON_EXECUTE_FLAG;
     tasks[child].sleep_until = 0;
     fork_internal(&tasks[parent], &tasks[child], tasks[parent].stack_alloc, tasks[child].stack_alloc, tasks[parent].kernel_stack_alloc, tasks[child].kernel_stack_alloc);
     if (tasks[get_tpidr_el1()].pid != parent_pid) {

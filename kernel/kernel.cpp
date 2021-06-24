@@ -31,6 +31,7 @@ void kernel_exception(uint64_t x0, uint64_t x1, uint64_t x2, uint64_t x3, uint64
     io() << "x6 = " << u64tohex(x6, buffer, sizeof(buffer)) << "\r\n";
     io() << "x7 = " << u64tohex(x7, buffer, sizeof(buffer)) << "\r\n";
     io() << "Unknown exception\r\n";
+    while (true);
     reset();
 }
 

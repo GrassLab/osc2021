@@ -8,9 +8,10 @@
 
 from .req x0
 to .req x1
-to_tpidr .req x2
-argc .req x3
-argv .req x4
+page .req x2
+to_tpidr .req x3
+argc .req x4
+argv .req x5
 
 switch_to:
     cbz from, 1f
@@ -40,9 +41,18 @@ switch_to:
     ldr x9, [to, 8 * 14]
     mov sp, x9
     msr tpidr_el1, to_tpidr
+    mov x0, #0x4400
+    movk x0, #0xffff, lsl #48
+    movk page, #0, lsl #48
+    orr page, page, #3
+    str page, [x0]
+    dsb ish
+    tlbi vmalle1is
+    dsb ish
+    isb
 
-    mov x0, x3
-    mov x1, x4
+    mov x0, argc
+    mov x1, argv
     ret
 
 get_tpidr_el1:
@@ -104,8 +114,8 @@ fork_internal:
     stp x27, x28, [child, 16 * 4]
     stp fp, lr, [child, 16 * 5]
     mrs x9, sp_el0
-    sub x9, x9, x2
-    add x9, x9, x3
+    //sub x9, x9, x2
+    //add x9, x9, x3
     str x9, [child, 8 * 12]
     mrs x9, elr_el1
     str x9, [child, 8 * 13]
