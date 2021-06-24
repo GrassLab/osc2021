@@ -4,13 +4,14 @@
 #include "type.h"
 #include "mm.h"
 #include "set_int.h"
+#include "mmu.h"
 
 #define CMD_LEN 128
 
 /* Reboot */
-#define PM_PASSWORD    0x5a000000
-#define PM_RSTC        ((volatile unsigned int*)(0x3F10001c))
-#define PM_WDOG        ((volatile unsigned int*)(0x3F100024))
+#define PM_PASSWORD    (KERNEL_MAPPING+0x5a000000)
+#define PM_RSTC        ((volatile unsigned int*)(KERNEL_MAPPING+0x3F10001c))
+#define PM_WDOG        ((volatile unsigned int*)(KERNEL_MAPPING+0x3F100024))
 
 /* Key */
 #define LEFT_BRACKET    (char)91
@@ -20,7 +21,7 @@
 
 #define EXEC_ADDR      0x1000000
 /* Timer */
-#define CORE0_TIMER_IRQ_CTRL ((volatile unsigned int*)0x40000040)
+#define CORE0_TIMER_IRQ_CTRL ((volatile unsigned int*)(KERNEL_MAPPING+0x40000040))
 
 void *addr[100];
 int addr_count;

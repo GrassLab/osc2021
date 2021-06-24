@@ -57,14 +57,35 @@ typedef struct fat32_dir_entry {
 } fat32_de_t;
 
 typedef struct {
-    uint32_t start_sec;
-    uint32_t end_sec;
+    uint32_t fat_sec;
+    uint32_t head_sec;
+    uint32_t clus_pos;
     uint32_t size;
+    uint8_t  sec_per_clu;
     uint16_t byte_per_sec;
 } fat32_file_t;
 
 vnode_operations_t fat32_vop;
 file_operations_t fat32_fop;
+
+static inline uint32_t fat32_clus_to_sec(uint32_t head_sec, uint32_t clus_pos,
+                                     uint8_t  sec_per_clu, uint8_t sec_count) {
+    return head_sec + sec_per_clu * (clus_pos - 2) + sec_count;
+}
+
+static uint32_t fat32_get_next_clus(uint32_t current_clus, uint32_t fat_sec,
+                                    uint16_t byte_per_sec) {
+    char buf[BLOCK_SIZE];
+    fat_sec += current_clus / (byte_per_sec / 4);
+    current_clus %= (byte_per_sec / 4);
+    readblock(fat_sec, buf);
+    uint32_t *next_clus = &buf[4 * current_clus];
+    if (*next_clus < 0xffffff8) {
+        return *next_clus;
+    } else {
+        return 0;
+    }
+}
 
 static void fat32_umount_operation(vnode_t *file) {
     kfree(file->internal);
@@ -109,18 +130,29 @@ static void fat32_create_dir(vnode_t *dir_node, const char *dir_name) {
 
 static int fat32_read(struct file *file, void *buf, size_t len) {
     fat32_file_t *f = (fat32_file_t*)file->vnode->internal;
-    uint32_t start_sec = f->start_sec + file->f_pos / f->byte_per_sec;
+    uint8_t sec_count = (file->f_pos / f->byte_per_sec) % f->sec_per_clu;
+    uint32_t start_sec = fat32_clus_to_sec(f->head_sec, f->clus_pos,
+                                           f->sec_per_clu, sec_count);
     uint16_t pos = file->f_pos % f->byte_per_sec;
     char sd_buf[BLOCK_SIZE];
     if ((file->f_pos + len) > f->size)
         len = f->size - file->f_pos;
     readblock(start_sec, sd_buf);
-    for (int i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         *((char*)buf + i) = sd_buf[pos];
         if (++pos == f->byte_per_sec) {
-            pos = 0;
-            start_sec++;
+            if (++sec_count == f->sec_per_clu) {
+                uint32_t next_clus = fat32_get_next_clus(f->clus_pos, f->fat_sec,
+                                                         f->byte_per_sec);
+                f->clus_pos = next_clus;
+                start_sec = fat32_clus_to_sec(f->head_sec, f->clus_pos,
+                                              f->sec_per_clu, 0);
+                sec_count = 0;
+            } else {
+                start_sec++;
+            }
             readblock(start_sec, sd_buf);
+            pos = 0;
         }
     }
     file->f_pos += len;
@@ -129,58 +161,43 @@ static int fat32_read(struct file *file, void *buf, size_t len) {
 
 static int fat32_write(struct file *file, const void *buf, size_t len) {
     fat32_file_t *f = (fat32_file_t*)file->vnode->internal;
-    size_t max_file_size = (f->end_sec - f->start_sec + 1) * f->byte_per_sec;
-    if ((file->f_pos + len) > max_file_size) {
-        len = max_file_size - file->f_pos;
-        if (!len)
-            return -1;
-    }
-    uint32_t start_sec = f->start_sec + file->f_pos / f->byte_per_sec;
+    if (!fat32_get_next_clus(f->clus_pos, f->fat_sec, f->byte_per_sec))
+        return -1;
+    uint8_t sec_count = (file->f_pos / f->byte_per_sec) % f->sec_per_clu;
+    uint32_t start_sec = fat32_clus_to_sec(f->head_sec, f->clus_pos,
+                                           f->sec_per_clu, sec_count);
     uint16_t pos = file->f_pos % f->byte_per_sec;
     char sd_buf[BLOCK_SIZE];
+    size_t count;
     readblock(start_sec, sd_buf);
-    for (int i = 0; i < len; i++) {
-        sd_buf[pos] = *((char*)buf + i);
+    for (count = 0; count < len; count++) {
+        sd_buf[pos] = *((char*)buf + count);
         if (++pos == f->byte_per_sec) {
             writeblock(start_sec, sd_buf);
-            pos = 0;
-            start_sec++;
+            if (++sec_count == f->sec_per_clu) {
+                uint32_t next_clus = fat32_get_next_clus(f->clus_pos, f->fat_sec,
+                                                         f->byte_per_sec);
+                if (!next_clus) {
+                    count++;
+                    break;
+                } else {
+                    f->clus_pos = next_clus;
+                    start_sec = fat32_clus_to_sec(f->head_sec, f->clus_pos,
+                                                  f->sec_per_clu, 0);
+                    sec_count = 0;
+                }
+            } else {
+                start_sec++;
+            }
             readblock(start_sec, sd_buf);
+            pos = 0;
         }
     }
     writeblock(start_sec, sd_buf);
-    if ((file->f_pos + len) > f->size)
-        f->size += len - (f->size - file->f_pos);
-    file->f_pos += len;
-    return len;
-}
-
-static uint32_t fat32_scan_fat(uint32_t *start_clus, uint32_t fat_sec) {
-    char buf[BLOCK_SIZE];
-    uint32_t clus_pos = (*start_clus) % 128;
-    fat_sec += (*start_clus) / 128;
-    readblock(fat_sec, buf);
-    uint32_t *num = &buf[4 * clus_pos];
-    while (!(*num)) {
-        (*start_clus)++;
-        if (++clus_pos == 128) {
-            fat_sec++;
-            clus_pos = 0;
-            readblock(fat_sec, buf);
-        }
-        num = &buf[4 * clus_pos];
-    }
-    uint32_t end_clus = *start_clus;
-    while ((*num) < 0xffffff8) {
-        if (++clus_pos == 128) {
-            fat_sec++;
-            clus_pos = 0;
-            readblock(fat_sec, buf);
-        }
-        num = &buf[4 * clus_pos];
-        end_clus++;
-    }
-    return end_clus + 1;
+    if ((file->f_pos + count) > f->size)
+        f->size += count - (f->size - file->f_pos);
+    file->f_pos += count;
+    return count;
 }
 
 int fat_set_mount(mount_t *mount, const char *device) {
@@ -197,9 +214,8 @@ int fat_set_mount(mount_t *mount, const char *device) {
         memcpy(&bs.p2, &buf[14], sizeof(fat_bs_p2_t));
         memcpy(&bs.p3, &buf[32], sizeof(fat32_bs_p3_t));
         uint32_t fat_sec = mbr.sector_addr + bs.p2.bpb_rsvd_sec_cnt;
-        uint32_t dir_sec = fat_sec +
-                           bs.p2.bpb_num_fats * bs.p3.bpb_fat_sz +
-                           bs.p1.bpb_sec_per_clu * (bs.p3.bpb_root_clus - 2);
+        uint32_t head_sec = fat_sec + bs.p2.bpb_num_fats * bs.p3.bpb_fat_sz;
+        uint32_t dir_sec = head_sec + bs.p1.bpb_sec_per_clu * (bs.p3.bpb_root_clus - 2);
         /* Set mount */
         char *fs_name = kmalloc(strlen("fat32") + 1);
         strcpy(fs_name, "fat32");
@@ -208,31 +224,40 @@ int fat_set_mount(mount_t *mount, const char *device) {
         mount->root = kmalloc(sizeof(vnode_t));
         fat32_vnode_init(mount->root, "/");
         /* Set content */
-        uint32_t end_clus = fat32_scan_fat(&bs.p3.bpb_root_clus, fat_sec);
-        uint32_t start_clus = end_clus;
-        uint32_t head_clus = end_clus;
-        uint32_t head_sec = dir_sec +
-                            (start_clus - bs.p3.bpb_root_clus) * bs.p1.bpb_sec_per_clu;
+        uint8_t sec_count = 0;
         uint16_t file_count = 0;
         readblock(dir_sec, buf);
         while (buf[file_count * 32 + 11]) {
             memcpy(&dir.p1, &buf[file_count * 32], sizeof(fat32_de_p1_t));
             /* Only for file */
-            if (dir.p1.attribute == (char)32) {
-                end_clus = fat32_scan_fat(&start_clus, fat_sec);
+            if (dir.p1.attribute == 32 && dir.p1.file_name[0] != 229) {
                 memcpy(&dir.p2, &buf[file_count * 32 + 20], sizeof(fat32_de_p2_t));
                 fat32_file_t *f = kmalloc(sizeof(fat32_file_t));
-                f->start_sec = head_sec + (start_clus - head_clus) * bs.p1.bpb_sec_per_clu;
-                f->end_sec = f->start_sec + (end_clus - start_clus) * bs.p1.bpb_sec_per_clu - 1;
+                f->fat_sec = fat_sec;
+                f->head_sec = head_sec;
+                f->clus_pos = dir.p2.l_clu_num + dir.p2.h_clu_num * 0x10000;
                 f->size = dir.p2.size;
+                f->sec_per_clu = bs.p1.bpb_sec_per_clu;
                 f->byte_per_sec = bs.p1.bpb_byte_per_sec;
                 fat32_create_file_vnode(mount->root, &dir, f);
-                start_clus = end_clus;
             }
             if (++file_count == (bs.p1.bpb_byte_per_sec / 32)) {
-                file_count = 0;
-                dir_sec++;
+                if (++sec_count == bs.p1.bpb_sec_per_clu) {
+                    uint32_t next_clus = fat32_get_next_clus(bs.p3.bpb_root_clus, fat_sec,
+                                                             bs.p1.bpb_byte_per_sec);
+                    if (!next_clus) {
+                        break;
+                    } else {
+                        bs.p3.bpb_root_clus = next_clus;
+                        dir_sec = fat32_clus_to_sec(head_sec, bs.p3.bpb_root_clus,
+                                                    bs.p1.bpb_sec_per_clu, 0);
+                        sec_count = 0;
+                    }
+                } else {
+                    dir_sec++;
+                }
                 readblock(dir_sec, buf);
+                file_count = 0;
             }
         }
         return 0;

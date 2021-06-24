@@ -1,7 +1,9 @@
 #ifndef _GPIO_H_
 #define  _GPIO_H_
 
-#define MMIO_BASE    0x3F000000
+#include "mmu.h"
+
+#define MMIO_BASE    (KERNEL_MAPPING+0x3F000000)
 #define GPIO_BASE    (MMIO_BASE+0x200000)
 
 #define GPFSEL0      ((volatile unsigned int*)(GPIO_BASE+0x00))

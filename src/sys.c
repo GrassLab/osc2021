@@ -7,12 +7,66 @@
 #include "uart.h"
 #include "sched.h"
 #include "vfs.h"
+#include "mmu.h"
 
-#define USTACK_SIZE       2048
-#define EXEC_ADDR         0x1000000
-#define MAX_PROGRAM_SIZE  0x1000
+#define USTACK_SIZE   PAGE_SIZE
+#define EXEC_ADDR     0x80000
 
-uint32_t program_num = 1;
+/* System call - exit */
+static void sys_exit(void) {
+    thread_t *current = get_current();
+    kfree(current->ucode_addr);
+    kfree(current->ustack_addr);
+    kfree(current->pgd_addr);
+    kfree(current->pud_addr);
+    kfree(current->pmd_addr);
+    kfree(current->pte_addr);
+    current->ucode_addr = NULL;
+    current->ucode_size = 0;
+    current->ustack_addr = NULL;
+    current->pgd_addr = NULL;
+    current->pud_addr = NULL;
+    current->pmd_addr = NULL;
+    current->pte_addr = NULL;
+    current->reg.ttbr0_el1 = 0;
+    thread_exit();
+}
+
+void page_fault_handler(uint64_t virtual_addr) {
+    print("Segmentation fault: 0x");
+    print_hex(virtual_addr);
+    print("\n");
+    sys_exit();
+}
+
+static void page_table_init(thread_t *t) {
+    t->pgd_addr = kmalloc(PAGE_SIZE);
+    t->pud_addr = kmalloc(PAGE_SIZE);
+    t->pmd_addr = kmalloc(PAGE_SIZE);
+    t->pte_addr = kmalloc(PAGE_SIZE);
+
+    t->reg.ttbr0_el1 = (uint64_t)t->pgd_addr & PA_MASK;
+    uint64_t *entry = t->pgd_addr;
+    (*entry) = ((uint64_t)t->pud_addr & PA_MASK) | PGD_ATTR;
+    entry = t->pud_addr;
+    (*entry) = ((uint64_t)t->pmd_addr & PA_MASK) | PUD_ATTR;
+    entry = t->pmd_addr;
+    (*entry) = ((uint64_t)t->pte_addr & PA_MASK) | PMD_ATTR;
+}
+
+static void pte_init(thread_t *t) {
+    uint64_t ustack_addr = EXEC_ADDR - PAGE_SIZE;
+    uint32_t page_count = !(t->ucode_size % PAGE_SIZE) ? (t->ucode_size / PAGE_SIZE)
+                                                       : (t->ucode_size / PAGE_SIZE) + 1;
+    uint64_t *entry;
+
+    entry = (char*)t->pte_addr + (ustack_addr / PAGE_SIZE) * 8;
+    (*entry) =  ((uint64_t)t->ustack_addr & PA_MASK) | PTE_NORMAL_ATTR | PD_EL0_ACCESS;
+    for(int i = 0; i < page_count; i++) {
+        entry = (char*)t->pte_addr + (EXEC_ADDR / PAGE_SIZE + i) * 8;
+        (*entry) = (((uint64_t)t->ucode_addr + i * PAGE_SIZE) & PA_MASK) | PTE_NORMAL_ATTR | PD_EL0_ACCESS;
+    }
+}
 
 /* System call - exec */
 int do_exec(const char *name, char *const argv[], int pos) {
@@ -23,22 +77,38 @@ int do_exec(const char *name, char *const argv[], int pos) {
 
     int argc = 0;
     thread_t *current = get_current();
-    if (current->ustack_num > MAX_USTACK_NUM)
-        return -1;
 
-    /* Allocate user program address */
-    current->ustack_addr[current->ustack_num] = kmalloc(USTACK_SIZE);
-    current->ustack_num++;
+    /* Allocate user stack */
+    char *ustack_addr = kmalloc(USTACK_SIZE);
+    /* Count argc and Copy argv */
+    while (argv[argc] != 0)
+        argc++;
+    char **tmp_argv = ustack_addr;
+    char *kaddr = ustack_addr + argc * sizeof(char*);
+    char *uaddr = (EXEC_ADDR - PAGE_SIZE) + argc * sizeof(char*);
+    for (int i = 0; i < argc; i++) {
+        size_t len = strlen(argv[i]) + 1;
+        memcpy(kaddr, argv[i], len);
+        tmp_argv[i] = uaddr ;
+        kaddr += len;
+        uaddr += len;
+    }
+    if (current->ustack_addr)
+        kfree(current->ustack_addr);
+    current->ustack_addr = ustack_addr;
     /* load user program */
-    char *exec_addr = (char*)(EXEC_ADDR + MAX_PROGRAM_SIZE * (program_num - 1));
-    memcpy(exec_addr, file_list[pos].file_content, file_list[pos].file_size);
-    program_num++;
-    /* Count argc */
-    while (argv[argc++] != 0) {}
+    if (current->ucode_addr)
+        kfree(current->ucode_addr);
+    current->ucode_size = file_list[pos].file_size;
+    uint32_t alloc_size = !(current->ucode_size % PAGE_SIZE) ? current->ucode_size
+                                                             : (current->ucode_size / PAGE_SIZE + 1) * PAGE_SIZE;
+    current->ucode_addr = kmalloc(alloc_size);
+    memcpy(current->ucode_addr, file_list[pos].file_content, file_list[pos].file_size);
+    if(current->pgd_addr == NULL)
+        page_table_init(current);
+    pte_init(current);
 
-    from_el1_to_el0(argc - 1, argv,
-                   (uint64_t)current->ustack_addr[current->ustack_num - 1] + USTACK_SIZE,
-                   (uint64_t)exec_addr);
+    from_el1_to_el0(argc, EXEC_ADDR - PAGE_SIZE, EXEC_ADDR, current->reg.ttbr0_el1);
 }
 
 /*System call - umount */
@@ -140,14 +210,6 @@ static void sys_sleep(tframe_t *frame) {
     schedule();
 }
 
-/* System call - exit */
-static void sys_exit(void) {
-    thread_t *current = get_current();
-    for (int i = 0; i < current->ustack_num; i++)
-        kfree(current->ustack_addr[i]);
-    thread_exit();
-}
-
 /* System call - fork */
 static void sys_fork(tframe_t *frame) {
     thread_t *parent = get_current();
@@ -156,10 +218,19 @@ static void sys_fork(tframe_t *frame) {
         frame->x[0] = -1;
         return ;
     }
+
     frame->x[0] = child->pid;
     child->reg.sp -= 272;
-    child->ustack_addr[child->ustack_num] = kmalloc(USTACK_SIZE);
-    child->ustack_num++;
+    child->ustack_addr = kmalloc(USTACK_SIZE);
+    child->ucode_size = parent->ucode_size;
+    uint32_t alloc_size = !(parent->ucode_size % PAGE_SIZE) ? parent->ucode_size
+                                                            : (parent->ucode_size / PAGE_SIZE + 1) * PAGE_SIZE;
+    child->ucode_addr = kmalloc(alloc_size);
+    memcpy(child->ucode_addr, parent->ucode_addr, parent->ucode_size);
+    memcpy(child->ustack_addr, parent->ustack_addr, USTACK_SIZE);
+    page_table_init(child);
+    pte_init(child);
+
     child->wd = parent->wd;
     child->fd_pos = child->fd_pos;
     for (int i = 0; i < MAX_FD_NUM; i++) {
@@ -169,20 +240,11 @@ static void sys_fork(tframe_t *frame) {
         }
     }
 
-    /* Copy parent user stack to child user stack */
-    uint64_t parent_usp_start = (uint64_t)parent->ustack_addr[parent->ustack_num - 1] + USTACK_SIZE - 1;
-    uint64_t child_usp_start  = (uint64_t)child->ustack_addr[child->ustack_num - 1] + USTACK_SIZE - 1;
-    uint64_t parent_usp_end   = frame->sp_el0;
-    uint64_t child_usp_end    = child_usp_start - (parent_usp_start - parent_usp_end);
-    memcpy((char*)child_usp_end, (char*)parent_usp_end, (parent_usp_start - parent_usp_end + 1));
     /* Copy trap frame to child kernel stack*/
-    uint64_t parent_ksp_start = (uint64_t)frame;
-    uint64_t child_ksp_start  = child->reg.sp;
-    memcpy((char*)child_ksp_start, (char*)parent_ksp_start, 272);
+    memcpy((char*)child->reg.sp, (char*)frame, 272);
     /* Modify trap frame */
-    tframe_t *child_frame = (tframe_t*)child_ksp_start;
+    tframe_t *child_frame = (tframe_t*)child->reg.sp;
     child_frame->x[0] = 0;
-    child_frame->sp_el0 = child_usp_end;
 }
 
 /* System call - uart_write */

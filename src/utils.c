@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "mm.h"
 
 /* Delay time = time * 3~4 cycles */
 void delay(uint64_t time) {
@@ -70,6 +71,22 @@ unsigned int atoi(const char *s) {
         num += ctoi(s[pos - 1]);
     }
     return num;
+}
+
+uint8_t* htoa(uint64_t num) {
+    static uint16_t count = 0;
+    if (!num) {
+        uint8_t *s = kmalloc(16+1);
+        return s;
+    }
+    uint8_t *s = htoa(num / 16);
+    uint8_t n = num % 16;
+    if (n < 10) {
+        s[count++] = '0' + n;
+    } else {
+        s[count++] = 'A' + (n - 10);
+    }
+    return s;
 }
 
 unsigned long pow(unsigned int base,

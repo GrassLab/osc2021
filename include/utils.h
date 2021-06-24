@@ -12,6 +12,7 @@ void strcat(char*, const char*);
 int strchr(const char*, char);
 int ctoi(char);
 unsigned int atoi(const char*);
+uint8_t* htoa(uint64_t);
 unsigned long pow(unsigned int,
                   unsigned int);
 void memset(void*, size_t, char);

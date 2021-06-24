@@ -1,8 +1,9 @@
 #include "cpio.h"
 #include "utils.h"
+#include "mmu.h"
 
-#define CPIO_LOAD_ADDR 0x20000000
-//#define CPIO_LOAD_ADDR 0x8000000 /* For Qemu */
+#define CPIO_LOAD_ADDR (KERNEL_MAPPING+0x20000000)
+//#define CPIO_LOAD_ADDR (KERNEL_MAPPING+0x8000000) /* For Qemu */
 
 const unsigned int header_size = 110;
 
