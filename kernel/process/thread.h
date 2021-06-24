@@ -2,7 +2,7 @@
 #define THREAD_H
 
 #include "fd.h"
-#include "../lib/type.h"
+#include "../../lib/type.h"
 
 #define THREAD_SIZE 4096
 

@@ -1,7 +1,7 @@
 #include "tmpfs.h"
-#include "allocator.h"
-#include "../lib/string.h"
-#include "../lib/uart.h"
+#include "../mm/allocator.h"
+#include "../../lib/string.h"
+#include "../../lib/uart.h"
 
 struct filesystem tmpfs = {
     .name = "tmpfs",
@@ -33,7 +33,6 @@ int tmpfs_lookup(struct vnode * dir_node, struct vnode ** target, const char * c
 {
     struct vnode * tmp_node = dir_node;
 
-    int count = 0;
     while (tmp_node->internel != NULL && ((struct tmpfs_internel *)(tmp_node->internel))->next_sibling != NULL)
     {
         if (!strcmp(component_name, ((struct tmpfs_internel *)(tmp_node->internel))->name))
@@ -59,7 +58,7 @@ int tmpfs_create(struct vnode * dir_node, struct vnode ** target, const char * c
     struct vnode * tmp_node = NULL;
 
     tmp_node = tmpfs_create_vnode(dir_node, component_name);
-    append_child(dir_node, tmp_node);
+    tmpfs_append_child(dir_node, tmp_node);
     
     *target = tmp_node;
 
@@ -129,7 +128,7 @@ struct tmpfs_internel * tmpfs_create_internel(const char * name)
     return internel;
 }
 
-void append_child(struct vnode * parent, struct vnode * child)
+void tmpfs_append_child(struct vnode * parent, struct vnode * child)
 {
     struct tmpfs_internel * internel = (struct tmpfs_internel *)(parent->internel);
 

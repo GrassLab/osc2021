@@ -23,7 +23,7 @@
 #
 #
 
-SRCS = $(wildcard *.c) $(wildcard ../lib/*.c)
+SRCS = $(wildcard *.c) $(wildcard exception/*.c) $(wildcard fs/*.c) $(wildcard mm/*.c) $(wildcard process/*.c) $(wildcard ../lib/*.c)
 OBJS = $(SRCS:.c=.o)
 CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
 CC = aarch64-linux-gnu-gcc

@@ -1,7 +1,7 @@
 #ifndef FD_H
 #define FD_H
 
-#include "vfs.h"
+#include "../fs/vfs.h"
 
 #define FD_TABLE_SIZE 100
 

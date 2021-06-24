@@ -1,7 +1,7 @@
 #ifndef VFS_H
 #define VFS_H
 
-#include "../lib/type.h"
+#include "../../lib/type.h"
 
 struct vnode {
     struct mount * mount;

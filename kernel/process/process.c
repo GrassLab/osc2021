@@ -1,10 +1,10 @@
-#include "../lib/uart.h"
-#include "../lib/string.h"
 #include "process.h"
-#include "reader.h"
 #include "thread.h"
-#include "vfs.h"
 #include "fd.h"
+#include "../../lib/uart.h"
+#include "../../lib/string.h"
+#include "../mm/cpio.h"
+#include "../fs/vfs.h"
 
 int do_getpid()
 {
@@ -50,6 +50,7 @@ int do_open(const char * path_name, int flags)
     struct Thread * t = current_thread();
 
     int fd = insert_fd(t->fd_table, f);
+    
     return fd;
 }
 
@@ -67,11 +68,9 @@ int do_close(int fd)
 int do_write(int fd, const void * buf, size_t len)
 {
     struct Thread * t = current_thread();
-
     struct File * f = t->fd_table[fd].f;
 
     int ret = vfs_write(f, buf, len);
-
     return ret;
 }
 

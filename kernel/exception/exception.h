@@ -1,7 +1,7 @@
 #ifndef EXCEPTION_H
 #define EXCEPTION_H
 
-#include "thread.h"
+#include "../process/thread.h"
 
 void log_state();
 

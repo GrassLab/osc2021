@@ -1,7 +1,7 @@
 #ifndef PROCESS_H
 #define PROCESS_H
 
-#include "../lib/type.h"
+#include "../../lib/type.h"
 
 #define PROCESS_SIZE 4096
 
