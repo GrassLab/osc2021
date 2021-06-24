@@ -34,6 +34,12 @@ void syn_handler(unsigned long el1_esr, void *el1_elr, void *el0_sp,
         case SYS_WRITE:
           el1_sp->x0 = sys_write(el1_sp->x0, (char *)(el1_sp->x1), el1_sp->x2);
           break;
+        case SYS_OPEN:
+          el1_sp->x0 = vfs_open((char *)(el1_sp->x0), el1_sp->x1);
+          break;
+        case SYS_CLOSE:
+          el1_sp->x0 = vfs_close(el1_sp->x0);
+          break;
         case SYS_GETPID:
           el1_sp->x0 = get_pid();
           break;
@@ -45,6 +51,32 @@ void syn_handler(unsigned long el1_esr, void *el1_elr, void *el0_sp,
           break;
         case SYS_EXIT:
           die();
+          break;
+        case SYS_MKDIR:
+          el1_sp->x0 = vfs_mkdir((char *)el1_sp->x0);
+          break;
+        case SYS_RMDIR:
+          el1_sp->x0 = vfs_rmdir((char *)el1_sp->x0);
+          break;
+        case SYS_CREATE:
+          el1_sp->x0 = vfs_create((char *)el1_sp->x0);
+          break;
+        case SYS_REMOVE:
+          el1_sp->x0 = vfs_remove((char *)el1_sp->x0);
+          break;
+        case SYS_CHDIR:
+          el1_sp->x0 = vfs_chdir((char *)el1_sp->x0);
+          break;
+        case SYS_MOUNT:
+          el1_sp->x0 = vfs_mount((char *)el1_sp->x0, (char *)el1_sp->x1,
+                                 (char *)el1_sp->x2);
+          break;
+        case SYS_UMOUNT:
+          el1_sp->x0 = vfs_umount((char *)el1_sp->x0);
+          break;
+        case SYS_GETDENT:
+          el1_sp->x0 =
+              vfs_getdent(el1_sp->x0, el1_sp->x1, (dirent *)el1_sp->x2);
           break;
         default:
           break;

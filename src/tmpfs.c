@@ -36,9 +36,6 @@ tmpfs_node *new_tmpfs_node(const char *name, unsigned long mode) {
 }
 
 int tmpfs_mount(file_system_t *fs, dentry *mp, const char *dev) {
-  log("mnt ", LOG_PRINT);
-  log(dev, LOG_PRINT);
-  log("\n", LOG_PRINT);
   if (strcmp(dev, "tmpfs") != 0) {
     return INVALID_DEV;
   }
@@ -120,13 +117,13 @@ void write_node(tmpfs_node *node, unsigned long offset, const char *buf,
     *buf_itr++ = *buf++;
     write_pos++;
   }
-  node->size = write_pos;
+  if (write_pos > node->size) {
+    node->size = write_pos;
+  }
 }
 
 unsigned long read_node(tmpfs_node *node, unsigned long offset, char *buf,
-                        unsigned long len) {                     
-  // log("?", LOG_PRINT);
-  asm volatile ("":::"memory");   
+                        unsigned long len) {
   if (offset >= node->size) {
     return 0;
   }
@@ -147,12 +144,29 @@ unsigned long read_node(tmpfs_node *node, unsigned long offset, char *buf,
     }
     *buf++ = *buf_itr++;
     read_pos++;
-    log("+", LOG_PRINT);
   }
   return read_pos - offset;
 }
 
-void shrink_node(tmpfs_node *node) {}
+void shrink_node(tmpfs_node *node) {
+  unsigned long req_pg_cnt = (node->size + PAGE_SIZE - 1) / PAGE_SIZE;
+  if (node->pb_cnt > req_pg_cnt) {
+    page_block **pb_itr = &(node->pb_head);
+    for (unsigned long i = 0; i < req_pg_cnt; i++) {
+      pb_itr = &((*pb_itr)->next);
+    }
+    page_block *pb = *pb_itr;
+    *pb_itr = NULL;
+    while (pb != NULL) {
+      page_block *pb_next = pb->next;
+      void *pb_page = pb->page;
+      kfree(pb_page);
+      kfree(pb);
+      pb = pb_next;
+    }
+    node->pb_cnt = req_pg_cnt;
+  }
+}
 
 void new_entry(tmpfs_node *node, const char *name, unsigned long mode) {
   tmpfs_node *tn = new_tmpfs_node(name, mode);
@@ -171,18 +185,29 @@ int tmpfs_create(dentry *dent, const char *name) {
   new_entry((tmpfs_node *)(dent->d_inode->i_data), name, TYPE_FILE);
   dent->d_inode->i_size = ((tmpfs_node *)(dent->d_inode->i_data))->size;
   enable_interrupt();
-  log("crt\n", LOG_PRINT);
   return 0;
 }
 
-// void del_entry(tmpfs) {
-
-// }
+int del_entry(tmpfs_node *p_node, tmpfs_node **c_node) {
+  disable_interrupt();
+  kfree((*c_node)->name);
+  kfree(*c_node);
+  read_node(p_node, p_node->size - sizeof(tmpfs_node *), (char *)c_node,
+            sizeof(tmpfs_node *));
+  p_node->size -= sizeof(tmpfs_node *);
+  shrink_node(p_node);
+  enable_interrupt();
+  return 0;
+}
 
 int tmpfs_remove(dentry *dent, const char *name) {
   if (dent->d_inode->i_mode != TYPE_DIR) {
     return INVALID_PATH;
   }
+  if (strcmp(".", name) == 0 || strcmp("..", name) == 0) {
+    return INVALID_PATH;
+  }
+
   disable_interrupt();
   tmpfs_node **node_pos =
       tmpfs_find((tmpfs_node *)(dent->d_inode->i_data), name);
@@ -190,7 +215,17 @@ int tmpfs_remove(dentry *dent, const char *name) {
     enable_interrupt();
     return TARGET_NO_EXIST;
   }
-  return 0;
+  if ((*node_pos)->mode != TYPE_FILE) {
+    return INVALID_PATH;
+  }
+  if ((*node_pos)->size != 0) {
+    (*node_pos)->size = 0;
+    shrink_node(*node_pos);
+  }
+  int stat = del_entry(dent->d_inode->i_data, node_pos);
+  dent->d_inode->i_size = ((tmpfs_node *)(dent->d_inode->i_data))->size;
+  enable_interrupt();
+  return stat;
 }
 
 int tmpfs_mkdir(dentry *dent, const char *name) {
@@ -208,10 +243,34 @@ int tmpfs_mkdir(dentry *dent, const char *name) {
   return 0;
 }
 
-int tmpfs_rmdir(dentry *dent, const char *name) { return 0; }
+int tmpfs_rmdir(dentry *dent, const char *name) {
+  if (dent->d_inode->i_mode != TYPE_DIR) {
+    return INVALID_PATH;
+  }
+  if (strcmp(".", name) == 0 || strcmp("..", name) == 0) {
+    return INVALID_PATH;
+  }
+
+  disable_interrupt();
+  tmpfs_node **node_pos =
+      tmpfs_find((tmpfs_node *)(dent->d_inode->i_data), name);
+  if (node_pos == NULL) {
+    enable_interrupt();
+    return TARGET_NO_EXIST;
+  }
+  if ((*node_pos)->mode != TYPE_DIR) {
+    return INVALID_PATH;
+  }
+  if ((*node_pos)->size != 0) {
+    return TARGET_INUSE;
+  }
+  int stat = del_entry(dent->d_inode->i_data, node_pos);
+  dent->d_inode->i_size = ((tmpfs_node *)(dent->d_inode->i_data))->size;
+  enable_interrupt();
+  return stat;
+}
 
 int tmpfs_open(dentry *dent, file **f, unsigned long flag) {
-  log_hex("opn ", dent->ref_cnt, LOG_PRINT);
   file *new_f = kmalloc(sizeof(file));
   new_f->path = dent;
   dent->ref_cnt++;
@@ -220,7 +279,6 @@ int tmpfs_open(dentry *dent, file **f, unsigned long flag) {
   new_f->f_mode = flag;
   new_f->f_pos = 0;
   *f = new_f;
-  log_hex(dent->name, dent->d_inode->i_size, LOG_PRINT);
   return 0;
 }
 
@@ -260,7 +318,6 @@ int tmpfs_opendent(dentry *dent, dentry **target, const char *name) {
   new_dent->ref_cnt = 1;
   *target = new_dent;
   enable_interrupt();
-  log("opd\n", LOG_PRINT);
   return 0;
 }
 
@@ -276,6 +333,16 @@ int tmpfs_closedent(dentry *dent) {
 }
 
 int tmpfs_getdent(dentry *dent, unsigned long offset, struct dirent *d) {
+  tmpfs_node *node;
+  unsigned long rl =
+      read_node(dent->d_inode->i_data, offset * sizeof(tmpfs_node *),
+                (char *)&node, sizeof(tmpfs_node *));
+  if (rl != sizeof(tmpfs_node *)) {
+    return -1;
+  }
+  strcpy_n(d->name, node->name, 512);
+  d->size = node->size;
+  d->mode = node->mode;
   return 0;
 }
 
@@ -285,12 +352,32 @@ long tmpfs_read(struct file *f, char *buf, unsigned long len) {
   return rl;
 }
 long tmpfs_write(struct file *f, const char *buf, unsigned long len) {
+  disable_interrupt();
   write_node(f->f_inode->i_data, f->f_pos, buf, len);
+  f->f_inode->i_size = ((tmpfs_node *)(f->f_inode->i_data))->size;
+  enable_interrupt();
   f->f_pos += len;
   return len;
 }
 
-int tmpfs_umount(dentry *dent) { return 0; }
+void rec_del_node(tmpfs_node *r_node) {}
+
+int tmpfs_umount(dentry *dent) {
+  if (dent->ref_cnt != 1) {
+    return TARGET_INUSE;
+  }
+
+  tmpfs_node *r_node = dent->d_inode->i_data;
+  dentry *mp = dent->d_inode->i_sb->mnt_p;
+  pop_cdl_list(&(dent->d_inode->i_sb->sb_list));
+  kfree(dent->d_inode->i_sb);
+  kfree(dent->d_inode);
+  kfree(dent);
+  mp->mnt = NULL;
+  vfs_closedent(mp);
+  rec_del_node(r_node);
+  return 0;
+}
 
 void setup_tmpfs() {
   tmpfs_t = kmalloc(sizeof(file_system_t));

@@ -69,9 +69,23 @@ int vfs_remove(const char *path) {
     if (target->d_inode->i_mode != TYPE_DIR) {
       stat = INVALID_PATH;
     } else {
-      stat = (target->d_inode->i_op->remove == NULL)
-                 ? METHOD_NOT_IMP
-                 : (*(target->d_inode->i_op->remove))(target, c_path);
+      cdl_list *c_itr = target->child.bk;
+      int is_open = 0;
+      while (c_itr != &(target->child)) {
+        dentry *c_dent = get_struct_head(dentry, sibli, c_itr);
+        if (strcmp(c_dent->name, c_path) == 0) {
+          is_open = 1;
+          break;
+        }
+        c_itr = c_itr->bk;
+      }
+      if (is_open) {
+        stat = TARGET_INUSE;
+      } else {
+        stat = (target->d_inode->i_op->remove == NULL)
+                   ? METHOD_NOT_IMP
+                   : (*(target->d_inode->i_op->remove))(target, c_path);
+      }
     }
     vfs_closedent(target);
   }
@@ -111,9 +125,23 @@ int vfs_rmdir(const char *path) {
     if (target->d_inode->i_mode != TYPE_DIR) {
       stat = INVALID_PATH;
     } else {
-      stat = (target->d_inode->i_op->rmdir == NULL)
-                 ? METHOD_NOT_IMP
-                 : (*(target->d_inode->i_op->rmdir))(target, c_path);
+      cdl_list *c_itr = target->child.bk;
+      int is_open = 0;
+      while (c_itr != &(target->child)) {
+        dentry *c_dent = get_struct_head(dentry, sibli, c_itr);
+        if (strcmp(c_dent->name, c_path) == 0) {
+          is_open = 1;
+          break;
+        }
+        c_itr = c_itr->bk;
+      }
+      if (is_open) {
+        stat = TARGET_INUSE;
+      } else {
+        stat = (target->d_inode->i_op->rmdir == NULL)
+                   ? METHOD_NOT_IMP
+                   : (*(target->d_inode->i_op->rmdir))(target, c_path);
+      }
     }
     vfs_closedent(target);
   }
@@ -136,12 +164,8 @@ unsigned long vfs_open(const char *path, unsigned long flag) {
   }
 
   if (stat >= 0) {
-    log_hex("von", target->ref_cnt, LOG_PRINT);
     file *new_file;
-    barrier();
     stat = (*(target->d_inode->i_op->open))(target, &new_file, flag);
-    barrier();
-    log_hex("von", target->ref_cnt, LOG_PRINT);
     vfs_closedent(target);
     if (stat >= 0) {
       task_struct *ts = get_taskstruct();
@@ -151,6 +175,8 @@ unsigned long vfs_open(const char *path, unsigned long flag) {
       new_fd_num = new_fd->fd_num;
       push_cdl_list(&(ts->fd_list), &(new_fd->fd_list));
     }
+  } else {
+    log("open fail", LOG_DEBUG);
   }
   return new_fd_num;
 }
@@ -175,7 +201,6 @@ int vfs_close(unsigned long fd_num) {
   pop_cdl_list(&(fd->fd_list));
   file *f = fd->f;
   kfree(fd);
-  log("cl\n", LOG_PRINT);
   return (*(f->f_inode->i_op->close))(f);
 }
 
@@ -262,7 +287,6 @@ int vfs_opendent(struct dentry **target, const char *path) {
           t_itr->ref_cnt--;
           enable_interrupt();
           t_itr = child_dent;
-          log_hex(t_itr->name, t_itr->ref_cnt, LOG_PRINT);
         }
       }
     }
@@ -277,18 +301,27 @@ int vfs_closedent(struct dentry *target) {
   int stat = 0;
   disable_interrupt();
   target->ref_cnt--;
-  log_hex(target->name, target->ref_cnt, LOG_PRINT);
   if (target->ref_cnt == 0) {
-    log("cls\n", LOG_ERROR);
     stat = (*(target->d_inode->i_op->closedent))(target);
   }
   enable_interrupt();
   return stat;
 }
 
-int vfs_getdent(struct dentry *target, unsigned long count,
+int vfs_getdent(unsigned long fd_num, unsigned long count,
                 struct dirent *dent) {
-  return 0;
+  file_discriptor *fd = fd_num_to_fd(fd_num);
+  if (fd == NULL) {
+    return INVALID_FD;
+  };
+  struct dentry *target = fd->f->path;
+  if (target->d_inode->i_mode != TYPE_DIR) {
+    return INVALID_PATH;
+  }
+
+  return (target->d_inode->i_op->getdent == NULL)
+             ? METHOD_NOT_IMP
+             : (*(target->d_inode->i_op->getdent))(target, count, dent);
 }
 
 long vfs_read(unsigned long fd_num, char *buf, unsigned long size) {
@@ -370,6 +403,7 @@ int vfs_mount(const char *dev, const char *mp, const char *fs) {
   stat = (*(mfs->mount))(mfs, mdent, dev);
   enable_interrupt();
   vfs_closedent(mdent);
+  mdent = dentry_btm_layer(mdent);
   return stat;
 }
 
@@ -401,9 +435,6 @@ void register_fs(file_system_t *fs) {
   disable_interrupt();
   push_cdl_list(&(fs_list), &(fs->fs_list));
   enable_interrupt();
-  log("reg ", LOG_PRINT);
-  log(fs->name, LOG_PRINT);
-  log("\n", LOG_PRINT);
 }
 
 int vfs_umount(const char *path) {
@@ -424,4 +455,12 @@ int vfs_umount(const char *path) {
     vfs_closedent(mdent);
   }
   return stat;
+}
+
+unsigned long get_filesize(unsigned long fd_num) {
+  file_discriptor *fd = fd_num_to_fd(fd_num);
+  if (fd == NULL) {
+    return 0;
+  }
+  return fd->f->f_inode->i_size;
 }

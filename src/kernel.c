@@ -3,10 +3,10 @@
 #include "gpio.h"
 #include "io.h"
 #include "mem.h"
-#include "tmpfs.h"
 #include "reset.h"
 #include "sched.h"
 #include "timer.h"
+#include "tmpfs.h"
 #include "util.h"
 #include "vfs.h"
 
@@ -19,15 +19,6 @@ void shell() {
     gets_n(cmd_buf, 1023);
     if (!strcmp(cmd_buf, "reboot")) {
       reset(5);
-    } else if (!strcmp_n(cmd_buf, "cat ", 4)) {
-      void *cpio_file = get_cpio_file(cmd_buf + 4);
-      if (cpio_file != NULL) {
-        unsigned long file_size = get_file_size(cpio_file);
-        void *file_data = get_file_data(cpio_file);
-        print_n((char *)file_data, file_size);
-      } else {
-        print("file not found\n");
-      }
     } else if (!strcmp_n(cmd_buf, "exec ", 5)) {
       if (clone() == 0) {
         exec(cmd_buf + 5);
@@ -69,28 +60,8 @@ void kernel() {
 
   setup_tmpfs();
   vfs_mount("tmpfs", "/", "tmpfs");
-  // vfs_create("fuck");
-  int fd = vfs_open("fuck", O_CREATE);
-  // log_hex("fd", fd, LOG_PRINT);
-  if(vfs_write(fd, "hello", 5) != 5) {
-    log("we", LOG_ERROR);
-  }
-  vfs_close(fd);
-  asm volatile ("":::"memory");
-  char b[6];
-  fd = vfs_open("fuck", O_CREATE);
-  log_hex("rc", ((file *)(get_taskstruct()->fd_list.bk))->path->ref_cnt, LOG_PRINT);
-  // log_hex("fd", fd, LOG_PRINT);
-  int a = vfs_read(fd, b, 5);
-  if(a != 5) {
-    log_hex("re", a, LOG_ERROR);
-  }
-  vfs_close(fd);
-  b[5] = 0;
-  if(strcmp(b, "hello") != 0){
-    log("fuck", LOG_ERROR);
-  }
 
+  thread_create(&pop_cpio);
   thread_create(&shell);
   idle();
 }

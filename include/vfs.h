@@ -53,7 +53,9 @@ typedef struct file {
 } file;
 
 typedef struct dirent {
-  char name[16];
+  char name[512];
+  unsigned long size;
+  unsigned long mode;
 } dirent;
 
 // open* and close* is required
@@ -92,7 +94,7 @@ unsigned long vfs_open(const char *path, unsigned long flag);
 int vfs_close(unsigned long fd_num);
 int vfs_opendent(struct dentry **target, const char *path);
 int vfs_closedent(struct dentry *target);
-int vfs_getdent(struct dentry *target, unsigned long count,
+int vfs_getdent(unsigned long fd_num, unsigned long count,
                 struct dirent *dent);
 long vfs_read(unsigned long fd_num, char *buf, unsigned long size);
 long vfs_write(unsigned long fd_num, const char *buf, unsigned long size);
@@ -110,6 +112,7 @@ typedef struct file_discriptor {
 #define INVALID_DEV -5
 #define TARGET_EXIST -6
 #define TARGET_NO_EXIST -7
+#define TARGET_INUSE -8
 
 #define TYPE_DIR 1
 #define TYPE_FILE 2
@@ -127,6 +130,6 @@ void register_fs(file_system_t *fs);
 
 #define O_CREATE 1 << 0
 
-#define barrier() asm volatile ("":::"memory")
+unsigned long get_filesize(unsigned long fd_num);
 
 #endif

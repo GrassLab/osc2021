@@ -189,7 +189,7 @@ unsigned long clone() {
   new_ts->parent = ts;
   new_ts->exc_lvl = ts->exc_lvl;
   new_ts->sp = new_sp;
-  if(vfs_opendent(&(new_ts->pwd), "") < 0 || new_ts->pwd != ts->pwd) {
+  if(vfs_opendent(&(new_ts->pwd), "") < 0) {
     log("error clone pwd", LOG_ERROR);
   }
   init_cdl_list(&(new_ts->fd_list));
@@ -244,7 +244,7 @@ unsigned long wait() {
   }
   task_struct *ts = pop_cdl_list(reap_list->fd);
   unsigned long pid = ts->pid;
-  log_hex("rip", pid, LOG_PRINT);
+  log_hex("rip", pid, LOG_DEBUG);
   kfree((void *)ts);
   return pid;
 }
@@ -256,12 +256,13 @@ typedef struct arg_stack {
 } arg_stack;
 
 mem_seg *get_usr_prog(const char *fn) {
-  void *cpio_file = get_cpio_file(fn);
-  if (cpio_file != NULL) {
-    unsigned long file_size = get_file_size(cpio_file);
-    void *file_data = get_file_data(cpio_file);
+  int fd = vfs_open(fn, 0);
+  // void *cpio_file = get_cpio_file(fn);
+  if (fd > 0) {
+    unsigned long file_size = get_filesize(fd);
     void *usr_prog = kmalloc(pad(file_size, 4096));
-    memcpy(usr_prog, file_data, file_size);
+    vfs_read(fd, usr_prog, file_size);
+    vfs_close(fd);
     mem_seg *prog_seg = kmalloc(sizeof(mem_seg));
     prog_seg->base = usr_prog;
     prog_seg->ref_cnt = 1;
