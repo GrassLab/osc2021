@@ -360,7 +360,25 @@ long tmpfs_write(struct file *f, const char *buf, unsigned long len) {
   return len;
 }
 
-void rec_del_node(tmpfs_node *r_node) {}
+void rec_del_node(tmpfs_node *r_node) {
+  if (r_node->mode == TYPE_DIR) {
+    page_block *pb_itr = r_node->pb_head;
+    unsigned long entry_size = r_node->size / sizeof(tmpfs_node *);
+    tmpfs_node **node_itr = pb_itr->page;
+    for (unsigned long i = 0; i < entry_size; i++) {
+      if (i != 0 && i % (PAGE_SIZE / sizeof(tmpfs_node *)) == 0) {
+        pb_itr = pb_itr->next;
+        node_itr = pb_itr->page;
+      }
+      rec_del_node(*node_itr);
+      node_itr++;
+    }
+  } 
+  r_node->size = 0;
+  shrink_node(r_node);
+  kfree(r_node->name);
+  kfree(r_node);
+}
 
 int tmpfs_umount(dentry *dent) {
   if (dent->ref_cnt != 1) {
