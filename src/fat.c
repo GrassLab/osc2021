@@ -59,6 +59,8 @@ typedef struct fat32_dir_entry {
 typedef struct {
     uint32_t fat_sec;
     uint32_t head_sec;
+    uint32_t dir_sec;
+    uint16_t file_num;
     uint32_t clus_pos;
     uint32_t size;
     uint8_t  sec_per_clu;
@@ -85,6 +87,14 @@ static uint32_t fat32_get_next_clus(uint32_t current_clus, uint32_t fat_sec,
     } else {
         return 0;
     }
+}
+
+static void fat32_update_file_size(fat32_file_t *file) {
+    char buf[BLOCK_SIZE];
+    readblock(file->dir_sec, buf);
+    uint32_t *size = &buf[file->file_num * 32 + 28];
+    *size = file->size;
+    writeblock(file->dir_sec, buf);
 }
 
 static void fat32_umount_operation(vnode_t *file) {
@@ -130,6 +140,8 @@ static void fat32_create_dir(vnode_t *dir_node, const char *dir_name) {
 
 static int fat32_read(struct file *file, void *buf, size_t len) {
     fat32_file_t *f = (fat32_file_t*)file->vnode->internal;
+    if (file->f_pos < 0)
+        return -1;
     uint8_t sec_count = (file->f_pos / f->byte_per_sec) % f->sec_per_clu;
     uint32_t start_sec = fat32_clus_to_sec(f->head_sec, f->clus_pos,
                                            f->sec_per_clu, sec_count);
@@ -161,7 +173,7 @@ static int fat32_read(struct file *file, void *buf, size_t len) {
 
 static int fat32_write(struct file *file, const void *buf, size_t len) {
     fat32_file_t *f = (fat32_file_t*)file->vnode->internal;
-    if (!fat32_get_next_clus(f->clus_pos, f->fat_sec, f->byte_per_sec))
+    if (file->f_pos < 0)
         return -1;
     uint8_t sec_count = (file->f_pos / f->byte_per_sec) % f->sec_per_clu;
     uint32_t start_sec = fat32_clus_to_sec(f->head_sec, f->clus_pos,
@@ -169,6 +181,7 @@ static int fat32_write(struct file *file, const void *buf, size_t len) {
     uint16_t pos = file->f_pos % f->byte_per_sec;
     char sd_buf[BLOCK_SIZE];
     size_t count;
+    bool_t no_next_clus = false;
     readblock(start_sec, sd_buf);
     for (count = 0; count < len; count++) {
         sd_buf[pos] = *((char*)buf + count);
@@ -179,6 +192,7 @@ static int fat32_write(struct file *file, const void *buf, size_t len) {
                                                          f->byte_per_sec);
                 if (!next_clus) {
                     count++;
+                    no_next_clus = true;
                     break;
                 } else {
                     f->clus_pos = next_clus;
@@ -194,9 +208,15 @@ static int fat32_write(struct file *file, const void *buf, size_t len) {
         }
     }
     writeblock(start_sec, sd_buf);
-    if ((file->f_pos + count) > f->size)
+    if ((file->f_pos + count) > f->size) {
         f->size += count - (f->size - file->f_pos);
-    file->f_pos += count;
+        fat32_update_file_size(f);
+    }
+    if (no_next_clus == false) {
+        file->f_pos += count;
+    } else {
+        file->f_pos = -1;
+    }
     return count;
 }
 
@@ -235,6 +255,8 @@ int fat_set_mount(mount_t *mount, const char *device) {
                 fat32_file_t *f = kmalloc(sizeof(fat32_file_t));
                 f->fat_sec = fat_sec;
                 f->head_sec = head_sec;
+                f->dir_sec = dir_sec;
+                f->file_num = file_count;
                 f->clus_pos = dir.p2.l_clu_num + dir.p2.h_clu_num * 0x10000;
                 f->size = dir.p2.size;
                 f->sec_per_clu = bs.p1.bpb_sec_per_clu;
