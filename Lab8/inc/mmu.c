@@ -130,7 +130,7 @@ void initMMU(){//be careful when using stack memory!
 	asm volatile("str %0, [%1]\n"::"r"(0x1000|BOOT_PGD_ATTR),"r"(0));
 
 	//L1 table init
-	asm volatile("str %0, [%1]\n"::"r"(0x2000|BOOT_PUD_ATTR),"r"(0x1000));//finer granularity for different memory type
+	asm volatile("str %0, [%1]\n"::"r"(0x2000|BOOT_PGD_ATTR),"r"(0x1000));//finer granularity for different memory type
 	asm volatile("str %0, [%1]\n"::"r"(0x40000000|BOOT_PUD_ATTR),"r"(0x1000+8));
 
 	//L2 table for 0~1G
