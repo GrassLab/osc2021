@@ -9,9 +9,8 @@ void x0Set(unsigned long v){
 	task[16]=v;
 }
 
-void sys_getpid() {
-    x0Set(current->id);
-    return;
+int sys_getpid() {
+    return current->id;
 }
 
 void sys_uart_read(char *buf, int size) {
@@ -19,7 +18,7 @@ void sys_uart_read(char *buf, int size) {
 }
 
 void sys_uart_write(char *buf, int size) {
-    uart_puts(buf);
+    uart_printf(buf);
 }
 
 void sys_exec(char *name, char **argv) {
@@ -30,13 +29,12 @@ void sys_exit() {
     _exit();
 }
 
-void sys_fork() {
-    x0Set(create_thread(0, 0, 0, 0));
-    return;
+int sys_fork() {
+    return create_thread(0, 0, 0);
 }
 
 int sys_open(const char *pathname, int flags) {
-    thread* task;
+    struct task_struct* task;
 	asm volatile("mrs %0, tpidr_el1	\n":"=r"(task):);
     int ret = -1;
     for(int i = 0; i < FD_MAX_SIZE; i++) {
@@ -51,7 +49,7 @@ int sys_open(const char *pathname, int flags) {
 }
 
 int sys_close(int fd) {
-    thread* task;
+    struct task_struct* task;
 	asm volatile("mrs %0, tpidr_el1	\n":"=r"(task):);
     if(task->fd_table[fd]) {
         vfs_close(task->fd_table[fd]);
@@ -61,7 +59,7 @@ int sys_close(int fd) {
 }
 
 int sys_write(int fd, const void *buf, int count) {
-    thread* task;
+    struct task_struct* task;
 	asm volatile("mrs %0, tpidr_el1	\n":"=r"(task):);
     if(task->fd_table[fd]) {
         x0Set(vfs_write(task->fd_table[fd], buf, count));
@@ -70,7 +68,7 @@ int sys_write(int fd, const void *buf, int count) {
 }
 
 void sys_read(int fd, void *buf, int count) {
-    thread* task;
+    struct task_struct* task;
 	asm volatile("mrs %0, tpidr_el1	\n":"=r"(task):);
     if(task->fd_table[fd]) {
         x0Set(vfs_read(task->fd_table[fd], buf, count));

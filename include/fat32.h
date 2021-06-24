@@ -1,6 +1,8 @@
 #ifndef FAT32_H
 #define FAT32_H
 
+#ifndef __ASSEMBLER__
+
 #include "vfs.h"
 #define BLOCK_SIZE 512
 #define DENTRY_SIZE 32
@@ -61,4 +63,5 @@ int fat32_setup(filesystem* fs, mount* mnt);
 int fat32_lookup(vnode* dir_node, vnode** target, const char* component_name);
 
 
+#endif
 #endif

@@ -21,11 +21,7 @@ void lab3() {
 /*lab5: thread*/
 static void foo(){
     for(int i = 0; i < 10; ++i) {
-        uart_puts("Thread id: ");
-        uart_puts_int(current->id);
-        uart_puts(" ,i = ");
-        uart_puts_int(i);
-        uart_puts("\n");
+        uart_printf("Thread id: %d, i = %d\n", current->id, i);
         delay(1000000);
         scheduler();
     }
@@ -34,9 +30,9 @@ static void foo(){
 
 void lab5_required_1(int N) {
     for(int i = 0; i < N; ++i) { // N should > 2
-        create_thread(PF_KTHREAD, (unsigned long)&foo, 0, 0);
+        uart_printf("%d\n", create_thread(PF_KTHREAD, (unsigned long)&foo, 0));
     }
-    create_thread(PF_KTHREAD, (unsigned long)&idle, 0, 0);
+    create_thread(PF_KTHREAD, (unsigned long)&idle, 0);
     while(1) scheduler();
 }
 
@@ -47,10 +43,9 @@ void foo2() {
 }
 
 void lab5_required_2() {
-    create_thread(PF_KTHREAD, (unsigned long)&foo2, 0, 0);
-    idle();
-    //create_thread(PF_KTHREAD, (unsigned long)&idle, 0, 0);
-    //while(1) scheduler();
+    create_thread(PF_KTHREAD, (unsigned long)&foo2, 0);
+    create_thread(PF_KTHREAD, (unsigned long)&idle, 0);
+    while(1) scheduler();
 }
 
 void lab6_required_1() {
@@ -87,7 +82,7 @@ void foo3() {
 }
 
 void lab6_required_2() {
-    create_thread(PF_KTHREAD, (unsigned long)&foo3, 0, 0);
+    create_thread(PF_KTHREAD, (unsigned long)&foo3, 0);
     while(1) scheduler();
 }
 
@@ -96,10 +91,22 @@ void lab7() {
     if(vfs_write(a, "add hello", 10) == 0) {
         uart_puts("write Hello error!\n");
     }
+    
     int sz = 0;
     char buf[100];
     sz = vfs_read(a, buf, 20);
     buf[sz] = '\0';
     uart_puts(buf);
     uart_puts("\n");
+}
+
+void foo4() {
+    char *argv[] = {0};
+    _exec("vm.img", argv);
+    scheduler();
+}
+
+void lab8() {
+    create_thread(PF_KTHREAD, (unsigned long)&foo4, 0);
+    while(1) scheduler();
 }

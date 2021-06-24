@@ -1,0 +1,34 @@
+#ifndef _MMU_H
+#define _MMU_H
+
+#define MM_TYPE_PAGE_TABLE		0x3
+#define MM_TYPE_PAGE 			0x3
+#define MM_TYPE_BLOCK			0x1
+#define MM_ACCESS			    (0x1 << 10)
+#define MM_ACCESS_PERMISSION	(0x01 << 6) 
+#define MT_NORMAL_NC			0x1
+
+#define MMU_PTE_FLAGS		(MM_TYPE_PAGE | (MT_NORMAL_NC << 2) | MM_ACCESS | MM_ACCESS_PERMISSION)	
+
+#define PAGE_MASK			0xfffffffffffff000
+#define PAGE_SHIFT	 		12
+#define TABLE_SHIFT 		9
+
+#define SECTION_SHIFT		(PAGE_SHIFT + TABLE_SHIFT)
+
+#define PAGE_SIZE   		(1 << PAGE_SHIFT)	
+#define SECTION_SIZE		(1 << SECTION_SHIFT)	
+
+#define LOW_MEMORY          (2 * SECTION_SIZE)
+#define HIGH_MEMORY         DEVICE_BASE
+
+#define PAGING_MEMORY 		(HIGH_MEMORY - LOW_MEMORY)
+#define PAGING_PAGES 		(PAGING_MEMORY/PAGE_SIZE)
+
+#define PTRS_PER_TABLE		(1 << TABLE_SHIFT)
+
+#define PGD_SHIFT			PAGE_SHIFT + 3*TABLE_SHIFT
+#define PUD_SHIFT			PAGE_SHIFT + 2*TABLE_SHIFT
+#define PMD_SHIFT			PAGE_SHIFT + TABLE_SHIFT
+
+#endif

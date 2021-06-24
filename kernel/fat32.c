@@ -103,9 +103,10 @@ void update_file_cluster_index(unsigned int dir_cluster_index, const char* compo
 }
 
 void update_file_size(unsigned int dir_cluster_index, const char* component_name, unsigned int new_size) {
-    char buf[512];
+    unsigned char buf[512];
     read_data_region(dir_cluster_index, buf);
-    for(char* cur = buf; *cur != '\0'; cur += DENTRY_SIZE) {
+    
+    for(unsigned char* cur = buf; *cur != '\0'; cur += DENTRY_SIZE) {
         char fname[13];
         parse_fname(cur, cur+8, fname);
         if(!strcmp(fname, component_name)) {
@@ -125,21 +126,22 @@ int fat32_write(file* file, const void* buf, unsigned long len) {
     for(int l = 0; l < entry_level; l++) {
         cluster_index = get_fat_entry(cluster_index);
     }
-    
+    /*
     // if file size == 0, allocate a cluster for it
     if(content->size == 0) {
         cluster_index = get_new_cluster();
         update_file_cluster_index(content->parent_cluster_index, content->name, cluster_index);
         content->cluster_index = cluster_index;
     }
+    */
     
     int iter = f_pos % 512;
     unsigned char write_buf[512];
-    read_data_region(cluster_index, write_buf);
     int len_write = 0;
     
     for(; len_write < len; f_pos++, len_write++) {
         write_buf[iter] = ((unsigned char*)buf)[len_write];
+
         if(++iter % 512 == 0) {
             write_data_region(cluster_index, write_buf);
             iter = 0;
@@ -150,10 +152,9 @@ int fat32_write(file* file, const void* buf, unsigned long len) {
                 set_fat_entry(cluster_index, new_cluster_index);
                 cluster_index = new_cluster_index;
             }
-            // read_data_region(cluster_index, write_buf); I think there is no need to read?
+            //read_data_region(cluster_index, write_buf); //I think there is no need to read?
         }
     }
-    
     write_data_region(cluster_index, write_buf); // for the case that iter%512 != 0 in the last loop
 
     if(f_pos > content->size) {

@@ -1,6 +1,7 @@
 #include "uart.h"
 #include "utils.h"
 #include "allocator.h"
+#include "base.h"
 
 /* buckets store linked-lists for blocks with different size */
 static Node buckets[BUCKETS_NUM];
