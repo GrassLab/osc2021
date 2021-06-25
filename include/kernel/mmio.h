@@ -27,7 +27,7 @@ enum class MMIOREG : uint64_t {
 
 class MMIO {
 public:
-    static const uint32_t PM_PASSWORD     = 0x5A000000;
+    static constexpr uint32_t PM_PASSWORD     = 0x5A000000;
     static inline void set(MMIOREG addr, uint32_t val) {
         *reinterpret_cast<volatile uint32_t*>(addr) = val;
     }

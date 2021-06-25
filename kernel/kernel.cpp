@@ -2,10 +2,11 @@
 #include <kernel/string.h>
 
 extern "C" void reset();
+void sys_exit();
 
 extern"C"
 void kernel_exception(uint64_t x0, uint64_t x1, uint64_t x2, uint64_t x3, uint64_t x4, uint64_t x5, uint64_t x6, uint64_t x7) {
-    uint64_t esr_el1, spsr_el1, elr_el1, sctlr_el1, el, spsel;
+    uint64_t esr_el1, spsr_el1, elr_el1, sctlr_el1, el, spsel, far_el1;
     char buffer[30];
     asm(R"(
         mrs %x0, esr_el1
@@ -14,7 +15,12 @@ void kernel_exception(uint64_t x0, uint64_t x1, uint64_t x2, uint64_t x3, uint64
         mrs %x3, SCTLR_EL1
         mrs %x4, CurrentEL
         mrs %x5, SPSel
-    )":"=r"(esr_el1), "=r"(spsr_el1), "=r"(elr_el1), "=r"(sctlr_el1), "=r"(el), "=r"(spsel));
+        mrs %x6, FAR_EL1
+    )":"=r"(esr_el1), "=r"(spsr_el1), "=r"(elr_el1), "=r"(sctlr_el1), "=r"(el), "=r"(spsel), "=r"(far_el1));
+    if (((esr_el1 >> 26) & 0b111111) == 0b100100) {
+        io() << "fault address, FAR_EL1 = " << u64tohex(far_el1, buffer, sizeof(buffer)) << "\r\n";
+        sys_exit();
+    }
     
     io() << "ESR_EL1 = " << u64tohex(esr_el1, buffer, sizeof(buffer)) << "\r\n";
     io() << "SPSR_EL1 = " << u64tohex(spsr_el1, buffer, sizeof(buffer)) << "\r\n";
@@ -22,6 +28,7 @@ void kernel_exception(uint64_t x0, uint64_t x1, uint64_t x2, uint64_t x3, uint64
     io() << "SCTLR_EL1 = " << u64tohex(sctlr_el1, buffer, sizeof(buffer)) << "\r\n";
     io() << "CurrentEL = " << u64tohex(el >> 2, buffer, sizeof(buffer)) << "\r\n";
     io() << "SPSel = " << u64tohex(spsel, buffer, sizeof(buffer)) << "\r\n";
+    io() << "FAR_EL1 = " << u64tohex(far_el1, buffer, sizeof(buffer)) << "\r\n";
     io() << "x0 = " << u64tohex(x0, buffer, sizeof(buffer)) << "\r\n";
     io() << "x1 = " << u64tohex(x1, buffer, sizeof(buffer)) << "\r\n";
     io() << "x2 = " << u64tohex(x2, buffer, sizeof(buffer)) << "\r\n";
@@ -31,6 +38,7 @@ void kernel_exception(uint64_t x0, uint64_t x1, uint64_t x2, uint64_t x3, uint64
     io() << "x6 = " << u64tohex(x6, buffer, sizeof(buffer)) << "\r\n";
     io() << "x7 = " << u64tohex(x7, buffer, sizeof(buffer)) << "\r\n";
     io() << "Unknown exception\r\n";
+    while (true);
     reset();
 }
 

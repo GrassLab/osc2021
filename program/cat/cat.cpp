@@ -5,7 +5,7 @@ int main(int argc, char ** argv) {
         io() << "Argument not met\r\n";
         return -1;
     }
-    if (strlen(argv[1]) > 10) {
+    if (strlen(argv[1]) > 12) {
         io() << "Filename too long\r\n";
         return -1;
     }
