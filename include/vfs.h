@@ -26,7 +26,7 @@ typedef struct vnode {
 
 typedef struct file {
     uint16_t              use_num;
-    size_t                f_pos;
+    int64_t               f_pos;
     struct vnode          *vnode;
 } file_t;
 

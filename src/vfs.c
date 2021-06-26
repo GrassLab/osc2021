@@ -213,7 +213,7 @@ int vfs_mount(const char *device, const char *pathname,
     if (*(p_name + len - 1) == '/')
         *(p_name + len - 1) = (char)0;
     if (vfs_lookup(dir, &target, pathname, &dir_name, DIR) >= 0) {
-        if (!vfs_setup_mount(&target->dentry.mount, device, filesystem)) {
+        if (target->dentry.prev == NULL && !vfs_setup_mount(&target->dentry.mount, device, filesystem)) {
             vnode_t *root = target->dentry.mount->root;
             root->dentry.prev = target;
             root->dentry.parent = target->dentry.parent;

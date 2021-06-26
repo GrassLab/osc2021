@@ -1,10 +1,12 @@
+#include "mm.h"
 #include "list.h"
 #include "uart.h"
 #include "utils.h"
+#include "mmu.h"
+#include "type.h"
 
-#define MEM_START       0x10000000
-#define MEM_END         0x20000000
-#define PAGE_SIZE       4096
+#define MEM_START       (KERNEL_MAPPING+0x10000000)
+#define MEM_END         (KERNEL_MAPPING+0x20000000)
 #define MAX_ORDER       8
 #define MAX_POOL_NUM    30
 #define MAX_POOL_PAGE   10
@@ -328,7 +330,11 @@ void* kmalloc(unsigned int size){
 }
 
 void kfree(void *addr) {
-    unsigned int index = ((unsigned long)addr - MEM_START) / PAGE_SIZE;
+    if (addr < MEM_START || addr >= MEM_END) {
+        print("Invalid address 4\n");
+        return ;
+    }
+    unsigned int index = ((uint64_t)addr - (uint64_t)MEM_START) / PAGE_SIZE;
     for (int i = 0; i < MAX_POOL_NUM; i++) {
         if (pool[i].used) {
             for (int j = 0; j < pool[i].page_used; j++) {
@@ -342,9 +348,7 @@ void kfree(void *addr) {
             break;
         }
     }
-    if ((((unsigned int)addr - MEM_START) % PAGE_SIZE)!= 0 ||
-          (unsigned int)addr < MEM_START ||
-          (unsigned int)addr >= MEM_END) {
+    if ((((uint64_t)addr - (uint64_t)MEM_START) % PAGE_SIZE)!= 0) {
         print("Invalid address 3\n");
     } else {
         buddy_free(&page[index]);

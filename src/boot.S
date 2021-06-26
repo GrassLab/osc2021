@@ -15,6 +15,11 @@ _start:
 2:
 		bl     set_exception_vector_table
 		bl     core_timer_enable
+		bl		 set_mmu
+		ldr  	 x2, =_virtual_start
+		br		 x2
+
+_virtual_start:
 		ldr    x1, = _start
 		mov    sp, x1
 

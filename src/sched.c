@@ -37,15 +37,20 @@ static void reg_init(callee_reg_t *reg) {
     reg->fp = 0;
     reg->lr = 0;
     reg->sp = 0;
+    reg->ttbr0_el1 = 0;
 }
 
 static void thread_init(void) {
       for (int i = 0; i < MAX_THREAD_NUM; i++) {
           thread_pool[i].pid = i;
           thread_pool[i].kstack_addr = NULL;
-          for (int j = 0; j < MAX_USTACK_NUM; j++)
-              thread_pool[i].ustack_addr[j] = NULL;
-          thread_pool[i].ustack_num = 0;
+          thread_pool[i].ucode_addr = NULL;
+          thread_pool[i].ucode_size = 0;
+          thread_pool[i].ustack_addr = NULL;
+          thread_pool[i].pgd_addr = NULL;
+          thread_pool[i].pud_addr = NULL;
+          thread_pool[i].pmd_addr = NULL;
+          thread_pool[i].pte_addr = NULL;
           thread_pool[i].read_size = 0;
           thread_pool[i].wait_time = 0;
           for (int j = 0; j < MAX_FD_NUM; j++)

@@ -1,4 +1,5 @@
 #include "context.h"
+#include "irq.h"
 
 .global from_el2_to_el1
 from_el2_to_el1:
@@ -11,15 +12,16 @@ from_el2_to_el1:
 
 .global from_el1_to_el0
 from_el1_to_el0:
-    msr    elr_el1, x3
+    msr    elr_el1, x2
     msr    sp_el0, x2
-    mov    x4, 0x0
-    msr    spsr_el1, x4
+    msr    ttbr0_el1, x3
+    mov    x3, 0x0
+    msr    spsr_el1, x3
     eret
 
 .global set_exception_vector_table
 set_exception_vector_table:
-    adr    x0, exception_vector_table
+    ldr    x0, =exception_vector_table
     msr    vbar_el1, x0
     ret
 
@@ -35,7 +37,7 @@ exception_vector_table:
     b    invalid_exception
     .align 7
 
-    b    cur_el_svc_handler
+    b    cur_el_exception_handler
     .align 7
     b    interrupt_handler
     .align 7
@@ -44,7 +46,7 @@ exception_vector_table:
     b    invalid_exception
     .align 7
 
-    b    low_el_svc_handler
+    b    low_el_exception_handler
     .align 7
     b    interrupt_handler
     .align 7
@@ -70,8 +72,19 @@ leave_exception:
 
 // =====Exception=====
 
-low_el_svc_handler:
+low_el_exception_handler:
     kernel_entry
+    mrs  x0, esr_el1
+    mov  x0, x0, lsr #26
+    ldr  x1, =SVC_EXCEPTION
+    sub  x1, x1, x0
+    cbz  x1, low_el_svc_handler
+    ldr  x1, =LOW_EL_DA_EXCEPTION
+    sub  x1, x1, x0
+    cbz  x1, low_el_da_handler
+    b    leave_exception
+
+low_el_svc_handler:
     sub  x8, x8, 2
     cbz  x8, check_file
     mov  x0, sp
@@ -96,6 +109,10 @@ sys_exec:
     mov  x8, 0
     bl   do_exec
 
+low_el_da_handler:
+    mrs  x0, far_el1
+    b    page_fault_handler
+
 // =====Interrupt=====
 
 interrupt_handler:
@@ -105,7 +122,7 @@ interrupt_handler:
 
 // ===================
 
-cur_el_svc_handler:
+cur_el_exception_handler:
     kernel_entry
     b   leave_exception
 

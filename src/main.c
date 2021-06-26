@@ -8,9 +8,6 @@
 #include "vfs.h"
 #include "utils.h"
 
-#include "sdhost.h"
-#include "fat.h"
-
 void foo(void) {
 		thread_t *current = get_current();
 		for (int i = 0; i < 5; i++) {
@@ -26,14 +23,18 @@ void foo(void) {
 }
 
 void user_test(void) {
-		char *argv[] = {"argv_test", 0};
+		char *argv[5];
+		argv[0] = "argvtes";
+		argv[1] = "-o";
+		argv[2] = "arg2";
+		argv[3] = 0;
 		do_exec("argv_test.img", argv, -1);
 		thread_exit();
 }
 
 void user_test2(void) {
-		char *argv[] = {"fork_test", "-o", 0};
-		do_exec("loop.img", argv, -1);
+		char *argv[] = {"fork_test"};
+		do_exec("fork_test.img", argv, -1);
 		thread_exit();
 }
 
@@ -49,26 +50,11 @@ static void kernel_init(void) {
 int kernel_main(void) {
 		kernel_init();
 
-		/*mount_t m;
-		fat_set_mount(&m, "sd");
-		vnode_t *r = m.root;
-		list_head_t *pos = r->node.next;
-		while (pos != &r->node) {
-				vnode_t *t = list_entry(pos, vnode_t, node);
-				print(t->name);
-				print("\n");
-				pos = pos->next;
-		}*/
-
-		/* require 1 */
-		/*for (int i = 0; i < 5; i++)
-				thread_create(&foo);
-		idle();*/
-
-		/* require 2 */
 		thread_create(&user_test);
-		thread_create(&user_test2);
+		//thread_create(&user_test2);
+
 		idle();
+
 		//run_shell();
 		return 0;
 }

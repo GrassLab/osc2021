@@ -14,8 +14,8 @@ char write_buff[BUFF_SIZE];
 queue_t read_queue;
 queue_t write_queue;
 
-io_t *uart_in = &read_buff;
-io_t *uart_out = &write_buff;
+io_t *uart_in = &read_queue;
+io_t *uart_out = &write_queue;
 
 void uart_init() {
     register unsigned int r = *GPFSEL1;

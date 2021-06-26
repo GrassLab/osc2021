@@ -5,7 +5,6 @@
 #include "vfs.h"
 #include "type.h"
 
-#define MAX_USTACK_NUM 20
 #define MAX_FD_NUM     50
 
 typedef unsigned int pid_t;
@@ -32,14 +31,20 @@ typedef struct {
     uint64_t fp;
     uint64_t lr;
     uint64_t sp;
+    uint64_t ttbr0_el1;
 } callee_reg_t;
 
 typedef struct {
     callee_reg_t   reg;
     pid_t          pid;
     void           *kstack_addr;
-    void           *ustack_addr[MAX_USTACK_NUM];
-    uint16_t       ustack_num;
+    void           *ucode_addr;
+    uint32_t       ucode_size;
+    void           *ustack_addr;
+    void           *pgd_addr;
+    void           *pud_addr;
+    void           *pmd_addr;
+    void           *pte_addr;
     uint16_t       wait_time;
     size_t         read_size;
     file_t          *fd_table[MAX_FD_NUM];
