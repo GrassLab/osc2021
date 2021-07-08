@@ -3,7 +3,7 @@
 
 #include <base.h>
 
-#define CORE0_IRQ_SRC       ((volatile unsigned int*)0x40000060)
+#define CORE0_IRQ_SRC       ((volatile unsigned int*)(MMIO_BASE+0x40000060))
 // To identify IRQ interrupt source is from AUX
 // // GPU pending 1 register, see p.115 in BCM2835 ARM Peripherals docs
 #define IRQ_PENDING_1       ((volatile unsigned int*)(MMIO_BASE+0x0000B204))
@@ -12,7 +12,7 @@
 // See p.116 in BCM2835 ARM Peripherals docs
 #define ENABLE_IRQS_1       ((volatile unsigned int*)(MMIO_BASE+0x0000B210))
 // To Disable second level interrupt controller’s IRQs1(0x3f00b210)’s bit29. 
-#define DISABLE_IRQS_1		((volatile unsigned int*)(PBASE+0x0000B21C))
+#define DISABLE_IRQS_1		((volatile unsigned int*)(MMIO_BASE+0x0000B21C))
 // enable/disable/check pending miniUART interrupt bit 29
 // See p.113 ARM peripherals interrupts table in BCM2835 docs
 #define AUX_IRQ (1 << 29) 

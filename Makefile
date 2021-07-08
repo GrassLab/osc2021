@@ -2,7 +2,7 @@
 # https://github.com/s-matyukevich/raspberry-pi-os/blob/master/src/lesson01/Makefile
 ARMGNU ?= aarch64-linux-gnu
 
-COPS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude -ggdb  #-D__FS_DEBUG #-D__DEBUG #-D__DEBUG_MM #-D__DEBUG_MM_ALLOC #-D__DEBUG_MM_SCHED
+COPS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude #-ggdb  #-D__FS_DEBUG #-D__DEBUG #-D__DEBUG_MM #-D__DEBUG_MM_ALLOC #-D__DEBUG_MM_SCHED
 ASMOPS = -Iinclude 
 
 BUILD_DIR = build

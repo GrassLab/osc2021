@@ -10,21 +10,14 @@ _start:
     // read cpu id, stop slave cores
     mrs     x1, mpidr_el1
     and     x1, x1, #3              // get CPU ID and mask reserved bits
-    cbz     x1, clear_bss
+    cbz     x1, el2_entry
     // cpu id > 0, stop
 proc_hang:  
     wfe                             // hang for all noo-primary CPU and enter low power mode
     b       proc_hang    
-
-clear_bss:
-    // clear bss
-    adr     x0, __bss_start
-    adr     x1, __bss_end
-    sub     x1, x1, x0
-    bl      memzero
-
+    
     // jump into master label. cpu id == 0, is primary CPU 
-master:  
+el2_entry:  
     ldr     x0, =SCTLR_VALUE_MMU_DISABLED   // disable MMU 
     msr     sctlr_el1, x0
 
@@ -40,23 +33,26 @@ master:
     eret		                     // from el2 to el1
 
 el1_entry:
-    ldr     x1, =CPACR_EL1_VALUE     // let el0, el1 can use Floating point and Advanced SIMD
-    msr     CPACR_EL1, x1
-
-    //ldr     x1, =_start               // set EL1 stack before our code
-    //mov     sp, x1
+    ldr     x0, =CPACR_EL1_VALUE     // let el0, el1 can use Floating point and Advanced SIMD
+    msr     CPACR_EL1, x0
 
     ldr     x0, =exception_vector_table      // set up el1 exception table
     msr     vbar_el1, x0
 
-    //ldr     x0, =SPSR_EL1_VALUE
-    //msr     spsr_el1, x0
-
     ldr	    x0, =0x3c5                // set processor restore state after calling eret
     msr	    spsr_el1, x0              // kernel should be running in EL1
 
-    //ldr     x1, =0x40000              // set EL0 stack pointer
-    //msr     sp_el0, x1
+    adr	    x0, master		          // eret return address
+    msr	    elr_el1, x0
+
+    eret
+
+master:
+    // clear bss
+    adr     x0, __bss_start
+    adr     x1, __bss_end
+    sub     x1, x1, x0
+    bl      memzero
 
     /* Prepare MMU config */
     bl      __create_page_tables      // Create Kernel's Page table
@@ -71,18 +67,18 @@ el1_entry:
     ldr 	x0, =(MAIR_VALUE)
     msr	    mair_el1, x0
 
-    ldr     x0, =_kernel_start        // set EL1 stack pointer (virtual address) before our code
+    ldr     x0, =__kernel_start        // set EL1 stack pointer (virtual address) before our code
     mov     sp, x0
     
-    ldr     x2, =main                 // save absolute address for jumping to main functoin in C code after enable MMU
+    ldr     x2, =main          // save absolute address for jumping to main functoin in C code after enable MMU
 
-    ldr     x1, =SCTLR_MMU_ENABLED    // Enable MMU
+    ldr     x1, =SCTLR_MMU_ENABLED     // Enable MMU
     mrs     x0, sctlr_el1
     orr     x0 , x0, x1
-    msr     sctlr_el1, x0             
+    msr     sctlr_el1, x0
 
     // Jump to main functoin in C code, should not return
-    br      x2                        
+    br      x2
 
     .macro  create_pgd_entry, tbl, virt, tmp1, tmp2
     create_table_entry \tbl, \virt, PGD_SHIFT, \tmp1, \tmp2

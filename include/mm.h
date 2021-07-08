@@ -18,7 +18,7 @@
 #define MAX_ORDER                  9 
 #define MAX_ORDER_SIZE             (1 << MAX_ORDER)
 
-#define LOW_MEMORY                 SECTION_SIZE             // 2MB
+#define LOW_MEMORY                 (2 * SECTION_SIZE)             // 2MB
 #define HIGH_MEMORY                DEVICE_BASE
 
 #define PTRS_PER_TABLE			    (1 << TABLE_SHIFT)

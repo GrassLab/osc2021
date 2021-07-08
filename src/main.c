@@ -251,8 +251,10 @@ int main()
 
     // enable IRQ interrupt
     enable_irq();
-    
-    enable_uart_interrupt();
+
+    // TODO: This uart interrupt might cause bug, because uart read interrupt might be triggered continously  
+    //       (In rpi3 hardware) And when we inital rpi3 hardware, sometimes there are a random char are generated for no reason (We can't find the reason)
+    //enable_uart_interrupt(); 
 
     // say hello
     printf(init_logo);
