@@ -1,4 +1,4 @@
-# OSDI 2021 - Lab 07 File System Meets Hardware
+# OSDI 2021 - Lab 07 Virtual Memory
 
 ## Author
 
@@ -7,24 +7,26 @@
 | 0856167    | Yunyung        | 許振揚| yungyung7654321@gmail.com  |
 
 ### Introduction
-In the previous lab, the file’s operations were only in the memory. In this lab, we are going to read data from an external storage device, modify it in the memory, and write it back. In addition, we are going to implement the basic of the FAT32 file system.
+Virtual memory provides isolated address spaces, so each user process can run in its address space without interfering with others.
+
+In this lab, we need to initialize the memory management unit(MMU) and set up the address spaces for the kernel and user processes to achieve process isolation
 
 ### Goals of this lab
-- Understand how to read/write data from an SD card.
+- Understand ARMv8-A virtual memory system architecture.
 
-- Implement the FAT32 file system.
+- Understand how to design multitasking with virtual memory.
 
-- Implement the FAT32 file system that meet the VFS interface.
+- Understand how to prevent invalid memory access.
 
-- Mount the FAT32 partition in sd card to VFS.
+- Understand how the kernel manages memory for user processes.
 
-- Read/Parse Master Boot Record(MBR) and FAT32 boot sector.
+- Implement simple mmap
 
-- Understand how to access devices by the VFS.
+- Understand how demand paging works.
 
-- Implement Open(lookup)/Read/Write/Create function and register to VFS interface for manipulating a file in FAT32 and sd card.
+- Implement demand paging mechanism.
 
-- Understand how memory be used as a cache for slow external storage mediums.
+- Understand how copy-on-write works.
 
 ## Directory structure
 ```
@@ -59,7 +61,9 @@ In the previous lab, the file’s operations were only in the memory. In this la
 │   ├── tmpfs.h
 │   ├── mbr.h           # header file of Master boot Record
 │   ├── sdhost.h    
-│   └── fat32.h
+│   ├── fat32.h  
+│   ├── base.h  
+│   └── mmu.h
 │
 ├── src                 # source files
 │   ├── command.c       # source file to process command
@@ -73,6 +77,7 @@ In the previous lab, the file’s operations were only in the memory. In this la
 │   ├── uart.c          # source file to process uart interface and implement uart asynchronous read/write cooperate with shell in shell.c
 │   ├── mm.c            # Implementation of buudy system and object allocator(slab) for memory allocation
 │   ├── mm.S   
+│   ├── utils.c 
 │   ├── utils.S        
 │   ├── entry.S 
 │   ├── exception.c  
