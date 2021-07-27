@@ -1,4 +1,4 @@
-# OSDI 2021 - Lab 07 Virtual Memory
+# OSDI 2021 - Lab 08 Virtual Memory
 
 ## Author
 
