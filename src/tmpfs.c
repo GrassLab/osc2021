@@ -45,7 +45,7 @@ struct vnode* tmpfs_create_vnode(struct dentry *dentry, int type)
 int tmpfs_register()
 {
     if (tmpfs_v_ops != NULL && tmpfs_f_ops != NULL) {
-        return TMPFS_ERROR;
+        return TMPFS_ERROR; // Register error
     }
 
     // vnode operations
@@ -58,19 +58,19 @@ int tmpfs_register()
     tmpfs_f_ops = (struct file_operations *) kmalloc(sizeof(struct file_operations));
     tmpfs_f_ops->write = tmpfs_write;
     tmpfs_f_ops->read = tmpfs_read;
-    // Register error
+
     return 0;
 }
 
 int tmpfs_setup_mount(struct filesystem* fs, struct mount* mount, const char *component_name)
 {
-    //printf("[tmpfs_setup_mount]\n");
+    // printf("[tmpfs_setup_mount]\n");
     mount->fs = fs;
     mount->root = tmpfs_create_dentry(NULL, component_name, DIRECTORY);
     
-    printf("[tmpfs_setup_mount] New created dentry name = %s\n", mount->root->name);
+    printf("[tmpfs_setup_mount] Setup tmpfs, New created dentry name = %s\n", mount->root->name);
 
-    return TMPFS_ERROR;
+    return TRUE;
 }
 
 int tmpfs_lookup(struct vnode *dir_node, struct vnode **target, const char *component_name)
@@ -176,7 +176,7 @@ int tmpfs_read(struct file *file, void *buf, size_t len)
 
 int tmpfs_mkdir(struct vnode *parent, const char *component_name)
 {
-    printf("[tmpfs_mkdir] dir name: %s%\n", component_name);
+    printf("[tmpfs_mkdir] dir name: %s\n", component_name);
     tmpfs_create_dentry(parent->dentry, component_name, DIRECTORY);
 
     return 1;

@@ -1,7 +1,11 @@
 #include "mm.h"
 #include "uart.h"
 #include "printf.h"
-
+#include "sched.h"
+#include "mmu.h"
+#include "utils.h"
+#include "types.h"
+#include "sys.h"
 
 page_t bookkeep[PAGE_FRMAME_NUM];
 free_area_t free_area[MAX_ORDER + 1];
@@ -45,11 +49,11 @@ void pop_block_from_free_area(page_t *poped_block, free_area_t *fa) {
 
 struct page *buddy_block_alloc(int order) 
 {
-    #ifdef __DEBUG
+    #ifdef __DEBUG_MM_ALLOC
     // printf("\n[buddy_block_alloc]Before allocate buddy memory:");
     // dump_buddy();
     printf("[buddy_block_alloc] Requested Order: %d, Size: %d\n\n", order, 1 << order);
-    #endif //__DEBUG
+    #endif // __DEBUG_MM_ALLOC
 
     if ( (order<0) | (order>MAX_ORDER) ) {
         printf("[buddy_block_alloc] %d is invalid order!\n", order);
@@ -75,20 +79,20 @@ struct page *buddy_block_alloc(int order)
             struct page *bottom_half_block = &bookkeep[buddy_pfn];
             push_block_to_free_area(bottom_half_block, &free_area[downward_order], downward_order);
 
-            #ifdef __DEBUG   
+            #ifdef __DEBUG_MM_ALLOC   
             printf("Push back -> Redundant block(bottom half)  { pfn(%d), order(%d) }\n", 
                     bottom_half_block->pfn, bottom_half_block->order);
-            #endif //__DEBUG
+            #endif // __DEBUG_MM_ALLOC
         }
 
-        #ifdef __DEBUG   
+        #ifdef __DEBUG_MM_ALLOC   
         printf("\n[buddy_block_alloc]After allocate buddy memory:");
         dump_buddy();
         
         printf("[buddy_block_alloc] Result - Allocated block{ pfn(%d), order(%d), phy_addr_16(0x%x) }\n",
                 target_block->pfn, target_block->order, target_block->phy_addr);
         printf("[buddy_block_alloc] **Done**\n\n");
-        #endif //__DEBUG
+        #endif // __DEBUG_MM_ALLOC
 
         return target_block;
         
@@ -99,23 +103,23 @@ struct page *buddy_block_alloc(int order)
     return 0;
 }
 
-void buddy_block_free(struct page* block) 
+void buddy_block_free(struct page *block) 
 {
-    #ifdef __DEBUG
+    #ifdef __DEBUG_MM_ALLOC
      printf("\n[buddy_block_free] **Start free block{ pfn(%d), order(%d) }**\n", 
            block->pfn, block->order);
     // printf("\n[buddy_block_free]Before free memory:");
     // dump_buddy();
-    #endif //__DEBUG
+    #endif // __DEBUG_MM_ALLOC
 
     // Coalesce free buddy
     int buddy_pfn = FIND_BUDDY_PFN(block->pfn, block->order);
     page_t *buddy_block = &bookkeep[buddy_pfn];
     while (block->order < MAX_ORDER && block->order == buddy_block->order && 
            buddy_block->used == Free) {
-        #ifdef __DEBUG
+        #ifdef __DEBUG_MM_ALLOC
         printf("Buddy{ pfn(%d), order(%d) }\n", buddy_block->pfn, buddy_block->order);
-        #endif //__DEBUG
+        #endif // __DEBUG_MM_ALLOC
         // Pop buddy block from frealist
         pop_block_from_free_area(buddy_block, &free_area[buddy_block->order]);
 
@@ -133,17 +137,16 @@ void buddy_block_free(struct page* block)
     // Push merged block to freelist
     push_block_to_free_area(block, &free_area[block->order], block->order);
 
-    #ifdef __DEBUG
+    #ifdef __DEBUG_MM_ALLOC
     printf("\n[buddy_block_free]After free memory:");
     dump_buddy();
     printf("[buddy_block_free] **Done**\n\n");
-    #endif //__DEBUG
+    #endif // __DEBUG_MM_ALLOC
 
     
 }
 
 
-#ifdef __DEBUG
 void dump_buddy()
 {
     printf("\n---------Buddy Debug---------\n");
@@ -161,7 +164,6 @@ void dump_buddy()
     printf("\n---------End Buddy Debug---------\n\n");
 
 }
-#endif
 
 void __init_obj_alloc(obj_allocator_t *obj_allocator_p, int objsize)
 {
@@ -202,10 +204,10 @@ int register_obj_allocator(int objsize)
 
         __init_obj_alloc(&obj_alloc_pool[token], objsize);
 
-        #ifdef __DEBUG
+        #ifdef __DEBUG_MM_ALLOC
         printf("[register_obj_allocator] Successfully Register object allocator! {objsize(%d), token(%d)}\n"
                 ,objsize, token);
-        #endif //__DEBUG 
+        #endif // __DEBUG_MM_ALLOC 
 
         return token;
     }
@@ -223,11 +225,11 @@ void *obj_allocate(int token) {
     obj_allocator_t *obj_allocator_p = &obj_alloc_pool[token];
     void *allocated_addr = NULL; // address of allocated object 
 
-    #ifdef __DEBUG
+    #ifdef __DEBUG_MM_ALLOC
     printf("[obj_allocate] Requested token: %d, size: %d\n",token, obj_allocator_p->objsize);
     // printf("[obj_allocate] Before allocation:");
     // dump_obj_alloc(obj_allocator_p);
-    #endif //__DEBUG
+    #endif // __DEBUG_MM_ALLOC
     
     if (obj_allocator_p->curr_page == NULL) {
         page_t *page_p;
@@ -254,10 +256,10 @@ void *obj_allocate(int token) {
     struct list_head *obj_freelist = obj_allocator_p->curr_page->free;
     if (obj_freelist != NULL) {
         // Allocate memory by free list in current page
-        #ifdef __DEBUG
+        #ifdef __DEBUG_MM_ALLOC
         printf("[obj_allocate] Use object freelist\n");
         printf("[obj_allocate] obj_freelist->next = 0x%x\n", obj_freelist->next);
-        #endif //__DEBUG
+        #endif // __DEBUG_MM_ALLOC
         allocated_addr = obj_freelist;
         obj_allocator_p->curr_page->free = obj_freelist->next; // Point to next address of free object;
     }
@@ -277,12 +279,12 @@ void *obj_allocate(int token) {
     }
 
     
-    #ifdef __DEBUG
+    #ifdef __DEBUG_MM_ALLOC
     printf("[obj_allocate] Allocated address: {phy_addr_16(%x)}\n", allocated_addr);
     printf("[obj_allocate] After allocation:");
     dump_obj_alloc(obj_allocator_p);
     printf("[obj_allocate] **Done**\n\n");
-    #endif //__DEBUG
+    #endif // __DEBUG_MM_ALLOC
 
     
     return allocated_addr;
@@ -296,13 +298,13 @@ void obj_free(void *obj_addr) {
     page_t *page_p = &bookkeep[obj_pfn];
     obj_allocator_t *obj_allocator_p = page_p->obj_alloc;
     
-    #ifdef __DEBUG
+    #ifdef __DEBUG_MM_ALLOC
     printf("\n[obj_free] Free object procedure!\n");
     printf("[obj_free] Page info: 0x%x {pfn=(%d), obj_used(%d))\n", obj_addr, obj_pfn, page_p->obj_used);
     printf("[obj_free] object free list point to {0x%x}\n", page_p->free);
     // printf("[obj_free] Before free:");
     // dump_obj_alloc(obj_allocator_p);
-    #endif // __DEBUG
+    #endif // __DEBUG_MM_ALLOC
 
     // Make page's object freelist point to address of new first free object.
     // And the contect of released object should record the orginal address 
@@ -332,9 +334,9 @@ void obj_free(void *obj_addr) {
         // Return empty page to free page pool(free_area)
         // otherwise, add it to empty list 
         if (obj_allocator_p->page_used >= 10) { // TODO: Return empty page only if memory becomes tight
-            #ifdef __DEBUG
+            #ifdef __DEBUG_MM_ALLOC
             printf("[obj_free] Free empty page bacause memory is tight");
-            #endif // __DEBUG
+            #endif // __DEBUG_MM_ALLOC
 
             obj_allocator_p->page_used -= 1;
             page_p->free = NULL;
@@ -347,14 +349,14 @@ void obj_free(void *obj_addr) {
         }
     }
 
-    #ifdef __DEBUG
+    #ifdef __DEBUG_MM_ALLOC
     printf("[obj_free] After free:");
     dump_obj_alloc(obj_allocator_p);
     printf("[obj_free] **Done**\n\n");
-    #endif // __DEBUG
+    #endif // __DEBUG_MM_ALLOC
 }
 
-#ifdef __DEBUG
+#ifdef __DEBUG_MM_ALLOC
 void dump_obj_alloc(obj_allocator_t *obj_allocator_p)
 {
     printf("\n---------Object Allocator Debug---------\n");
@@ -398,7 +400,7 @@ void dump_obj_alloc(obj_allocator_t *obj_allocator_p)
     printf("\n---------End Object Allocator Debug---------\n\n");
 
 }
-#endif
+#endif // __DEBUG_MM_ALLOC
 
 void __init_kmalloc()
 {
@@ -409,9 +411,9 @@ void __init_kmalloc()
 
 void *kmalloc(int size)
 {
-    #ifdef __DEBUG
+    #ifdef __DEBUG_MM_ALLOC
     printf("[kmalloc] Requested Size: %d\n", size);
-    #endif //__DEBUG
+    #endif // __DEBUG_MM_ALLOC
 
     void *allocated_addr;
 
@@ -420,10 +422,10 @@ void *kmalloc(int size)
         if (size <= (1<<i)) {
             allocated_addr = obj_allocate(i - MIN_KMALLOC_ORDER);
 
-            #ifdef __DEBUG
+            #ifdef __DEBUG_MM_ALLOC
             printf("[kmlloc] Allocated address: 0x%x\n", allocated_addr);
             printf("[kmlloc] **Done**\n\n");
-            #endif //__DEBUG
+            #endif // __DEBUG_MM_ALLOC
 
             return allocated_addr;
         }
@@ -433,10 +435,10 @@ void *kmalloc(int size)
         if (size <= 1<<(i + PAGE_SHIFT)) {
             allocated_addr = (void *) buddy_block_alloc(i)->phy_addr;
 
-            #ifdef __DEBUG
+            #ifdef __DEBUG_MM_ALLOC
             printf("[kmlloc] Allocated address: 0x%x\n", allocated_addr);
             printf("[kmlloc] **Done**\n\n");
-            #endif //__DEBUG
+            #endif // __DEBUG_MM_ALLOC
 
             return allocated_addr;
         }
@@ -448,9 +450,9 @@ void *kmalloc(int size)
 
 void kfree(void *addr) 
 {
-    #ifdef __DEBUG
+    #ifdef __DEBUG_MM_ALLOC
     printf("[kfree] Free Memory Address: 0x%x\n", addr);
-    #endif //__DEBUG
+    #endif // __DEBUG_MM_ALLOC
 
     int pfn = PHY_ADDR_TO_PFN(addr);
     page_t *page_p = &bookkeep[pfn];
@@ -463,9 +465,280 @@ void kfree(void *addr)
         buddy_block_free(page_p);
     }
 
-    #ifdef __DEBUG
+    #ifdef __DEBUG_MM_ALLOC
     printf("[kfree] **Done**\n\n");
-    #endif //__DEBUG
+    #endif // __DEBUG_MM_ALLOC
+}
+
+
+
+/* Page allocate and free after MMU enable */
+
+void *get_free_page()
+{
+    void *page = (void *) buddy_block_alloc(0)->phy_addr;   // alloacte one page
+    memzero((unsigned long) page + VA_START, PAGE_SIZE);    // clear page
+    return page;
+}
+
+void free_page(void *pg_addr)
+{
+    #ifdef __DEBUG_MM
+    printf("[free_page] Free Memory Address(Physical address): 0x%x\n", pg_addr);
+    #endif //__DEBUG_MM
+
+    int pfn = PHY_ADDR_TO_PFN(pg_addr);
+    page_t *page_p = &bookkeep[pfn];
+
+    buddy_block_free(page_p);
+}
+
+void *alloacte_kernel_page()
+{
+    void *page = (void *) get_free_page(); // alloacte one page
+    if (page == 0) {
+        // fail
+        return 0;   
+    }
+    return page + VA_START;
+}
+
+void *alloacte_user_page(struct task_struct *task, unsigned long va)
+{
+    void *page = (void *) get_free_page(); // alloacte one page
+    if (page == 0) {
+        // fail
+        return 0;   
+    }
+    map_page(task, va, (unsigned long)page); // map page and use normal page mapping, it may allocate and populate new page tables            
+    return page + VA_START;
+}
+
+void map_table_entry(unsigned long *pte, unsigned long va, unsigned long page)
+{
+    unsigned long index = va >> PAGE_SHIFT;
+    index = index & (PTRS_PER_TABLE - 1);
+    unsigned long entry = page | MMU_PTE_FLAGS;
+    pte[index] = entry;
+}
+
+unsigned long map_table(unsigned long *table, unsigned long shift, unsigned long va, int *new_table)
+{
+    unsigned long index = va >> shift;
+    index = index & (PTRS_PER_TABLE - 1);
+    if (!table[index]) {
+        *new_table = 1;
+        unsigned long next_level_table = (unsigned long) get_free_page();
+        unsigned long entry = next_level_table | MM_TYPE_PAGE_TABLE;
+        table[index] = entry;
+        return next_level_table;
+    } else {
+        *new_table = 0;
+    }
+
+    return table[index] & PAGE_MASK;
+}
+
+void map_page(struct task_struct *task, unsigned long va, unsigned long page)
+{
+    unsigned long pgd;
+    if (!task->mm.pgd) {
+        task->mm.pgd = (unsigned long) get_free_page();
+        task->mm.kernel_pages[++task->mm.kernel_pages_count] = task->mm.pgd;
+    }
+    pgd = task->mm.pgd;
+    int new_table;
+    unsigned long pud = map_table((unsigned long *)(pgd + VA_START), PGD_SHIFT, va, &new_table);
+    if (new_table) {
+        task->mm.kernel_pages[++task->mm.kernel_pages_count] = pud;
+    }
+    unsigned long pmd = map_table((unsigned long *)(pud + VA_START), PUD_SHIFT, va, &new_table);
+    if (new_table) {
+		task->mm.kernel_pages[++task->mm.kernel_pages_count] = pmd;
+	}
+    unsigned long pte = map_table((unsigned long *)(pmd + VA_START), PMD_SHIFT, va, &new_table);
+	if (new_table) {
+		task->mm.kernel_pages[++task->mm.kernel_pages_count] = pte;
+	}
+    map_table_entry((unsigned long *)(pte + VA_START), va, page);
+    struct user_page p = {page, va};
+    task->mm.user_pages[task->mm.user_pages_count++] = p;
+}
+
+int copy_virt_memory(struct task_struct *dst)
+{
+    #ifdef __DEBUG_MM
+    printf("[copy_virt_memory]\n");
+    #endif
+    struct task_struct *src = current;
+
+    #ifdef __DEBUG_MM
+    printf("[copy_virt_memory] src->mm.user_pages_count = %d\n", src->mm.user_pages_count);
+    #endif
+    for (int i = 0;i < src->mm.user_pages_count;i++) {
+        #ifdef __DEBUG_MM
+        printf("[copy_virt_memory] src->mm.user_pages[%d].phys_addr = 0x%x\n", i, src->mm.user_pages[i].phys_addr);
+        printf("[copy_virt_memory] src->mm.user_pages[%d].virt_addr = 0x%x\n", i, src->mm.user_pages[i].virt_addr);
+        #endif
+        void *kernel_va = alloacte_user_page(dst, src->mm.user_pages[i].virt_addr);
+        if (kernel_va == 0) {
+            // fail
+            printf("[copy_virt_moemory] Error.");
+            return -1;
+        }
+        memcpy((unsigned long) kernel_va, src->mm.user_pages[i].virt_addr, PAGE_SIZE);
+    }
+
+    #ifdef __DEBUG_MM
+    printf("[copy_virt_memory] End virtual memory copy\n");
+    #endif
+    return 0;
+}
+
+unsigned long _find_pte(struct task_struct *task, unsigned long va)
+{
+    unsigned long pgd;
+    if (!task->mm.pgd) {
+        task->mm.pgd = (unsigned long) get_free_page();
+        task->mm.kernel_pages[++task->mm.kernel_pages_count] = task->mm.pgd;
+    }
+    pgd = task->mm.pgd;
+    int new_table;
+    unsigned long pud = map_table((unsigned long *)(pgd + VA_START), PGD_SHIFT, va, &new_table);
+    if (new_table) {
+        task->mm.kernel_pages[++task->mm.kernel_pages_count] = pud;
+    }
+    unsigned long pmd = map_table((unsigned long *)(pud + VA_START), PUD_SHIFT, va, &new_table);
+    if (new_table) {
+		task->mm.kernel_pages[++task->mm.kernel_pages_count] = pmd;
+	}
+    unsigned long pte = map_table((unsigned long *)(pmd + VA_START), PMD_SHIFT, va, &new_table);
+	if (new_table) {
+		task->mm.kernel_pages[++task->mm.kernel_pages_count] = pte;
+	}
+
+    return pte;
+}
+
+void _map_table_entry_with_prot(unsigned long *pte, unsigned long va, unsigned long page, uint64_t entry_prot)
+{
+    unsigned long index = va >> PAGE_SHIFT;
+    index = index & (PTRS_PER_TABLE - 1);
+    unsigned long entry = page | entry_prot;
+    pte[index] = entry;
+
+    printf("[mem_map] entry: ");
+    print_0x_64bit((void *)entry);
+
+}
+
+/** mmap kernel function 
+ *  For simplicity, we always allocate one page regardless of "len" value and "fd", "file_offset" not used 
+ **/
+void *mem_map(void *addr, size_t len, int prot, int flags, int fd, int file_offset)
+{
+    if (len <= 0) { // requested size must be greater than 0
+        printf("[mem_map] Requested size must be greater than 0\n");
+    }
+
+    // region’s access protection
+    uint64_t pte_entry_prot = MMAP_PTE_DEFAULT;
+    if ((prot & PROT_NONE) == PROT_NONE)   pte_entry_prot = pte_entry_prot & (~MM_ACCESS);
+    if ((prot & PROT_READ) == PROT_READ)   pte_entry_prot = pte_entry_prot | MM_READ_ONLY;
+    if ((prot & PROT_WRITE) == PROT_WRITE) pte_entry_prot = pte_entry_prot & (~MM_READ_ONLY); // PROT_WRITE implies PROT_READ.
+    if ((prot & PROT_EXEC) == PROT_EXEC)   pte_entry_prot = pte_entry_prot & (~MM_EXEC_NONE);
+    
+    unsigned long new_region_addr = 0;
+    int idx_unused_pte_entry = 0;
+    printf("[mem_map] current->mm.kernel_pages_count = %d\n", current->mm.kernel_pages_count);
+    if (addr == NULL) { // Allocate a new page,  
+        // find the first unused page descriptor in pte.
+        unsigned long *pte;
+        for (int i = 0;i < MAX_PROCESS_PAGES;i++) {
+            pte = (unsigned long *) _find_pte(current, i * PAGE_SIZE);
+            pte = (unsigned long *)((unsigned long)pte + VA_START);
+            printf("[mem_map] pte[%d]: ", i);
+            print_0x_64bit((void *)pte[i]);
+            if (pte[i] == 0) { // unused page entry
+                if (pte[i] == 0) {
+                    printf("[mem_map] Find first unused virtual memory of the process. index = %d\n", i);
+                    idx_unused_pte_entry = i;
+                    break;
+                }
+            }
+        }
+        if (pte == 0) {
+            printf("[mem_map] No avaliable memory for the process.\n");
+            return NULL;
+        }
+
+        // fill in new page entry
+        new_region_addr = (unsigned long)(PAGE_SIZE * idx_unused_pte_entry);
+        unsigned long page = (unsigned long) get_free_page();
+        _map_table_entry_with_prot(pte, new_region_addr, page, pte_entry_prot);
+    }
+    else { // if addr is specified 
+        int isPageAligned = ((unsigned long)addr & 0x0FFF) > 0;
+        printf("[mem_map] isPageAligned = %d\n", isPageAligned);
+        if (flags == MAP_FIXED && isPageAligned) {
+            printf("[mem_map] MAP_FIXED is set but addr is not page-aligned, mmap() failed.\n");
+            return NULL;
+        }
+
+        new_region_addr = (unsigned long)addr & ~(0x0FFF); // The memory region created by mmap() should be page-aligned,
+        unsigned long *pte;
+        pte = (unsigned long *) _find_pte(current, new_region_addr);
+        pte = (unsigned long *)((unsigned long)pte + VA_START);
+        // fill in new page entry
+        unsigned long page = (unsigned long) get_free_page();
+        _map_table_entry_with_prot(pte, new_region_addr, page, pte_entry_prot);
+        printf("[mem_map] pte: ");
+        print_0x_64bit((void *)pte);
+        printf("[mem_map] new_region_addr: ", new_region_addr);
+        print_0x_64bit((void *)new_region_addr);
+    }
+
+    return (void *)new_region_addr;
+}
+
+int do_mem_abort(unsigned long addr, unsigned long esr) 
+{
+    printf("[do_mem_abort] Here!\n");
+    printf("[do_mem_abort] ESR: 0x%x\n", esr);
+    printf("[do_mem_abort] Page Fault address: ");
+    print_0x_64bit((void *)addr);
+
+    unsigned long dfs = (esr & 0b111111);
+    if ((dfs & 0b111100) == 0b100) { // Translation fault
+        printf("[do_mem_abort] Is translation fault!\n");
+        if (addr >= MAX_PROCESS_ADDRESS_SPACE) {
+            printf("[do_mem_abort] *segmentation fault*  Addrss exceed process’s address space, terminate process!\n");
+            exit_process(); // terminate current process
+        }
+        void *page = get_free_page();
+        if (page == 0) {
+            // fail
+            printf("[do_mem_abort] Fail to alloacte free page\n");
+            return -1;
+        }
+
+        map_page(current, addr & PAGE_MASK, (unsigned long)page);
+
+        return 0;
+    }
+
+    if ((dfs & 0b111100) == 0b1100) { // Permission fault
+        printf("[do_mem_abort] Is Permission fault!\n");
+        printf("[do_mem_abort] *segmentation fault*,  terminate process!\n");
+        exit_process(); // terminate current process
+    }
+
+    if ((dfs & 0b111100) == 0b1000) { // Access flag fault
+        printf("[do_mem_abort] Is Access flag fault!\n");
+        printf("[do_mem_abort] *segmentation fault*,  terminate process!\n");
+        exit_process(); // terminate current process
+    }
+    return -1;
 }
 
 void mm_init()

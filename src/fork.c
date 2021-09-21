@@ -12,7 +12,10 @@
 #include "printf.h"
 #include "sched.h"
 #include "types.h"
+#include "utils.h"
 
+// no virtual memory version
+// TODO: fork and exec syscall is change, so it may not acceptable
 int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg, unsigned long stack) {
     preempt_disable();
     struct task_struct *p;
@@ -69,6 +72,8 @@ int copy_process(unsigned long clone_flags, unsigned long fn, unsigned long arg,
     return pid;
 }
 
+// no virtual memory version
+// TODO: fork and exec syscall is change, so it may not acceptable
 int move_to_user_mode(unsigned long pc) 
 {
     struct pt_regs *regs = task_pt_regs(current);
@@ -83,6 +88,75 @@ int move_to_user_mode(unsigned long pc)
     
     regs->sp = stack + PAGE_SIZE;
     current->stack = stack;
+    return 0;
+}
+
+// virtual memory version
+int copy_process_virt(unsigned long clone_flags, unsigned long fn, unsigned long arg) {
+    
+    preempt_disable();
+    struct task_struct *p;
+    p = (struct task_struct *) alloacte_kernel_page(); // get a free and clean(init zero val) page 
+    if (!p) { // NULL
+        printf("[copy_process_virt] Fail to allocate memory");
+        return -1;
+    }
+    struct pt_regs *childregs = task_pt_regs(p);
+    if (clone_flags & PF_KTHREAD) {
+        // Kernel thread
+        p->cpu_context.x19 = fn;
+        p->cpu_context.x20 = arg;
+    } else {
+        // Sysclone and fork, initalize stage for clone and fork user process
+        #ifdef __DEBUG_MM
+        printf("[copy_process_virt] Fork!\n");
+        #endif
+        struct pt_regs * cur_regs = task_pt_regs(current);
+        *childregs = *cur_regs;
+        childregs->regs[0] = 0; // To distinguish it as new child process
+        copy_virt_memory(p);
+    }
+
+    p->flags = clone_flags;
+    p->priority = current->priority;
+    p->state = TASK_RUNNING;
+    p->counter = p->priority;
+    // disable preemption until schedule_tail, 
+    // meaning that after the task is executed it should not be rescheduled
+    // until it completes some initialization work.
+    p->preempt_count = 1; 
+    // Init file descriptor table(file struct)
+    _init_files_struct(p);
+    // process current working directory for filesystem
+    p->cwd = rootfs->root;
+
+    p->cpu_context.pc = (unsigned long)ret_from_fork;
+    p->cpu_context.sp = (unsigned long)childregs;
+
+    int pid = assignPID();
+    task[pid] = p;	
+    task[pid]->pid = pid;
+
+    preempt_enable();
+
+    return pid;
+}
+
+// virtual memory version
+int move_to_user_mode_virt(unsigned long pc, unsigned long user_start_address) 
+{
+    struct pt_regs *regs = task_pt_regs(current);
+    //memzero((unsigned long)regs, sizeof(* regs));
+    regs->pstate = PSR_MODE_EL0t;
+    regs->sp = MAX_PROCESS_ADDRESS_SPACE;   // sp increase from high memory
+    void *code_page = alloacte_user_page(current, 0);
+    regs->pc = 0;   // Becuase virtual memory enable, so user code can always start at 0
+    if (code_page == 0) {
+        printf("[move_to_user_mode_virt] Fail to allocate memory");
+        return -1;
+    }
+    memcpy((unsigned long)code_page, user_start_address, PAGE_SIZE);
+    set_pgd(current->mm.pgd);
     return 0;
 }
 

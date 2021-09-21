@@ -11,7 +11,7 @@ struct tmpfs_internal {
     char *buf;
 };
 
-int tmpfs_setup_mount();
+int tmpfs_setup_mount(struct filesystem* fs, struct mount* mount, const char *component_name);
 int tmpfs_register();
 struct dentry* tmpfs_create_dentry(struct dentry *parent, const char *name, int type);
 struct vnode* tmpfs_create_vnode(struct dentry *dentry, int type);
